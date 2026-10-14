@@ -94,3 +94,13 @@ def test_model_runs_on_sample():
     p = predict_variants(Model(), text_image())
     assert set(p) == {"pack", "crop"} and p["pack"].shape == (3665,)
     assert p["pack"].sum() == pytest.approx(1, abs=1e-4)
+
+
+def test_meta_json_is_generated():
+    """extension/model/meta.json must equal build_meta output (data/gf_extra.json included)."""
+    import json
+
+    from fontsnap_ref.build_meta import build
+    from fontsnap_ref.pipeline import ROOT
+
+    assert json.load(open(ROOT / "extension" / "model" / "meta.json")) == json.loads(json.dumps(build()))
