@@ -23,25 +23,27 @@ function runs(mask, minGap) { const out = []; let s = -1, p = -1;
   if (s >= 0) out.push([s, p + 1]); return out; }
 function ellipse(k) { const r = k >> 1, c = k >> 1, half = []; // half-width per row
   for (let i = 0; i < k; i++) { const dy = i - r; half.push(rint(c * Math.sqrt((r * r - dy * dy) / (r * r)))); } return half; }
-// grayscale morphology (min/max) with ellipse; out-of-bounds pixels ignored (cv2 default border for morphology)
+// grayscale morphology (min/max) with ellipse; out-of-bounds pixels ignored (cv2 default border for morphology).
+// Ellipse = union of horizontal segments: 1D sliding min/max (van Herk/Gil-Werman) per distinct half-width, then min/max over rows.
 function morph(g, w, h, k, isMax) {
-  const half = ellipse(k), r = k >> 1, uniq = [...new Set(half)], rowF = new Map();
-  const tmp = new Uint8Array(w);
-  for (const dx of uniq) { const o = new Uint8Array(w * h);
-    for (let y = 0; y < h; y++) { const base = y * w;
-      // sliding window via van Herk/Gil-Werman over window 2dx+1 with clipped borders
-      const W = 2 * dx + 1, L = w + 2 * dx, pad = new Uint8Array(L), fv = isMax ? 0 : 255;
-      for (let x = 0; x < L; x++) { const sx = x - dx; pad[x] = (sx >= 0 && sx < w) ? g[base + sx] : fv; }
-      const pre = new Uint8Array(L), suf = new Uint8Array(L);
-      for (let x = 0; x < L; x++) pre[x] = (x % W === 0) ? pad[x] : (isMax ? Math.max(pre[x-1], pad[x]) : Math.min(pre[x-1], pad[x]));
-      for (let x = L - 1; x >= 0; x--) suf[x] = (x % W === W - 1 || x === L - 1) ? pad[x] : (isMax ? Math.max(suf[x+1], pad[x]) : Math.min(suf[x+1], pad[x]));
-      for (let x = 0; x < w; x++) { const a = suf[x], b = pre[x + W - 1]; o[base + x] = isMax ? (a > b ? a : b) : (a < b ? a : b); }
+  const half = ellipse(k), r = k >> 1, rowF = new Map(), fv = isMax ? 0 : 255;
+  const op = isMax ? (a, b) => (a > b ? a : b) : (a, b) => (a < b ? a : b);
+  for (const dx of new Set(half)) {
+    const o = new Uint8Array(w * h), W = 2 * dx + 1, L = w + 2 * dx, pad = new Uint8Array(L), pre = new Uint8Array(L), suf = new Uint8Array(L);
+    for (let y = 0; y < h; y++) {
+      const base = y * w;
+      pad.fill(fv); pad.set(g.subarray(base, base + w), dx);
+      for (let x = 0; x < L; x++) pre[x] = x % W === 0 ? pad[x] : op(pre[x - 1], pad[x]);
+      for (let x = L - 1; x >= 0; x--) suf[x] = x % W === W - 1 || x === L - 1 ? pad[x] : op(suf[x + 1], pad[x]);
+      for (let x = 0; x < w; x++) o[base + x] = op(suf[x], pre[x + W - 1]);
     }
-    rowF.set(dx, o); }
-  const out = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let v = isMax ? 0 : 255;
-    for (let i = 0; i < k; i++) { const yy = y + i - r; if (yy < 0 || yy >= h) continue; const q = rowF.get(half[i])[yy * w + x]; if (isMax ? q > v : q < v) v = q; }
-    out[y * w + x] = v; }
+    rowF.set(dx, o);
+  }
+  const rows = half.map((dx) => rowF.get(dx)), out = new Uint8Array(w * h).fill(fv);
+  for (let i = 0; i < k; i++) {
+    const src = rows[i], dy = i - r, y0 = Math.max(0, -dy), y1 = Math.min(h, h - dy);
+    for (let y = y0; y < y1; y++) { const ob = y * w, sb = (y + dy) * w; for (let x = 0; x < w; x++) out[ob + x] = op(out[ob + x], src[sb + x]); }
+  }
   return out;
 }
 function components(ink, w, h) { // 8-connectivity labels + stats

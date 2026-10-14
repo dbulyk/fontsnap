@@ -8,7 +8,7 @@
   hint.textContent = 'FontSnap: drag over the text (Esc to cancel)';
   ov.append(box, hint); document.documentElement.appendChild(ov);
   let sx, sy, drag = false;
-  const done = () => { ov.remove(); window.removeEventListener('keydown', key, true); window.__fontsnapActive = false; };
+  const done = () => { if (!ov.isConnected) return; ov.remove(); window.removeEventListener('keydown', key, true); window.__fontsnapActive = false; };
   const key = e => { if (e.key === 'Escape') { e.preventDefault(); done(); } };
   window.addEventListener('keydown', key, true);
   ov.addEventListener('mousedown', e => { e.preventDefault(); drag = true; sx = e.clientX; sy = e.clientY; Object.assign(box.style, { display: 'block', left: sx + 'px', top: sy + 'px', width: '0', height: '0' }); });
@@ -19,6 +19,6 @@
     done(); if (rect.w < 8 || rect.h < 8) return;
     let text = ''; try { const s = window.getSelection()?.toString(); text = (s || '').trim().slice(0, 80); } catch {}
     // wait two frames so the overlay is gone from the screenshot
-    requestAnimationFrame(() => requestAnimationFrame(() => chrome.runtime.sendMessage({ type: 'fontsnap-rect', rect, dpr: window.devicePixelRatio || 1, text })));
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => chrome.runtime.sendMessage({ type: 'fontsnap-rect', rect, dpr: window.devicePixelRatio || 1, text }), 30)));
   });
 })();

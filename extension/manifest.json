@@ -3,14 +3,46 @@
   "name": "FontSnap: AI Font Identifier from Image",
   "short_name": "FontSnap",
   "version": "0.1.0",
-  "description": "Select any text on a page or upload a screenshot — FontSnap identifies the Google Font on-device and shows the top 5 matches.",
-  "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
-  "background": { "service_worker": "background.js", "type": "module" },
-  "action": { "default_title": "FontSnap: identify a font", "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" } },
-  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
-  "commands": { "_execute_action": { "suggested_key": { "default": "Alt+Shift+F" } } },
-  "content_security_policy": { "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'" },
-  "cross_origin_embedder_policy": { "value": "credentialless" },
-  "cross_origin_opener_policy": { "value": "same-origin" },
-  "web_accessible_resources": []
+  "description": "Select any text on a page or upload a screenshot \u2014 FontSnap identifies the Google Font on-device and shows the top 5 matches.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "contextMenus"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "FontSnap: identify a font",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+F"
+      }
+    }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  },
+  "cross_origin_embedder_policy": {
+    "value": "credentialless"
+  },
+  "cross_origin_opener_policy": {
+    "value": "same-origin"
+  }
 }
