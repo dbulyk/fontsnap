@@ -65,7 +65,7 @@ Open FontSnap on any page and switch to upload mode, or open it on a restricted 
 Recognition itself runs locally. An internet connection is only used to load previews from Google Fonts.
 
 📍 Can this detector recognize commercial typefaces?
-FontSnap matches against Google Fonts families. For a commercial typeface it shows the closest open alternatives, which is often what you need for a web project.
+FontSnap matches against Google Fonts families. For a commercial typeface it shows the closest Google Fonts alternatives, which is often what you need for a web project.
 
 📍 Which languages are supported?
 Latin, Cyrillic and Arabic scripts give the most accurate results. Chinese and Japanese support is still limited.
