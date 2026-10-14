@@ -97,28 +97,6 @@
   "note": {
     "message": "מתאים משפחות של Google Fonts. לטינית, קירילית וערבית עובדות הכי טוב; סינית/יפנית עדיין חלשות. התמונות אף פעם לא יוצאות מהמחשב שלך; תצוגות הגופנים נטענות מ-Google Fonts."
   },
-  "doneIn": {
-    "message": "הסתיים תוך $MS$ אלפיות שנייה",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "הסתיים תוך $TOTAL$ אלפיות שנייה (טעינת מודל $LOAD$ + ניתוח $MS$)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap הותקן"
   },

@@ -97,28 +97,6 @@
   "note": {
     "message": "Подбирает шрифты из Google Fonts. Лучше всего работают латиница, кириллица и арабский; китайский и японский пока слабее. Картинки не покидают ваш компьютер; превью шрифтов загружаются с Google Fonts."
   },
-  "doneIn": {
-    "message": "Готово за $MS$ мс",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Готово за $TOTAL$ мс (загрузка модели $LOAD$ мс + анализ $MS$ мс)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap установлен"
   },

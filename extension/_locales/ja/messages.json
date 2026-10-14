@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fontsのファミリーから判別します。ラテン文字・キリル文字・アラビア文字が得意で、中国語・日本語はまだ精度が低めです。画像がパソコンから外部に送信されることはありません。フォントのプレビューはGoogle Fontsから読み込みます。"
   },
-  "doneIn": {
-    "message": "$MS$ ミリ秒で完了",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "$TOTAL$ ミリ秒で完了(モデル読み込み $LOAD$ ミリ秒 + 分析 $MS$ ミリ秒)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnapをインストールしました"
   },

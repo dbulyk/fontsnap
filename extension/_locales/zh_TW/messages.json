@@ -97,28 +97,6 @@
   "note": {
     "message": "比對 Google Fonts 字型家族。拉丁文、西里爾文和阿拉伯文效果最佳,中文/日文目前辨識較弱。圖片絕不會離開您的電腦;字型預覽從 Google Fonts 載入。"
   },
-  "doneIn": {
-    "message": "耗時 $MS$ 毫秒",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "耗時 $TOTAL$ 毫秒(載入模型 $LOAD$ 毫秒 + 分析 $MS$ 毫秒)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap 已安裝"
   },

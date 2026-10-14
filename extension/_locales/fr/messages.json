@@ -97,28 +97,6 @@
   "note": {
     "message": "Trouve des familles Google Fonts. Latin, cyrillique et arabe fonctionnent le mieux ; chinois/japonais encore faibles. Les images ne quittent jamais votre ordinateur ; les aperçus de polices viennent de Google Fonts."
   },
-  "doneIn": {
-    "message": "Terminé en $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Terminé en $TOTAL$ ms (chargement du modèle $LOAD$ ms + analyse $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap est installé"
   },

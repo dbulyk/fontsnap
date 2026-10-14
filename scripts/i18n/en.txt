@@ -25,8 +25,6 @@ not on Google Fonts
 Copy CSS
 Copied
 Matches Google Fonts families. Latin, Cyrillic, Arabic work best; Chinese/Japanese are still weak. Images never leave your computer; font previews are loaded from Google Fonts.
-Done in $MS$ ms
-Done in $TOTAL$ ms (model load $LOAD$ ms + analysis $MS$ ms)
 FontSnap is installed
 Pin FontSnap to the toolbar
 Click the puzzle icon in the top-right corner of Chrome.

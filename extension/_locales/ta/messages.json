@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fonts குடும்பங்களுடன் பொருத்துகிறது. லத்தீன், சிரிலிக், அரபு சிறப்பாக வேலை செய்யும்; சீனம்/ஜப்பானியம் இன்னும் பலவீனம். படங்கள் உங்கள் கணினியை விட்டு வெளியேறாது; முன்னோட்டங்கள் Google Fonts-இலிருந்து ஏற்றப்படும்."
   },
-  "doneIn": {
-    "message": "$MS$ ms-இல் முடிந்தது",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "$TOTAL$ ms-இல் முடிந்தது (மாடல் ஏற்றம் $LOAD$ ms + பகுப்பாய்வு $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap நிறுவப்பட்டது"
   },

@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fonts ailelerini bulur. En iyi Latin, Kiril ve Arap alfabesiyle çalışır; Çince/Japonca henüz zayıf. Resimler bilgisayarınızdan asla çıkmaz; yazı tipi önizlemeleri Google Fonts'tan yüklenir."
   },
-  "doneIn": {
-    "message": "$MS$ ms'de tamamlandı",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "$TOTAL$ ms'de tamamlandı (model yükleme $LOAD$ ms + analiz $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap yüklendi"
   },

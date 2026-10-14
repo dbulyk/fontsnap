@@ -97,28 +97,6 @@
   "note": {
     "message": "Findet Schriften aus Google Fonts. Lateinisch, Kyrillisch und Arabisch funktionieren am besten; Chinesisch/Japanisch noch schwächer. Bilder verlassen Ihren Computer nie; Schriftvorschauen werden von Google Fonts geladen."
   },
-  "doneIn": {
-    "message": "Fertig in $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Fertig in $TOTAL$ ms (Modell laden $LOAD$ ms + Analyse $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap ist installiert"
   },

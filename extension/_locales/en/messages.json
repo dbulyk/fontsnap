@@ -97,28 +97,6 @@
   "note": {
     "message": "Matches Google Fonts families. Latin, Cyrillic, Arabic work best; Chinese/Japanese are still weak. Images never leave your computer; font previews are loaded from Google Fonts."
   },
-  "doneIn": {
-    "message": "Done in $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Done in $TOTAL$ ms (model load $LOAD$ ms + analysis $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap is installed"
   },

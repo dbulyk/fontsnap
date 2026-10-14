@@ -97,28 +97,6 @@
   "note": {
     "message": "Găsește familii Google Fonts. Latina, chirilica și araba merg cel mai bine; chineza/japoneza încă slab. Imaginile nu părăsesc niciodată computerul; previzualizările fonturilor se încarcă de pe Google Fonts."
   },
-  "doneIn": {
-    "message": "Gata în $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Gata în $TOTAL$ ms (încărcare model $LOAD$ ms + analiză $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap a fost instalat"
   },

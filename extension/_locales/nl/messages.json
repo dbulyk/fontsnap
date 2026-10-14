@@ -97,28 +97,6 @@
   "note": {
     "message": "Vindt Google Fonts-families. Latijn, Cyrillisch en Arabisch werken het best; Chinees/Japans nog zwak. Afbeeldingen verlaten je computer nooit; lettertypevoorbeelden worden geladen van Google Fonts."
   },
-  "doneIn": {
-    "message": "Klaar in $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Klaar in $TOTAL$ ms (model laden $LOAD$ ms + analyse $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap is geïnstalleerd"
   },

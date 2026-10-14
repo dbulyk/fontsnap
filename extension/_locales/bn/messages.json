@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fonts পরিবারের সাথে মেলায়। ল্যাটিন, সিরিলিক ও আরবি সবচেয়ে ভালো কাজ করে; চীনা/জাপানি এখনও দুর্বল। ছবি কখনও আপনার কম্পিউটার ছাড়ে না; ফন্ট প্রিভিউ Google Fonts থেকে লোড হয়।"
   },
-  "doneIn": {
-    "message": "$MS$ ms-এ সম্পন্ন",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "$TOTAL$ ms-এ সম্পন্ন (মডেল লোড $LOAD$ ms + বিশ্লেষণ $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap ইনস্টল হয়েছে"
   },

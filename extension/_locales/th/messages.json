@@ -97,28 +97,6 @@
   "note": {
     "message": "จับคู่กับฟอนต์ใน Google Fonts ใช้ได้ดีที่สุดกับละติน ซีริลลิก และอาหรับ ส่วนจีน/ญี่ปุ่นยังไม่แม่นยำ รูปภาพไม่เคยออกจากคอมพิวเตอร์ของคุณ ตัวอย่างฟอนต์โหลดจาก Google Fonts"
   },
-  "doneIn": {
-    "message": "เสร็จใน $MS$ มิลลิวินาที",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "เสร็จใน $TOTAL$ มิลลิวินาที (โหลดโมเดล $LOAD$ + วิเคราะห์ $MS$ มิลลิวินาที)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "ติดตั้ง FontSnap แล้ว"
   },

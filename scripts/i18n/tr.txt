@@ -25,8 +25,6 @@ Google Fonts'ta yok
 CSS'yi kopyala
 Kopyalandı
 Google Fonts ailelerini bulur. En iyi Latin, Kiril ve Arap alfabesiyle çalışır; Çince/Japonca henüz zayıf. Resimler bilgisayarınızdan asla çıkmaz; yazı tipi önizlemeleri Google Fonts'tan yüklenir.
-$MS$ ms'de tamamlandı
-$TOTAL$ ms'de tamamlandı (model yükleme $LOAD$ ms + analiz $MS$ ms)
 FontSnap yüklendi
 FontSnap'i araç çubuğuna sabitleyin
 Chrome'un sağ üst köşesindeki yapboz simgesine tıklayın.

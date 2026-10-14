@@ -97,28 +97,6 @@
   "note": {
     "message": "Tìm các họ font trên Google Fonts. Chữ Latinh, Kirin và Ả Rập cho kết quả tốt nhất; tiếng Trung/Nhật còn yếu. Ảnh không bao giờ rời khỏi máy tính của bạn; bản xem trước font được tải từ Google Fonts."
   },
-  "doneIn": {
-    "message": "Xong trong $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Xong trong $TOTAL$ ms (tải mô hình $LOAD$ ms + phân tích $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "Đã cài đặt FontSnap"
   },

@@ -97,28 +97,6 @@
   "note": {
     "message": "Проналази породице Google Fonts. Најбоље раде латиница, ћирилица и арапски; кинески/јапански још слабо. Слике никад не напуштају ваш рачунар; прегледи фонтова се учитавају са Google Fonts."
   },
-  "doneIn": {
-    "message": "Готово за $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Готово за $TOTAL$ ms (учитавање модела $LOAD$ ms + анализа $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap је инсталиран"
   },

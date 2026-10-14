@@ -25,8 +25,6 @@ nicht bei Google Fonts
 CSS kopieren
 Kopiert
 Findet Schriften aus Google Fonts. Lateinisch, Kyrillisch und Arabisch funktionieren am besten; Chinesisch/Japanisch noch schwächer. Bilder verlassen Ihren Computer nie; Schriftvorschauen werden von Google Fonts geladen.
-Fertig in $MS$ ms
-Fertig in $TOTAL$ ms (Modell laden $LOAD$ ms + Analyse $MS$ ms)
 FontSnap ist installiert
 FontSnap an die Symbolleiste anheften
 Klicken Sie oben rechts in Chrome auf das Puzzle-Symbol.

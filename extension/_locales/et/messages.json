@@ -97,28 +97,6 @@
   "note": {
     "message": "Leiab Google Fontsi perekondi. Ladina, kirillitsa ja araabia kiri toimivad kõige paremini; hiina/jaapani veel nõrgalt. Pildid ei lahku kunagi sinu arvutist; fondieelvaated laaditakse Google Fontsist."
   },
-  "doneIn": {
-    "message": "Valmis $MS$ ms-ga",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Valmis $TOTAL$ ms-ga (mudeli laadimine $LOAD$ ms + analüüs $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap on installitud"
   },

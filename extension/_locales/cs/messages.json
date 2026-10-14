@@ -97,28 +97,6 @@
   "note": {
     "message": "Hledá rodiny Google Fonts. Nejlépe funguje latinka, cyrilice a arabština; čínština/japonština zatím slabě. Obrázky nikdy neopustí váš počítač; náhledy písem se načítají z Google Fonts."
   },
-  "doneIn": {
-    "message": "Hotovo za $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Hotovo za $TOTAL$ ms (načtení modelu $LOAD$ ms + analýza $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap je nainstalován"
   },

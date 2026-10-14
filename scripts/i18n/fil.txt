@@ -25,8 +25,6 @@ wala sa Google Fonts
 Kopyahin ang CSS
 Nakopya
 Tumutugma sa mga pamilya ng Google Fonts. Pinakamahusay sa Latin, Cyrillic at Arabic; mahina pa sa Chinese/Japanese. Hindi kailanman umaalis ang mga larawan sa iyong computer; nilo-load ang mga preview mula sa Google Fonts.
-Tapos sa loob ng $MS$ ms
-Tapos sa loob ng $TOTAL$ ms (pag-load ng model $LOAD$ ms + pagsusuri $MS$ ms)
 Na-install na ang FontSnap
 I-pin ang FontSnap sa toolbar
 I-click ang icon na puzzle sa kanang itaas ng Chrome.

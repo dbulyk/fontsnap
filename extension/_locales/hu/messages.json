@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fonts-családokat talál. A latin, cirill és arab írás működik a legjobban; a kínai/japán még gyenge. A képek sosem hagyják el a számítógépét; a betűtípus-előnézetek a Google Fontsból töltődnek be."
   },
-  "doneIn": {
-    "message": "Kész: $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Kész: $TOTAL$ ms (modell betöltése $LOAD$ ms + elemzés $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "A FontSnap telepítve van"
   },

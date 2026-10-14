@@ -97,28 +97,6 @@
   "note": {
     "message": "Finder Google Fonts-familier. Latin, kyrillisk og arabisk virker bedst; kinesisk/japansk er stadig svagt. Billeder forlader aldrig din computer; skrifteksempler hentes fra Google Fonts."
   },
-  "doneIn": {
-    "message": "Færdig på $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Færdig på $TOTAL$ ms (indlæsning af model $LOAD$ ms + analyse $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap er installeret"
   },

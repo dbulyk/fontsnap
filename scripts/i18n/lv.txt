@@ -25,8 +25,6 @@ nav Google Fonts
 Kopēt CSS
 Nokopēts
 Atrod Google Fonts saimes. Vislabāk darbojas latīņu, kirilica un arābu raksts; ķīniešu/japāņu vēl vāji. Attēli nekad nepamet jūsu datoru; fontu priekšskatījumi tiek ielādēti no Google Fonts.
-Gatavs $MS$ ms laikā
-Gatavs $TOTAL$ ms laikā (modeļa ielāde $LOAD$ ms + analīze $MS$ ms)
 FontSnap ir instalēts
 Piespraudiet FontSnap rīkjoslai
 Noklikšķiniet uz puzles ikonas Chrome augšējā labajā stūrī.

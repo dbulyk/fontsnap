@@ -25,8 +25,6 @@ finns inte på Google Fonts
 Kopiera CSS
 Kopierat
 Hittar typsnittsfamiljer från Google Fonts. Latin, kyrilliska och arabiska fungerar bäst; kinesiska/japanska är fortfarande svaga. Bilder lämnar aldrig din dator; förhandsvisningar laddas från Google Fonts.
-Klart på $MS$ ms
-Klart på $TOTAL$ ms (inläsning av modell $LOAD$ ms + analys $MS$ ms)
 FontSnap är installerat
 Fäst FontSnap i verktygsfältet
 Klicka på pusselikonen uppe till höger i Chrome.

@@ -25,8 +25,6 @@ não está no Google Fonts
 Copiar CSS
 Copiado
 Encontra famílias do Google Fonts. Latim, cirílico e árabe funcionam melhor; chinês/japonês ainda são fracos. As imagens nunca saem do seu computador; as visualizações são carregadas do Google Fonts.
-Concluído em $MS$ ms
-Concluído em $TOTAL$ ms (carregamento do modelo $LOAD$ ms + análise $MS$ ms)
 O FontSnap foi instalado
 Fixe o FontSnap na barra de ferramentas
 Clique no ícone de quebra-cabeça no canto superior direito do Chrome.

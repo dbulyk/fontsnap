@@ -97,28 +97,6 @@
   "note": {
     "message": "Löytää Google Fonts -perheitä. Latinalainen, kyrillinen ja arabialainen kirjoitus toimivat parhaiten; kiina/japani vielä heikosti. Kuvat eivät koskaan poistu tietokoneeltasi; esikatselut ladataan Google Fontsista."
   },
-  "doneIn": {
-    "message": "Valmis $MS$ ms:ssa",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Valmis $TOTAL$ ms:ssa (mallin lataus $LOAD$ ms + analyysi $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap on asennettu"
   },

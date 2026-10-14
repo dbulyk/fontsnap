@@ -97,28 +97,6 @@
   "note": {
     "message": "Открива семейства от Google Fonts. Най-добре работят латиница, кирилица и арабски; китайски/японски все още слабо. Изображенията не напускат компютъра ви; прегледите на шрифтовете се зареждат от Google Fonts."
   },
-  "doneIn": {
-    "message": "Готово за $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Готово за $TOTAL$ ms (зареждане на модела $LOAD$ ms + анализ $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap е инсталиран"
   },

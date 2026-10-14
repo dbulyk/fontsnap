@@ -97,28 +97,6 @@
   "note": {
     "message": "Hulinganisha familia za Google Fonts. Kilatini, Kisiriliki na Kiarabu hufanya kazi vizuri zaidi; Kichina/Kijapani bado dhaifu. Picha haziondoki kwenye kompyuta yako; maonyesho ya fonti hupakiwa kutoka Google Fonts."
   },
-  "doneIn": {
-    "message": "Imekamilika kwa $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Imekamilika kwa $TOTAL$ ms (kupakia modeli $LOAD$ ms + uchanganuzi $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap imesakinishwa"
   },

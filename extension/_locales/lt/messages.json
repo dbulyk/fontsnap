@@ -97,28 +97,6 @@
   "note": {
     "message": "Randa Google Fonts šeimas. Geriausiai veikia lotynų, kirilica ir arabų raštas; kinų/japonų dar silpnai. Paveikslėliai niekada nepalieka jūsų kompiuterio; šriftų peržiūros įkeliamos iš Google Fonts."
   },
-  "doneIn": {
-    "message": "Atlikta per $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Atlikta per $TOTAL$ ms (modelio įkėlimas $LOAD$ ms + analizė $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap įdiegtas"
   },

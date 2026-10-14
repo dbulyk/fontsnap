@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fonts కుటుంబాలతో సరిపోలుస్తుంది. లాటిన్, సిరిలిక్, అరబిక్ ఉత్తమంగా పనిచేస్తాయి; చైనీస్/జపనీస్ ఇంకా బలహీనం. చిత్రాలు మీ కంప్యూటర్‌ను వదిలి వెళ్లవు; ఫాంట్ ప్రివ్యూలు Google Fonts నుండి లోడ్ అవుతాయి."
   },
-  "doneIn": {
-    "message": "$MS$ msలో పూర్తయింది",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "$TOTAL$ msలో పూర్తయింది (మోడల్ లోడ్ $LOAD$ ms + విశ్లేషణ $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap ఇన్‌స్టాల్ అయింది"
   },

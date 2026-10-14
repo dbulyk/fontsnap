@@ -1,7 +1,7 @@
 import * as ort from './ort/ort.wasm.min.mjs';
 import { fromRGBA, textLines, cropNormalize, prep, softmax, makeRanker } from './lib/fontsnap-core.js';
 import { t, applyI18n } from './lib/i18n.js';
-import { genericFamily, cssFontFamily, previewText, timingText, visibleResults } from './lib/ui.js';
+import { genericFamily, cssFontFamily, previewText, visibleResults } from './lib/ui.js';
 applyI18n();
 const $ = (id) => document.getElementById(id),
   status = (t, err) => {
@@ -13,19 +13,15 @@ ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardw
 let session,
   ranker,
   lastImg,
-  runId = 0,
-  modelLoadMs = 0,
-  loadCounted = false;
+  runId = 0;
 const MAX_SIDE = 2400; // very large uploads are downscaled first (textcrop cost grows with kernel x pixels)
 const ready = (async () => {
-  const tLoad = performance.now();
   const meta = await (await fetch('model/meta.json')).json();
   ranker = makeRanker(meta);
   session = await ort.InferenceSession.create(chrome.runtime.getURL('model/model_fp16.onnx'), {
     executionProviders: ['wasm'],
     graphOptimizationLevel: 'all',
   });
-  modelLoadMs = performance.now() - tLoad;
 })();
 function drawGray(cv, im) {
   cv.width = im.w;
@@ -44,7 +40,6 @@ async function identify(canvas) {
   const my = ++runId;
   status(t('analyzing'));
   await ready;
-  const t0 = performance.now();
   const ctx = canvas.getContext('2d', { willReadFrequently: true }),
     d = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const img = fromRGBA(d.data, canvas.width, canvas.height),
@@ -57,12 +52,9 @@ async function identify(canvas) {
     probs.push(softmax(out.logits.data));
   }
   if (my !== runId) return; // a newer image superseded this run
-  const analysisMs = performance.now() - t0;
-  const loadMs = loadCounted ? 0 : modelLoadMs; // the first analysis also pays for loading the model
-  loadCounted = true;
   lastImg = ranker.rank(probs, { alpha: 0.5, merge: true, k: 5 });
   render(lastImg);
-  status(pre.lines.length ? timingText(analysisMs, loadMs, t) : t('noLines'), !pre.lines.length);
+  status(pre.lines.length ? '' : t('noLines'), !pre.lines.length);
 }
 const loaded = new Set();
 function loadFont(name) {

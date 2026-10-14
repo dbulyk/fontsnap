@@ -25,8 +25,6 @@ không có trên Google Fonts
 Sao chép CSS
 Đã sao chép
 Tìm các họ font trên Google Fonts. Chữ Latinh, Kirin và Ả Rập cho kết quả tốt nhất; tiếng Trung/Nhật còn yếu. Ảnh không bao giờ rời khỏi máy tính của bạn; bản xem trước font được tải từ Google Fonts.
-Xong trong $MS$ ms
-Xong trong $TOTAL$ ms (tải mô hình $LOAD$ ms + phân tích $MS$ ms)
 Đã cài đặt FontSnap
 Ghim FontSnap vào thanh công cụ
 Nhấp vào biểu tượng mảnh ghép ở góc trên bên phải Chrome.

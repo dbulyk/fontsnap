@@ -177,3 +177,6 @@ button {
   color: #778;
   font-size: 13px;
 }
+.status:empty {
+  display: none;
+}

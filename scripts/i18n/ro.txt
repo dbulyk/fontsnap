@@ -25,8 +25,6 @@ nu este pe Google Fonts
 Copiază CSS
 Copiat
 Găsește familii Google Fonts. Latina, chirilica și araba merg cel mai bine; chineza/japoneza încă slab. Imaginile nu părăsesc niciodată computerul; previzualizările fonturilor se încarcă de pe Google Fonts.
-Gata în $MS$ ms
-Gata în $TOTAL$ ms (încărcare model $LOAD$ ms + analiză $MS$ ms)
 FontSnap a fost instalat
 Fixați FontSnap în bara de instrumente
 Faceți clic pe pictograma puzzle din colțul dreapta sus din Chrome.

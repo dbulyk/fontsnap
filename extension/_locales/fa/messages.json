@@ -97,28 +97,6 @@
   "note": {
     "message": "خانواده‌های Google Fonts را پیدا می‌کند. لاتین، سیریلیک و عربی بهترین نتیجه را دارند؛ چینی/ژاپنی هنوز ضعیف است. تصاویر هرگز از رایانه شما خارج نمی‌شوند؛ پیش‌نمایش فونت‌ها از Google Fonts بارگذاری می‌شود."
   },
-  "doneIn": {
-    "message": "انجام شد در $MS$ میلی‌ثانیه",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "انجام شد در $TOTAL$ میلی‌ثانیه (بارگذاری مدل $LOAD$ + تحلیل $MS$ میلی‌ثانیه)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap نصب شد"
   },

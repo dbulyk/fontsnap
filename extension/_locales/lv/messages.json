@@ -97,28 +97,6 @@
   "note": {
     "message": "Atrod Google Fonts saimes. Vislabāk darbojas latīņu, kirilica un arābu raksts; ķīniešu/japāņu vēl vāji. Attēli nekad nepamet jūsu datoru; fontu priekšskatījumi tiek ielādēti no Google Fonts."
   },
-  "doneIn": {
-    "message": "Gatavs $MS$ ms laikā",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Gatavs $TOTAL$ ms laikā (modeļa ielāde $LOAD$ ms + analīze $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap ir instalēts"
   },

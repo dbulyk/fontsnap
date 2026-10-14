@@ -25,8 +25,6 @@ nincs a Google Fontsban
 CSS másolása
 Másolva
 Google Fonts-családokat talál. A latin, cirill és arab írás működik a legjobban; a kínai/japán még gyenge. A képek sosem hagyják el a számítógépét; a betűtípus-előnézetek a Google Fontsból töltődnek be.
-Kész: $MS$ ms
-Kész: $TOTAL$ ms (modell betöltése $LOAD$ ms + elemzés $MS$ ms)
 A FontSnap telepítve van
 Rögzítse a FontSnapet az eszköztáron
 Kattintson a Chrome jobb felső sarkában a puzzle ikonra.

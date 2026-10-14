@@ -25,8 +25,6 @@ nėra Google Fonts
 Kopijuoti CSS
 Nukopijuota
 Randa Google Fonts šeimas. Geriausiai veikia lotynų, kirilica ir arabų raštas; kinų/japonų dar silpnai. Paveikslėliai niekada nepalieka jūsų kompiuterio; šriftų peržiūros įkeliamos iš Google Fonts.
-Atlikta per $MS$ ms
-Atlikta per $TOTAL$ ms (modelio įkėlimas $LOAD$ ms + analizė $MS$ ms)
 FontSnap įdiegtas
 Prisekite FontSnap prie įrankių juostos
 Spustelėkite dėlionės piktogramą viršutiniame dešiniajame Chrome kampe.

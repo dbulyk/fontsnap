@@ -25,8 +25,6 @@ ni v Google Fonts
 Kopiraj CSS
 Kopirano
 Išče družine Google Fonts. Najbolje delujejo latinica, cirilica in arabščina; kitajščina/japonščina še šibko. Slike nikoli ne zapustijo vašega računalnika; predogledi pisav se naložijo iz Google Fonts.
-Končano v $MS$ ms
-Končano v $TOTAL$ ms (nalaganje modela $LOAD$ ms + analiza $MS$ ms)
 FontSnap je nameščen
 Pripnite FontSnap v orodno vrstico
 Kliknite ikono sestavljanke v zgornjem desnem kotu Chroma.

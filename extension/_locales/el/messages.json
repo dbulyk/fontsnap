@@ -97,28 +97,6 @@
   "note": {
     "message": "Βρίσκει οικογένειες Google Fonts. Λατινικά, κυριλλικά και αραβικά λειτουργούν καλύτερα· κινεζικά/ιαπωνικά ακόμη αδύναμα. Οι εικόνες δεν φεύγουν ποτέ από τον υπολογιστή σας· οι προεπισκοπήσεις φορτώνονται από το Google Fonts."
   },
-  "doneIn": {
-    "message": "Ολοκληρώθηκε σε $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Ολοκληρώθηκε σε $TOTAL$ ms (φόρτωση μοντέλου $LOAD$ ms + ανάλυση $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "Το FontSnap εγκαταστάθηκε"
   },

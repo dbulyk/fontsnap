@@ -97,28 +97,6 @@
   "note": {
     "message": "يطابق عائلات Google Fonts. يعمل أفضل مع اللاتينية والسيريلية والعربية؛ الصينية واليابانية ما زالتا ضعيفتين. لا تغادر الصور جهاز الكمبيوتر أبدًا؛ تُحمَّل معاينات الخطوط من Google Fonts."
   },
-  "doneIn": {
-    "message": "تم خلال $MS$ مللي ثانية",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "تم خلال $TOTAL$ مللي ثانية (تحميل النموذج $LOAD$ + التحليل $MS$ مللي ثانية)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "تم تثبيت FontSnap"
   },

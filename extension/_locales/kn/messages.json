@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fonts ಕುಟುಂಬಗಳೊಂದಿಗೆ ಹೊಂದಿಸುತ್ತದೆ. ಲ್ಯಾಟಿನ್, ಸಿರಿಲಿಕ್, ಅರೇಬಿಕ್ ಅತ್ಯುತ್ತಮ; ಚೈನೀಸ್/ಜಪಾನೀಸ್ ಇನ್ನೂ ದುರ್ಬಲ. ಚಿತ್ರಗಳು ನಿಮ್ಮ ಕಂಪ್ಯೂಟರ್ ಬಿಟ್ಟು ಹೋಗುವುದಿಲ್ಲ; ಫಾಂಟ್ ಪೂರ್ವವೀಕ್ಷಣೆಗಳು Google Fonts ನಿಂದ ಲೋಡ್ ಆಗುತ್ತವೆ."
   },
-  "doneIn": {
-    "message": "$MS$ ms ನಲ್ಲಿ ಪೂರ್ಣಗೊಂಡಿದೆ",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "$TOTAL$ ms ನಲ್ಲಿ ಪೂರ್ಣಗೊಂಡಿದೆ (ಮಾದರಿ ಲೋಡ್ $LOAD$ ms + ವಿಶ್ಲೇಷಣೆ $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap ಸ್ಥಾಪಿಸಲಾಗಿದೆ"
   },

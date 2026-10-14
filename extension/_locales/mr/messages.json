@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fonts फॅमिलीशी जुळवते. लॅटिन, सिरिलिक आणि अरबी सर्वोत्तम चालतात; चिनी/जपानी अजून कमकुवत. इमेज तुमच्या संगणकाबाहेर जात नाहीत; फॉन्ट पूर्वावलोकन Google Fonts वरून लोड होते."
   },
-  "doneIn": {
-    "message": "$MS$ ms मध्ये पूर्ण",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "$TOTAL$ ms मध्ये पूर्ण (मॉडेल लोड $LOAD$ ms + विश्लेषण $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap इंस्टॉल झाले"
   },

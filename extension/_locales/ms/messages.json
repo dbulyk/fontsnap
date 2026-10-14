@@ -97,28 +97,6 @@
   "note": {
     "message": "Memadankan keluarga Google Fonts. Latin, Cyril dan Arab paling baik; Cina/Jepun masih lemah. Imej tidak pernah meninggalkan komputer anda; pratonton fon dimuatkan daripada Google Fonts."
   },
-  "doneIn": {
-    "message": "Selesai dalam $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Selesai dalam $TOTAL$ ms (muat model $LOAD$ ms + analisis $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap telah dipasang"
   },

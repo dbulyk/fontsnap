@@ -97,28 +97,6 @@
   "note": {
     "message": "ከGoogle Fonts ቤተሰቦች ጋር ያዛምዳል። ላቲን፣ ሲሪሊክ እና ዓረብኛ በተሻለ ይሰራሉ፤ ቻይንኛ/ጃፓንኛ ገና ደካማ ናቸው። ምስሎች ከኮምፒውተርዎ አይወጡም፤ የፊደል ቅድመ እይታዎች ከGoogle Fonts ይጫናሉ።"
   },
-  "doneIn": {
-    "message": "በ$MS$ ሚሴ ተጠናቋል",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "በ$TOTAL$ ሚሴ ተጠናቋል (ሞዴል መጫን $LOAD$ ሚሴ + ትንተና $MS$ ሚሴ)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap ተጭኗል"
   },

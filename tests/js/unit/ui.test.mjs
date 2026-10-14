@@ -3,15 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from '../../../scripts/lib/evaljs.mjs';
-import {
-  genericFamily,
-  cssFontFamily,
-  previewText,
-  timingText,
-  DEFAULT_PREVIEW,
-  visibleResults,
-  MIN_DISPLAY_PCT,
-} from '../../../extension/lib/ui.js';
+import { genericFamily, cssFontFamily, previewText, DEFAULT_PREVIEW, visibleResults, MIN_DISPLAY_PCT } from '../../../extension/lib/ui.js';
 
 const EXT = path.join(ROOT, 'extension');
 
@@ -31,11 +23,6 @@ test('preview text: typed > selected > pangram', () => {
   assert.equal(previewText('', '  Big\n  Title '), 'Big Title');
   assert.equal(previewText('', ''), DEFAULT_PREVIEW);
   assert.equal(previewText(undefined, 'x'.repeat(200)).length, 80);
-});
-
-test('timing text includes model load on the first run', () => {
-  assert.equal(timingText(412.4, 0), 'Done in 412 ms');
-  assert.equal(timingText(400, 1500.2), 'Done in 1900 ms (model load 1500 ms + analysis 400 ms)');
 });
 
 test('manifest: CWS limits, no author/key/fingerprint, both context menu items', () => {

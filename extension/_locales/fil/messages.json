@@ -97,28 +97,6 @@
   "note": {
     "message": "Tumutugma sa mga pamilya ng Google Fonts. Pinakamahusay sa Latin, Cyrillic at Arabic; mahina pa sa Chinese/Japanese. Hindi kailanman umaalis ang mga larawan sa iyong computer; nilo-load ang mga preview mula sa Google Fonts."
   },
-  "doneIn": {
-    "message": "Tapos sa loob ng $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Tapos sa loob ng $TOTAL$ ms (pag-load ng model $LOAD$ ms + pagsusuri $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "Na-install na ang FontSnap"
   },

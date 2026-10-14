@@ -97,28 +97,6 @@
   "note": {
     "message": "Finner Google Fonts-familier. Latin, kyrillisk og arabisk fungerer best; kinesisk/japansk er fortsatt svakt. Bilder forlater aldri datamaskinen din; forhåndsvisninger lastes fra Google Fonts."
   },
-  "doneIn": {
-    "message": "Ferdig på $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Ferdig på $TOTAL$ ms (lasting av modell $LOAD$ ms + analyse $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap er installert"
   },

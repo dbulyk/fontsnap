@@ -25,8 +25,6 @@ ei Google Fontsissa
 Kopioi CSS
 Kopioitu
 Löytää Google Fonts -perheitä. Latinalainen, kyrillinen ja arabialainen kirjoitus toimivat parhaiten; kiina/japani vielä heikosti. Kuvat eivät koskaan poistu tietokoneeltasi; esikatselut ladataan Google Fontsista.
-Valmis $MS$ ms:ssa
-Valmis $TOTAL$ ms:ssa (mallin lataus $LOAD$ ms + analyysi $MS$ ms)
 FontSnap on asennettu
 Kiinnitä FontSnap työkalupalkkiin
 Napsauta Chromen oikeassa yläkulmassa olevaa palapelikuvaketta.

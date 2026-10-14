@@ -25,8 +25,6 @@ nije na Google Fonts
 Kopiraj CSS
 Kopirano
 Pronalazi obitelji Google Fonts. Najbolje rade latinica, ćirilica i arapski; kineski/japanski još slabo. Slike nikad ne napuštaju vaše računalo; pregledi fontova učitavaju se s Google Fonts.
-Gotovo za $MS$ ms
-Gotovo za $TOTAL$ ms (učitavanje modela $LOAD$ ms + analiza $MS$ ms)
 FontSnap je instaliran
 Prikvačite FontSnap na alatnu traku
 Kliknite ikonu slagalice u gornjem desnom kutu Chromea.

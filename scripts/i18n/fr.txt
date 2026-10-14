@@ -25,8 +25,6 @@ absente de Google Fonts
 Copier le CSS
 Copié
 Trouve des familles Google Fonts. Latin, cyrillique et arabe fonctionnent le mieux ; chinois/japonais encore faibles. Les images ne quittent jamais votre ordinateur ; les aperçus de polices viennent de Google Fonts.
-Terminé en $MS$ ms
-Terminé en $TOTAL$ ms (chargement du modèle $LOAD$ ms + analyse $MS$ ms)
 FontSnap est installé
 Épinglez FontSnap à la barre d'outils
 Cliquez sur l'icône puzzle en haut à droite de Chrome.

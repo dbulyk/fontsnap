@@ -97,28 +97,6 @@
   "note": {
     "message": "匹配 Google Fonts 字体家族。拉丁文、西里尔文和阿拉伯文效果最佳,中文/日文目前识别较弱。图片绝不会离开您的电脑;字体预览从 Google Fonts 加载。"
   },
-  "doneIn": {
-    "message": "用时 $MS$ 毫秒",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "用时 $TOTAL$ 毫秒(加载模型 $LOAD$ 毫秒 + 分析 $MS$ 毫秒)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap 已安装"
   },

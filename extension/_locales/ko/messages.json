@@ -97,28 +97,6 @@
   "note": {
     "message": "Google Fonts 글꼴군에서 찾습니다. 라틴 문자, 키릴 문자, 아랍 문자에서 가장 정확하며 중국어/일본어는 아직 약합니다. 이미지는 컴퓨터 밖으로 전송되지 않으며, 글꼴 미리보기는 Google Fonts에서 불러옵니다."
   },
-  "doneIn": {
-    "message": "$MS$ms 만에 완료",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "$TOTAL$ms 만에 완료(모델 로드 $LOAD$ms + 분석 $MS$ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap이 설치되었습니다"
   },

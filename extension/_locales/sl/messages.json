@@ -97,28 +97,6 @@
   "note": {
     "message": "Išče družine Google Fonts. Najbolje delujejo latinica, cirilica in arabščina; kitajščina/japonščina še šibko. Slike nikoli ne zapustijo vašega računalnika; predogledi pisav se naložijo iz Google Fonts."
   },
-  "doneIn": {
-    "message": "Končano v $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Končano v $TOTAL$ ms (nalaganje modela $LOAD$ ms + analiza $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap je nameščen"
   },

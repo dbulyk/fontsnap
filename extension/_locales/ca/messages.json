@@ -97,28 +97,6 @@
   "note": {
     "message": "Troba famílies de Google Fonts. Llatí, ciríl·lic i àrab funcionen millor; xinès/japonès encara són febles. Les imatges no surten mai del teu ordinador; les previsualitzacions es carreguen de Google Fonts."
   },
-  "doneIn": {
-    "message": "Fet en $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Fet en $TOTAL$ ms (càrrega del model $LOAD$ ms + anàlisi $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap s'ha instal·lat"
   },

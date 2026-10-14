@@ -25,8 +25,6 @@ AI 字型辨識 · 在您的裝置上執行
 複製 CSS
 已複製
 比對 Google Fonts 字型家族。拉丁文、西里爾文和阿拉伯文效果最佳,中文/日文目前辨識較弱。圖片絕不會離開您的電腦;字型預覽從 Google Fonts 載入。
-耗時 $MS$ 毫秒
-耗時 $TOTAL$ 毫秒(載入模型 $LOAD$ 毫秒 + 分析 $MS$ 毫秒)
 FontSnap 已安裝
 將 FontSnap 固定到工具列
 按一下 Chrome 右上角的拼圖圖示。

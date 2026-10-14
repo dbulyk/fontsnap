@@ -97,28 +97,6 @@
   "note": {
     "message": "Dopasowuje rodziny Google Fonts. Najlepiej działa łacinka, cyrylica i arabski; chiński/japoński wciąż słabo. Obrazy nigdy nie opuszczają Twojego komputera; podglądy czcionek są ładowane z Google Fonts."
   },
-  "doneIn": {
-    "message": "Gotowe w $MS$ ms",
-    "placeholders": {
-      "ms": {
-        "content": "$1"
-      }
-    }
-  },
-  "doneInLoad": {
-    "message": "Gotowe w $TOTAL$ ms (ładowanie modelu $LOAD$ ms + analiza $MS$ ms)",
-    "placeholders": {
-      "total": {
-        "content": "$1"
-      },
-      "load": {
-        "content": "$2"
-      },
-      "ms": {
-        "content": "$3"
-      }
-    }
-  },
   "wTitle": {
     "message": "FontSnap został zainstalowany"
   },
