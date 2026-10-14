@@ -11,23 +11,33 @@ export const META = path.join(ROOT, 'extension', 'model', 'meta.json');
 
 export function parseCsv(text) {
   const rows = [];
-  let row = [], f = '', q = false;
+  let row = [],
+    f = '',
+    q = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (q) {
-      if (c === '"' && text[i + 1] === '"') { f += '"'; i++; }
-      else if (c === '"') q = false;
+      if (c === '"' && text[i + 1] === '"') {
+        f += '"';
+        i++;
+      } else if (c === '"') q = false;
       else f += c;
     } else if (c === '"') q = true;
-    else if (c === ',') { row.push(f); f = ''; }
-    else if (c === '\n' || c === '\r') {
+    else if (c === ',') {
+      row.push(f);
+      f = '';
+    } else if (c === '\n' || c === '\r') {
       if (c === '\r' && text[i + 1] === '\n') i++;
-      row.push(f); f = '';
+      row.push(f);
+      f = '';
       if (row.length > 1 || row[0] !== '') rows.push(row);
       row = [];
     } else f += c;
   }
-  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  if (f !== '' || row.length) {
+    row.push(f);
+    rows.push(row);
+  }
   const [head, ...body] = rows;
   return body.map((r) => Object.fromEntries(head.map((h, i) => [h, r[i] ?? ''])));
 }
@@ -52,7 +62,8 @@ export async function createSession(backend = 'node', threads = 0) {
 }
 
 export async function predict({ ort, s }, img) {
-  const pre = textLines(img), P = {};
+  const pre = textLines(img),
+    P = {};
   for (const v of ['pack', 'crop']) {
     const x = prep(cropNormalize(img, v, 96, 6, pre));
     const o = await s.run({ input: new ort.Tensor('float32', x, [1, 3, 320, 320]) });
@@ -64,22 +75,30 @@ export async function predict({ ort, s }, img) {
 export const CONFIGS = { bare: { v: ['pack'], alpha: 0, merge: false }, best: { v: ['pack', 'crop'], alpha: 0.5, merge: true } };
 
 export async function evaluate({ set = path.join(ROOT, 'data', 'realset3'), backend = 'node', limit = 0, threads = 0 } = {}) {
-  const meta = JSON.parse(fs.readFileSync(META)), R = makeRanker(meta), sess = await createSession(backend, threads);
+  const meta = JSON.parse(fs.readFileSync(META)),
+    R = makeRanker(meta),
+    sess = await createSession(backend, threads);
   let rows = parseCsv(fs.readFileSync(path.join(set, 'labels.csv'), 'utf8'));
   if (limit) rows = rows.slice(0, limit);
-  const preds = {}, acc = { bare: [0, 0], best: [0, 0] }, t0 = Date.now();
+  const preds = {},
+    acc = { bare: [0, 0], best: [0, 0] },
+    t0 = Date.now();
   for (const { image, label } of rows) {
     const P = await predict(sess, loadPng(path.join(set, 'images', image)));
     preds[image] = {};
     for (const [c, cf] of Object.entries(CONFIGS)) {
-      const top = R.rank(cf.v.map((v) => P[v]), { alpha: cf.alpha, merge: cf.merge, k: 5 }).map((o) => o.key);
+      const top = R.rank(
+        cf.v.map((v) => P[v]),
+        { alpha: cf.alpha, merge: cf.merge, k: 5 },
+      ).map((o) => o.key);
       const lb = cf.merge ? R.mg(nz(label)) : nz(label);
       preds[image][c] = top;
       acc[c][0] += top[0] === lb;
       acc[c][1] += top.includes(lb);
     }
   }
-  const n = rows.length, pc = (v) => Math.round((1000 * v) / n) / 10;
+  const n = rows.length,
+    pc = (v) => Math.round((1000 * v) / n) / 10;
   const metrics = Object.fromEntries(Object.entries(acc).map(([c, [a1, a5]]) => [c, { n, top1: pc(a1), top5: pc(a5) }]));
   return { metrics, preds, msPerImage: Math.round((Date.now() - t0) / Math.max(n, 1)), backend };
 }

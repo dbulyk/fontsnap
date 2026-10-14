@@ -30,8 +30,16 @@ MERGE = {
     "notosansdisplay": "notosans",
 }
 KEEP_NOTO = (
-    "notosanssc", "notosanstc", "notosanshk", "notosansjp", "notosanskr",
-    "notosansarabic", "notosansdevanagari", "notosansmono", "notosansthai", "notosanshebrew",
+    "notosanssc",
+    "notosanstc",
+    "notosanshk",
+    "notosansjp",
+    "notosanskr",
+    "notosansarabic",
+    "notosansdevanagari",
+    "notosansmono",
+    "notosansthai",
+    "notosanshebrew",
 )
 
 

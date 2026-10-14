@@ -9,3 +9,4 @@ out/
 .ruff_cache/
 *.zip
 .env
+dist/

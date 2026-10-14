@@ -4,12 +4,7 @@
   "short_name": "FontSnap",
   "version": "0.1.0",
   "description": "Select any text on a page or upload a screenshot \u2014 FontSnap identifies the Google Font on-device and shows the top 5 matches.",
-  "permissions": [
-    "activeTab",
-    "scripting",
-    "storage",
-    "contextMenus"
-  ],
+  "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
   "background": {
     "service_worker": "background.js",
     "type": "module"

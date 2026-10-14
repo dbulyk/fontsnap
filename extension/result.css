@@ -1,13 +1,158 @@
-*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;color:#1b1f2a;background:#f6f7fb}
-header{display:flex;align-items:center;gap:10px;padding:12px 20px;background:#fff;border-bottom:1px solid #e3e6ef}header img{width:28px}h1{font-size:18px;margin:0}.sub{color:#778}
-main{display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1.3fr);gap:20px;padding:20px;max-width:1200px;margin:auto}
-.drop{background:#fff;border:2px dashed #c9cfe0;border-radius:10px;padding:12px;text-align:center;min-height:160px}.drop.over{border-color:#4f7cff}
-#shot,#seen{max-width:100%;display:block;margin:auto}#shot{display:none}.link{color:#4f7cff;cursor:pointer;text-decoration:underline}
-details{margin-top:10px}summary{cursor:pointer;color:#556}#seen{border:1px solid #ddd;margin-top:8px;max-width:320px}
-.status{padding:8px 12px;background:#eef2ff;border-radius:8px;margin-bottom:10px}.status.err{background:#ffecec}
-.pv{display:flex;gap:8px;align-items:center;margin-bottom:10px}.pv input{flex:1;padding:6px 8px;border:1px solid #ccd;border-radius:6px}
-ol{list-style:none;padding:0;margin:0}li{background:#fff;border:1px solid #e3e6ef;border-radius:10px;padding:12px 14px;margin-bottom:10px}
-.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.name{font-weight:600;font-size:15px}.meta{color:#778;font-size:12px}
-.bar{height:4px;background:#e8ebf3;border-radius:2px;margin:6px 0}.bar i{display:block;height:100%;background:#4f7cff;border-radius:2px}
-.sample{font-size:28px;line-height:1.25;overflow-wrap:anywhere;margin-top:4px}a{color:#4f7cff}.acts a,.acts button{margin-left:10px;font-size:12px}
-button{border:0;background:none;color:#4f7cff;cursor:pointer;padding:0}.note{color:#778;font-size:12px}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font:
+    14px/1.45 system-ui,
+    sans-serif;
+  color: #1b1f2a;
+  background: #f6f7fb;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #fff;
+  border-bottom: 1px solid #e3e6ef;
+}
+header img {
+  width: 28px;
+}
+h1 {
+  font-size: 18px;
+  margin: 0;
+}
+.sub {
+  color: #778;
+}
+main {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(360px, 1.3fr);
+  gap: 20px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: auto;
+}
+.drop {
+  background: #fff;
+  border: 2px dashed #c9cfe0;
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+  min-height: 160px;
+}
+.drop.over {
+  border-color: #4f7cff;
+}
+#shot,
+#seen {
+  max-width: 100%;
+  display: block;
+  margin: auto;
+}
+#shot {
+  display: none;
+}
+.link {
+  color: #4f7cff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+details {
+  margin-top: 10px;
+}
+summary {
+  cursor: pointer;
+  color: #556;
+}
+#seen {
+  border: 1px solid #ddd;
+  margin-top: 8px;
+  max-width: 320px;
+}
+.status {
+  padding: 8px 12px;
+  background: #eef2ff;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+.status.err {
+  background: #ffecec;
+}
+.pv {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.pv input {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ccd;
+  border-radius: 6px;
+}
+ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+li {
+  background: #fff;
+  border: 1px solid #e3e6ef;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.name {
+  font-weight: 600;
+  font-size: 15px;
+}
+.meta {
+  color: #778;
+  font-size: 12px;
+}
+.bar {
+  height: 4px;
+  background: #e8ebf3;
+  border-radius: 2px;
+  margin: 6px 0;
+}
+.bar i {
+  display: block;
+  height: 100%;
+  background: #4f7cff;
+  border-radius: 2px;
+}
+.sample {
+  font-size: 28px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  margin-top: 4px;
+}
+a {
+  color: #4f7cff;
+}
+.acts a,
+.acts button {
+  margin-left: 10px;
+  font-size: 12px;
+}
+button {
+  border: 0;
+  background: none;
+  color: #4f7cff;
+  cursor: pointer;
+  padding: 0;
+}
+.note {
+  color: #778;
+  font-size: 12px;
+}

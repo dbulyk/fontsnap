@@ -5,7 +5,12 @@ import { parseArgs } from 'node:util';
 import { evaluate, ROOT } from './lib/evaljs.mjs';
 
 const { values: a } = parseArgs({
-  options: { backend: { type: 'string', default: 'node' }, set: { type: 'string' }, limit: { type: 'string', default: '0' }, out: { type: 'string' } },
+  options: {
+    backend: { type: 'string', default: 'node' },
+    set: { type: 'string' },
+    limit: { type: 'string', default: '0' },
+    out: { type: 'string' },
+  },
 });
 const res = await evaluate({ backend: a.backend, set: a.set && path.resolve(a.set), limit: +a.limit });
 const out = a.out || path.join(ROOT, 'out', `js_${a.backend}_realset3.json`);

@@ -1,6 +1,7 @@
 // FontSnap service worker: start region selection, capture the visible tab, crop it, hand the crop to result.html.
 // The screenshot never leaves the browser: it is cropped here and passed via chrome.storage.session (trusted contexts only).
-const RESTRICTED = /^(chrome|edge|about|devtools|view-source|chrome-extension|chrome-search):|^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com)/;
+const RESTRICTED =
+  /^(chrome|edge|about|devtools|view-source|chrome-extension|chrome-search):|^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com)/;
 const resultUrl = (hash = '') => chrome.runtime.getURL('result.html') + hash;
 
 async function startSelect(tab) {
