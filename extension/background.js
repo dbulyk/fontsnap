@@ -13,20 +13,60 @@ async function startSelect(tab) {
   }
 }
 
+function bytesToDataUrl(buf, type) {
+  let s = '';
+  for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+  return `data:${type};base64,` + btoa(s);
+}
+
 async function cropToDataUrl(dataUrl, rect, dpr) {
   const bmp = await createImageBitmap(await (await fetch(dataUrl)).blob());
   const x = Math.max(0, Math.round(rect.x * dpr));
   const y = Math.max(0, Math.round(rect.y * dpr));
-  const w = Math.min(Math.round(rect.w * dpr), bmp.width - x);
-  const h = Math.min(Math.round(rect.h * dpr), bmp.height - y);
+  const w = Math.min(Math.round((rect.w + Math.min(0, rect.x)) * dpr), bmp.width - x);
+  const h = Math.min(Math.round((rect.h + Math.min(0, rect.y)) * dpr), bmp.height - y);
   if (w < 4 || h < 4) throw new Error('Selection is outside the visible area');
   const cv = new OffscreenCanvas(w, h);
   cv.getContext('2d').drawImage(bmp, x, y, w, h, 0, 0, w, h);
   bmp.close();
-  const buf = new Uint8Array(await (await cv.convertToBlob({ type: 'image/png' })).arrayBuffer());
-  let s = '';
-  for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-  return 'data:image/png;base64,' + btoa(s);
+  return bytesToDataUrl(new Uint8Array(await (await cv.convertToBlob({ type: 'image/png' })).arrayBuffer()), 'image/png');
+}
+
+// Right-click on an image: analyse that image. First try to download it (works for data: URLs and
+// CORS-enabled images); otherwise screenshot the tab and crop to the image's on-screen box (activeTab).
+const MAX_IMAGE_BYTES = 25e6;
+async function imageToDataUrl(srcUrl, tab) {
+  try {
+    const r = await fetch(srcUrl, { credentials: 'omit' });
+    const blob = r.ok ? await r.blob() : null;
+    if (blob && blob.type.startsWith('image/') && blob.type !== 'image/svg+xml' && blob.size < MAX_IMAGE_BYTES) {
+      await createImageBitmap(blob).then((b) => b.close()); // decodable?
+      return bytesToDataUrl(new Uint8Array(await blob.arrayBuffer()), blob.type);
+    }
+  } catch {
+    // CORS / network: fall back to a screenshot of the image
+  }
+  const [{ result } = {}] = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [srcUrl],
+    func: async (src) => {
+      const img = [...document.images].find((i) => i.currentSrc === src || i.src === src);
+      if (!img) return null;
+      img.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+      const b = img.getBoundingClientRect();
+      return { rect: { x: b.left, y: b.top, w: b.width, h: b.height }, dpr: window.devicePixelRatio || 1 };
+    },
+  });
+  if (!result || !validRect(result.rect)) throw new Error('Could not access this image');
+  const shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+  return cropToDataUrl(shot, result.rect, result.dpr);
+}
+
+async function openResult(entry, tab) {
+  const id = 'cap_' + Date.now();
+  await chrome.storage.session.set({ [id]: entry });
+  chrome.tabs.create({ url: resultUrl('#' + id), ...(tab ? { index: tab.index + 1 } : {}) });
 }
 
 function validRect(r) {
@@ -35,20 +75,31 @@ function validRect(r) {
 
 chrome.action.onClicked.addListener(startSelect);
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: 'fontsnap-select',
-    title: 'FontSnap: identify font in a region',
-    contexts: ['page', 'image', 'selection', 'link'],
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: 'fontsnap-image',
+      title: 'FontSnap: identify font in this image',
+      contexts: ['image'],
+    });
+    chrome.contextMenus.create({
+      id: 'fontsnap-select',
+      title: 'FontSnap: select an area to identify font',
+      contexts: ['page', 'selection', 'link'],
+    });
   });
 });
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'fontsnap-select') startSelect(tab);
+  else if (info.menuItemId === 'fontsnap-image' && info.srcUrl) {
+    imageToDataUrl(info.srcUrl, tab)
+      .then((dataUrl) => openResult({ dataUrl, text: '' }, tab))
+      .catch((e) => openResult({ error: String(e?.message || e) }, tab));
+  }
 });
 chrome.runtime.onMessage.addListener((msg, sender) => {
   // only accept messages from our own content script running in a tab
   if (sender.id !== chrome.runtime.id || !sender.tab || msg?.type !== 'fontsnap-rect' || !validRect(msg.rect)) return;
   (async () => {
-    const id = 'cap_' + Date.now();
     let entry;
     try {
       const dpr = Number.isFinite(msg.dpr) && msg.dpr > 0 ? msg.dpr : 1;
@@ -57,7 +108,6 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     } catch (e) {
       entry = { error: String(e?.message || e) };
     }
-    await chrome.storage.session.set({ [id]: entry });
-    chrome.tabs.create({ url: resultUrl('#' + id), index: sender.tab.index + 1 });
+    await openResult(entry, sender.tab);
   })();
 });
