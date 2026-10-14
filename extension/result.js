@@ -1,6 +1,8 @@
 import * as ort from './ort/ort.wasm.min.mjs';
 import { fromRGBA, textLines, cropNormalize, prep, softmax, makeRanker } from './lib/fontsnap-core.js';
+import { t, applyI18n } from './lib/i18n.js';
 import { genericFamily, cssFontFamily, previewText, timingText, visibleResults } from './lib/ui.js';
+applyI18n();
 const $ = (id) => document.getElementById(id),
   status = (t, err) => {
     $('status').textContent = t;
@@ -40,7 +42,7 @@ async function identify(canvas) {
   $('shot').style.display = 'block';
   $('dropHint').style.display = 'none';
   const my = ++runId;
-  status('Analyzing…');
+  status(t('analyzing'));
   await ready;
   const t0 = performance.now();
   const ctx = canvas.getContext('2d', { willReadFrequently: true }),
@@ -60,10 +62,7 @@ async function identify(canvas) {
   loadCounted = true;
   lastImg = ranker.rank(probs, { alpha: 0.5, merge: true, k: 5 });
   render(lastImg);
-  status(
-    pre.lines.length ? timingText(analysisMs, loadMs) : 'No clear text lines found — result may be unreliable. Try a tighter selection.',
-    !pre.lines.length,
-  );
+  status(pre.lines.length ? timingText(analysisMs, loadMs, t) : t('noLines'), !pre.lines.length);
 }
 const loaded = new Set();
 function loadFont(name) {
@@ -87,19 +86,19 @@ function render(all) {
     li.innerHTML = `<div class="row"><span class="name">${i + 1}. </span><span class="meta"></span></div><div class="bar"><i></i></div><div class="sample"></div><div class="row"><span class="meta"></span><span class="acts"></span></div>`;
     li.querySelector('.name').append(r.name);
     li.querySelectorAll('.meta')[0].textContent = `${Math.round(r.conf * 100)}%`;
-    li.querySelectorAll('.meta')[0].title = 'Relative score among the top 5';
+    li.querySelectorAll('.meta')[0].title = t('scoreTitle');
     li.querySelector('.bar i').style.width = `${Math.max(2, r.conf * 100)}%`;
     const s = li.querySelector('.sample');
     s.textContent = text;
     s.style.fontFamily = `'${r.name}', ${genericFamily(r.category)}`;
-    li.querySelectorAll('.meta')[1].textContent = r.category || (r.inGF ? '' : 'not on Google Fonts');
+    li.querySelectorAll('.meta')[1].textContent = r.category || (r.inGF ? '' : t('notOnGF'));
     const acts = li.querySelector('.acts'),
       cp = document.createElement('button');
-    cp.textContent = 'Copy CSS';
+    cp.textContent = t('copyCss');
     cp.onclick = () =>
       navigator.clipboard.writeText(cssFontFamily(r.name, r.category)).then(() => {
-        cp.textContent = 'Copied';
-        setTimeout(() => (cp.textContent = 'Copy CSS'), 1200);
+        cp.textContent = t('copied');
+        setTimeout(() => (cp.textContent = t('copyCss')), 1200);
       });
     acts.append(cp);
     if (r.inGF) {
@@ -119,7 +118,7 @@ async function fromBlob(blob) {
   try {
     bmp = await createImageBitmap(blob);
   } catch {
-    return status('Could not read this image.', true);
+    return status(t('readFail'), true);
   }
   const sc = Math.min(1, MAX_SIDE / Math.max(bmp.width, bmp.height)),
     cv = $('shot');
@@ -127,7 +126,7 @@ async function fromBlob(blob) {
   cv.height = Math.round(bmp.height * sc);
   cv.getContext('2d', { willReadFrequently: true }).drawImage(bmp, 0, 0, cv.width, cv.height);
   bmp.close();
-  identify(cv).catch((e) => status('Error: ' + e.message, true));
+  identify(cv).catch((e) => status(t('errorMsg', [e.message]), true));
 }
 $('file').addEventListener('change', (e) => e.target.files[0] && fromBlob(e.target.files[0]));
 document.addEventListener('paste', (e) => {
@@ -149,9 +148,9 @@ drop.addEventListener('drop', (e) => {
 (async () => {
   try {
     await ready;
-    status('Ready. Paste, drop or choose an image.');
+    status(t('ready'));
   } catch (e) {
-    status('Model failed to load: ' + e.message, true);
+    status(t('modelFail', [e.message]), true);
     return;
   }
   const id = location.hash.slice(1);
@@ -159,7 +158,7 @@ drop.addEventListener('drop', (e) => {
   const st = (await chrome.storage.session.get(id))[id];
   if (!st) return;
   chrome.storage.session.remove(id);
-  if (st.error) return status('Capture failed: ' + st.error + ' — try again or paste a screenshot.', true);
+  if (st.error) return status(t('captureFail', [st.error]), true);
   if (st.text) $('pvText').value = st.text;
   fromBlob(await (await fetch(st.dataUrl)).blob());
 })();

@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: rozpoznawanie czcionki ze zdjęcia z AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Rozpoznawanie czcionki ze zdjęcia z AI: zaznacz tekst, a FontSnap znajdzie czcionkę i pokaże 5 najbliższych czcionek Google.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: rozpoznaj czcionkę"
+  },
+  "ctxImage": {
+    "message": "FontSnap: rozpoznaj czcionkę na tym obrazie"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: zaznacz obszar, aby rozpoznać czcionkę"
+  },
+  "selectHint": {
+    "message": "FontSnap: przeciągnij nad tekstem (Esc, aby anulować)"
+  },
+  "resTitle": {
+    "message": "FontSnap — wyniki"
+  },
+  "tagline": {
+    "message": "Rozpoznawanie czcionek AI · działa na Twoim urządzeniu"
+  },
+  "dropHint": {
+    "message": "Wklej (Ctrl+V) lub upuść obraz z tekstem albo wybierz plik."
+  },
+  "chooseImage": {
+    "message": "Wybierz obraz"
+  },
+  "dropTip": {
+    "message": "Wskazówka: na dowolnej stronie kliknij ikonę FontSnap i przeciągnij nad tekstem."
+  },
+  "modelSees": {
+    "message": "Co widzi model"
+  },
+  "loading": {
+    "message": "Ładowanie modelu…"
+  },
+  "analyzing": {
+    "message": "Analizowanie…"
+  },
+  "ready": {
+    "message": "Gotowe. Wklej, upuść lub wybierz obraz."
+  },
+  "noLines": {
+    "message": "Nie znaleziono wyraźnych linii tekstu — wynik może być niedokładny. Zaznacz ciaśniej."
+  },
+  "readFail": {
+    "message": "Nie udało się odczytać obrazu."
+  },
+  "captureFail": {
+    "message": "Przechwycenie nie powiodło się: $ERR$ — spróbuj ponownie lub wklej zrzut ekranu.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Nie udało się załadować modelu: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Błąd: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Tekst podglądu"
+  },
+  "previewPh": {
+    "message": "Wpisz własny tekst (domyślnie: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Względny wynik w pierwszej piątce"
+  },
+  "notOnGF": {
+    "message": "brak w Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopiuj CSS"
+  },
+  "copied": {
+    "message": "Skopiowano"
+  },
+  "note": {
+    "message": "Dopasowuje rodziny Google Fonts. Najlepiej działa łacinka, cyrylica i arabski; chiński/japoński wciąż słabo. Obrazy nigdy nie opuszczają Twojego komputera; podglądy czcionek są ładowane z Google Fonts."
+  },
+  "doneIn": {
+    "message": "Gotowe w $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Gotowe w $TOTAL$ ms (ładowanie modelu $LOAD$ ms + analiza $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap został zainstalowany"
+  },
+  "wPinH": {
+    "message": "Przypnij FontSnap do paska narzędzi"
+  },
+  "wPin1": {
+    "message": "Kliknij ikonę puzzla w prawym górnym rogu Chrome."
+  },
+  "wPin2": {
+    "message": "Znajdź FontSnap na liście."
+  },
+  "wPin3": {
+    "message": "Kliknij ikonę pinezki obok."
+  },
+  "wPinned": {
+    "message": "Już przypięte? Pokaż, jak używać"
+  },
+  "wUseH": {
+    "message": "Jak rozpoznać czcionkę"
+  },
+  "wUse1": {
+    "message": "Kliknij ikonę FontSnap lub naciśnij Alt+Shift+F i przeciągnij nad dowolnym tekstem."
+  },
+  "wUse2": {
+    "message": "Kliknij obraz prawym przyciskiem i wybierz „Rozpoznaj czcionkę na tym obrazie”."
+  },
+  "wUse3": {
+    "message": "Albo otwórz FontSnap i wklej, upuść lub prześlij zrzut ekranu."
+  },
+  "wUse4": {
+    "message": "Otrzymaj 5 najbliższych czcionek Google, porównaj podglądy i skopiuj CSS."
+  },
+  "wTry": {
+    "message": "Wypróbuj teraz"
+  },
+  "wShowPin": {
+    "message": "Jak przypiąć FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Wszystko działa na Twoim urządzeniu. Obrazy nigdy nie są wysyłane."
+  }
+}

@@ -1,0 +1,43 @@
+FontSnap: identificador de tipos de letra por imagem com IA
+Identificador de tipos de letra por imagem com IA: selecione um texto e veja as 5 fontes Google mais parecidas com a da imagem.
+FontSnap: identificar um tipo de letra
+FontSnap: identificar o tipo de letra desta imagem
+FontSnap: selecionar uma área para identificar o tipo de letra
+FontSnap: arraste sobre o texto (Esc para cancelar)
+FontSnap — resultados
+Identificador de tipos de letra com IA · funciona no seu dispositivo
+Cole (Ctrl+V) ou largue uma imagem com texto, ou escolha um ficheiro.
+Escolher imagem
+Dica: em qualquer página, clique no ícone do FontSnap e arraste sobre o texto.
+O que o modelo vê
+A carregar o modelo…
+A analisar…
+Pronto. Cole, largue ou escolha uma imagem.
+Não foram encontradas linhas de texto nítidas — o resultado pode não ser fiável. Faça uma seleção mais justa.
+Não foi possível ler esta imagem.
+Falha na captura: $ERR$ — tente novamente ou cole uma captura de ecrã.
+Falha ao carregar o modelo: $ERR$
+Erro: $ERR$
+Texto de pré-visualização
+Escreva o seu texto (predefinição: The quick brown fox…)
+Pontuação relativa entre os 5 primeiros
+não está no Google Fonts
+Copiar CSS
+Copiado
+Encontra famílias do Google Fonts. Latim, cirílico e árabe funcionam melhor; chinês/japonês ainda são fracos. As imagens nunca saem do seu computador; as pré-visualizações são carregadas do Google Fonts.
+Concluído em $MS$ ms
+Concluído em $TOTAL$ ms (carregamento do modelo $LOAD$ ms + análise $MS$ ms)
+O FontSnap foi instalado
+Afixe o FontSnap na barra de ferramentas
+Clique no ícone de peça de puzzle no canto superior direito do Chrome.
+Encontre o FontSnap na lista.
+Clique no ícone de pionés ao lado.
+Já afixou? Ver como utilizar
+Como identificar um tipo de letra
+Clique no ícone do FontSnap ou prima Alt+Shift+F e arraste sobre qualquer texto da página.
+Clique com o botão direito numa imagem e escolha "Identificar o tipo de letra desta imagem".
+Ou abra o FontSnap e cole, largue ou carregue uma captura de ecrã.
+Obtenha as 5 fontes Google mais parecidas, compare as pré-visualizações e copie o CSS.
+Experimentar agora
+Como afixar o FontSnap
+Tudo funciona no seu dispositivo. As imagens nunca são enviadas.

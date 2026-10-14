@@ -19,11 +19,12 @@ export function previewText(typed, selected) {
 }
 
 // Status line. On the first run the model load time is included in the total and shown separately.
-export function timingText(analysisMs, modelLoadMs) {
+// `t` is an optional chrome.i18n lookup (keys doneIn / doneInLoad); English is the fallback.
+export function timingText(analysisMs, modelLoadMs, t) {
   const a = Math.round(analysisMs);
-  if (!(modelLoadMs > 0)) return `Done in ${a} ms`;
+  if (!(modelLoadMs > 0)) return (t && t('doneIn', [String(a)])) || `Done in ${a} ms`;
   const m = Math.round(modelLoadMs);
-  return `Done in ${a + m} ms (model load ${m} ms + analysis ${a} ms)`;
+  return (t && t('doneInLoad', [String(a + m), String(m), String(a)])) || `Done in ${a + m} ms (model load ${m} ms + analysis ${a} ms)`;
 }
 
 // Display filter. The ranker always returns k candidates (needed for the top-5 metric), but when the

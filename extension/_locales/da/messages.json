@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: AI-skrifttypegenkendelse fra billede",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Find skrifttype fra billede med AI: markér tekst, og FontSnap viser de 5 mest lignende Google-skrifttyper. Font finder til Chrome.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: genkend en skrifttype"
+  },
+  "ctxImage": {
+    "message": "FontSnap: genkend skrifttypen i dette billede"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: vælg et område for at genkende skrifttype"
+  },
+  "selectHint": {
+    "message": "FontSnap: træk hen over teksten (Esc for at annullere)"
+  },
+  "resTitle": {
+    "message": "FontSnap – resultater"
+  },
+  "tagline": {
+    "message": "AI-skrifttypegenkendelse · kører på din enhed"
+  },
+  "dropHint": {
+    "message": "Indsæt (Ctrl+V) eller slip et billede med tekst, eller vælg en fil."
+  },
+  "chooseImage": {
+    "message": "Vælg billede"
+  },
+  "dropTip": {
+    "message": "Tip: klik på FontSnap-ikonet på en hvilken som helst side, og træk hen over teksten."
+  },
+  "modelSees": {
+    "message": "Hvad modellen ser"
+  },
+  "loading": {
+    "message": "Indlæser model…"
+  },
+  "analyzing": {
+    "message": "Analyserer…"
+  },
+  "ready": {
+    "message": "Klar. Indsæt, slip eller vælg et billede."
+  },
+  "noLines": {
+    "message": "Ingen tydelige tekstlinjer fundet – resultatet kan være upålideligt. Lav en tættere markering."
+  },
+  "readFail": {
+    "message": "Billedet kunne ikke læses."
+  },
+  "captureFail": {
+    "message": "Optagelse mislykkedes: $ERR$ – prøv igen, eller indsæt et skærmbillede.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Modellen kunne ikke indlæses: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Fejl: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Eksempeltekst"
+  },
+  "previewPh": {
+    "message": "Skriv din egen tekst (standard: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relativ score blandt top 5"
+  },
+  "notOnGF": {
+    "message": "findes ikke på Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopiér CSS"
+  },
+  "copied": {
+    "message": "Kopieret"
+  },
+  "note": {
+    "message": "Finder Google Fonts-familier. Latin, kyrillisk og arabisk virker bedst; kinesisk/japansk er stadig svagt. Billeder forlader aldrig din computer; skrifteksempler hentes fra Google Fonts."
+  },
+  "doneIn": {
+    "message": "Færdig på $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Færdig på $TOTAL$ ms (indlæsning af model $LOAD$ ms + analyse $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap er installeret"
+  },
+  "wPinH": {
+    "message": "Fastgør FontSnap til værktøjslinjen"
+  },
+  "wPin1": {
+    "message": "Klik på puslespilsikonet øverst til højre i Chrome."
+  },
+  "wPin2": {
+    "message": "Find FontSnap på listen."
+  },
+  "wPin3": {
+    "message": "Klik på nåleikonet ved siden af."
+  },
+  "wPinned": {
+    "message": "Allerede fastgjort? Se, hvordan det bruges"
+  },
+  "wUseH": {
+    "message": "Sådan genkender du en skrifttype"
+  },
+  "wUse1": {
+    "message": "Klik på FontSnap-ikonet eller tryk Alt+Shift+F, og træk hen over tekst på siden."
+  },
+  "wUse2": {
+    "message": "Højreklik på et billede, og vælg \"Genkend skrifttypen i dette billede\"."
+  },
+  "wUse3": {
+    "message": "Eller åbn FontSnap, og indsæt, slip eller upload et skærmbillede."
+  },
+  "wUse4": {
+    "message": "Få de 5 mest lignende Google Fonts, sammenlign eksempler, og kopiér CSS."
+  },
+  "wTry": {
+    "message": "Prøv nu"
+  },
+  "wShowPin": {
+    "message": "Sådan fastgør du FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Alt kører på din enhed. Billeder uploades aldrig."
+  }
+}

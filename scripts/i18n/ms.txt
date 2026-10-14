@@ -1,0 +1,43 @@
+FontSnap: Pengecam Fon daripada Imej dengan AI
+Pengecam fon daripada imej dengan AI: pilih teks dan FontSnap menunjukkan 5 fon Google yang paling hampir. Pencari fon untuk Chrome.
+FontSnap: kenal pasti fon
+FontSnap: kenal pasti fon dalam imej ini
+FontSnap: pilih kawasan untuk mengenal pasti fon
+FontSnap: seret di atas teks (Esc untuk batal)
+FontSnap — keputusan
+Pengecam fon AI · berjalan pada peranti anda
+Tampal (Ctrl+V) atau lepaskan imej berteks, atau pilih fail.
+Pilih imej
+Petua: pada mana-mana halaman, klik ikon FontSnap dan seret di atas teks.
+Apa yang dilihat model
+Memuatkan model…
+Menganalisis…
+Sedia. Tampal, lepaskan atau pilih imej.
+Tiada baris teks yang jelas ditemui — hasil mungkin kurang tepat. Kecilkan pilihan.
+Tidak dapat membaca imej ini.
+Tangkapan gagal: $ERR$ — cuba lagi atau tampal tangkapan skrin.
+Model gagal dimuatkan: $ERR$
+Ralat: $ERR$
+Teks pratonton
+Taip teks anda sendiri (lalai: The quick brown fox…)
+Skor relatif antara 5 teratas
+tiada dalam Google Fonts
+Salin CSS
+Disalin
+Memadankan keluarga Google Fonts. Latin, Cyril dan Arab paling baik; Cina/Jepun masih lemah. Imej tidak pernah meninggalkan komputer anda; pratonton fon dimuatkan daripada Google Fonts.
+Selesai dalam $MS$ ms
+Selesai dalam $TOTAL$ ms (muat model $LOAD$ ms + analisis $MS$ ms)
+FontSnap telah dipasang
+Sematkan FontSnap pada bar alat
+Klik ikon teka-teki di penjuru kanan atas Chrome.
+Cari FontSnap dalam senarai.
+Klik ikon pin di sebelahnya.
+Sudah disematkan? Tunjukkan cara menggunakannya
+Cara mengenal pasti fon
+Klik ikon FontSnap atau tekan Alt+Shift+F, kemudian seret di atas mana-mana teks.
+Klik kanan imej dan pilih "Kenal pasti fon dalam imej ini".
+Atau buka FontSnap dan tampal, lepaskan atau muat naik tangkapan skrin.
+Dapatkan 5 Google Fonts paling hampir, bandingkan pratonton dan salin CSS.
+Cuba sekarang
+Cara menyematkan FontSnap
+Semuanya berjalan pada peranti anda. Imej tidak pernah dimuat naik.

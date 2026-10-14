@@ -25,7 +25,7 @@
     borderRadius: '6px',
     pointerEvents: 'none',
   });
-  hint.textContent = 'FontSnap: drag over the text (Esc to cancel)';
+  hint.textContent = chrome.i18n.getMessage('selectHint') || 'FontSnap: drag over the text (Esc to cancel)';
   ov.append(box, hint);
   document.documentElement.appendChild(ov);
   let sx,

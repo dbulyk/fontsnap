@@ -1,0 +1,43 @@
+FontSnap : identifier une police à partir d'une image (IA)
+Identifier une police avec l'IA : sélectionnez un texte et ce détecteur de police trouve les 5 polices Google les plus proches.
+FontSnap : identifier une police
+FontSnap : identifier la police de cette image
+FontSnap : sélectionner une zone pour identifier la police
+FontSnap : faites glisser sur le texte (Échap pour annuler)
+FontSnap — résultats
+Identification de police par IA · fonctionne sur votre appareil
+Collez (Ctrl+V) ou déposez une image avec du texte, ou choisissez un fichier.
+Choisir une image
+Astuce : sur n'importe quelle page, cliquez sur l'icône FontSnap et faites glisser sur le texte.
+Ce que voit le modèle
+Chargement du modèle…
+Analyse…
+Prêt. Collez, déposez ou choisissez une image.
+Aucune ligne de texte nette trouvée — le résultat peut être imprécis. Resserrez la sélection.
+Impossible de lire cette image.
+Échec de la capture : $ERR$ — réessayez ou collez une capture d'écran.
+Échec du chargement du modèle : $ERR$
+Erreur : $ERR$
+Texte d'aperçu
+Saisissez votre texte (par défaut : The quick brown fox…)
+Score relatif parmi les 5 premiers
+absente de Google Fonts
+Copier le CSS
+Copié
+Trouve des familles Google Fonts. Latin, cyrillique et arabe fonctionnent le mieux ; chinois/japonais encore faibles. Les images ne quittent jamais votre ordinateur ; les aperçus de polices viennent de Google Fonts.
+Terminé en $MS$ ms
+Terminé en $TOTAL$ ms (chargement du modèle $LOAD$ ms + analyse $MS$ ms)
+FontSnap est installé
+Épinglez FontSnap à la barre d'outils
+Cliquez sur l'icône puzzle en haut à droite de Chrome.
+Trouvez FontSnap dans la liste.
+Cliquez sur l'icône d'épingle à côté.
+Déjà épinglé ? Voir comment l'utiliser
+Comment identifier une police
+Cliquez sur l'icône FontSnap ou appuyez sur Alt+Shift+F, puis faites glisser sur un texte.
+Faites un clic droit sur une image et choisissez « Identifier la police de cette image ».
+Ou ouvrez FontSnap et collez, déposez ou importez une capture d'écran.
+Obtenez les 5 polices Google les plus proches, comparez les aperçus et copiez le CSS.
+Essayer maintenant
+Comment épingler FontSnap
+Tout fonctionne sur votre appareil. Les images ne sont jamais envoyées.

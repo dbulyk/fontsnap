@@ -1,0 +1,43 @@
+FontSnap: prepoznavanje pisave iz slike z UI
+Prepoznajte pisavo iz slike z umetno inteligenco: označite besedilo in FontSnap pokaže 5 najbolj podobnih pisav Google Fonts.
+FontSnap: prepoznaj pisavo
+FontSnap: prepoznaj pisavo na tej sliki
+FontSnap: izberi območje za prepoznavanje pisave
+FontSnap: povlecite čez besedilo (Esc za preklic)
+FontSnap – rezultati
+Prepoznavanje pisav z UI · deluje v vaši napravi
+Prilepite (Ctrl+V) ali spustite sliko z besedilom ali izberite datoteko.
+Izberi sliko
+Namig: na kateri koli strani kliknite ikono FontSnap in povlecite čez besedilo.
+Kaj vidi model
+Nalaganje modela…
+Analiziranje…
+Pripravljeno. Prilepite, spustite ali izberite sliko.
+Jasnih vrstic besedila ni bilo mogoče najti – rezultat je morda nezanesljiv. Izberite ožje območje.
+Slike ni bilo mogoče prebrati.
+Zajem ni uspel: $ERR$ – poskusite znova ali prilepite posnetek zaslona.
+Modela ni bilo mogoče naložiti: $ERR$
+Napaka: $ERR$
+Besedilo predogleda
+Vnesite svoje besedilo (privzeto: The quick brown fox…)
+Relativna ocena med prvimi 5
+ni v Google Fonts
+Kopiraj CSS
+Kopirano
+Išče družine Google Fonts. Najbolje delujejo latinica, cirilica in arabščina; kitajščina/japonščina še šibko. Slike nikoli ne zapustijo vašega računalnika; predogledi pisav se naložijo iz Google Fonts.
+Končano v $MS$ ms
+Končano v $TOTAL$ ms (nalaganje modela $LOAD$ ms + analiza $MS$ ms)
+FontSnap je nameščen
+Pripnite FontSnap v orodno vrstico
+Kliknite ikono sestavljanke v zgornjem desnem kotu Chroma.
+Poiščite FontSnap na seznamu.
+Kliknite ikono žebljička poleg njega.
+Že pripeto? Pokaži, kako ga uporabljati
+Kako prepoznati pisavo
+Kliknite ikono FontSnap ali pritisnite Alt+Shift+F in povlecite čez poljubno besedilo.
+Z desno tipko kliknite sliko in izberite »Prepoznaj pisavo na tej sliki«.
+Ali odprite FontSnap in prilepite, spustite ali naložite posnetek zaslona.
+Dobite 5 najbolj podobnih Google Fonts, primerjajte predoglede in kopirajte CSS.
+Preizkusi zdaj
+Kako pripeti FontSnap
+Vse deluje v vaši napravi. Slike se nikoli ne naložijo.

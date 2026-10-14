@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: identificador de fontes por imagem com IA",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Identificador de fontes por imagem com IA: selecione um texto e este localizador de fontes mostra as 5 fontes Google mais parecidas.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: identificar uma fonte"
+  },
+  "ctxImage": {
+    "message": "FontSnap: identificar a fonte desta imagem"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: selecionar uma área para identificar a fonte"
+  },
+  "selectHint": {
+    "message": "FontSnap: arraste sobre o texto (Esc para cancelar)"
+  },
+  "resTitle": {
+    "message": "FontSnap — resultados"
+  },
+  "tagline": {
+    "message": "Identificador de fontes com IA · funciona no seu dispositivo"
+  },
+  "dropHint": {
+    "message": "Cole (Ctrl+V) ou solte uma imagem com texto, ou escolha um arquivo."
+  },
+  "chooseImage": {
+    "message": "Escolher imagem"
+  },
+  "dropTip": {
+    "message": "Dica: em qualquer página, clique no ícone do FontSnap e arraste sobre o texto."
+  },
+  "modelSees": {
+    "message": "O que o modelo vê"
+  },
+  "loading": {
+    "message": "Carregando modelo…"
+  },
+  "analyzing": {
+    "message": "Analisando…"
+  },
+  "ready": {
+    "message": "Pronto. Cole, solte ou escolha uma imagem."
+  },
+  "noLines": {
+    "message": "Nenhuma linha de texto nítida encontrada — o resultado pode não ser confiável. Faça uma seleção mais justa."
+  },
+  "readFail": {
+    "message": "Não foi possível ler esta imagem."
+  },
+  "captureFail": {
+    "message": "Falha na captura: $ERR$ — tente novamente ou cole uma captura de tela.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Falha ao carregar o modelo: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Erro: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Texto de visualização"
+  },
+  "previewPh": {
+    "message": "Digite seu próprio texto (padrão: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Pontuação relativa entre as 5 primeiras"
+  },
+  "notOnGF": {
+    "message": "não está no Google Fonts"
+  },
+  "copyCss": {
+    "message": "Copiar CSS"
+  },
+  "copied": {
+    "message": "Copiado"
+  },
+  "note": {
+    "message": "Encontra famílias do Google Fonts. Latim, cirílico e árabe funcionam melhor; chinês/japonês ainda são fracos. As imagens nunca saem do seu computador; as visualizações são carregadas do Google Fonts."
+  },
+  "doneIn": {
+    "message": "Concluído em $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Concluído em $TOTAL$ ms (carregamento do modelo $LOAD$ ms + análise $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "O FontSnap foi instalado"
+  },
+  "wPinH": {
+    "message": "Fixe o FontSnap na barra de ferramentas"
+  },
+  "wPin1": {
+    "message": "Clique no ícone de quebra-cabeça no canto superior direito do Chrome."
+  },
+  "wPin2": {
+    "message": "Encontre o FontSnap na lista."
+  },
+  "wPin3": {
+    "message": "Clique no ícone de alfinete ao lado dele."
+  },
+  "wPinned": {
+    "message": "Já fixou? Ver como usar"
+  },
+  "wUseH": {
+    "message": "Como identificar uma fonte"
+  },
+  "wUse1": {
+    "message": "Clique no ícone do FontSnap ou pressione Alt+Shift+F e arraste sobre qualquer texto da página."
+  },
+  "wUse2": {
+    "message": "Clique com o botão direito em uma imagem e escolha “Identificar a fonte desta imagem”."
+  },
+  "wUse3": {
+    "message": "Ou abra o FontSnap e cole, solte ou envie uma captura de tela."
+  },
+  "wUse4": {
+    "message": "Receba as 5 fontes Google mais parecidas, compare as visualizações e copie o CSS."
+  },
+  "wTry": {
+    "message": "Experimentar agora"
+  },
+  "wShowPin": {
+    "message": "Como fixar o FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Tudo funciona no seu dispositivo. As imagens nunca são enviadas."
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: identificare font din imagine cu AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Identificator de fonturi din imagine cu AI: selectați un text, iar FontSnap găsește fontul și arată 5 fonturi Google similare.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: identifică un font"
+  },
+  "ctxImage": {
+    "message": "FontSnap: identifică fontul din această imagine"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: selectează o zonă pentru a identifica fontul"
+  },
+  "selectHint": {
+    "message": "FontSnap: trageți peste text (Esc pentru anulare)"
+  },
+  "resTitle": {
+    "message": "FontSnap — rezultate"
+  },
+  "tagline": {
+    "message": "Identificator de fonturi cu AI · rulează pe dispozitivul dvs."
+  },
+  "dropHint": {
+    "message": "Lipiți (Ctrl+V) sau plasați o imagine cu text ori alegeți un fișier."
+  },
+  "chooseImage": {
+    "message": "Alege imaginea"
+  },
+  "dropTip": {
+    "message": "Sfat: pe orice pagină, faceți clic pe pictograma FontSnap și trageți peste text."
+  },
+  "modelSees": {
+    "message": "Ce vede modelul"
+  },
+  "loading": {
+    "message": "Se încarcă modelul…"
+  },
+  "analyzing": {
+    "message": "Se analizează…"
+  },
+  "ready": {
+    "message": "Gata. Lipiți, plasați sau alegeți o imagine."
+  },
+  "noLines": {
+    "message": "Nu s-au găsit rânduri clare de text — rezultatul poate fi nesigur. Faceți o selecție mai strânsă."
+  },
+  "readFail": {
+    "message": "Imaginea nu a putut fi citită."
+  },
+  "captureFail": {
+    "message": "Captura a eșuat: $ERR$ — încercați din nou sau lipiți o captură de ecran.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Modelul nu s-a putut încărca: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Eroare: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Text de previzualizare"
+  },
+  "previewPh": {
+    "message": "Scrieți propriul text (implicit: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Scor relativ între primele 5"
+  },
+  "notOnGF": {
+    "message": "nu este pe Google Fonts"
+  },
+  "copyCss": {
+    "message": "Copiază CSS"
+  },
+  "copied": {
+    "message": "Copiat"
+  },
+  "note": {
+    "message": "Găsește familii Google Fonts. Latina, chirilica și araba merg cel mai bine; chineza/japoneza încă slab. Imaginile nu părăsesc niciodată computerul; previzualizările fonturilor se încarcă de pe Google Fonts."
+  },
+  "doneIn": {
+    "message": "Gata în $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Gata în $TOTAL$ ms (încărcare model $LOAD$ ms + analiză $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap a fost instalat"
+  },
+  "wPinH": {
+    "message": "Fixați FontSnap în bara de instrumente"
+  },
+  "wPin1": {
+    "message": "Faceți clic pe pictograma puzzle din colțul dreapta sus din Chrome."
+  },
+  "wPin2": {
+    "message": "Găsiți FontSnap în listă."
+  },
+  "wPin3": {
+    "message": "Faceți clic pe pictograma pioneză de lângă el."
+  },
+  "wPinned": {
+    "message": "Deja fixat? Vezi cum se folosește"
+  },
+  "wUseH": {
+    "message": "Cum identificați un font"
+  },
+  "wUse1": {
+    "message": "Faceți clic pe pictograma FontSnap sau apăsați Alt+Shift+F și trageți peste orice text."
+  },
+  "wUse2": {
+    "message": "Clic dreapta pe o imagine și alegeți „Identifică fontul din această imagine”."
+  },
+  "wUse3": {
+    "message": "Sau deschideți FontSnap și lipiți, plasați sau încărcați o captură de ecran."
+  },
+  "wUse4": {
+    "message": "Primiți cele mai apropiate 5 fonturi Google, comparați previzualizările și copiați CSS."
+  },
+  "wTry": {
+    "message": "Încearcă acum"
+  },
+  "wShowPin": {
+    "message": "Cum fixați FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Totul rulează pe dispozitivul dvs. Imaginile nu sunt încărcate niciodată."
+  }
+}

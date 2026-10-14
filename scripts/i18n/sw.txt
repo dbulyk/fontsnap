@@ -1,0 +1,43 @@
+FontSnap: Kitambua Fonti kutoka Picha kwa AI
+Tambua fonti kutoka picha kwa AI: chagua maandishi na FontSnap itaonyesha fonti 5 za Google zinazofanana zaidi. Kitafuta fonti.
+FontSnap: tambua fonti
+FontSnap: tambua fonti kwenye picha hii
+FontSnap: chagua eneo ili kutambua fonti
+FontSnap: buruta juu ya maandishi (Esc kughairi)
+FontSnap — matokeo
+Kitambua fonti cha AI · kinafanya kazi kwenye kifaa chako
+Bandika (Ctrl+V) au dondosha picha yenye maandishi, au chagua faili.
+Chagua picha
+Kidokezo: kwenye ukurasa wowote, bofya aikoni ya FontSnap na uburute juu ya maandishi.
+Kile ambacho modeli inaona
+Inapakia modeli…
+Inachanganua…
+Tayari. Bandika, dondosha au chagua picha.
+Hakuna mistari ya maandishi iliyo wazi — matokeo huenda si sahihi. Chagua eneo dogo zaidi.
+Imeshindwa kusoma picha hii.
+Imeshindwa kupiga picha: $ERR$ — jaribu tena au bandika picha ya skrini.
+Imeshindwa kupakia modeli: $ERR$
+Hitilafu: $ERR$
+Maandishi ya onyesho
+Andika maandishi yako (chaguomsingi: The quick brown fox…)
+Alama linganishi kati ya 5 bora
+haipo kwenye Google Fonts
+Nakili CSS
+Imenakiliwa
+Hulinganisha familia za Google Fonts. Kilatini, Kisiriliki na Kiarabu hufanya kazi vizuri zaidi; Kichina/Kijapani bado dhaifu. Picha haziondoki kwenye kompyuta yako; maonyesho ya fonti hupakiwa kutoka Google Fonts.
+Imekamilika kwa $MS$ ms
+Imekamilika kwa $TOTAL$ ms (kupakia modeli $LOAD$ ms + uchanganuzi $MS$ ms)
+FontSnap imesakinishwa
+Bandika FontSnap kwenye upau wa zana
+Bofya aikoni ya fumbo kwenye kona ya juu kulia ya Chrome.
+Tafuta FontSnap kwenye orodha.
+Bofya aikoni ya pini kando yake.
+Tayari imebandikwa? Onyesha jinsi ya kutumia
+Jinsi ya kutambua fonti
+Bofya aikoni ya FontSnap au bonyeza Alt+Shift+F, kisha uburute juu ya maandishi yoyote.
+Bofya kulia kwenye picha na uchague "Tambua fonti kwenye picha hii".
+Au fungua FontSnap na ubandike, udondoshe au upakie picha ya skrini.
+Pata fonti 5 za Google zinazofanana zaidi, linganisha na unakili CSS.
+Jaribu sasa
+Jinsi ya kubandika FontSnap
+Kila kitu kinafanya kazi kwenye kifaa chako. Picha hazipakiwi kamwe.

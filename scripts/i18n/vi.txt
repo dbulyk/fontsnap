@@ -1,0 +1,43 @@
+FontSnap: Nhận diện font chữ từ ảnh bằng AI
+Nhận diện font chữ từ ảnh bằng AI: chọn đoạn chữ, FontSnap tìm font và hiển thị 5 font Google giống nhất. Công cụ tìm font.
+FontSnap: nhận diện font chữ
+FontSnap: nhận diện font trong ảnh này
+FontSnap: chọn vùng để nhận diện font
+FontSnap: kéo chuột qua đoạn chữ (Esc để hủy)
+FontSnap — kết quả
+Nhận diện font bằng AI · chạy trên thiết bị của bạn
+Dán (Ctrl+V) hoặc thả ảnh có chữ vào đây, hoặc chọn tệp.
+Chọn ảnh
+Mẹo: trên bất kỳ trang nào, nhấp biểu tượng FontSnap rồi kéo chuột qua đoạn chữ.
+Mô hình nhìn thấy gì
+Đang tải mô hình…
+Đang phân tích…
+Sẵn sàng. Dán, thả hoặc chọn một ảnh.
+Không tìm thấy dòng chữ rõ ràng — kết quả có thể chưa chính xác. Hãy chọn vùng hẹp hơn.
+Không thể đọc ảnh này.
+Chụp thất bại: $ERR$ — hãy thử lại hoặc dán ảnh chụp màn hình.
+Không tải được mô hình: $ERR$
+Lỗi: $ERR$
+Văn bản xem trước
+Nhập văn bản của bạn (mặc định: The quick brown fox…)
+Điểm tương đối trong top 5
+không có trên Google Fonts
+Sao chép CSS
+Đã sao chép
+Tìm các họ font trên Google Fonts. Chữ Latinh, Kirin và Ả Rập cho kết quả tốt nhất; tiếng Trung/Nhật còn yếu. Ảnh không bao giờ rời khỏi máy tính của bạn; bản xem trước font được tải từ Google Fonts.
+Xong trong $MS$ ms
+Xong trong $TOTAL$ ms (tải mô hình $LOAD$ ms + phân tích $MS$ ms)
+Đã cài đặt FontSnap
+Ghim FontSnap vào thanh công cụ
+Nhấp vào biểu tượng mảnh ghép ở góc trên bên phải Chrome.
+Tìm FontSnap trong danh sách.
+Nhấp vào biểu tượng ghim bên cạnh.
+Đã ghim rồi? Xem cách sử dụng
+Cách nhận diện font chữ
+Nhấp biểu tượng FontSnap hoặc nhấn Alt+Shift+F, rồi kéo chuột qua đoạn chữ bất kỳ.
+Nhấp chuột phải vào ảnh và chọn "Nhận diện font trong ảnh này".
+Hoặc mở FontSnap rồi dán, thả hoặc tải lên ảnh chụp màn hình.
+Nhận 5 font Google giống nhất, so sánh bản xem trước và sao chép CSS.
+Dùng thử ngay
+Cách ghim FontSnap
+Mọi thứ chạy trên thiết bị của bạn. Ảnh không bao giờ được tải lên.

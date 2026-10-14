@@ -1,0 +1,43 @@
+FontSnap: AI Font Identifier from Image
+Snap any text with this AI font identifier from image: a font finder and font matcher that shows the 5 closest Google typefaces.
+FontSnap: identify a font
+FontSnap: identify font in this image
+FontSnap: select an area to identify font
+FontSnap: drag over the text (Esc to cancel)
+FontSnap — results
+AI font identifier · runs on your device
+Paste (Ctrl+V) or drop an image with text, or choose a file.
+Choose image
+Tip: click the FontSnap toolbar icon on any page and drag over text.
+What the model sees
+Loading model…
+Analyzing…
+Ready. Paste, drop or choose an image.
+No clear text lines found — result may be unreliable. Try a tighter selection.
+Could not read this image.
+Capture failed: $ERR$ — try again or paste a screenshot.
+Model failed to load: $ERR$
+Error: $ERR$
+Preview text
+Type your own text (default: The quick brown fox…)
+Relative score among the top 5
+not on Google Fonts
+Copy CSS
+Copied
+Matches Google Fonts families. Latin, Cyrillic, Arabic work best; Chinese/Japanese are still weak. Images never leave your computer; font previews are loaded from Google Fonts.
+Done in $MS$ ms
+Done in $TOTAL$ ms (model load $LOAD$ ms + analysis $MS$ ms)
+FontSnap is installed
+Pin FontSnap to the toolbar
+Click the puzzle icon in the top-right corner of Chrome.
+Find FontSnap in the list.
+Click the pin icon next to it.
+Already pinned? Show how to use it
+How to identify a font
+Click the FontSnap icon or press Alt+Shift+F, then drag over any text on the page.
+Right-click an image and choose “Identify font in this image”.
+Or open FontSnap and paste, drop or upload a screenshot.
+Get the 5 closest Google Fonts, compare previews and copy the CSS.
+Try it now
+How to pin FontSnap
+Everything runs on your device. Images are never uploaded.

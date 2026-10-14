@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: ከምስል ፊደል መለያ በAI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "በAI ከምስል የፊደል አይነትን ይለዩ፦ ጽሑፍ ይምረጡ፣ FontSnap በጣም ተመሳሳይ የሆኑ 5 የGoogle ፊደሎችን ያሳያል።",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap፦ ፊደል ለይ"
+  },
+  "ctxImage": {
+    "message": "FontSnap፦ በዚህ ምስል ያለውን ፊደል ለይ"
+  },
+  "ctxSelect": {
+    "message": "FontSnap፦ ፊደል ለመለየት ቦታ ምረጥ"
+  },
+  "selectHint": {
+    "message": "FontSnap፦ በጽሑፉ ላይ ይጎትቱ (ለመሰረዝ Esc)"
+  },
+  "resTitle": {
+    "message": "FontSnap — ውጤቶች"
+  },
+  "tagline": {
+    "message": "በAI የሚሰራ ፊደል መለያ · በመሣሪያዎ ላይ ይሰራል"
+  },
+  "dropHint": {
+    "message": "ጽሑፍ ያለበት ምስል ይለጥፉ (Ctrl+V) ወይም ይጣሉ፣ ወይም ፋይል ይምረጡ።"
+  },
+  "chooseImage": {
+    "message": "ምስል ይምረጡ"
+  },
+  "dropTip": {
+    "message": "ጠቃሚ ምክር፦ በማንኛውም ገጽ ላይ የFontSnap አዶን ጠቅ አድርገው በጽሑፉ ላይ ይጎትቱ።"
+  },
+  "modelSees": {
+    "message": "ሞዴሉ የሚያየው"
+  },
+  "loading": {
+    "message": "ሞዴሉ በመጫን ላይ…"
+  },
+  "analyzing": {
+    "message": "በመተንተን ላይ…"
+  },
+  "ready": {
+    "message": "ዝግጁ። ምስል ይለጥፉ፣ ይጣሉ ወይም ይምረጡ።"
+  },
+  "noLines": {
+    "message": "ግልጽ የጽሑፍ መስመሮች አልተገኙም — ውጤቱ ትክክል ላይሆን ይችላል። ጠበብ አድርገው ይምረጡ።"
+  },
+  "readFail": {
+    "message": "ይህን ምስል ማንበብ አልተቻለም።"
+  },
+  "captureFail": {
+    "message": "ቀረጻ አልተሳካም፦ $ERR$ — እንደገና ይሞክሩ ወይም ቅጽበታዊ ገጽ እይታ ይለጥፉ።",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "ሞዴሉን መጫን አልተቻለም፦ $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "ስህተት፦ $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "የቅድመ እይታ ጽሑፍ"
+  },
+  "previewPh": {
+    "message": "የራስዎን ጽሑፍ ይተይቡ (ነባሪ፦ The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "ከምርጥ 5 መካከል አንጻራዊ ነጥብ"
+  },
+  "notOnGF": {
+    "message": "በGoogle Fonts ላይ የለም"
+  },
+  "copyCss": {
+    "message": "CSS ቅዳ"
+  },
+  "copied": {
+    "message": "ተቀድቷል"
+  },
+  "note": {
+    "message": "ከGoogle Fonts ቤተሰቦች ጋር ያዛምዳል። ላቲን፣ ሲሪሊክ እና ዓረብኛ በተሻለ ይሰራሉ፤ ቻይንኛ/ጃፓንኛ ገና ደካማ ናቸው። ምስሎች ከኮምፒውተርዎ አይወጡም፤ የፊደል ቅድመ እይታዎች ከGoogle Fonts ይጫናሉ።"
+  },
+  "doneIn": {
+    "message": "በ$MS$ ሚሴ ተጠናቋል",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "በ$TOTAL$ ሚሴ ተጠናቋል (ሞዴል መጫን $LOAD$ ሚሴ + ትንተና $MS$ ሚሴ)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap ተጭኗል"
+  },
+  "wPinH": {
+    "message": "FontSnapን በመሣሪያ አሞሌው ላይ ይሰኩ"
+  },
+  "wPin1": {
+    "message": "በChrome ላይኛው ቀኝ ጥግ ያለውን የእንቆቅልሽ አዶ ጠቅ ያድርጉ።"
+  },
+  "wPin2": {
+    "message": "በዝርዝሩ ውስጥ FontSnapን ያግኙ።"
+  },
+  "wPin3": {
+    "message": "ከጎኑ ያለውን የመሰኪያ አዶ ጠቅ ያድርጉ።"
+  },
+  "wPinned": {
+    "message": "አስቀድመው ሰክተዋል? አጠቃቀሙን አሳይ"
+  },
+  "wUseH": {
+    "message": "ፊደልን እንዴት መለየት እንደሚቻል"
+  },
+  "wUse1": {
+    "message": "የFontSnap አዶን ጠቅ ያድርጉ ወይም Alt+Shift+F ይጫኑ፣ ከዚያ በማንኛውም ጽሑፍ ላይ ይጎትቱ።"
+  },
+  "wUse2": {
+    "message": "ምስል ላይ በቀኝ ጠቅ አድርገው «በዚህ ምስል ያለውን ፊደል ለይ»ን ይምረጡ።"
+  },
+  "wUse3": {
+    "message": "ወይም FontSnapን ከፍተው ቅጽበታዊ ገጽ እይታ ይለጥፉ፣ ይጣሉ ወይም ይስቀሉ።"
+  },
+  "wUse4": {
+    "message": "በጣም ተመሳሳይ የሆኑ 5 የGoogle ፊደሎችን ያግኙ፣ ያወዳድሩ እና CSS ይቅዱ።"
+  },
+  "wTry": {
+    "message": "አሁን ይሞክሩ"
+  },
+  "wShowPin": {
+    "message": "FontSnapን እንዴት መሰካት እንደሚቻል"
+  },
+  "wPrivacy": {
+    "message": "ሁሉም ነገር በመሣሪያዎ ላይ ይሰራል። ምስሎች በፍጹም አይሰቀሉም።"
+  }
+}

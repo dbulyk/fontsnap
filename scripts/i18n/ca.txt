@@ -1,0 +1,43 @@
+FontSnap: identificador de fonts per imatge amb IA
+Identificador de fonts per imatge amb IA: selecciona un text i FontSnap troba la font i mostra les 5 fonts Google més semblants.
+FontSnap: identifica una font
+FontSnap: identifica la font d'aquesta imatge
+FontSnap: selecciona una àrea per identificar la font
+FontSnap: arrossega sobre el text (Esc per cancel·lar)
+FontSnap — resultats
+Identificador de fonts amb IA · funciona al teu dispositiu
+Enganxa (Ctrl+V) o deixa anar una imatge amb text, o tria un fitxer.
+Tria una imatge
+Consell: a qualsevol pàgina, fes clic a la icona de FontSnap i arrossega sobre el text.
+Què veu el model
+S'està carregant el model…
+S'està analitzant…
+A punt. Enganxa, deixa anar o tria una imatge.
+No s'han trobat línies de text clares; el resultat pot no ser fiable. Ajusta més la selecció.
+No s'ha pogut llegir aquesta imatge.
+Ha fallat la captura: $ERR$. Torna-ho a provar o enganxa una captura de pantalla.
+No s'ha pogut carregar el model: $ERR$
+Error: $ERR$
+Text de previsualització
+Escriu el teu text (per defecte: The quick brown fox…)
+Puntuació relativa entre les 5 primeres
+no és a Google Fonts
+Copia el CSS
+Copiat
+Troba famílies de Google Fonts. Llatí, ciríl·lic i àrab funcionen millor; xinès/japonès encara són febles. Les imatges no surten mai del teu ordinador; les previsualitzacions es carreguen de Google Fonts.
+Fet en $MS$ ms
+Fet en $TOTAL$ ms (càrrega del model $LOAD$ ms + anàlisi $MS$ ms)
+FontSnap s'ha instal·lat
+Fixa FontSnap a la barra d'eines
+Fes clic a la icona del trencaclosques a dalt a la dreta de Chrome.
+Cerca FontSnap a la llista.
+Fes clic a la icona de xinxeta que hi ha al costat.
+Ja l'has fixat? Mostra com fer-lo servir
+Com identificar una font
+Fes clic a la icona de FontSnap o prem Alt+Shift+F i arrossega sobre qualsevol text.
+Fes clic dret en una imatge i tria «Identifica la font d'aquesta imatge».
+O obre FontSnap i enganxa, deixa anar o puja una captura de pantalla.
+Obtén les 5 fonts Google més semblants, compara-les i copia el CSS.
+Prova-ho ara
+Com fixar FontSnap
+Tot funciona al teu dispositiu. Les imatges no es pugen mai.

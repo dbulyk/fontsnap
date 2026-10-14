@@ -1,0 +1,76 @@
+FontSnap, doğrudan Chrome içinde çalışan, yapay zeka destekli bir resimden yazı tipi bulma aracıdır. Bir sitede, banner'da veya ekran görüntüsünde güzel bir yazı tipi mi gördünüz? Metnin üzerine bir çerçeve çizin; FontSnap yaklaşık bir saniyede en yakın beş Google yazı tipini göstersin.
+
+🚀 3 adımda resimden yazı tipi bulma
+1️⃣ Araç çubuğundaki FontSnap simgesine tıklayın veya Alt+Shift+F'ye basın.
+2️⃣ Bir veya iki satırlık metnin üzerine dikdörtgen çizin.
+3️⃣ Canlı önizleme ve güven çubuğuyla en iyi 5 eşleşmeyi görün.
+
+Hesap yok, sunucuya yükleme yok, bekleme yok. Sinir ağı yerel olarak çalışır; resimleriniz bilgisayarınızda kalır.
+
+🔍 FontSnap'i farklı kılan ne?
+Bu türdeki çoğu eklenti yalnızca CSS'i okur ve logolarda, resimlerde, banner'larda ve canvas metinlerinde başarısız olur. FontSnap koda değil piksellere bakar; bu yüzden CSS'in hiçbir şey söylemediği yerlerde de çalışır:
+• resimlerdeki, afişlerdeki ve sosyal medya görsellerindeki metinler
+• uygulama, sunum ve PDF sayfası ekran görüntüleri
+• her sitedeki banner'lar ve reklamlar
+• müşterinin sohbette gönderdiği tasarım taslakları
+
+📌 Temel özellikler
+- Her sayfada alan seçimi: metnin üzerinden sürüklemeniz yeterli.
+- Yükleme modu: Ctrl+V ile yapıştırın, dosya bırakın veya resim seçin.
+- Güven puanıyla en yakın 5 yazı tipi.
+- Her eşleşmenin kendi metninizle canlı önizlemesi.
+- Hazır CSS satırını tek tıkla kopyalama.
+- Latin, Kiril ve Arap alfabeleriyle çalışır.
+
+🧠 Binlerce aile üzerinde eğitilmiş yapay zeka font bulucu
+FontSnap, 3.600'den fazla yazı stili üzerinde eğitilmiş kompakt bir görüntü tanıma modeli kullanır. Stilleri ailelere ayırır ve onlarca benzer kopya yerine kısa, temiz bir liste sunar. Tam yazı tipi ücretliyse bile bugün kullanabileceğiniz en yakın alternatifi alırsınız.
+
+🎨 Bu font bulucuyu kimler kullanıyor?
+➤ Müşteri taslağı için hızlıca yazı tipi bulması gereken web tasarımcıları.
+➤ Sadece adı değil, CSS satırını isteyen front-end geliştiriciler.
+➤ Bir banner'ın stilini yeniden oluşturan pazarlamacılar ve sosyal medya uzmanları.
+➤ Sürekli "bu hangi yazı tipi?" diye soran öğrenciler ve blog yazarları.
+➤ Ağır bir masaüstü uygulaması olmadan resimden yazı tipi bulmak isteyen herkes.
+➤ Logolardan ve ambalajlardan yazı tipi eşleşmeleri toplayan tipografi meraklıları.
+
+⚡ Çevrimiçi bir araç neden her zaman yetmez?
+Web araçları resmi kaydetmenizi, yüklemenizi ve kırpmanızı ister. FontSnap bunları atlar:
+▸ seçim, zaten baktığınız sayfada yapılır;
+▸ tanıma, fareyi bıraktığınız anda başlar;
+▸ sonuçlar kaynak sekmenin yanında yeni bir sekmede açılır.
+Tarayıcının dışına sapmak yerine onun içine yerleşen bir yazı tipi bulucudur.
+
+📊 Yazı tipi bulucu ve CSS denetleyicisi
+CSS denetleyicisi sayfadaki gerçek metnin stillerini okur ama JPG veya canvas içindeki metni göremez. Görüntü tabanlı bir yazı tipi bulucu bu boşluğu doldurur. İkisini birlikte kullanın: gerçek metin için CSS, resimler için FontSnap.
+
+🔒 Önce gizlilik
+▸ Görüntü analizi WebAssembly ile cihazınızda çalışır.
+▸ Ekran görüntüleriniz tarayıcıdan asla çıkmaz.
+▸ Önizlemeler için Google Fonts'tan yalnızca aile adları istenir.
+▸ İzleme yok, reklam yok, kayıt yok.
+
+💡 Doğru sonuçlar için ipuçları
+• Tüm sayfayı değil, bir veya iki satır metni seçin.
+• Büyük metin, küçük altyazılardan daha iyi sonuç verir.
+• İlk tahmin uymazsa diğer dördüne bakın: doğru aile çoğu zaman ilk 5'tedir.
+
+❓ SSS
+📍 FontSnap nedir?
+Ekranın seçili bir alanındaki veya yüklenen bir resimdeki yazı tiplerini tanıyan, yapay zeka destekli bir Chrome eklentisidir.
+
+📍 Bir resim dosyasındaki yazı tipini nasıl bulurum?
+FontSnap'i herhangi bir sayfada açıp yükleme moduna geçin veya Chrome ayarları gibi kısıtlı bir sayfada açın. Metin içeren bir resmi yapıştırın, sürükleyin veya seçin.
+
+📍 Eklenti çevrimdışı çalışır mı?
+Tanıma işleminin kendisi yerel olarak çalışır. İnternet yalnızca Google Fonts önizlemelerini yüklemek için kullanılır.
+
+📍 Ücretli yazı tiplerini tanıyabilir mi?
+FontSnap, Google Fonts aileleriyle karşılaştırır. Ücretli bir yazı tipi için Google Fonts'taki en yakın alternatifleri gösterir; bir web projesi için çoğu zaman gereken de budur.
+
+📍 Hangi diller destekleniyor?
+Latin, Kiril ve Arap alfabeleri en doğru sonuçları verir. Çince ve Japonca desteği henüz sınırlıdır.
+
+📍 Verilerim toplanıyor mu?
+Hayır. Eklenti kişisel veri toplamaz ve resimlerinizi hiçbir yere göndermez.
+
+🌟 Günlük tasarım işleriniz için resimden yazı tipi bulma aracı FontSnap'i yükleyin ve her "bu hangi yazı tipi?" sorusunu iki saniyelik bir cevaba dönüştürün. Metni seçin, eşleşmeyi alın, CSS'i kopyalayın ve tasarlamaya devam edin.

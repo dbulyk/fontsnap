@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap : identifier une police à partir d'une image (IA)",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Identifier une police avec l'IA : sélectionnez un texte et ce détecteur de police trouve les 5 polices Google les plus proches.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap : identifier une police"
+  },
+  "ctxImage": {
+    "message": "FontSnap : identifier la police de cette image"
+  },
+  "ctxSelect": {
+    "message": "FontSnap : sélectionner une zone pour identifier la police"
+  },
+  "selectHint": {
+    "message": "FontSnap : faites glisser sur le texte (Échap pour annuler)"
+  },
+  "resTitle": {
+    "message": "FontSnap — résultats"
+  },
+  "tagline": {
+    "message": "Identification de police par IA · fonctionne sur votre appareil"
+  },
+  "dropHint": {
+    "message": "Collez (Ctrl+V) ou déposez une image avec du texte, ou choisissez un fichier."
+  },
+  "chooseImage": {
+    "message": "Choisir une image"
+  },
+  "dropTip": {
+    "message": "Astuce : sur n'importe quelle page, cliquez sur l'icône FontSnap et faites glisser sur le texte."
+  },
+  "modelSees": {
+    "message": "Ce que voit le modèle"
+  },
+  "loading": {
+    "message": "Chargement du modèle…"
+  },
+  "analyzing": {
+    "message": "Analyse…"
+  },
+  "ready": {
+    "message": "Prêt. Collez, déposez ou choisissez une image."
+  },
+  "noLines": {
+    "message": "Aucune ligne de texte nette trouvée — le résultat peut être imprécis. Resserrez la sélection."
+  },
+  "readFail": {
+    "message": "Impossible de lire cette image."
+  },
+  "captureFail": {
+    "message": "Échec de la capture : $ERR$ — réessayez ou collez une capture d'écran.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Échec du chargement du modèle : $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Erreur : $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Texte d'aperçu"
+  },
+  "previewPh": {
+    "message": "Saisissez votre texte (par défaut : The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Score relatif parmi les 5 premiers"
+  },
+  "notOnGF": {
+    "message": "absente de Google Fonts"
+  },
+  "copyCss": {
+    "message": "Copier le CSS"
+  },
+  "copied": {
+    "message": "Copié"
+  },
+  "note": {
+    "message": "Trouve des familles Google Fonts. Latin, cyrillique et arabe fonctionnent le mieux ; chinois/japonais encore faibles. Les images ne quittent jamais votre ordinateur ; les aperçus de polices viennent de Google Fonts."
+  },
+  "doneIn": {
+    "message": "Terminé en $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Terminé en $TOTAL$ ms (chargement du modèle $LOAD$ ms + analyse $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap est installé"
+  },
+  "wPinH": {
+    "message": "Épinglez FontSnap à la barre d'outils"
+  },
+  "wPin1": {
+    "message": "Cliquez sur l'icône puzzle en haut à droite de Chrome."
+  },
+  "wPin2": {
+    "message": "Trouvez FontSnap dans la liste."
+  },
+  "wPin3": {
+    "message": "Cliquez sur l'icône d'épingle à côté."
+  },
+  "wPinned": {
+    "message": "Déjà épinglé ? Voir comment l'utiliser"
+  },
+  "wUseH": {
+    "message": "Comment identifier une police"
+  },
+  "wUse1": {
+    "message": "Cliquez sur l'icône FontSnap ou appuyez sur Alt+Shift+F, puis faites glisser sur un texte."
+  },
+  "wUse2": {
+    "message": "Faites un clic droit sur une image et choisissez « Identifier la police de cette image »."
+  },
+  "wUse3": {
+    "message": "Ou ouvrez FontSnap et collez, déposez ou importez une capture d'écran."
+  },
+  "wUse4": {
+    "message": "Obtenez les 5 polices Google les plus proches, comparez les aperçus et copiez le CSS."
+  },
+  "wTry": {
+    "message": "Essayer maintenant"
+  },
+  "wShowPin": {
+    "message": "Comment épingler FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Tout fonctionne sur votre appareil. Les images ne sont jamais envoyées."
+  }
+}

@@ -1,0 +1,76 @@
+FontSnap est un outil d'IA pour identifier une police à partir d'une image, directement dans Chrome. Vous avez repéré une belle typographie sur un site, une bannière ou une capture d'écran ? Tracez un cadre sur le texte et FontSnap affiche en une seconde environ les cinq polices Google les plus proches.
+
+🚀 Identifier la police d'une image en 3 étapes
+1️⃣ Cliquez sur l'icône FontSnap dans la barre d'outils ou appuyez sur Alt+Shift+F.
+2️⃣ Tracez un rectangle sur une ou deux lignes de texte.
+3️⃣ Consultez les 5 meilleures correspondances avec aperçu en direct et barre de confiance.
+
+Pas de compte, pas d'envoi sur un serveur, pas d'attente. Le réseau de neurones fonctionne en local : vos images restent sur votre ordinateur.
+
+🔍 Ce qui rend FontSnap différent
+La plupart des extensions de ce type lisent seulement le CSS et échouent sur les logos, images, bannières et textes en canvas. FontSnap analyse les pixels, pas le code, et fonctionne donc là où le CSS ne dit rien :
+• texte dans des images, affiches et visuels de réseaux sociaux
+• captures d'applications, de diapositives et de pages PDF
+• bannières et publicités sur n'importe quel site
+• maquettes envoyées par un client dans une messagerie
+
+📌 Fonctions principales
+- Sélection de zone sur n'importe quelle page : faites simplement glisser sur le texte.
+- Mode import : collez avec Ctrl+V, déposez un fichier ou choisissez une image.
+- Les 5 polices les plus proches avec un score de confiance.
+- Aperçu en direct de chaque résultat avec votre propre texte.
+- Copie de la ligne CSS prête à l'emploi en un clic.
+- Fonctionne avec les écritures latine, cyrillique et arabe.
+
+🧠 Une IA de reconnaissance de polices entraînée sur des milliers de familles
+FontSnap utilise un modèle compact de reconnaissance d'images entraîné sur plus de 3 600 styles typographiques. Il regroupe les styles en familles et fournit une liste courte et nette au lieu de dizaines de quasi-doublons. Si la police exacte est commerciale, vous obtenez quand même l'alternative la plus proche, utilisable dès aujourd'hui.
+
+🎨 Qui utilise ce détecteur de police
+➤ Les webdesigners qui doivent retrouver vite la police d'une maquette client.
+➤ Les développeurs front-end qui veulent la ligne CSS, pas seulement un nom.
+➤ Les marketeurs et community managers qui recréent le style d'une bannière.
+➤ Les étudiants et blogueurs qui se demandent sans cesse « quelle est cette police ? ».
+➤ Tous ceux qui veulent trouver une police à partir d'une image sans logiciel lourd.
+➤ Les passionnés de typographie qui collectionnent les associations de polices.
+
+⚡ Pourquoi un outil en ligne ne suffit pas toujours
+Les outils web obligent à enregistrer, importer et recadrer l'image. FontSnap s'en passe :
+▸ la sélection se fait sur la page que vous regardez déjà ;
+▸ l'identification démarre dès que vous relâchez la souris ;
+▸ les résultats s'ouvrent dans un nouvel onglet à côté de la source.
+C'est un outil d'identification de police intégré au navigateur, pas un détour.
+
+📊 Identifier une police vs inspecteur CSS
+Un inspecteur CSS lit les styles du texte réel d'une page mais ne voit pas le texte d'un JPG ou d'un canvas. Un identificateur basé sur l'image comble ce manque. Utilisez les deux : le CSS pour le texte réel, FontSnap pour les images.
+
+🔒 La confidentialité avant tout
+▸ L'analyse d'image s'exécute sur l'appareil grâce à WebAssembly.
+▸ Vos captures ne quittent jamais le navigateur.
+▸ Seuls des noms de familles sont demandés à Google Fonts pour les aperçus.
+▸ Pas de pistage, pas de publicité, pas d'inscription.
+
+💡 Conseils pour des résultats précis
+• Sélectionnez une ou deux lignes de texte, pas toute la page.
+• Un grand texte donne de meilleurs résultats que de petites légendes.
+• Si la première proposition ne convient pas, regardez les quatre autres : la bonne famille est souvent dans le top 5.
+
+❓ FAQ
+📍 Qu'est-ce que FontSnap ?
+Une extension Chrome d'identification de police par IA qui reconnaît les polices dans une zone sélectionnée de l'écran ou dans une image importée.
+
+📍 Comment identifier la police d'un fichier image ?
+Ouvrez FontSnap sur n'importe quelle page et passez en mode import, ou ouvrez-le sur une page protégée comme les paramètres de Chrome. Collez, déposez ou choisissez une image contenant du texte.
+
+📍 L'extension fonctionne-t-elle hors ligne ?
+La reconnaissance s'exécute en local. La connexion sert uniquement à charger les aperçus depuis Google Fonts.
+
+📍 Reconnaît-elle les polices commerciales ?
+FontSnap compare avec les familles de Google Fonts. Pour une police commerciale, il propose les alternatives Google Fonts les plus proches, souvent ce qu'il faut pour un projet web.
+
+📍 Quelles langues sont prises en charge ?
+Les écritures latine, cyrillique et arabe donnent les résultats les plus précis. Le chinois et le japonais restent limités.
+
+📍 Mes données sont-elles collectées ?
+Non. L'extension ne collecte aucune donnée personnelle et n'envoie vos images nulle part.
+
+🌟 Installez FontSnap pour identifier une police à partir d'une image au quotidien, et transformez chaque « quelle est cette police ? » en réponse de deux secondes. Sélectionnez le texte, obtenez la correspondance, copiez le CSS et continuez à créer.

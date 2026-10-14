@@ -160,3 +160,20 @@ button {
   color: #778;
   font-size: 12px;
 }
+.btn {
+  display: inline-block;
+  margin: 10px 0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: #4f46e5;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn:hover {
+  background: #4338ca;
+}
+.tip {
+  color: #778;
+  font-size: 13px;
+}

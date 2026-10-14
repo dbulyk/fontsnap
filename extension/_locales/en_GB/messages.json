@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: AI Font Identifier from Image",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Snap any text with this AI font identifier from image: a font finder and font matcher that shows the 5 closest Google typefaces.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: identify a font"
+  },
+  "ctxImage": {
+    "message": "FontSnap: identify font in this image"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: select an area to identify font"
+  },
+  "selectHint": {
+    "message": "FontSnap: drag over the text (Esc to cancel)"
+  },
+  "resTitle": {
+    "message": "FontSnap — results"
+  },
+  "tagline": {
+    "message": "AI font identifier · runs on your device"
+  },
+  "dropHint": {
+    "message": "Paste (Ctrl+V) or drop an image with text, or choose a file."
+  },
+  "chooseImage": {
+    "message": "Choose image"
+  },
+  "dropTip": {
+    "message": "Tip: click the FontSnap toolbar icon on any page and drag over text."
+  },
+  "modelSees": {
+    "message": "What the model sees"
+  },
+  "loading": {
+    "message": "Loading model…"
+  },
+  "analyzing": {
+    "message": "Analyzing…"
+  },
+  "ready": {
+    "message": "Ready. Paste, drop or choose an image."
+  },
+  "noLines": {
+    "message": "No clear text lines found — result may be unreliable. Try a tighter selection."
+  },
+  "readFail": {
+    "message": "Could not read this image."
+  },
+  "captureFail": {
+    "message": "Capture failed: $ERR$ — try again or paste a screenshot.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Model failed to load: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Error: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Preview text"
+  },
+  "previewPh": {
+    "message": "Type your own text (default: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relative score among the top 5"
+  },
+  "notOnGF": {
+    "message": "not on Google Fonts"
+  },
+  "copyCss": {
+    "message": "Copy CSS"
+  },
+  "copied": {
+    "message": "Copied"
+  },
+  "note": {
+    "message": "Matches Google Fonts families. Latin, Cyrillic, Arabic work best; Chinese/Japanese are still weak. Images never leave your computer; font previews are loaded from Google Fonts."
+  },
+  "doneIn": {
+    "message": "Done in $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Done in $TOTAL$ ms (model load $LOAD$ ms + analysis $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap is installed"
+  },
+  "wPinH": {
+    "message": "Pin FontSnap to the toolbar"
+  },
+  "wPin1": {
+    "message": "Click the puzzle icon in the top-right corner of Chrome."
+  },
+  "wPin2": {
+    "message": "Find FontSnap in the list."
+  },
+  "wPin3": {
+    "message": "Click the pin icon next to it."
+  },
+  "wPinned": {
+    "message": "Already pinned? Show how to use it"
+  },
+  "wUseH": {
+    "message": "How to identify a font"
+  },
+  "wUse1": {
+    "message": "Click the FontSnap icon or press Alt+Shift+F, then drag over any text on the page."
+  },
+  "wUse2": {
+    "message": "Right-click an image and choose “Identify font in this image”."
+  },
+  "wUse3": {
+    "message": "Or open FontSnap and paste, drop or upload a screenshot."
+  },
+  "wUse4": {
+    "message": "Get the 5 closest Google Fonts, compare previews and copy the CSS."
+  },
+  "wTry": {
+    "message": "Try it now"
+  },
+  "wShowPin": {
+    "message": "How to pin FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Everything runs on your device. Images are never uploaded."
+  }
+}

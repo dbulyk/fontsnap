@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap:AI 圖片字體辨識",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "AI 圖片字體辨識工具:選取文字,FontSnap 就能辨識字型並顯示 5 款最相似的 Google 字型。線上找字體,一鍵查字型。",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap:辨識字型"
+  },
+  "ctxImage": {
+    "message": "FontSnap:辨識這張圖片中的字型"
+  },
+  "ctxSelect": {
+    "message": "FontSnap:選取區域以辨識字型"
+  },
+  "selectHint": {
+    "message": "FontSnap:在文字上拖曳選取(按 Esc 取消)"
+  },
+  "resTitle": {
+    "message": "FontSnap — 結果"
+  },
+  "tagline": {
+    "message": "AI 字型辨識 · 在您的裝置上執行"
+  },
+  "dropHint": {
+    "message": "貼上(Ctrl+V)或拖放含有文字的圖片,或選擇檔案。"
+  },
+  "chooseImage": {
+    "message": "選擇圖片"
+  },
+  "dropTip": {
+    "message": "提示:在任何網頁上按一下工具列中的 FontSnap 圖示,然後在文字上拖曳。"
+  },
+  "modelSees": {
+    "message": "模型看到的內容"
+  },
+  "loading": {
+    "message": "正在載入模型…"
+  },
+  "analyzing": {
+    "message": "正在分析…"
+  },
+  "ready": {
+    "message": "就緒。請貼上、拖放或選擇圖片。"
+  },
+  "noLines": {
+    "message": "找不到清楚的文字行,結果可能不準確。請縮小選取範圍。"
+  },
+  "readFail": {
+    "message": "無法讀取這張圖片。"
+  },
+  "captureFail": {
+    "message": "擷取失敗:$ERR$ — 請重試或貼上螢幕截圖。",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "模型載入失敗:$ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "錯誤:$ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "預覽文字"
+  },
+  "previewPh": {
+    "message": "輸入自訂文字(預設:The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "在前 5 名中的相對分數"
+  },
+  "notOnGF": {
+    "message": "不在 Google Fonts 中"
+  },
+  "copyCss": {
+    "message": "複製 CSS"
+  },
+  "copied": {
+    "message": "已複製"
+  },
+  "note": {
+    "message": "比對 Google Fonts 字型家族。拉丁文、西里爾文和阿拉伯文效果最佳,中文/日文目前辨識較弱。圖片絕不會離開您的電腦;字型預覽從 Google Fonts 載入。"
+  },
+  "doneIn": {
+    "message": "耗時 $MS$ 毫秒",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "耗時 $TOTAL$ 毫秒(載入模型 $LOAD$ 毫秒 + 分析 $MS$ 毫秒)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap 已安裝"
+  },
+  "wPinH": {
+    "message": "將 FontSnap 固定到工具列"
+  },
+  "wPin1": {
+    "message": "按一下 Chrome 右上角的拼圖圖示。"
+  },
+  "wPin2": {
+    "message": "在清單中找到 FontSnap。"
+  },
+  "wPin3": {
+    "message": "按一下旁邊的圖釘圖示。"
+  },
+  "wPinned": {
+    "message": "已經固定?查看使用方式"
+  },
+  "wUseH": {
+    "message": "如何辨識字型"
+  },
+  "wUse1": {
+    "message": "按一下 FontSnap 圖示或按 Alt+Shift+F,然後在網頁上的任何文字上拖曳。"
+  },
+  "wUse2": {
+    "message": "在圖片上按右鍵並選擇「辨識這張圖片中的字型」。"
+  },
+  "wUse3": {
+    "message": "或開啟 FontSnap,貼上、拖放或上傳螢幕截圖。"
+  },
+  "wUse4": {
+    "message": "取得 5 款最相似的 Google 字型,比較預覽並複製 CSS。"
+  },
+  "wTry": {
+    "message": "立即試用"
+  },
+  "wShowPin": {
+    "message": "如何固定 FontSnap"
+  },
+  "wPrivacy": {
+    "message": "一切都在您的裝置上執行,圖片絕不會被上傳。"
+  }
+}

@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: визначення шрифту за зображенням з ШІ",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Визначник шрифту за зображенням на ШІ: виділіть текст, і FontSnap знайде шрифт та покаже 5 найсхожіших шрифтів Google Fonts.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: визначити шрифт"
+  },
+  "ctxImage": {
+    "message": "FontSnap: визначити шрифт на цьому зображенні"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: виділити область і визначити шрифт"
+  },
+  "selectHint": {
+    "message": "FontSnap: виділіть текст мишею (Esc — скасувати)"
+  },
+  "resTitle": {
+    "message": "FontSnap — результати"
+  },
+  "tagline": {
+    "message": "ШІ-визначник шрифтів · працює на вашому пристрої"
+  },
+  "dropHint": {
+    "message": "Вставте (Ctrl+V) або перетягніть зображення з текстом чи виберіть файл."
+  },
+  "chooseImage": {
+    "message": "Вибрати зображення"
+  },
+  "dropTip": {
+    "message": "Порада: на будь-якій сторінці натисніть значок FontSnap на панелі й виділіть текст."
+  },
+  "modelSees": {
+    "message": "Що бачить модель"
+  },
+  "loading": {
+    "message": "Завантаження моделі…"
+  },
+  "analyzing": {
+    "message": "Аналіз…"
+  },
+  "ready": {
+    "message": "Готово. Вставте, перетягніть або виберіть зображення."
+  },
+  "noLines": {
+    "message": "Чітких рядків тексту не знайдено — результат може бути неточним. Виділіть область щільніше."
+  },
+  "readFail": {
+    "message": "Не вдалося прочитати зображення."
+  },
+  "captureFail": {
+    "message": "Не вдалося зробити знімок: $ERR$ — спробуйте ще раз або вставте скриншот.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Не вдалося завантажити модель: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Помилка: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Текст для попереднього перегляду"
+  },
+  "previewPh": {
+    "message": "Введіть свій текст (за замовчуванням: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Відносна оцінка серед перших 5"
+  },
+  "notOnGF": {
+    "message": "немає в Google Fonts"
+  },
+  "copyCss": {
+    "message": "Копіювати CSS"
+  },
+  "copied": {
+    "message": "Скопійовано"
+  },
+  "note": {
+    "message": "Підбирає шрифти з Google Fonts. Найкраще працюють латиниця, кирилиця й арабська; китайська та японська поки слабші. Зображення не залишають ваш комп'ютер; попередній перегляд шрифтів завантажується з Google Fonts."
+  },
+  "doneIn": {
+    "message": "Готово за $MS$ мс",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Готово за $TOTAL$ мс (завантаження моделі $LOAD$ мс + аналіз $MS$ мс)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap встановлено"
+  },
+  "wPinH": {
+    "message": "Закріпіть FontSnap на панелі"
+  },
+  "wPin1": {
+    "message": "Натисніть значок пазла у правому верхньому куті Chrome."
+  },
+  "wPin2": {
+    "message": "Знайдіть FontSnap у списку."
+  },
+  "wPin3": {
+    "message": "Натисніть значок шпильки поруч із ним."
+  },
+  "wPinned": {
+    "message": "Уже закріпили? Покажіть, як користуватися"
+  },
+  "wUseH": {
+    "message": "Як визначити шрифт"
+  },
+  "wUse1": {
+    "message": "Натисніть значок FontSnap або Alt+Shift+F і виділіть мишею будь-який текст на сторінці."
+  },
+  "wUse2": {
+    "message": "Клацніть правою кнопкою на зображення й виберіть «Визначити шрифт на цьому зображенні»."
+  },
+  "wUse3": {
+    "message": "Або відкрийте FontSnap і вставте, перетягніть чи завантажте скриншот."
+  },
+  "wUse4": {
+    "message": "Отримайте 5 найсхожіших шрифтів Google Fonts, порівняйте їх і скопіюйте CSS."
+  },
+  "wTry": {
+    "message": "Спробувати"
+  },
+  "wShowPin": {
+    "message": "Як закріпити FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Усе працює на вашому пристрої. Зображення нікуди не завантажуються."
+  }
+}

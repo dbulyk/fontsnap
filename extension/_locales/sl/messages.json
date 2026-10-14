@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: prepoznavanje pisave iz slike z UI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Prepoznajte pisavo iz slike z umetno inteligenco: označite besedilo in FontSnap pokaže 5 najbolj podobnih pisav Google Fonts.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: prepoznaj pisavo"
+  },
+  "ctxImage": {
+    "message": "FontSnap: prepoznaj pisavo na tej sliki"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: izberi območje za prepoznavanje pisave"
+  },
+  "selectHint": {
+    "message": "FontSnap: povlecite čez besedilo (Esc za preklic)"
+  },
+  "resTitle": {
+    "message": "FontSnap – rezultati"
+  },
+  "tagline": {
+    "message": "Prepoznavanje pisav z UI · deluje v vaši napravi"
+  },
+  "dropHint": {
+    "message": "Prilepite (Ctrl+V) ali spustite sliko z besedilom ali izberite datoteko."
+  },
+  "chooseImage": {
+    "message": "Izberi sliko"
+  },
+  "dropTip": {
+    "message": "Namig: na kateri koli strani kliknite ikono FontSnap in povlecite čez besedilo."
+  },
+  "modelSees": {
+    "message": "Kaj vidi model"
+  },
+  "loading": {
+    "message": "Nalaganje modela…"
+  },
+  "analyzing": {
+    "message": "Analiziranje…"
+  },
+  "ready": {
+    "message": "Pripravljeno. Prilepite, spustite ali izberite sliko."
+  },
+  "noLines": {
+    "message": "Jasnih vrstic besedila ni bilo mogoče najti – rezultat je morda nezanesljiv. Izberite ožje območje."
+  },
+  "readFail": {
+    "message": "Slike ni bilo mogoče prebrati."
+  },
+  "captureFail": {
+    "message": "Zajem ni uspel: $ERR$ – poskusite znova ali prilepite posnetek zaslona.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Modela ni bilo mogoče naložiti: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Napaka: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Besedilo predogleda"
+  },
+  "previewPh": {
+    "message": "Vnesite svoje besedilo (privzeto: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relativna ocena med prvimi 5"
+  },
+  "notOnGF": {
+    "message": "ni v Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopiraj CSS"
+  },
+  "copied": {
+    "message": "Kopirano"
+  },
+  "note": {
+    "message": "Išče družine Google Fonts. Najbolje delujejo latinica, cirilica in arabščina; kitajščina/japonščina še šibko. Slike nikoli ne zapustijo vašega računalnika; predogledi pisav se naložijo iz Google Fonts."
+  },
+  "doneIn": {
+    "message": "Končano v $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Končano v $TOTAL$ ms (nalaganje modela $LOAD$ ms + analiza $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap je nameščen"
+  },
+  "wPinH": {
+    "message": "Pripnite FontSnap v orodno vrstico"
+  },
+  "wPin1": {
+    "message": "Kliknite ikono sestavljanke v zgornjem desnem kotu Chroma."
+  },
+  "wPin2": {
+    "message": "Poiščite FontSnap na seznamu."
+  },
+  "wPin3": {
+    "message": "Kliknite ikono žebljička poleg njega."
+  },
+  "wPinned": {
+    "message": "Že pripeto? Pokaži, kako ga uporabljati"
+  },
+  "wUseH": {
+    "message": "Kako prepoznati pisavo"
+  },
+  "wUse1": {
+    "message": "Kliknite ikono FontSnap ali pritisnite Alt+Shift+F in povlecite čez poljubno besedilo."
+  },
+  "wUse2": {
+    "message": "Z desno tipko kliknite sliko in izberite »Prepoznaj pisavo na tej sliki«."
+  },
+  "wUse3": {
+    "message": "Ali odprite FontSnap in prilepite, spustite ali naložite posnetek zaslona."
+  },
+  "wUse4": {
+    "message": "Dobite 5 najbolj podobnih Google Fonts, primerjajte predoglede in kopirajte CSS."
+  },
+  "wTry": {
+    "message": "Preizkusi zdaj"
+  },
+  "wShowPin": {
+    "message": "Kako pripeti FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Vse deluje v vaši napravi. Slike se nikoli ne naložijo."
+  }
+}

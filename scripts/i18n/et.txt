@@ -1,0 +1,43 @@
+FontSnap: AI fondituvastaja pildilt
+Tuvasta font pildilt tehisintellektiga: vali tekst ja FontSnap näitab 5 kõige sarnasemat Google'i fonti. Fondiotsija Chrome'ile.
+FontSnap: tuvasta font
+FontSnap: tuvasta selle pildi font
+FontSnap: vali ala fondi tuvastamiseks
+FontSnap: lohista üle teksti (Esc tühistab)
+FontSnap – tulemused
+AI fondituvastaja · töötab sinu seadmes
+Kleebi (Ctrl+V) või lohista siia tekstiga pilt või vali fail.
+Vali pilt
+Nõuanne: klõpsa mis tahes lehel FontSnapi ikoonil ja lohista üle teksti.
+Mida mudel näeb
+Mudeli laadimine…
+Analüüsimine…
+Valmis. Kleebi, lohista või vali pilt.
+Selgeid tekstiridu ei leitud – tulemus võib olla ebatäpne. Vali kitsam ala.
+Pilti ei õnnestunud lugeda.
+Jäädvustamine ebaõnnestus: $ERR$ – proovi uuesti või kleebi ekraanipilt.
+Mudeli laadimine ebaõnnestus: $ERR$
+Viga: $ERR$
+Eelvaate tekst
+Sisesta oma tekst (vaikimisi: The quick brown fox…)
+Suhteline skoor esimese 5 seas
+pole Google Fontsis
+Kopeeri CSS
+Kopeeritud
+Leiab Google Fontsi perekondi. Ladina, kirillitsa ja araabia kiri toimivad kõige paremini; hiina/jaapani veel nõrgalt. Pildid ei lahku kunagi sinu arvutist; fondieelvaated laaditakse Google Fontsist.
+Valmis $MS$ ms-ga
+Valmis $TOTAL$ ms-ga (mudeli laadimine $LOAD$ ms + analüüs $MS$ ms)
+FontSnap on installitud
+Kinnita FontSnap tööriistaribale
+Klõpsa Chrome'i paremas ülanurgas pusleikoonil.
+Leia loendist FontSnap.
+Klõpsa selle kõrval oleval nööpnõela ikoonil.
+Juba kinnitatud? Näita, kuidas kasutada
+Kuidas fonti tuvastada
+Klõpsa FontSnapi ikoonil või vajuta Alt+Shift+F ja lohista üle mis tahes teksti.
+Paremklõpsa pildil ja vali „Tuvasta selle pildi font”.
+Või ava FontSnap ja kleebi, lohista või laadi üles ekraanipilt.
+Saad 5 kõige sarnasemat Google Fonti, võrdle eelvaateid ja kopeeri CSS.
+Proovi kohe
+Kuidas FontSnap kinnitada
+Kõik töötab sinu seadmes. Pilte ei laadita kunagi üles.

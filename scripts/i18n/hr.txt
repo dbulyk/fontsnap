@@ -1,0 +1,43 @@
+FontSnap: prepoznavanje fonta sa slike pomoću AI
+Prepoznajte font sa slike pomoću umjetne inteligencije: označite tekst i FontSnap prikazuje 5 najsličnijih Google fontova.
+FontSnap: prepoznaj font
+FontSnap: prepoznaj font na ovoj slici
+FontSnap: odaberi područje za prepoznavanje fonta
+FontSnap: povucite preko teksta (Esc za odustajanje)
+FontSnap – rezultati
+Prepoznavanje fontova pomoću AI · radi na vašem uređaju
+Zalijepite (Ctrl+V) ili ispustite sliku s tekstom ili odaberite datoteku.
+Odaberi sliku
+Savjet: na bilo kojoj stranici kliknite ikonu FontSnap i povucite preko teksta.
+Što model vidi
+Učitavanje modela…
+Analiza…
+Spremno. Zalijepite, ispustite ili odaberite sliku.
+Nisu pronađeni jasni retci teksta – rezultat možda nije pouzdan. Odaberite uže područje.
+Nije moguće pročitati ovu sliku.
+Snimanje nije uspjelo: $ERR$ – pokušajte ponovno ili zalijepite snimku zaslona.
+Učitavanje modela nije uspjelo: $ERR$
+Pogreška: $ERR$
+Tekst pregleda
+Upišite vlastiti tekst (zadano: The quick brown fox…)
+Relativni rezultat među prvih 5
+nije na Google Fonts
+Kopiraj CSS
+Kopirano
+Pronalazi obitelji Google Fonts. Najbolje rade latinica, ćirilica i arapski; kineski/japanski još slabo. Slike nikad ne napuštaju vaše računalo; pregledi fontova učitavaju se s Google Fonts.
+Gotovo za $MS$ ms
+Gotovo za $TOTAL$ ms (učitavanje modela $LOAD$ ms + analiza $MS$ ms)
+FontSnap je instaliran
+Prikvačite FontSnap na alatnu traku
+Kliknite ikonu slagalice u gornjem desnom kutu Chromea.
+Pronađite FontSnap na popisu.
+Kliknite ikonu pribadače pokraj njega.
+Već prikvačeno? Prikaži kako se koristi
+Kako prepoznati font
+Kliknite ikonu FontSnap ili pritisnite Alt+Shift+F i povucite preko bilo kojeg teksta.
+Desnom tipkom kliknite sliku i odaberite „Prepoznaj font na ovoj slici”.
+Ili otvorite FontSnap i zalijepite, ispustite ili učitajte snimku zaslona.
+Dobijte 5 najsličnijih Google fontova, usporedite preglede i kopirajte CSS.
+Isprobaj sada
+Kako prikvačiti FontSnap
+Sve radi na vašem uređaju. Slike se nikad ne prenose.

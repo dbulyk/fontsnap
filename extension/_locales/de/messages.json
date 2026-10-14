@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: KI-Schriftarterkennung aus Bild",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Schriftart erkennen per KI: Text markieren, und der Font Finder zeigt die 5 ähnlichsten Google-Schriften. Schrift aus Bild finden.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: Schriftart erkennen"
+  },
+  "ctxImage": {
+    "message": "FontSnap: Schriftart in diesem Bild erkennen"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: Bereich auswählen und Schriftart erkennen"
+  },
+  "selectHint": {
+    "message": "FontSnap: Ziehen Sie über den Text (Esc zum Abbrechen)"
+  },
+  "resTitle": {
+    "message": "FontSnap – Ergebnisse"
+  },
+  "tagline": {
+    "message": "KI-Schriftarterkennung · läuft auf Ihrem Gerät"
+  },
+  "dropHint": {
+    "message": "Bild mit Text einfügen (Strg+V), hierher ziehen oder Datei auswählen."
+  },
+  "chooseImage": {
+    "message": "Bild auswählen"
+  },
+  "dropTip": {
+    "message": "Tipp: Klicken Sie auf einer beliebigen Seite auf das FontSnap-Symbol und ziehen Sie über den Text."
+  },
+  "modelSees": {
+    "message": "Was das Modell sieht"
+  },
+  "loading": {
+    "message": "Modell wird geladen…"
+  },
+  "analyzing": {
+    "message": "Wird analysiert…"
+  },
+  "ready": {
+    "message": "Bereit. Bild einfügen, hierher ziehen oder auswählen."
+  },
+  "noLines": {
+    "message": "Keine klaren Textzeilen gefunden – das Ergebnis ist evtl. ungenau. Wählen Sie den Bereich enger."
+  },
+  "readFail": {
+    "message": "Dieses Bild konnte nicht gelesen werden."
+  },
+  "captureFail": {
+    "message": "Aufnahme fehlgeschlagen: $ERR$ – erneut versuchen oder einen Screenshot einfügen.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Modell konnte nicht geladen werden: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Fehler: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Vorschautext"
+  },
+  "previewPh": {
+    "message": "Eigenen Text eingeben (Standard: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relative Bewertung unter den Top 5"
+  },
+  "notOnGF": {
+    "message": "nicht bei Google Fonts"
+  },
+  "copyCss": {
+    "message": "CSS kopieren"
+  },
+  "copied": {
+    "message": "Kopiert"
+  },
+  "note": {
+    "message": "Findet Schriften aus Google Fonts. Lateinisch, Kyrillisch und Arabisch funktionieren am besten; Chinesisch/Japanisch noch schwächer. Bilder verlassen Ihren Computer nie; Schriftvorschauen werden von Google Fonts geladen."
+  },
+  "doneIn": {
+    "message": "Fertig in $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Fertig in $TOTAL$ ms (Modell laden $LOAD$ ms + Analyse $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap ist installiert"
+  },
+  "wPinH": {
+    "message": "FontSnap an die Symbolleiste anheften"
+  },
+  "wPin1": {
+    "message": "Klicken Sie oben rechts in Chrome auf das Puzzle-Symbol."
+  },
+  "wPin2": {
+    "message": "Suchen Sie FontSnap in der Liste."
+  },
+  "wPin3": {
+    "message": "Klicken Sie auf die Stecknadel daneben."
+  },
+  "wPinned": {
+    "message": "Schon angeheftet? So funktioniert es"
+  },
+  "wUseH": {
+    "message": "So erkennen Sie eine Schriftart"
+  },
+  "wUse1": {
+    "message": "Klicken Sie auf das FontSnap-Symbol oder drücken Sie Alt+Shift+F und ziehen Sie über einen Text."
+  },
+  "wUse2": {
+    "message": "Rechtsklick auf ein Bild und „Schriftart in diesem Bild erkennen“ wählen."
+  },
+  "wUse3": {
+    "message": "Oder FontSnap öffnen und einen Screenshot einfügen, hineinziehen oder hochladen."
+  },
+  "wUse4": {
+    "message": "Die 5 ähnlichsten Google Fonts erhalten, Vorschauen vergleichen und CSS kopieren."
+  },
+  "wTry": {
+    "message": "Jetzt ausprobieren"
+  },
+  "wShowPin": {
+    "message": "So heften Sie FontSnap an"
+  },
+  "wPrivacy": {
+    "message": "Alles läuft auf Ihrem Gerät. Bilder werden nie hochgeladen."
+  }
+}

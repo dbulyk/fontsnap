@@ -1,0 +1,76 @@
+FontSnap é um identificador de fontes por imagem com IA que funciona dentro do Chrome. Viu uma tipografia bonita em um site, banner ou captura de tela? Desenhe um retângulo sobre o texto e a ferramenta mostra em cerca de um segundo as cinco fontes do Google mais parecidas.
+
+🚀 Como identificar a fonte de uma imagem em 3 passos
+1️⃣ Clique no ícone do FontSnap na barra ou pressione Alt+Shift+F.
+2️⃣ Arraste um retângulo sobre uma ou duas linhas de texto.
+3️⃣ Veja as 5 melhores correspondências com visualização ao vivo e barra de confiança.
+
+Sem conta, sem upload para servidor, sem espera. A rede neural roda localmente, então suas imagens ficam no seu computador.
+
+🔍 O que torna o FontSnap diferente
+A maioria das extensões desse tipo só lê o CSS e falha em logotipos, imagens, banners e texto em canvas. O FontSnap olha os pixels, não o código, por isso funciona também onde o CSS não diz nada:
+• texto dentro de imagens, pôsteres e artes de redes sociais
+• capturas de tela de apps, slides e páginas de PDF
+• banners e anúncios em qualquer site
+• mockups enviados por um cliente no chat
+
+📌 Principais recursos
+- Seleção de área em qualquer página: basta arrastar sobre o texto.
+- Modo de envio: cole com Ctrl+V, solte um arquivo ou escolha uma imagem.
+- As 5 fontes mais parecidas com pontuação de confiança.
+- Visualização ao vivo de cada resultado com seu próprio texto.
+- Copie a linha CSS pronta com um clique.
+- Funciona com texto latino, cirílico e árabe.
+
+🧠 Um identificador de fontes com IA treinado com milhares de famílias
+O FontSnap usa um modelo compacto de reconhecimento de imagens treinado com mais de 3.600 estilos tipográficos. Ele agrupa os estilos em famílias e entrega uma lista curta e limpa, em vez de dezenas de quase duplicatas. Se a fonte exata for comercial, você ainda recebe a alternativa mais próxima que pode usar hoje.
+
+🎨 Quem usa este localizador de fontes por imagem
+➤ Web designers que precisam encontrar rápido a fonte de um mockup.
+➤ Desenvolvedores front-end que querem a linha CSS, não só o nome.
+➤ Profissionais de marketing e social media que recriam o estilo de um banner.
+➤ Estudantes e blogueiros que vivem perguntando “que fonte é essa?”.
+➤ Quem quer descobrir a fonte de uma imagem sem um app pesado.
+➤ Fãs de tipografia que colecionam combinações de logotipos e embalagens.
+
+⚡ Por que um identificador online nem sempre basta
+Ferramentas web obrigam você a salvar, enviar e recortar a imagem. O FontSnap pula essa etapa:
+▸ a seleção acontece na página que você já está vendo;
+▸ a identificação começa assim que você solta o mouse;
+▸ os resultados abrem em uma nova aba ao lado da original.
+É um identificador de fontes que fica no navegador, não um desvio para fora dele.
+
+📊 Identificador de fontes x inspetor de CSS
+Um inspetor de CSS lê os estilos do texto real da página, mas não enxerga texto em um JPG ou canvas. Um identificador baseado em imagem preenche essa lacuna. Use os dois: CSS quando o texto é real, FontSnap quando é imagem.
+
+🔒 Privacidade em primeiro lugar
+▸ A análise da imagem é feita no dispositivo com WebAssembly.
+▸ Suas capturas nunca saem do navegador.
+▸ Ao Google Fonts são solicitados apenas nomes de famílias para as visualizações.
+▸ Sem rastreamento, sem anúncios, sem cadastro.
+
+💡 Dicas para resultados precisos
+• Selecione uma ou duas linhas de texto, não a página inteira.
+• Texto grande dá resultados melhores que legendas pequenas.
+• Se o primeiro palpite não servir, veja os outros quatro: a família certa costuma estar no top 5.
+
+❓ Perguntas frequentes
+📍 O que é o FontSnap?
+É uma extensão do Chrome e identificador de fontes com IA que reconhece tipografias em uma área selecionada da tela ou em uma imagem enviada.
+
+📍 Como identifico a fonte de um arquivo de imagem?
+Abra o FontSnap em qualquer página e mude para o modo de envio, ou abra-o em uma página restrita, como as configurações do Chrome. Cole, solte ou escolha uma imagem com texto.
+
+📍 Funciona offline?
+O reconhecimento roda localmente. A internet só é usada para carregar as visualizações do Google Fonts.
+
+📍 Reconhece fontes comerciais?
+O FontSnap compara com as famílias do Google Fonts. Para uma fonte comercial, mostra as alternativas mais próximas do Google Fonts, o que muitas vezes é o que você precisa em um projeto web.
+
+📍 Quais idiomas são suportados?
+Os alfabetos latino, cirílico e árabe dão os resultados mais precisos. O suporte a chinês e japonês ainda é limitado.
+
+📍 Meus dados são coletados?
+Não. A extensão não coleta dados pessoais nem envia suas imagens para lugar nenhum.
+
+🌟 Instale o FontSnap, o identificador de fontes por imagem para o seu trabalho de design diário, e transforme cada “que fonte é essa?” em uma resposta de dois segundos. Selecione o texto, receba a correspondência, copie o CSS e continue criando.

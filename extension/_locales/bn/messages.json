@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: ছবি থেকে ফন্ট শনাক্তকরণ AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "AI দিয়ে ছবি থেকে ফন্ট শনাক্ত করুন: টেক্সট বাছাই করুন, FontSnap সবচেয়ে কাছাকাছি ৫টি Google ফন্ট দেখাবে।",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: ফন্ট শনাক্ত করুন"
+  },
+  "ctxImage": {
+    "message": "FontSnap: এই ছবির ফন্ট শনাক্ত করুন"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: ফন্ট শনাক্ত করতে এলাকা বাছাই করুন"
+  },
+  "selectHint": {
+    "message": "FontSnap: টেক্সটের উপর টেনে নিন (বাতিল করতে Esc)"
+  },
+  "resTitle": {
+    "message": "FontSnap — ফলাফল"
+  },
+  "tagline": {
+    "message": "AI ফন্ট শনাক্তকারী · আপনার ডিভাইসে চলে"
+  },
+  "dropHint": {
+    "message": "টেক্সটসহ ছবি পেস্ট (Ctrl+V) বা ড্রপ করুন, অথবা ফাইল বেছে নিন।"
+  },
+  "chooseImage": {
+    "message": "ছবি বেছে নিন"
+  },
+  "dropTip": {
+    "message": "টিপ: যেকোনো পেজে FontSnap আইকনে ক্লিক করে টেক্সটের উপর টেনে নিন।"
+  },
+  "modelSees": {
+    "message": "মডেল যা দেখে"
+  },
+  "loading": {
+    "message": "মডেল লোড হচ্ছে…"
+  },
+  "analyzing": {
+    "message": "বিশ্লেষণ হচ্ছে…"
+  },
+  "ready": {
+    "message": "প্রস্তুত। ছবি পেস্ট, ড্রপ বা বেছে নিন।"
+  },
+  "noLines": {
+    "message": "স্পষ্ট টেক্সট লাইন পাওয়া যায়নি — ফলাফল সঠিক নাও হতে পারে। ছোট এলাকা বাছাই করুন।"
+  },
+  "readFail": {
+    "message": "এই ছবিটি পড়া যায়নি।"
+  },
+  "captureFail": {
+    "message": "ক্যাপচার ব্যর্থ: $ERR$ — আবার চেষ্টা করুন বা স্ক্রিনশট পেস্ট করুন।",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "মডেল লোড করা যায়নি: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "ত্রুটি: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "প্রিভিউ টেক্সট"
+  },
+  "previewPh": {
+    "message": "নিজের টেক্সট লিখুন (ডিফল্ট: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "শীর্ষ ৫-এর মধ্যে আপেক্ষিক স্কোর"
+  },
+  "notOnGF": {
+    "message": "Google Fonts-এ নেই"
+  },
+  "copyCss": {
+    "message": "CSS কপি করুন"
+  },
+  "copied": {
+    "message": "কপি হয়েছে"
+  },
+  "note": {
+    "message": "Google Fonts পরিবারের সাথে মেলায়। ল্যাটিন, সিরিলিক ও আরবি সবচেয়ে ভালো কাজ করে; চীনা/জাপানি এখনও দুর্বল। ছবি কখনও আপনার কম্পিউটার ছাড়ে না; ফন্ট প্রিভিউ Google Fonts থেকে লোড হয়।"
+  },
+  "doneIn": {
+    "message": "$MS$ ms-এ সম্পন্ন",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "$TOTAL$ ms-এ সম্পন্ন (মডেল লোড $LOAD$ ms + বিশ্লেষণ $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap ইনস্টল হয়েছে"
+  },
+  "wPinH": {
+    "message": "FontSnap টুলবারে পিন করুন"
+  },
+  "wPin1": {
+    "message": "Chrome-এর উপরের ডান কোণে পাজল আইকনে ক্লিক করুন।"
+  },
+  "wPin2": {
+    "message": "তালিকায় FontSnap খুঁজুন।"
+  },
+  "wPin3": {
+    "message": "পাশের পিন আইকনে ক্লিক করুন।"
+  },
+  "wPinned": {
+    "message": "আগেই পিন করেছেন? ব্যবহারের নিয়ম দেখুন"
+  },
+  "wUseH": {
+    "message": "কীভাবে ফন্ট শনাক্ত করবেন"
+  },
+  "wUse1": {
+    "message": "FontSnap আইকনে ক্লিক করুন বা Alt+Shift+F চাপুন, তারপর যেকোনো টেক্সটের উপর টেনে নিন।"
+  },
+  "wUse2": {
+    "message": "ছবিতে রাইট-ক্লিক করে \"এই ছবির ফন্ট শনাক্ত করুন\" বেছে নিন।"
+  },
+  "wUse3": {
+    "message": "অথবা FontSnap খুলে স্ক্রিনশট পেস্ট, ড্রপ বা আপলোড করুন।"
+  },
+  "wUse4": {
+    "message": "সবচেয়ে কাছাকাছি ৫টি Google Fonts পান, প্রিভিউ তুলনা করুন এবং CSS কপি করুন।"
+  },
+  "wTry": {
+    "message": "এখনই চেষ্টা করুন"
+  },
+  "wShowPin": {
+    "message": "কীভাবে FontSnap পিন করবেন"
+  },
+  "wPrivacy": {
+    "message": "সবকিছু আপনার ডিভাইসে চলে। ছবি কখনও আপলোড হয় না।"
+  }
+}

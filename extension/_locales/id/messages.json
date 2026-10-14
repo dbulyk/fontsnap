@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: Pendeteksi Font dari Gambar dengan AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Pendeteksi font dari gambar dengan AI: pilih teks, lalu font finder FontSnap menampilkan 5 font Google yang paling mirip.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: kenali font"
+  },
+  "ctxImage": {
+    "message": "FontSnap: kenali font di gambar ini"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: pilih area untuk mengenali font"
+  },
+  "selectHint": {
+    "message": "FontSnap: seret di atas teks (Esc untuk batal)"
+  },
+  "resTitle": {
+    "message": "FontSnap — hasil"
+  },
+  "tagline": {
+    "message": "Pendeteksi font AI · berjalan di perangkat Anda"
+  },
+  "dropHint": {
+    "message": "Tempel (Ctrl+V) atau letakkan gambar berisi teks, atau pilih file."
+  },
+  "chooseImage": {
+    "message": "Pilih gambar"
+  },
+  "dropTip": {
+    "message": "Tips: di halaman mana pun, klik ikon FontSnap lalu seret di atas teks."
+  },
+  "modelSees": {
+    "message": "Yang dilihat model"
+  },
+  "loading": {
+    "message": "Memuat model…"
+  },
+  "analyzing": {
+    "message": "Menganalisis…"
+  },
+  "ready": {
+    "message": "Siap. Tempel, letakkan, atau pilih gambar."
+  },
+  "noLines": {
+    "message": "Tidak ditemukan baris teks yang jelas — hasil mungkin kurang akurat. Persempit pilihan."
+  },
+  "readFail": {
+    "message": "Tidak dapat membaca gambar ini."
+  },
+  "captureFail": {
+    "message": "Pengambilan gagal: $ERR$ — coba lagi atau tempel tangkapan layar.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Model gagal dimuat: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Kesalahan: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Teks pratinjau"
+  },
+  "previewPh": {
+    "message": "Ketik teks Anda sendiri (bawaan: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Skor relatif di antara 5 teratas"
+  },
+  "notOnGF": {
+    "message": "tidak ada di Google Fonts"
+  },
+  "copyCss": {
+    "message": "Salin CSS"
+  },
+  "copied": {
+    "message": "Disalin"
+  },
+  "note": {
+    "message": "Mencocokkan keluarga Google Fonts. Latin, Sirilik, dan Arab paling akurat; Mandarin/Jepang masih lemah. Gambar tidak pernah keluar dari komputer Anda; pratinjau font dimuat dari Google Fonts."
+  },
+  "doneIn": {
+    "message": "Selesai dalam $MS$ md",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Selesai dalam $TOTAL$ md (memuat model $LOAD$ md + analisis $MS$ md)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap telah terpasang"
+  },
+  "wPinH": {
+    "message": "Sematkan FontSnap ke toolbar"
+  },
+  "wPin1": {
+    "message": "Klik ikon puzzle di pojok kanan atas Chrome."
+  },
+  "wPin2": {
+    "message": "Temukan FontSnap di daftar."
+  },
+  "wPin3": {
+    "message": "Klik ikon pin di sebelahnya."
+  },
+  "wPinned": {
+    "message": "Sudah disematkan? Lihat cara pakainya"
+  },
+  "wUseH": {
+    "message": "Cara mengenali font"
+  },
+  "wUse1": {
+    "message": "Klik ikon FontSnap atau tekan Alt+Shift+F, lalu seret di atas teks apa pun."
+  },
+  "wUse2": {
+    "message": "Klik kanan gambar dan pilih \"Kenali font di gambar ini\"."
+  },
+  "wUse3": {
+    "message": "Atau buka FontSnap lalu tempel, letakkan, atau unggah tangkapan layar."
+  },
+  "wUse4": {
+    "message": "Dapatkan 5 Google Fonts paling mirip, bandingkan pratinjau, dan salin CSS."
+  },
+  "wTry": {
+    "message": "Coba sekarang"
+  },
+  "wShowPin": {
+    "message": "Cara menyematkan FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Semua berjalan di perangkat Anda. Gambar tidak pernah diunggah."
+  }
+}

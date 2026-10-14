@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: Kitambua Fonti kutoka Picha kwa AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Tambua fonti kutoka picha kwa AI: chagua maandishi na FontSnap itaonyesha fonti 5 za Google zinazofanana zaidi. Kitafuta fonti.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: tambua fonti"
+  },
+  "ctxImage": {
+    "message": "FontSnap: tambua fonti kwenye picha hii"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: chagua eneo ili kutambua fonti"
+  },
+  "selectHint": {
+    "message": "FontSnap: buruta juu ya maandishi (Esc kughairi)"
+  },
+  "resTitle": {
+    "message": "FontSnap — matokeo"
+  },
+  "tagline": {
+    "message": "Kitambua fonti cha AI · kinafanya kazi kwenye kifaa chako"
+  },
+  "dropHint": {
+    "message": "Bandika (Ctrl+V) au dondosha picha yenye maandishi, au chagua faili."
+  },
+  "chooseImage": {
+    "message": "Chagua picha"
+  },
+  "dropTip": {
+    "message": "Kidokezo: kwenye ukurasa wowote, bofya aikoni ya FontSnap na uburute juu ya maandishi."
+  },
+  "modelSees": {
+    "message": "Kile ambacho modeli inaona"
+  },
+  "loading": {
+    "message": "Inapakia modeli…"
+  },
+  "analyzing": {
+    "message": "Inachanganua…"
+  },
+  "ready": {
+    "message": "Tayari. Bandika, dondosha au chagua picha."
+  },
+  "noLines": {
+    "message": "Hakuna mistari ya maandishi iliyo wazi — matokeo huenda si sahihi. Chagua eneo dogo zaidi."
+  },
+  "readFail": {
+    "message": "Imeshindwa kusoma picha hii."
+  },
+  "captureFail": {
+    "message": "Imeshindwa kupiga picha: $ERR$ — jaribu tena au bandika picha ya skrini.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Imeshindwa kupakia modeli: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Hitilafu: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Maandishi ya onyesho"
+  },
+  "previewPh": {
+    "message": "Andika maandishi yako (chaguomsingi: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Alama linganishi kati ya 5 bora"
+  },
+  "notOnGF": {
+    "message": "haipo kwenye Google Fonts"
+  },
+  "copyCss": {
+    "message": "Nakili CSS"
+  },
+  "copied": {
+    "message": "Imenakiliwa"
+  },
+  "note": {
+    "message": "Hulinganisha familia za Google Fonts. Kilatini, Kisiriliki na Kiarabu hufanya kazi vizuri zaidi; Kichina/Kijapani bado dhaifu. Picha haziondoki kwenye kompyuta yako; maonyesho ya fonti hupakiwa kutoka Google Fonts."
+  },
+  "doneIn": {
+    "message": "Imekamilika kwa $MS$ ms",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "Imekamilika kwa $TOTAL$ ms (kupakia modeli $LOAD$ ms + uchanganuzi $MS$ ms)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap imesakinishwa"
+  },
+  "wPinH": {
+    "message": "Bandika FontSnap kwenye upau wa zana"
+  },
+  "wPin1": {
+    "message": "Bofya aikoni ya fumbo kwenye kona ya juu kulia ya Chrome."
+  },
+  "wPin2": {
+    "message": "Tafuta FontSnap kwenye orodha."
+  },
+  "wPin3": {
+    "message": "Bofya aikoni ya pini kando yake."
+  },
+  "wPinned": {
+    "message": "Tayari imebandikwa? Onyesha jinsi ya kutumia"
+  },
+  "wUseH": {
+    "message": "Jinsi ya kutambua fonti"
+  },
+  "wUse1": {
+    "message": "Bofya aikoni ya FontSnap au bonyeza Alt+Shift+F, kisha uburute juu ya maandishi yoyote."
+  },
+  "wUse2": {
+    "message": "Bofya kulia kwenye picha na uchague \"Tambua fonti kwenye picha hii\"."
+  },
+  "wUse3": {
+    "message": "Au fungua FontSnap na ubandike, udondoshe au upakie picha ya skrini."
+  },
+  "wUse4": {
+    "message": "Pata fonti 5 za Google zinazofanana zaidi, linganisha na unakili CSS."
+  },
+  "wTry": {
+    "message": "Jaribu sasa"
+  },
+  "wShowPin": {
+    "message": "Jinsi ya kubandika FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Kila kitu kinafanya kazi kwenye kifaa chako. Picha hazipakiwi kamwe."
+  }
+}

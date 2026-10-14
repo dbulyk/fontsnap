@@ -1,0 +1,43 @@
+FontSnap: identificar fuente por imagen con IA
+Identificador de fuentes por imagen con IA: selecciona un texto y este buscador de fuentes muestra las 5 fuentes Google más afines.
+FontSnap: identificar una fuente
+FontSnap: identificar la fuente de esta imagen
+FontSnap: seleccionar un área para identificar la fuente
+FontSnap: arrastra sobre el texto (Esc para cancelar)
+FontSnap — resultados
+Identificador de fuentes con IA · funciona en tu dispositivo
+Pega (Ctrl+V) o suelta una imagen con texto, o elige un archivo.
+Elegir imagen
+Consejo: en cualquier página, haz clic en el icono de FontSnap y arrastra sobre el texto.
+Lo que ve el modelo
+Cargando modelo…
+Analizando…
+Listo. Pega, suelta o elige una imagen.
+No se encontraron líneas de texto claras: el resultado puede no ser fiable. Ajusta más la selección.
+No se pudo leer esta imagen.
+Error de captura: $ERR$. Inténtalo de nuevo o pega una captura de pantalla.
+No se pudo cargar el modelo: $ERR$
+Error: $ERR$
+Texto de vista previa
+Escribe tu propio texto (por defecto: The quick brown fox…)
+Puntuación relativa entre los 5 primeros
+no está en Google Fonts
+Copiar CSS
+Copiado
+Busca familias de Google Fonts. Latín, cirílico y árabe funcionan mejor; chino y japonés aún son débiles. Las imágenes nunca salen de tu computadora; las vistas previas se cargan desde Google Fonts.
+Listo en $MS$ ms
+Listo en $TOTAL$ ms (carga del modelo $LOAD$ ms + análisis $MS$ ms)
+FontSnap está instalado
+Fija FontSnap en la barra de herramientas
+Haz clic en el icono de pieza de puzle arriba a la derecha de Chrome.
+Busca FontSnap en la lista.
+Haz clic en el icono de chincheta junto a él.
+¿Ya lo fijaste? Ver cómo usarlo
+Cómo identificar una fuente
+Haz clic en el icono de FontSnap o pulsa Alt+Shift+F y arrastra sobre cualquier texto.
+Haz clic derecho en una imagen y elige «Identificar la fuente de esta imagen».
+O abre FontSnap y pega, suelta o sube una captura de pantalla.
+Obtén las 5 fuentes Google más parecidas, compara las vistas previas y copia el CSS.
+Probar ahora
+Cómo fijar FontSnap
+Todo funciona en tu dispositivo. Las imágenes nunca se suben.

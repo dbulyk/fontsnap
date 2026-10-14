@@ -1,0 +1,164 @@
+{
+  "appName": {
+    "message": "FontSnap: זיהוי גופן מתמונה עם בינה מלאכותית",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "זיהוי גופן מתמונה עם AI: סמנו טקסט ו-FontSnap יציג את 5 הגופנים הדומים ביותר מ-Google Fonts. כלי לחיפוש גופנים ב-Chrome.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: זיהוי גופן"
+  },
+  "ctxImage": {
+    "message": "FontSnap: זיהוי הגופן בתמונה זו"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: בחירת אזור לזיהוי גופן"
+  },
+  "selectHint": {
+    "message": "FontSnap: גררו מעל הטקסט (Esc לביטול)"
+  },
+  "resTitle": {
+    "message": "FontSnap — תוצאות"
+  },
+  "tagline": {
+    "message": "זיהוי גופנים בבינה מלאכותית · פועל במכשיר שלך"
+  },
+  "dropHint": {
+    "message": "הדביקו (Ctrl+V) או גררו תמונה עם טקסט, או בחרו קובץ."
+  },
+  "chooseImage": {
+    "message": "בחירת תמונה"
+  },
+  "dropTip": {
+    "message": "טיפ: בכל דף, לחצו על סמל FontSnap וגררו מעל הטקסט."
+  },
+  "modelSees": {
+    "message": "מה המודל רואה"
+  },
+  "loading": {
+    "message": "טוען מודל…"
+  },
+  "analyzing": {
+    "message": "מנתח…"
+  },
+  "ready": {
+    "message": "מוכן. הדביקו, גררו או בחרו תמונה."
+  },
+  "noLines": {
+    "message": "לא נמצאו שורות טקסט ברורות — ייתכן שהתוצאה לא מדויקת. נסו בחירה צרה יותר."
+  },
+  "readFail": {
+    "message": "לא ניתן לקרוא את התמונה."
+  },
+  "captureFail": {
+    "message": "הלכידה נכשלה: $ERR$ — נסו שוב או הדביקו צילום מסך.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "טעינת המודל נכשלה: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "שגיאה: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "טקסט לתצוגה מקדימה"
+  },
+  "previewPh": {
+    "message": "הקלידו טקסט משלכם (ברירת מחדל: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "ציון יחסי בין 5 המובילים"
+  },
+  "notOnGF": {
+    "message": "לא קיים ב-Google Fonts"
+  },
+  "copyCss": {
+    "message": "העתקת CSS"
+  },
+  "copied": {
+    "message": "הועתק"
+  },
+  "note": {
+    "message": "מתאים משפחות של Google Fonts. לטינית, קירילית וערבית עובדות הכי טוב; סינית/יפנית עדיין חלשות. התמונות אף פעם לא יוצאות מהמחשב שלך; תצוגות הגופנים נטענות מ-Google Fonts."
+  },
+  "doneIn": {
+    "message": "הסתיים תוך $MS$ אלפיות שנייה",
+    "placeholders": {
+      "ms": {
+        "content": "$1"
+      }
+    }
+  },
+  "doneInLoad": {
+    "message": "הסתיים תוך $TOTAL$ אלפיות שנייה (טעינת מודל $LOAD$ + ניתוח $MS$)",
+    "placeholders": {
+      "total": {
+        "content": "$1"
+      },
+      "load": {
+        "content": "$2"
+      },
+      "ms": {
+        "content": "$3"
+      }
+    }
+  },
+  "wTitle": {
+    "message": "FontSnap הותקן"
+  },
+  "wPinH": {
+    "message": "הצמידו את FontSnap לסרגל הכלים"
+  },
+  "wPin1": {
+    "message": "לחצו על סמל הפאזל בפינה העליונה של Chrome."
+  },
+  "wPin2": {
+    "message": "מצאו את FontSnap ברשימה."
+  },
+  "wPin3": {
+    "message": "לחצו על סמל הנעץ שלידו."
+  },
+  "wPinned": {
+    "message": "כבר מוצמד? הצג איך משתמשים"
+  },
+  "wUseH": {
+    "message": "איך מזהים גופן"
+  },
+  "wUse1": {
+    "message": "לחצו על סמל FontSnap או הקישו Alt+Shift+F, וגררו מעל טקסט כלשהו בדף."
+  },
+  "wUse2": {
+    "message": "לחצו לחיצה ימנית על תמונה ובחרו „זיהוי הגופן בתמונה זו”."
+  },
+  "wUse3": {
+    "message": "או פתחו את FontSnap והדביקו, גררו או העלו צילום מסך."
+  },
+  "wUse4": {
+    "message": "קבלו את 5 הגופנים הדומים ביותר מ-Google Fonts, השוו והעתיקו את ה-CSS."
+  },
+  "wTry": {
+    "message": "נסו עכשיו"
+  },
+  "wShowPin": {
+    "message": "איך מצמידים את FontSnap"
+  },
+  "wPrivacy": {
+    "message": "הכול פועל במכשיר שלך. התמונות לעולם לא מועלות."
+  }
+}

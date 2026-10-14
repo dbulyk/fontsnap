@@ -1,0 +1,43 @@
+FontSnap: rozpoznanie fontu z obrázka pomocou AI
+Rozpoznanie písma z obrázka pomocou AI: označte text a FontSnap nájde font a ukáže 5 najpodobnejších písiem Google Fonts.
+FontSnap: rozpoznať písmo
+FontSnap: rozpoznať písmo na tomto obrázku
+FontSnap: vybrať oblasť a rozpoznať písmo
+FontSnap: potiahnite cez text (Esc na zrušenie)
+FontSnap – výsledky
+Rozpoznávanie písma pomocou AI · beží vo vašom zariadení
+Vložte (Ctrl+V) alebo presuňte obrázok s textom, alebo vyberte súbor.
+Vybrať obrázok
+Tip: na ľubovoľnej stránke kliknite na ikonu FontSnap a potiahnite cez text.
+Čo vidí model
+Načítava sa model…
+Analyzuje sa…
+Pripravené. Vložte, presuňte alebo vyberte obrázok.
+Nenašli sa žiadne jasné riadky textu – výsledok môže byť nespoľahlivý. Vyberte oblasť tesnejšie.
+Obrázok sa nepodarilo načítať.
+Snímka zlyhala: $ERR$ – skúste to znova alebo vložte snímku obrazovky.
+Model sa nepodarilo načítať: $ERR$
+Chyba: $ERR$
+Text náhľadu
+Napíšte vlastný text (predvolené: The quick brown fox…)
+Relatívne skóre medzi prvými 5
+nie je v Google Fonts
+Kopírovať CSS
+Skopírované
+Hľadá rodiny Google Fonts. Najlepšie funguje latinka, cyrilika a arabčina; čínština/japončina zatiaľ slabo. Obrázky nikdy neopustia váš počítač; náhľady písiem sa načítavajú z Google Fonts.
+Hotovo za $MS$ ms
+Hotovo za $TOTAL$ ms (načítanie modelu $LOAD$ ms + analýza $MS$ ms)
+FontSnap je nainštalovaný
+Pripnite FontSnap na panel nástrojov
+Kliknite na ikonu puzzle v pravom hornom rohu Chrome.
+Nájdite FontSnap v zozname.
+Kliknite na ikonu špendlíka vedľa neho.
+Už je pripnutý? Ukázať, ako ho používať
+Ako rozpoznať písmo
+Kliknite na ikonu FontSnap alebo stlačte Alt+Shift+F a potiahnite cez ľubovoľný text.
+Kliknite pravým tlačidlom na obrázok a zvoľte „Rozpoznať písmo na tomto obrázku“.
+Alebo otvorte FontSnap a vložte, presuňte či nahrajte snímku obrazovky.
+Získajte 5 najpodobnejších Google Fonts, porovnajte náhľady a skopírujte CSS.
+Vyskúšať
+Ako pripnúť FontSnap
+Všetko beží vo vašom zariadení. Obrázky sa nikdy nenahrávajú.
