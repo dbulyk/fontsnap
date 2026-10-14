@@ -1,0 +1,5 @@
+{
+  "best": { "top1": 59.0, "top5": 77.5 },
+  "bare": { "top1": 45.0, "top5": 69.0 },
+  "parityTop1Agreement": 99.0
+}
