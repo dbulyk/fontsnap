@@ -62,6 +62,27 @@
       height: Math.abs(e.clientY - sy) + 'px',
     });
   });
+  // text of the page under the dragged rectangle (used as the preview sample when nothing is selected)
+  function textInRect(r) {
+    const out = [],
+      range = document.createRange(),
+      tw = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_TEXT);
+    let len = 0,
+      n = 0;
+    try {
+      for (let node = tw.nextNode(); node && len < 80 && n < 20000; node = tw.nextNode(), n++) {
+        if (!node.nodeValue.trim()) continue;
+        range.selectNodeContents(node);
+        const b = range.getBoundingClientRect();
+        if (b.right < r.x || b.left > r.x + r.w || b.bottom < r.y || b.top > r.y + r.h) continue;
+        out.push(node.nodeValue.trim().replace(/\s+/g, ' '));
+        len += out[out.length - 1].length + 1;
+      }
+    } catch {
+      return '';
+    }
+    return out.join(' ').slice(0, 80);
+  }
   ov.addEventListener('mouseup', (e) => {
     if (!drag) return;
     drag = false;
@@ -75,6 +96,7 @@
     } catch {
       // selection text is optional
     }
+    if (!text) text = textInRect(rect);
     // wait two frames so the overlay is gone from the screenshot
     requestAnimationFrame(() =>
       requestAnimationFrame(() =>

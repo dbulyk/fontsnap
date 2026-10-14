@@ -3,7 +3,7 @@
   "name": "FontSnap: AI Font Identifier from Image",
   "short_name": "FontSnap",
   "version": "0.1.0",
-  "description": "Select any text on a page or upload a screenshot \u2014 FontSnap identifies the Google Font on-device and shows the top 5 matches.",
+  "description": "Snap any text with this AI font identifier from image: a font finder and font matcher that shows the 5 closest Google typefaces.",
   "permissions": ["activeTab", "scripting", "storage", "contextMenus"],
   "background": {
     "service_worker": "background.js",

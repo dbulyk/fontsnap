@@ -1,0 +1,200 @@
+{
+ "adobeblank": {
+  "family": "Adobe Blank",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/adobeblank/METADATA.pb"
+ },
+ "bhavuka": {
+  "family": "Bhavuka",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/bhavuka/METADATA.pb"
+ },
+ "bigshouldersdisplay": {
+  "family": "Big Shoulders Display",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/bigshouldersdisplay/METADATA.pb"
+ },
+ "bigshouldersinlinedisplay": {
+  "family": "Big Shoulders Inline Display",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/bigshouldersinlinedisplay/METADATA.pb"
+ },
+ "bigshouldersinlinetext": {
+  "family": "Big Shoulders Inline Text",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/bigshouldersinlinetext/METADATA.pb"
+ },
+ "bigshouldersstencildisplay": {
+  "family": "Big Shoulders Stencil Display",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/bigshouldersstencildisplay/METADATA.pb"
+ },
+ "bigshouldersstenciltext": {
+  "family": "Big Shoulders Stencil Text",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/bigshouldersstenciltext/METADATA.pb"
+ },
+ "bigshoulderstext": {
+  "family": "Big Shoulders Text",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/bigshoulderstext/METADATA.pb"
+ },
+ "bungeecolor": {
+  "family": "Bungee Color",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/bungeecolor/METADATA.pb"
+ },
+ "creepstercaps": {
+  "family": "Creepster Caps",
+  "category": "Display",
+  "inGF": true,
+  "source": "apache/creepstercaps/METADATA.pb"
+ },
+ "dhyana": {
+  "family": "Dhyana",
+  "category": "Sans Serif",
+  "inGF": true,
+  "source": "ofl/dhyana/METADATA.pb"
+ },
+ "digitalnumbers": {
+  "family": "Digital Numbers",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/digitalnumbers/METADATA.pb"
+ },
+ "finlandica": {
+  "family": "Finlandica",
+  "category": "Sans Serif",
+  "inGF": true,
+  "source": "ofl/finlandica/METADATA.pb"
+ },
+ "hermeneusone": {
+  "family": "Hermeneus One",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/hermeneusone/METADATA.pb"
+ },
+ "hindcolombo": {
+  "family": "Hind Colombo",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/hindcolombo/METADATA.pb"
+ },
+ "hindjalandhar": {
+  "family": "Hind Jalandhar",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/hindjalandhar/METADATA.pb"
+ },
+ "hindkochi": {
+  "family": "Hind Kochi",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/hindkochi/METADATA.pb"
+ },
+ "mergeone": {
+  "family": "Merge One",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/mergeone/METADATA.pb"
+ },
+ "mervalescript": {
+  "family": "Mervale Script",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/mervalescript/METADATA.pb"
+ },
+ "miama": {
+  "family": "Miama",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/miama/METADATA.pb"
+ },
+ "montserratsubrayada": {
+  "family": "Montserrat Subrayada",
+  "category": "Sans Serif",
+  "inGF": true,
+  "source": "ofl/montserratsubrayada/METADATA.pb"
+ },
+ "nats": {
+  "family": "NATS",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/nats/METADATA.pb"
+ },
+ "nosifercaps": {
+  "family": "Nosifer Caps",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/nosifercaps/METADATA.pb"
+ },
+ "notonaskharabicui": {
+  "family": "Noto Naskh Arabic UI",
+  "category": "Serif",
+  "inGF": true,
+  "source": "ofl/notonaskharabicui/METADATA.pb"
+ },
+ "otomanopeeone": {
+  "family": "Otomanopee One",
+  "category": "Sans Serif",
+  "inGF": true,
+  "source": "ofl/otomanopeeone/METADATA.pb"
+ },
+ "portersansblock": {
+  "family": "Porter Sans Block",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/portersansblock/METADATA.pb"
+ },
+ "pushster": {
+  "family": "Pushster",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/pushster/METADATA.pb"
+ },
+ "sairastencilone": {
+  "family": "Saira Stencil One",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/sairastencilone/METADATA.pb"
+ },
+ "sansitaone": {
+  "family": "Sansita One",
+  "category": "Display",
+  "inGF": true,
+  "source": "ofl/sansitaone/METADATA.pb"
+ },
+ "sitara": {
+  "family": "Sitara",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/sitara/METADATA.pb"
+ },
+ "strong": {
+  "family": "Strong",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/strong/METADATA.pb"
+ },
+ "thabit": {
+  "family": "Thabit",
+  "category": "Serif",
+  "inGF": true,
+  "source": "ofl/thabit/METADATA.pb"
+ },
+ "yinmar": {
+  "family": "Yinmar",
+  "category": "",
+  "inGF": false,
+  "source": "ofl/yinmar/METADATA.pb"
+ }
+}
