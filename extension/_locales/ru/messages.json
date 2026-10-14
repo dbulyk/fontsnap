@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: определение шрифта по картинке с ИИ",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Определитель шрифта по картинке на ИИ: выделите текст, и FontSnap найдёт шрифт и покажет 5 самых похожих шрифтов Google Fonts.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: определить шрифт"
+  },
+  "ctxImage": {
+    "message": "FontSnap: определить шрифт на этой картинке"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: выделить область и определить шрифт"
+  },
+  "selectHint": {
+    "message": "FontSnap: выделите текст мышью (Esc — отмена)"
+  },
+  "resTitle": {
+    "message": "FontSnap — результаты"
+  },
+  "tagline": {
+    "message": "ИИ-определитель шрифтов · работает на вашем устройстве"
+  },
+  "dropHint": {
+    "message": "Вставьте (Ctrl+V) или перетащите картинку с текстом либо выберите файл."
+  },
+  "chooseImage": {
+    "message": "Выбрать картинку"
+  },
+  "dropTip": {
+    "message": "Совет: на любой странице нажмите значок FontSnap на панели и выделите текст."
+  },
+  "modelSees": {
+    "message": "Что видит модель"
+  },
+  "loading": {
+    "message": "Загрузка модели…"
+  },
+  "analyzing": {
+    "message": "Анализ…"
+  },
+  "ready": {
+    "message": "Готово. Вставьте, перетащите или выберите картинку."
+  },
+  "noLines": {
+    "message": "Чёткие строки текста не найдены — результат может быть неточным. Выделите область плотнее."
+  },
+  "readFail": {
+    "message": "Не удалось прочитать картинку."
+  },
+  "captureFail": {
+    "message": "Не удалось сделать снимок: $ERR$ — попробуйте ещё раз или вставьте скриншот.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Не удалось загрузить модель: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Ошибка: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Текст для предпросмотра"
+  },
+  "previewPh": {
+    "message": "Введите свой текст (по умолчанию: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Относительная оценка среди первых 5"
+  },
+  "notOnGF": {
+    "message": "нет в Google Fonts"
+  },
+  "copyCss": {
+    "message": "Копировать CSS"
+  },
+  "copied": {
+    "message": "Скопировано"
+  },
+  "note": {
+    "message": "Подбирает шрифты из Google Fonts. Лучше всего работают латиница, кириллица и арабский; китайский и японский пока слабее. Картинки не покидают ваш компьютер; превью шрифтов загружаются с Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap установлен"
+  },
+  "wPinH": {
+    "message": "Закрепите FontSnap на панели"
+  },
+  "wPin1": {
+    "message": "Нажмите на значок пазла в правом верхнем углу Chrome."
+  },
+  "wPin2": {
+    "message": "Найдите FontSnap в списке."
+  },
+  "wPin3": {
+    "message": "Нажмите на значок булавки рядом с ним."
+  },
+  "wPinned": {
+    "message": "Уже закрепили? Покажите, как пользоваться"
+  },
+  "wUseH": {
+    "message": "Как определить шрифт"
+  },
+  "wUse1": {
+    "message": "Нажмите значок FontSnap или Alt+Shift+F и выделите мышью любой текст на странице."
+  },
+  "wUse2": {
+    "message": "Нажмите правой кнопкой на картинку и выберите «Определить шрифт на этой картинке»."
+  },
+  "wUse3": {
+    "message": "Или откройте FontSnap и вставьте, перетащите или загрузите скриншот."
+  },
+  "wUse4": {
+    "message": "Получите 5 самых похожих шрифтов Google Fonts, сравните превью и скопируйте CSS."
+  },
+  "wTry": {
+    "message": "Попробовать"
+  },
+  "wShowPin": {
+    "message": "Как закрепить FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Всё работает на вашем устройстве. Картинки никуда не загружаются."
+  }
+}

@@ -1,0 +1,41 @@
+FontSnap: rozpoznawanie czcionki ze zdjęcia z AI
+Rozpoznawanie czcionki ze zdjęcia z AI: zaznacz tekst, a FontSnap znajdzie czcionkę i pokaże 5 najbliższych czcionek Google.
+FontSnap: rozpoznaj czcionkę
+FontSnap: rozpoznaj czcionkę na tym obrazie
+FontSnap: zaznacz obszar, aby rozpoznać czcionkę
+FontSnap: przeciągnij nad tekstem (Esc, aby anulować)
+FontSnap — wyniki
+Rozpoznawanie czcionek AI · działa na Twoim urządzeniu
+Wklej (Ctrl+V) lub upuść obraz z tekstem albo wybierz plik.
+Wybierz obraz
+Wskazówka: na dowolnej stronie kliknij ikonę FontSnap i przeciągnij nad tekstem.
+Co widzi model
+Ładowanie modelu…
+Analizowanie…
+Gotowe. Wklej, upuść lub wybierz obraz.
+Nie znaleziono wyraźnych linii tekstu — wynik może być niedokładny. Zaznacz ciaśniej.
+Nie udało się odczytać obrazu.
+Przechwycenie nie powiodło się: $ERR$ — spróbuj ponownie lub wklej zrzut ekranu.
+Nie udało się załadować modelu: $ERR$
+Błąd: $ERR$
+Tekst podglądu
+Wpisz własny tekst (domyślnie: The quick brown fox…)
+Względny wynik w pierwszej piątce
+brak w Google Fonts
+Kopiuj CSS
+Skopiowano
+Dopasowuje rodziny Google Fonts. Najlepiej działa łacinka, cyrylica i arabski; chiński/japoński wciąż słabo. Obrazy nigdy nie opuszczają Twojego komputera; podglądy czcionek są ładowane z Google Fonts.
+FontSnap został zainstalowany
+Przypnij FontSnap do paska narzędzi
+Kliknij ikonę puzzla w prawym górnym rogu Chrome.
+Znajdź FontSnap na liście.
+Kliknij ikonę pinezki obok.
+Już przypięte? Pokaż, jak używać
+Jak rozpoznać czcionkę
+Kliknij ikonę FontSnap lub naciśnij Alt+Shift+F i przeciągnij nad dowolnym tekstem.
+Kliknij obraz prawym przyciskiem i wybierz „Rozpoznaj czcionkę na tym obrazie”.
+Albo otwórz FontSnap i wklej, upuść lub prześlij zrzut ekranu.
+Otrzymaj 5 najbliższych czcionek Google, porównaj podglądy i skopiuj CSS.
+Wypróbuj teraz
+Jak przypiąć FontSnap
+Wszystko działa na Twoim urządzeniu. Obrazy nigdy nie są wysyłane.

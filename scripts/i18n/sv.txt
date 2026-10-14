@@ -1,0 +1,41 @@
+FontSnap: AI-typsnittsidentifierare från bild
+Identifiera typsnitt från bild med AI: markera text så visar FontSnap de 5 mest lika Google-typsnitten. Typsnittssökare i Chrome.
+FontSnap: identifiera ett typsnitt
+FontSnap: identifiera typsnittet i den här bilden
+FontSnap: markera ett område för att identifiera typsnitt
+FontSnap: dra över texten (Esc för att avbryta)
+FontSnap – resultat
+AI-typsnittsidentifierare · körs på din enhet
+Klistra in (Ctrl+V) eller släpp en bild med text, eller välj en fil.
+Välj bild
+Tips: klicka på FontSnap-ikonen på valfri sida och dra över texten.
+Vad modellen ser
+Läser in modellen…
+Analyserar…
+Klart. Klistra in, släpp eller välj en bild.
+Inga tydliga textrader hittades – resultatet kan vara opålitligt. Gör en snävare markering.
+Det gick inte att läsa bilden.
+Skärmbilden misslyckades: $ERR$ – försök igen eller klistra in en skärmbild.
+Modellen kunde inte läsas in: $ERR$
+Fel: $ERR$
+Förhandsgranskningstext
+Skriv egen text (standard: The quick brown fox…)
+Relativ poäng bland topp 5
+finns inte på Google Fonts
+Kopiera CSS
+Kopierat
+Hittar typsnittsfamiljer från Google Fonts. Latin, kyrilliska och arabiska fungerar bäst; kinesiska/japanska är fortfarande svaga. Bilder lämnar aldrig din dator; förhandsvisningar laddas från Google Fonts.
+FontSnap är installerat
+Fäst FontSnap i verktygsfältet
+Klicka på pusselikonen uppe till höger i Chrome.
+Hitta FontSnap i listan.
+Klicka på nålikonen bredvid.
+Redan fäst? Visa hur det används
+Så identifierar du ett typsnitt
+Klicka på FontSnap-ikonen eller tryck Alt+Shift+F och dra över valfri text på sidan.
+Högerklicka på en bild och välj ”Identifiera typsnittet i den här bilden”.
+Eller öppna FontSnap och klistra in, släpp eller ladda upp en skärmbild.
+Få de 5 mest lika Google Fonts, jämför förhandsvisningar och kopiera CSS.
+Prova nu
+Så fäster du FontSnap
+Allt körs på din enhet. Bilder laddas aldrig upp.

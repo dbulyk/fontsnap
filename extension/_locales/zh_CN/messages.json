@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap:AI 图片字体识别",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "AI 图片字体识别工具:选中文字,FontSnap 即可识别字体并显示 5 款最相似的 Google 字体。在线识别字体,一键查找字体。",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap:识别字体"
+  },
+  "ctxImage": {
+    "message": "FontSnap:识别此图片中的字体"
+  },
+  "ctxSelect": {
+    "message": "FontSnap:选择区域以识别字体"
+  },
+  "selectHint": {
+    "message": "FontSnap:在文字上拖动选择(按 Esc 取消)"
+  },
+  "resTitle": {
+    "message": "FontSnap — 结果"
+  },
+  "tagline": {
+    "message": "AI 字体识别 · 在您的设备上运行"
+  },
+  "dropHint": {
+    "message": "粘贴(Ctrl+V)或拖入包含文字的图片,或选择文件。"
+  },
+  "chooseImage": {
+    "message": "选择图片"
+  },
+  "dropTip": {
+    "message": "提示:在任意网页上点击工具栏中的 FontSnap 图标,然后在文字上拖动。"
+  },
+  "modelSees": {
+    "message": "模型看到的内容"
+  },
+  "loading": {
+    "message": "正在加载模型…"
+  },
+  "analyzing": {
+    "message": "正在分析…"
+  },
+  "ready": {
+    "message": "就绪。请粘贴、拖入或选择图片。"
+  },
+  "noLines": {
+    "message": "未找到清晰的文字行,结果可能不准确。请缩小选择范围。"
+  },
+  "readFail": {
+    "message": "无法读取此图片。"
+  },
+  "captureFail": {
+    "message": "截图失败:$ERR$ — 请重试或粘贴屏幕截图。",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "模型加载失败:$ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "错误:$ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "预览文字"
+  },
+  "previewPh": {
+    "message": "输入自定义文字(默认:The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "在前 5 名中的相对得分"
+  },
+  "notOnGF": {
+    "message": "不在 Google Fonts 中"
+  },
+  "copyCss": {
+    "message": "复制 CSS"
+  },
+  "copied": {
+    "message": "已复制"
+  },
+  "note": {
+    "message": "匹配 Google Fonts 字体家族。拉丁文、西里尔文和阿拉伯文效果最佳,中文/日文目前识别较弱。图片绝不会离开您的电脑;字体预览从 Google Fonts 加载。"
+  },
+  "wTitle": {
+    "message": "FontSnap 已安装"
+  },
+  "wPinH": {
+    "message": "将 FontSnap 固定到工具栏"
+  },
+  "wPin1": {
+    "message": "点击 Chrome 右上角的拼图图标。"
+  },
+  "wPin2": {
+    "message": "在列表中找到 FontSnap。"
+  },
+  "wPin3": {
+    "message": "点击旁边的图钉图标。"
+  },
+  "wPinned": {
+    "message": "已经固定?查看使用方法"
+  },
+  "wUseH": {
+    "message": "如何识别字体"
+  },
+  "wUse1": {
+    "message": "点击 FontSnap 图标或按 Alt+Shift+F,然后在网页上的任意文字上拖动。"
+  },
+  "wUse2": {
+    "message": "右键点击图片并选择“识别此图片中的字体”。"
+  },
+  "wUse3": {
+    "message": "或者打开 FontSnap,粘贴、拖入或上传屏幕截图。"
+  },
+  "wUse4": {
+    "message": "获得 5 款最相似的 Google 字体,对比预览并复制 CSS。"
+  },
+  "wTry": {
+    "message": "立即试用"
+  },
+  "wShowPin": {
+    "message": "如何固定 FontSnap"
+  },
+  "wPrivacy": {
+    "message": "一切都在您的设备上运行,图片绝不会被上传。"
+  }
+}

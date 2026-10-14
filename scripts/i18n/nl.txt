@@ -1,0 +1,41 @@
+FontSnap: lettertype herkennen uit afbeelding met AI
+Lettertype herkennen met AI: selecteer tekst en deze font finder toont de 5 meest gelijkende Google-lettertypen uit de afbeelding.
+FontSnap: lettertype herkennen
+FontSnap: lettertype in deze afbeelding herkennen
+FontSnap: gebied selecteren om lettertype te herkennen
+FontSnap: sleep over de tekst (Esc om te annuleren)
+FontSnap — resultaten
+AI-lettertypeherkenning · werkt op je apparaat
+Plak (Ctrl+V) of sleep een afbeelding met tekst hierheen, of kies een bestand.
+Afbeelding kiezen
+Tip: klik op elke pagina op het FontSnap-pictogram en sleep over de tekst.
+Wat het model ziet
+Model laden…
+Analyseren…
+Klaar. Plak, sleep of kies een afbeelding.
+Geen duidelijke tekstregels gevonden — het resultaat is mogelijk onbetrouwbaar. Selecteer nauwkeuriger.
+Kan deze afbeelding niet lezen.
+Vastleggen mislukt: $ERR$ — probeer het opnieuw of plak een screenshot.
+Model laden mislukt: $ERR$
+Fout: $ERR$
+Voorbeeldtekst
+Typ je eigen tekst (standaard: The quick brown fox…)
+Relatieve score binnen de top 5
+niet op Google Fonts
+CSS kopiëren
+Gekopieerd
+Vindt Google Fonts-families. Latijn, Cyrillisch en Arabisch werken het best; Chinees/Japans nog zwak. Afbeeldingen verlaten je computer nooit; lettertypevoorbeelden worden geladen van Google Fonts.
+FontSnap is geïnstalleerd
+Zet FontSnap vast op de werkbalk
+Klik rechtsboven in Chrome op het puzzelpictogram.
+Zoek FontSnap in de lijst.
+Klik op het punaise-pictogram ernaast.
+Al vastgezet? Bekijk hoe het werkt
+Zo herken je een lettertype
+Klik op het FontSnap-pictogram of druk op Alt+Shift+F en sleep over tekst op de pagina.
+Klik met rechts op een afbeelding en kies 'Lettertype in deze afbeelding herkennen'.
+Of open FontSnap en plak, sleep of upload een screenshot.
+Krijg de 5 meest gelijkende Google Fonts, vergelijk voorbeelden en kopieer de CSS.
+Nu proberen
+Zo zet je FontSnap vast
+Alles werkt op je apparaat. Afbeeldingen worden nooit geüpload.

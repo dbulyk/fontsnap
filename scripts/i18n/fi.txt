@@ -1,0 +1,41 @@
+FontSnap: tekoälyfonttien tunnistus kuvasta
+Tunnista fontti kuvasta tekoälyllä: valitse teksti, niin FontSnap näyttää 5 lähintä Google-fonttia. Fonttihaku Chromeen.
+FontSnap: tunnista fontti
+FontSnap: tunnista tämän kuvan fontti
+FontSnap: valitse alue fontin tunnistamiseksi
+FontSnap: vedä tekstin yli (Esc peruuttaa)
+FontSnap – tulokset
+Tekoälyfonttien tunnistus · toimii laitteellasi
+Liitä (Ctrl+V) tai pudota kuva, jossa on tekstiä, tai valitse tiedosto.
+Valitse kuva
+Vinkki: napsauta millä tahansa sivulla FontSnap-kuvaketta ja vedä tekstin yli.
+Mitä malli näkee
+Ladataan mallia…
+Analysoidaan…
+Valmis. Liitä, pudota tai valitse kuva.
+Selkeitä tekstirivejä ei löytynyt – tulos voi olla epäluotettava. Tee tiiviimpi valinta.
+Kuvaa ei voitu lukea.
+Kaappaus epäonnistui: $ERR$ – yritä uudelleen tai liitä kuvakaappaus.
+Mallin lataus epäonnistui: $ERR$
+Virhe: $ERR$
+Esikatseluteksti
+Kirjoita oma teksti (oletus: The quick brown fox…)
+Suhteellinen pistemäärä 5 parhaan joukossa
+ei Google Fontsissa
+Kopioi CSS
+Kopioitu
+Löytää Google Fonts -perheitä. Latinalainen, kyrillinen ja arabialainen kirjoitus toimivat parhaiten; kiina/japani vielä heikosti. Kuvat eivät koskaan poistu tietokoneeltasi; esikatselut ladataan Google Fontsista.
+FontSnap on asennettu
+Kiinnitä FontSnap työkalupalkkiin
+Napsauta Chromen oikeassa yläkulmassa olevaa palapelikuvaketta.
+Etsi FontSnap luettelosta.
+Napsauta sen vieressä olevaa nastakuvaketta.
+Jo kiinnitetty? Näytä, miten sitä käytetään
+Näin tunnistat fontin
+Napsauta FontSnap-kuvaketta tai paina Alt+Shift+F ja vedä minkä tahansa tekstin yli.
+Napsauta kuvaa hiiren oikealla ja valitse ”Tunnista tämän kuvan fontti”.
+Tai avaa FontSnap ja liitä, pudota tai lataa kuvakaappaus.
+Saat 5 lähintä Google-fonttia, vertaa esikatseluja ja kopioi CSS.
+Kokeile nyt
+Näin kiinnität FontSnapin
+Kaikki toimii laitteellasi. Kuvia ei koskaan ladata palvelimelle.

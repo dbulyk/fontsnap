@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: 이미지로 폰트 찾기 AI 글꼴 식별기",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "이미지로 폰트 찾기: 텍스트를 선택하면 AI 글꼴 식별기 FontSnap이 가장 비슷한 Google 폰트 5개를 보여줍니다.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: 글꼴 식별"
+  },
+  "ctxImage": {
+    "message": "FontSnap: 이 이미지의 글꼴 식별"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: 영역을 선택해 글꼴 식별"
+  },
+  "selectHint": {
+    "message": "FontSnap: 텍스트 위로 드래그하세요(취소: Esc)"
+  },
+  "resTitle": {
+    "message": "FontSnap — 결과"
+  },
+  "tagline": {
+    "message": "AI 글꼴 식별기 · 내 기기에서 실행"
+  },
+  "dropHint": {
+    "message": "텍스트가 있는 이미지를 붙여넣기(Ctrl+V)하거나 끌어다 놓거나 파일을 선택하세요."
+  },
+  "chooseImage": {
+    "message": "이미지 선택"
+  },
+  "dropTip": {
+    "message": "팁: 아무 페이지에서나 FontSnap 아이콘을 클릭하고 텍스트 위로 드래그하세요."
+  },
+  "modelSees": {
+    "message": "모델이 보는 이미지"
+  },
+  "loading": {
+    "message": "모델 로드 중…"
+  },
+  "analyzing": {
+    "message": "분석 중…"
+  },
+  "ready": {
+    "message": "준비됨. 이미지를 붙여넣거나 끌어다 놓거나 선택하세요."
+  },
+  "noLines": {
+    "message": "뚜렷한 텍스트 줄을 찾지 못했습니다. 결과가 정확하지 않을 수 있습니다. 더 좁게 선택해 보세요."
+  },
+  "readFail": {
+    "message": "이 이미지를 읽을 수 없습니다."
+  },
+  "captureFail": {
+    "message": "캡처 실패: $ERR$ — 다시 시도하거나 스크린샷을 붙여넣으세요.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "모델을 로드하지 못했습니다: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "오류: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "미리보기 텍스트"
+  },
+  "previewPh": {
+    "message": "직접 텍스트 입력(기본값: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "상위 5개 중 상대 점수"
+  },
+  "notOnGF": {
+    "message": "Google Fonts에 없음"
+  },
+  "copyCss": {
+    "message": "CSS 복사"
+  },
+  "copied": {
+    "message": "복사됨"
+  },
+  "note": {
+    "message": "Google Fonts 글꼴군에서 찾습니다. 라틴 문자, 키릴 문자, 아랍 문자에서 가장 정확하며 중국어/일본어는 아직 약합니다. 이미지는 컴퓨터 밖으로 전송되지 않으며, 글꼴 미리보기는 Google Fonts에서 불러옵니다."
+  },
+  "wTitle": {
+    "message": "FontSnap이 설치되었습니다"
+  },
+  "wPinH": {
+    "message": "FontSnap을 도구 모음에 고정하세요"
+  },
+  "wPin1": {
+    "message": "Chrome 오른쪽 위의 퍼즐 아이콘을 클릭합니다."
+  },
+  "wPin2": {
+    "message": "목록에서 FontSnap을 찾습니다."
+  },
+  "wPin3": {
+    "message": "옆에 있는 핀 아이콘을 클릭합니다."
+  },
+  "wPinned": {
+    "message": "이미 고정했나요? 사용 방법 보기"
+  },
+  "wUseH": {
+    "message": "글꼴을 식별하는 방법"
+  },
+  "wUse1": {
+    "message": "FontSnap 아이콘을 클릭하거나 Alt+Shift+F를 누른 뒤 페이지의 텍스트 위로 드래그합니다."
+  },
+  "wUse2": {
+    "message": "이미지를 마우스 오른쪽 버튼으로 클릭하고 '이 이미지의 글꼴 식별'을 선택합니다."
+  },
+  "wUse3": {
+    "message": "또는 FontSnap을 열고 스크린샷을 붙여넣거나 끌어다 놓거나 업로드합니다."
+  },
+  "wUse4": {
+    "message": "가장 비슷한 Google 폰트 5개를 받아 미리보기를 비교하고 CSS를 복사하세요."
+  },
+  "wTry": {
+    "message": "지금 사용해 보기"
+  },
+  "wShowPin": {
+    "message": "FontSnap 고정 방법"
+  },
+  "wPrivacy": {
+    "message": "모든 처리는 내 기기에서 이루어집니다. 이미지는 업로드되지 않습니다."
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: AI šrifto atpažinimas iš paveikslėlio",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Atpažinkite šriftą iš paveikslėlio su AI: pažymėkite tekstą ir FontSnap parodys 5 panašiausius Google šriftus. Šriftų paieška.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: atpažinti šriftą"
+  },
+  "ctxImage": {
+    "message": "FontSnap: atpažinti šriftą šiame paveikslėlyje"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: pažymėti sritį šriftui atpažinti"
+  },
+  "selectHint": {
+    "message": "FontSnap: vilkite per tekstą (Esc – atšaukti)"
+  },
+  "resTitle": {
+    "message": "FontSnap – rezultatai"
+  },
+  "tagline": {
+    "message": "AI šriftų atpažinimas · veikia jūsų įrenginyje"
+  },
+  "dropHint": {
+    "message": "Įklijuokite (Ctrl+V) arba nutempkite paveikslėlį su tekstu, arba pasirinkite failą."
+  },
+  "chooseImage": {
+    "message": "Pasirinkti paveikslėlį"
+  },
+  "dropTip": {
+    "message": "Patarimas: bet kuriame puslapyje spustelėkite FontSnap piktogramą ir vilkite per tekstą."
+  },
+  "modelSees": {
+    "message": "Ką mato modelis"
+  },
+  "loading": {
+    "message": "Įkeliamas modelis…"
+  },
+  "analyzing": {
+    "message": "Analizuojama…"
+  },
+  "ready": {
+    "message": "Paruošta. Įklijuokite, nutempkite arba pasirinkite paveikslėlį."
+  },
+  "noLines": {
+    "message": "Aiškių teksto eilučių nerasta – rezultatas gali būti netikslus. Pažymėkite siauriau."
+  },
+  "readFail": {
+    "message": "Nepavyko nuskaityti paveikslėlio."
+  },
+  "captureFail": {
+    "message": "Nepavyko užfiksuoti: $ERR$ – bandykite dar kartą arba įklijuokite ekrano kopiją.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Nepavyko įkelti modelio: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Klaida: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Peržiūros tekstas"
+  },
+  "previewPh": {
+    "message": "Įveskite savo tekstą (numatytasis: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Santykinis įvertinimas tarp pirmų 5"
+  },
+  "notOnGF": {
+    "message": "nėra Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopijuoti CSS"
+  },
+  "copied": {
+    "message": "Nukopijuota"
+  },
+  "note": {
+    "message": "Randa Google Fonts šeimas. Geriausiai veikia lotynų, kirilica ir arabų raštas; kinų/japonų dar silpnai. Paveikslėliai niekada nepalieka jūsų kompiuterio; šriftų peržiūros įkeliamos iš Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap įdiegtas"
+  },
+  "wPinH": {
+    "message": "Prisekite FontSnap prie įrankių juostos"
+  },
+  "wPin1": {
+    "message": "Spustelėkite dėlionės piktogramą viršutiniame dešiniajame Chrome kampe."
+  },
+  "wPin2": {
+    "message": "Sąraše raskite FontSnap."
+  },
+  "wPin3": {
+    "message": "Spustelėkite šalia esančią smeigtuko piktogramą."
+  },
+  "wPinned": {
+    "message": "Jau prisegta? Rodyti, kaip naudotis"
+  },
+  "wUseH": {
+    "message": "Kaip atpažinti šriftą"
+  },
+  "wUse1": {
+    "message": "Spustelėkite FontSnap piktogramą arba paspauskite Alt+Shift+F ir vilkite per bet kokį tekstą."
+  },
+  "wUse2": {
+    "message": "Dešiniuoju pelės mygtuku spustelėkite paveikslėlį ir pasirinkite „Atpažinti šriftą šiame paveikslėlyje“."
+  },
+  "wUse3": {
+    "message": "Arba atidarykite FontSnap ir įklijuokite, nutempkite ar įkelkite ekrano kopiją."
+  },
+  "wUse4": {
+    "message": "Gaukite 5 panašiausius Google Fonts, palyginkite peržiūras ir nukopijuokite CSS."
+  },
+  "wTry": {
+    "message": "Išbandyti dabar"
+  },
+  "wShowPin": {
+    "message": "Kaip prisegti FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Viskas veikia jūsų įrenginyje. Paveikslėliai niekada neįkeliami."
+  }
+}

@@ -1,0 +1,41 @@
+FontSnap: AI fontu atpazīšana no attēla
+Atpazīstiet fontu no attēla ar AI: atlasiet tekstu, un FontSnap parāda 5 līdzīgākos Google fontus. Fontu meklētājs pārlūkam Chrome.
+FontSnap: atpazīt fontu
+FontSnap: atpazīt fontu šajā attēlā
+FontSnap: atlasīt apgabalu fonta atpazīšanai
+FontSnap: velciet pāri tekstam (Esc — atcelt)
+FontSnap — rezultāti
+AI fontu atpazīšana · darbojas jūsu ierīcē
+Ielīmējiet (Ctrl+V) vai nometiet attēlu ar tekstu, vai izvēlieties failu.
+Izvēlēties attēlu
+Padoms: jebkurā lapā noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam.
+Ko redz modelis
+Ielādē modeli…
+Analizē…
+Gatavs. Ielīmējiet, nometiet vai izvēlieties attēlu.
+Skaidras teksta rindas netika atrastas — rezultāts var būt neprecīzs. Atlasiet šaurāk.
+Šo attēlu nevarēja nolasīt.
+Uzņemšana neizdevās: $ERR$ — mēģiniet vēlreiz vai ielīmējiet ekrānuzņēmumu.
+Modeli neizdevās ielādēt: $ERR$
+Kļūda: $ERR$
+Priekšskatījuma teksts
+Ierakstiet savu tekstu (noklusējums: The quick brown fox…)
+Relatīvais vērtējums starp pirmajiem 5
+nav Google Fonts
+Kopēt CSS
+Nokopēts
+Atrod Google Fonts saimes. Vislabāk darbojas latīņu, kirilica un arābu raksts; ķīniešu/japāņu vēl vāji. Attēli nekad nepamet jūsu datoru; fontu priekšskatījumi tiek ielādēti no Google Fonts.
+FontSnap ir instalēts
+Piespraudiet FontSnap rīkjoslai
+Noklikšķiniet uz puzles ikonas Chrome augšējā labajā stūrī.
+Atrodiet sarakstā FontSnap.
+Noklikšķiniet uz piespraudes ikonas blakus tam.
+Jau piesprausts? Parādīt, kā lietot
+Kā atpazīt fontu
+Noklikšķiniet uz FontSnap ikonas vai nospiediet Alt+Shift+F un velciet pāri jebkuram tekstam.
+Ar peles labo pogu noklikšķiniet uz attēla un izvēlieties “Atpazīt fontu šajā attēlā”.
+Vai atveriet FontSnap un ielīmējiet, nometiet vai augšupielādējiet ekrānuzņēmumu.
+Saņemiet 5 līdzīgākos Google Fonts, salīdziniet priekšskatījumus un kopējiet CSS.
+Izmēģināt tagad
+Kā piespraust FontSnap
+Viss darbojas jūsu ierīcē. Attēli nekad netiek augšupielādēti.

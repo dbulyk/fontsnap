@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: препознавање фонта са слике помоћу AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Препознајте фонт са слике помоћу вештачке интелигенције: означите текст и FontSnap приказује 5 најсличнијих Google фонтова.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: препознај фонт"
+  },
+  "ctxImage": {
+    "message": "FontSnap: препознај фонт на овој слици"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: изабери област за препознавање фонта"
+  },
+  "selectHint": {
+    "message": "FontSnap: превуците преко текста (Esc за отказивање)"
+  },
+  "resTitle": {
+    "message": "FontSnap – резултати"
+  },
+  "tagline": {
+    "message": "Препознавање фонтова помоћу AI · ради на вашем уређају"
+  },
+  "dropHint": {
+    "message": "Налепите (Ctrl+V) или превуците слику са текстом или изаберите датотеку."
+  },
+  "chooseImage": {
+    "message": "Изабери слику"
+  },
+  "dropTip": {
+    "message": "Савет: на било којој страници кликните на икону FontSnap и превуците преко текста."
+  },
+  "modelSees": {
+    "message": "Шта модел види"
+  },
+  "loading": {
+    "message": "Учитавање модела…"
+  },
+  "analyzing": {
+    "message": "Анализа…"
+  },
+  "ready": {
+    "message": "Спремно. Налепите, превуците или изаберите слику."
+  },
+  "noLines": {
+    "message": "Нису пронађени јасни редови текста – резултат можда није поуздан. Изаберите уже подручје."
+  },
+  "readFail": {
+    "message": "Није могуће прочитати ову слику."
+  },
+  "captureFail": {
+    "message": "Снимање није успело: $ERR$ – покушајте поново или налепите снимак екрана.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Учитавање модела није успело: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Грешка: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Текст прегледа"
+  },
+  "previewPh": {
+    "message": "Унесите свој текст (подразумевано: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Релативна оцена међу првих 5"
+  },
+  "notOnGF": {
+    "message": "није на Google Fonts"
+  },
+  "copyCss": {
+    "message": "Копирај CSS"
+  },
+  "copied": {
+    "message": "Копирано"
+  },
+  "note": {
+    "message": "Проналази породице Google Fonts. Најбоље раде латиница, ћирилица и арапски; кинески/јапански још слабо. Слике никад не напуштају ваш рачунар; прегледи фонтова се учитавају са Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap је инсталиран"
+  },
+  "wPinH": {
+    "message": "Закачите FontSnap на траку са алаткама"
+  },
+  "wPin1": {
+    "message": "Кликните на икону слагалице у горњем десном углу Chrome-а."
+  },
+  "wPin2": {
+    "message": "Пронађите FontSnap на листи."
+  },
+  "wPin3": {
+    "message": "Кликните на икону чиоде поред њега."
+  },
+  "wPinned": {
+    "message": "Већ закачено? Прикажи како се користи"
+  },
+  "wUseH": {
+    "message": "Како препознати фонт"
+  },
+  "wUse1": {
+    "message": "Кликните на икону FontSnap или притисните Alt+Shift+F и превуците преко било ког текста."
+  },
+  "wUse2": {
+    "message": "Десним кликом на слику изаберите „Препознај фонт на овој слици”."
+  },
+  "wUse3": {
+    "message": "Или отворите FontSnap и налепите, превуците или отпремите снимак екрана."
+  },
+  "wUse4": {
+    "message": "Добијте 5 најсличнијих Google фонтова, упоредите прегледе и копирајте CSS."
+  },
+  "wTry": {
+    "message": "Испробај сада"
+  },
+  "wShowPin": {
+    "message": "Како закачити FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Све ради на вашем уређају. Слике се никад не отпремају."
+  }
+}

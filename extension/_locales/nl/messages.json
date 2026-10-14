@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: lettertype herkennen uit afbeelding met AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Lettertype herkennen met AI: selecteer tekst en deze font finder toont de 5 meest gelijkende Google-lettertypen uit de afbeelding.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: lettertype herkennen"
+  },
+  "ctxImage": {
+    "message": "FontSnap: lettertype in deze afbeelding herkennen"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: gebied selecteren om lettertype te herkennen"
+  },
+  "selectHint": {
+    "message": "FontSnap: sleep over de tekst (Esc om te annuleren)"
+  },
+  "resTitle": {
+    "message": "FontSnap — resultaten"
+  },
+  "tagline": {
+    "message": "AI-lettertypeherkenning · werkt op je apparaat"
+  },
+  "dropHint": {
+    "message": "Plak (Ctrl+V) of sleep een afbeelding met tekst hierheen, of kies een bestand."
+  },
+  "chooseImage": {
+    "message": "Afbeelding kiezen"
+  },
+  "dropTip": {
+    "message": "Tip: klik op elke pagina op het FontSnap-pictogram en sleep over de tekst."
+  },
+  "modelSees": {
+    "message": "Wat het model ziet"
+  },
+  "loading": {
+    "message": "Model laden…"
+  },
+  "analyzing": {
+    "message": "Analyseren…"
+  },
+  "ready": {
+    "message": "Klaar. Plak, sleep of kies een afbeelding."
+  },
+  "noLines": {
+    "message": "Geen duidelijke tekstregels gevonden — het resultaat is mogelijk onbetrouwbaar. Selecteer nauwkeuriger."
+  },
+  "readFail": {
+    "message": "Kan deze afbeelding niet lezen."
+  },
+  "captureFail": {
+    "message": "Vastleggen mislukt: $ERR$ — probeer het opnieuw of plak een screenshot.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Model laden mislukt: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Fout: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Voorbeeldtekst"
+  },
+  "previewPh": {
+    "message": "Typ je eigen tekst (standaard: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relatieve score binnen de top 5"
+  },
+  "notOnGF": {
+    "message": "niet op Google Fonts"
+  },
+  "copyCss": {
+    "message": "CSS kopiëren"
+  },
+  "copied": {
+    "message": "Gekopieerd"
+  },
+  "note": {
+    "message": "Vindt Google Fonts-families. Latijn, Cyrillisch en Arabisch werken het best; Chinees/Japans nog zwak. Afbeeldingen verlaten je computer nooit; lettertypevoorbeelden worden geladen van Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap is geïnstalleerd"
+  },
+  "wPinH": {
+    "message": "Zet FontSnap vast op de werkbalk"
+  },
+  "wPin1": {
+    "message": "Klik rechtsboven in Chrome op het puzzelpictogram."
+  },
+  "wPin2": {
+    "message": "Zoek FontSnap in de lijst."
+  },
+  "wPin3": {
+    "message": "Klik op het punaise-pictogram ernaast."
+  },
+  "wPinned": {
+    "message": "Al vastgezet? Bekijk hoe het werkt"
+  },
+  "wUseH": {
+    "message": "Zo herken je een lettertype"
+  },
+  "wUse1": {
+    "message": "Klik op het FontSnap-pictogram of druk op Alt+Shift+F en sleep over tekst op de pagina."
+  },
+  "wUse2": {
+    "message": "Klik met rechts op een afbeelding en kies 'Lettertype in deze afbeelding herkennen'."
+  },
+  "wUse3": {
+    "message": "Of open FontSnap en plak, sleep of upload een screenshot."
+  },
+  "wUse4": {
+    "message": "Krijg de 5 meest gelijkende Google Fonts, vergelijk voorbeelden en kopieer de CSS."
+  },
+  "wTry": {
+    "message": "Nu proberen"
+  },
+  "wShowPin": {
+    "message": "Zo zet je FontSnap vast"
+  },
+  "wPrivacy": {
+    "message": "Alles werkt op je apparaat. Afbeeldingen worden nooit geüpload."
+  }
+}

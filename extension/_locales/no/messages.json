@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: AI-skrifttypegjenkjenning fra bilde",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Finn skrifttype fra bilde med AI: merk tekst, så viser FontSnap de 5 mest like Google-skrifttypene. Font finder for Chrome.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: gjenkjenn en skrifttype"
+  },
+  "ctxImage": {
+    "message": "FontSnap: gjenkjenn skrifttypen i dette bildet"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: velg et område for å gjenkjenne skrifttype"
+  },
+  "selectHint": {
+    "message": "FontSnap: dra over teksten (Esc for å avbryte)"
+  },
+  "resTitle": {
+    "message": "FontSnap – resultater"
+  },
+  "tagline": {
+    "message": "AI-skrifttypegjenkjenning · kjører på enheten din"
+  },
+  "dropHint": {
+    "message": "Lim inn (Ctrl+V) eller slipp et bilde med tekst, eller velg en fil."
+  },
+  "chooseImage": {
+    "message": "Velg bilde"
+  },
+  "dropTip": {
+    "message": "Tips: klikk på FontSnap-ikonet på en hvilken som helst side og dra over teksten."
+  },
+  "modelSees": {
+    "message": "Hva modellen ser"
+  },
+  "loading": {
+    "message": "Laster inn modellen…"
+  },
+  "analyzing": {
+    "message": "Analyserer…"
+  },
+  "ready": {
+    "message": "Klar. Lim inn, slipp eller velg et bilde."
+  },
+  "noLines": {
+    "message": "Fant ingen tydelige tekstlinjer – resultatet kan være upålitelig. Gjør et strammere utvalg."
+  },
+  "readFail": {
+    "message": "Kunne ikke lese bildet."
+  },
+  "captureFail": {
+    "message": "Opptak mislyktes: $ERR$ – prøv igjen eller lim inn et skjermbilde.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Kunne ikke laste inn modellen: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Feil: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Forhåndsvisningstekst"
+  },
+  "previewPh": {
+    "message": "Skriv din egen tekst (standard: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relativ poengsum blant topp 5"
+  },
+  "notOnGF": {
+    "message": "finnes ikke på Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopier CSS"
+  },
+  "copied": {
+    "message": "Kopiert"
+  },
+  "note": {
+    "message": "Finner Google Fonts-familier. Latin, kyrillisk og arabisk fungerer best; kinesisk/japansk er fortsatt svakt. Bilder forlater aldri datamaskinen din; forhåndsvisninger lastes fra Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap er installert"
+  },
+  "wPinH": {
+    "message": "Fest FontSnap til verktøylinjen"
+  },
+  "wPin1": {
+    "message": "Klikk på puslespillikonet øverst til høyre i Chrome."
+  },
+  "wPin2": {
+    "message": "Finn FontSnap i listen."
+  },
+  "wPin3": {
+    "message": "Klikk på nålikonet ved siden av."
+  },
+  "wPinned": {
+    "message": "Allerede festet? Se hvordan den brukes"
+  },
+  "wUseH": {
+    "message": "Slik gjenkjenner du en skrifttype"
+  },
+  "wUse1": {
+    "message": "Klikk på FontSnap-ikonet eller trykk Alt+Shift+F, og dra over tekst på siden."
+  },
+  "wUse2": {
+    "message": "Høyreklikk på et bilde og velg «Gjenkjenn skrifttypen i dette bildet»."
+  },
+  "wUse3": {
+    "message": "Eller åpne FontSnap og lim inn, slipp eller last opp et skjermbilde."
+  },
+  "wUse4": {
+    "message": "Få de 5 mest like Google Fonts, sammenlign forhåndsvisninger og kopier CSS."
+  },
+  "wTry": {
+    "message": "Prøv nå"
+  },
+  "wShowPin": {
+    "message": "Slik fester du FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Alt kjører på enheten din. Bilder lastes aldri opp."
+  }
+}

@@ -74,19 +74,31 @@ function validRect(r) {
 }
 
 chrome.action.onClicked.addListener(startSelect);
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(({ reason }) => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'fontsnap-image',
-      title: 'FontSnap: identify font in this image',
+      title: chrome.i18n.getMessage('ctxImage'),
       contexts: ['image'],
     });
     chrome.contextMenus.create({
       id: 'fontsnap-select',
-      title: 'FontSnap: select an area to identify font',
+      title: chrome.i18n.getMessage('ctxSelect'),
       contexts: ['page', 'selection', 'link'],
     });
   });
+  // Welcome page (internal, no hosting): only on a fresh install. Pinned state is re-checked live by welcome.js.
+  if (reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    setTimeout(async () => {
+      let pinned = false;
+      try {
+        pinned = !!(await chrome.action.getUserSettings()).isOnToolbar;
+      } catch {
+        // getUserSettings needs Chrome 91+; default to the pin instructions
+      }
+      chrome.tabs.create({ url: chrome.runtime.getURL(`welcome.html?pinned=${pinned ? 1 : 0}`) });
+    }, 1000);
+  }
 });
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'fontsnap-select') startSelect(tab);

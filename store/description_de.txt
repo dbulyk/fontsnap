@@ -1,0 +1,76 @@
+FontSnap ist eine KI-Schriftarterkennung aus Bildern, die direkt in Chrome läuft. Sie sehen eine schöne Schrift auf einer Website, in einem Banner oder auf einem Screenshot? Ziehen Sie einen Rahmen über den Text, und FontSnap zeigt in etwa einer Sekunde die fünf ähnlichsten Google-Schriften.
+
+🚀 Schriftart aus Bild erkennen in 3 Schritten
+1️⃣ Klicken Sie auf das FontSnap-Symbol in der Symbolleiste oder drücken Sie Alt+Shift+F.
+2️⃣ Ziehen Sie ein Rechteck über ein oder zwei Textzeilen.
+3️⃣ Sehen Sie die Top-5-Treffer mit Live-Vorschau und Konfidenzbalken.
+
+Kein Konto, kein Upload auf einen Server, keine Wartezeit. Das neuronale Netz läuft lokal, Ihre Bilder bleiben also auf Ihrem Computer.
+
+🔍 Was FontSnap anders macht
+Die meisten Erweiterungen dieser Art lesen nur CSS und scheitern an Logos, Bildern, Bannern und Canvas-Text. FontSnap analysiert Pixel statt Code und funktioniert daher auch dort, wo CSS nichts verrät:
+• Text in Bildern, Postern und Social-Media-Grafiken
+• Screenshots von Apps, Folien und PDF-Seiten
+• Hero-Banner und Anzeigen auf jeder Website
+• Entwürfe, die ein Kunde im Chat schickt
+
+📌 Hauptfunktionen
+- Bereichsauswahl auf jeder Seite: einfach über den Text ziehen.
+- Upload-Modus: mit Strg+V einfügen, Datei ablegen oder Bild auswählen.
+- Die 5 ähnlichsten Schriften mit Konfidenzwert.
+- Live-Vorschau jedes Treffers mit Ihrem eigenen Beispieltext.
+- Fertige CSS-Zeile mit einem Klick kopieren.
+- Funktioniert mit lateinischer, kyrillischer und arabischer Schrift.
+
+🧠 Eine KI-Schrifterkennung, trainiert mit Tausenden Familien
+FontSnap nutzt ein kompaktes Bilderkennungsmodell, das mit über 3.600 Schriftschnitten trainiert wurde. Es fasst Schnitte zu Familien zusammen und liefert eine kurze, saubere Liste statt Dutzender Beinahe-Duplikate. Ist die exakte Schrift kommerziell, erhalten Sie trotzdem die nächste Alternative, die Sie sofort nutzen können.
+
+🎨 Wer diesen Font Finder nutzt
+➤ Webdesigner, die schnell die Schrift eines Kundenentwurfs finden müssen.
+➤ Frontend-Entwickler, die die CSS-Zeile wollen, nicht nur einen Namen.
+➤ Marketing- und Social-Media-Profis, die den Stil eines Banners nachbauen.
+➤ Studierende und Blogger, die sich ständig fragen: Welche Schrift ist das?
+➤ Alle, die eine Schrift aus einem Bild finden wollen – ohne schwere Desktop-App.
+➤ Typografie-Fans, die Schriftpaarungen von Logos und Verpackungen sammeln.
+
+⚡ Warum ein Online-Tool nicht immer reicht
+Web-Tools verlangen, dass Sie ein Bild speichern, hochladen und zuschneiden. FontSnap spart sich das:
+▸ die Auswahl erfolgt auf der Seite, die Sie gerade ansehen;
+▸ die Erkennung startet, sobald Sie die Maus loslassen;
+▸ die Ergebnisse öffnen sich in einem neuen Tab neben der Quelle.
+Eine Schrifterkennung, die in den Browser passt, statt Sie aus ihm herauszuführen.
+
+📊 Schrifterkennung vs. CSS-Inspektor
+Ein CSS-Inspektor liest die Stile von echtem Webtext, sieht aber keinen Text in einem JPG oder Canvas. Eine bildbasierte Schrifterkennung schließt diese Lücke. Nutzen Sie beides: CSS für echten Text, FontSnap für Bilder.
+
+🔒 Datenschutz zuerst
+▸ Die Bildanalyse läuft per WebAssembly auf Ihrem Gerät.
+▸ Ihre Screenshots verlassen nie den Browser.
+▸ Von Google Fonts werden nur Familiennamen für die Vorschau abgerufen.
+▸ Kein Tracking, keine Werbung, keine Anmeldung.
+
+💡 Tipps für genaue Ergebnisse
+• Markieren Sie ein oder zwei Textzeilen, nicht die ganze Seite.
+• Großer Text liefert bessere Ergebnisse als winzige Bildunterschriften.
+• Passt der erste Treffer nicht, prüfen Sie die anderen vier: Die richtige Familie ist oft in den Top 5.
+
+❓ FAQ
+📍 Was ist FontSnap?
+Eine Chrome-Erweiterung und KI-Schriftarterkennung, die Schriften in einem markierten Bildschirmbereich oder in einem hochgeladenen Bild erkennt.
+
+📍 Wie erkenne ich die Schrift in einer Bilddatei?
+Öffnen Sie FontSnap auf einer beliebigen Seite und wechseln Sie in den Upload-Modus, oder öffnen Sie es auf einer geschützten Seite wie den Chrome-Einstellungen. Fügen Sie ein Bild mit Text ein, ziehen Sie es hinein oder wählen Sie es aus.
+
+📍 Funktioniert die Erweiterung offline?
+Die Erkennung selbst läuft lokal. Internet wird nur für die Vorschauen von Google Fonts benötigt.
+
+📍 Erkennt FontSnap kommerzielle Schriften?
+FontSnap vergleicht mit Google-Fonts-Familien. Bei einer kommerziellen Schrift zeigt es die nächsten Alternativen aus Google Fonts – oft genau das, was man für ein Webprojekt braucht.
+
+📍 Welche Sprachen werden unterstützt?
+Lateinische, kyrillische und arabische Schrift liefern die genauesten Ergebnisse. Chinesisch und Japanisch werden noch eingeschränkt unterstützt.
+
+📍 Werden meine Daten gesammelt?
+Nein. Die Erweiterung sammelt keine personenbezogenen Daten und sendet Ihre Bilder nirgendwohin.
+
+🌟 Installieren Sie FontSnap, die Schriftarterkennung aus Bildern für die tägliche Designarbeit, und machen Sie aus jedem „Welche Schrift ist das?“ eine Antwort in zwei Sekunden. Text markieren, Treffer erhalten, CSS kopieren und weiter gestalten.

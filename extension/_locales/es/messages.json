@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: identificar fuente por imagen con IA",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Identificador de fuentes por imagen con IA: selecciona un texto y este buscador de fuentes muestra las 5 fuentes Google más afines.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: identificar una fuente"
+  },
+  "ctxImage": {
+    "message": "FontSnap: identificar la fuente de esta imagen"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: seleccionar un área para identificar la fuente"
+  },
+  "selectHint": {
+    "message": "FontSnap: arrastra sobre el texto (Esc para cancelar)"
+  },
+  "resTitle": {
+    "message": "FontSnap — resultados"
+  },
+  "tagline": {
+    "message": "Identificador de fuentes con IA · funciona en tu dispositivo"
+  },
+  "dropHint": {
+    "message": "Pega (Ctrl+V) o suelta una imagen con texto, o elige un archivo."
+  },
+  "chooseImage": {
+    "message": "Elegir imagen"
+  },
+  "dropTip": {
+    "message": "Consejo: en cualquier página, haz clic en el icono de FontSnap y arrastra sobre el texto."
+  },
+  "modelSees": {
+    "message": "Lo que ve el modelo"
+  },
+  "loading": {
+    "message": "Cargando modelo…"
+  },
+  "analyzing": {
+    "message": "Analizando…"
+  },
+  "ready": {
+    "message": "Listo. Pega, suelta o elige una imagen."
+  },
+  "noLines": {
+    "message": "No se encontraron líneas de texto claras: el resultado puede no ser fiable. Ajusta más la selección."
+  },
+  "readFail": {
+    "message": "No se pudo leer esta imagen."
+  },
+  "captureFail": {
+    "message": "Error de captura: $ERR$. Inténtalo de nuevo o pega una captura de pantalla.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "No se pudo cargar el modelo: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Error: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Texto de vista previa"
+  },
+  "previewPh": {
+    "message": "Escribe tu propio texto (por defecto: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Puntuación relativa entre los 5 primeros"
+  },
+  "notOnGF": {
+    "message": "no está en Google Fonts"
+  },
+  "copyCss": {
+    "message": "Copiar CSS"
+  },
+  "copied": {
+    "message": "Copiado"
+  },
+  "note": {
+    "message": "Busca familias de Google Fonts. Latín, cirílico y árabe funcionan mejor; chino y japonés aún son débiles. Las imágenes nunca salen de tu ordenador; las vistas previas se cargan desde Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap está instalado"
+  },
+  "wPinH": {
+    "message": "Fija FontSnap en la barra de herramientas"
+  },
+  "wPin1": {
+    "message": "Haz clic en el icono de pieza de puzle arriba a la derecha de Chrome."
+  },
+  "wPin2": {
+    "message": "Busca FontSnap en la lista."
+  },
+  "wPin3": {
+    "message": "Haz clic en el icono de chincheta junto a él."
+  },
+  "wPinned": {
+    "message": "¿Ya lo fijaste? Ver cómo usarlo"
+  },
+  "wUseH": {
+    "message": "Cómo identificar una fuente"
+  },
+  "wUse1": {
+    "message": "Haz clic en el icono de FontSnap o pulsa Alt+Shift+F y arrastra sobre cualquier texto."
+  },
+  "wUse2": {
+    "message": "Haz clic derecho en una imagen y elige «Identificar la fuente de esta imagen»."
+  },
+  "wUse3": {
+    "message": "O abre FontSnap y pega, suelta o sube una captura de pantalla."
+  },
+  "wUse4": {
+    "message": "Obtén las 5 fuentes Google más parecidas, compara las vistas previas y copia el CSS."
+  },
+  "wTry": {
+    "message": "Probar ahora"
+  },
+  "wShowPin": {
+    "message": "Cómo fijar FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Todo funciona en tu dispositivo. Las imágenes nunca se suben."
+  }
+}

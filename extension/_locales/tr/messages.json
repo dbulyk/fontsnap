@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: Resimden Yazı Tipi Bulma (Yapay Zeka)",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Resimden yazı tipi bulma aracı: metni seçin, yapay zeka ile font bulucu FontSnap en yakın 5 Google yazı tipini göstersin.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: yazı tipini bul"
+  },
+  "ctxImage": {
+    "message": "FontSnap: bu resimdeki yazı tipini bul"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: yazı tipini bulmak için alan seç"
+  },
+  "selectHint": {
+    "message": "FontSnap: metnin üzerinden sürükleyin (iptal için Esc)"
+  },
+  "resTitle": {
+    "message": "FontSnap — sonuçlar"
+  },
+  "tagline": {
+    "message": "Yapay zeka ile yazı tipi bulucu · cihazınızda çalışır"
+  },
+  "dropHint": {
+    "message": "Metin içeren bir resmi yapıştırın (Ctrl+V) veya sürükleyin ya da dosya seçin."
+  },
+  "chooseImage": {
+    "message": "Resim seç"
+  },
+  "dropTip": {
+    "message": "İpucu: herhangi bir sayfada FontSnap simgesine tıklayın ve metnin üzerinden sürükleyin."
+  },
+  "modelSees": {
+    "message": "Modelin gördüğü"
+  },
+  "loading": {
+    "message": "Model yükleniyor…"
+  },
+  "analyzing": {
+    "message": "Analiz ediliyor…"
+  },
+  "ready": {
+    "message": "Hazır. Bir resim yapıştırın, sürükleyin veya seçin."
+  },
+  "noLines": {
+    "message": "Net metin satırı bulunamadı — sonuç güvenilir olmayabilir. Seçimi daraltın."
+  },
+  "readFail": {
+    "message": "Bu resim okunamadı."
+  },
+  "captureFail": {
+    "message": "Yakalama başarısız: $ERR$ — tekrar deneyin veya ekran görüntüsü yapıştırın.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Model yüklenemedi: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Hata: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Önizleme metni"
+  },
+  "previewPh": {
+    "message": "Kendi metninizi yazın (varsayılan: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "İlk 5 içindeki göreli puan"
+  },
+  "notOnGF": {
+    "message": "Google Fonts'ta yok"
+  },
+  "copyCss": {
+    "message": "CSS'yi kopyala"
+  },
+  "copied": {
+    "message": "Kopyalandı"
+  },
+  "note": {
+    "message": "Google Fonts ailelerini bulur. En iyi Latin, Kiril ve Arap alfabesiyle çalışır; Çince/Japonca henüz zayıf. Resimler bilgisayarınızdan asla çıkmaz; yazı tipi önizlemeleri Google Fonts'tan yüklenir."
+  },
+  "wTitle": {
+    "message": "FontSnap yüklendi"
+  },
+  "wPinH": {
+    "message": "FontSnap'i araç çubuğuna sabitleyin"
+  },
+  "wPin1": {
+    "message": "Chrome'un sağ üst köşesindeki yapboz simgesine tıklayın."
+  },
+  "wPin2": {
+    "message": "Listede FontSnap'i bulun."
+  },
+  "wPin3": {
+    "message": "Yanındaki raptiye simgesine tıklayın."
+  },
+  "wPinned": {
+    "message": "Zaten sabitlendi mi? Nasıl kullanılacağını göster"
+  },
+  "wUseH": {
+    "message": "Yazı tipi nasıl bulunur"
+  },
+  "wUse1": {
+    "message": "FontSnap simgesine tıklayın veya Alt+Shift+F'ye basın ve sayfadaki bir metnin üzerinden sürükleyin."
+  },
+  "wUse2": {
+    "message": "Bir resme sağ tıklayıp \"Bu resimdeki yazı tipini bul\"u seçin."
+  },
+  "wUse3": {
+    "message": "Ya da FontSnap'i açıp bir ekran görüntüsü yapıştırın, sürükleyin veya yükleyin."
+  },
+  "wUse4": {
+    "message": "En yakın 5 Google yazı tipini alın, önizlemeleri karşılaştırın ve CSS'yi kopyalayın."
+  },
+  "wTry": {
+    "message": "Şimdi dene"
+  },
+  "wShowPin": {
+    "message": "FontSnap nasıl sabitlenir"
+  },
+  "wPrivacy": {
+    "message": "Her şey cihazınızda çalışır. Resimler asla yüklenmez."
+  }
+}

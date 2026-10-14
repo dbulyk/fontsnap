@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: Nhận diện font chữ từ ảnh bằng AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Nhận diện font chữ từ ảnh bằng AI: chọn đoạn chữ, FontSnap tìm font và hiển thị 5 font Google giống nhất. Công cụ tìm font.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: nhận diện font chữ"
+  },
+  "ctxImage": {
+    "message": "FontSnap: nhận diện font trong ảnh này"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: chọn vùng để nhận diện font"
+  },
+  "selectHint": {
+    "message": "FontSnap: kéo chuột qua đoạn chữ (Esc để hủy)"
+  },
+  "resTitle": {
+    "message": "FontSnap — kết quả"
+  },
+  "tagline": {
+    "message": "Nhận diện font bằng AI · chạy trên thiết bị của bạn"
+  },
+  "dropHint": {
+    "message": "Dán (Ctrl+V) hoặc thả ảnh có chữ vào đây, hoặc chọn tệp."
+  },
+  "chooseImage": {
+    "message": "Chọn ảnh"
+  },
+  "dropTip": {
+    "message": "Mẹo: trên bất kỳ trang nào, nhấp biểu tượng FontSnap rồi kéo chuột qua đoạn chữ."
+  },
+  "modelSees": {
+    "message": "Mô hình nhìn thấy gì"
+  },
+  "loading": {
+    "message": "Đang tải mô hình…"
+  },
+  "analyzing": {
+    "message": "Đang phân tích…"
+  },
+  "ready": {
+    "message": "Sẵn sàng. Dán, thả hoặc chọn một ảnh."
+  },
+  "noLines": {
+    "message": "Không tìm thấy dòng chữ rõ ràng — kết quả có thể chưa chính xác. Hãy chọn vùng hẹp hơn."
+  },
+  "readFail": {
+    "message": "Không thể đọc ảnh này."
+  },
+  "captureFail": {
+    "message": "Chụp thất bại: $ERR$ — hãy thử lại hoặc dán ảnh chụp màn hình.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Không tải được mô hình: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Lỗi: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Văn bản xem trước"
+  },
+  "previewPh": {
+    "message": "Nhập văn bản của bạn (mặc định: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Điểm tương đối trong top 5"
+  },
+  "notOnGF": {
+    "message": "không có trên Google Fonts"
+  },
+  "copyCss": {
+    "message": "Sao chép CSS"
+  },
+  "copied": {
+    "message": "Đã sao chép"
+  },
+  "note": {
+    "message": "Tìm các họ font trên Google Fonts. Chữ Latinh, Kirin và Ả Rập cho kết quả tốt nhất; tiếng Trung/Nhật còn yếu. Ảnh không bao giờ rời khỏi máy tính của bạn; bản xem trước font được tải từ Google Fonts."
+  },
+  "wTitle": {
+    "message": "Đã cài đặt FontSnap"
+  },
+  "wPinH": {
+    "message": "Ghim FontSnap vào thanh công cụ"
+  },
+  "wPin1": {
+    "message": "Nhấp vào biểu tượng mảnh ghép ở góc trên bên phải Chrome."
+  },
+  "wPin2": {
+    "message": "Tìm FontSnap trong danh sách."
+  },
+  "wPin3": {
+    "message": "Nhấp vào biểu tượng ghim bên cạnh."
+  },
+  "wPinned": {
+    "message": "Đã ghim rồi? Xem cách sử dụng"
+  },
+  "wUseH": {
+    "message": "Cách nhận diện font chữ"
+  },
+  "wUse1": {
+    "message": "Nhấp biểu tượng FontSnap hoặc nhấn Alt+Shift+F, rồi kéo chuột qua đoạn chữ bất kỳ."
+  },
+  "wUse2": {
+    "message": "Nhấp chuột phải vào ảnh và chọn \"Nhận diện font trong ảnh này\"."
+  },
+  "wUse3": {
+    "message": "Hoặc mở FontSnap rồi dán, thả hoặc tải lên ảnh chụp màn hình."
+  },
+  "wUse4": {
+    "message": "Nhận 5 font Google giống nhất, so sánh bản xem trước và sao chép CSS."
+  },
+  "wTry": {
+    "message": "Dùng thử ngay"
+  },
+  "wShowPin": {
+    "message": "Cách ghim FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Mọi thứ chạy trên thiết bị của bạn. Ảnh không bao giờ được tải lên."
+  }
+}

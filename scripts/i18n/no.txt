@@ -1,0 +1,41 @@
+FontSnap: AI-skrifttypegjenkjenning fra bilde
+Finn skrifttype fra bilde med AI: merk tekst, så viser FontSnap de 5 mest like Google-skrifttypene. Font finder for Chrome.
+FontSnap: gjenkjenn en skrifttype
+FontSnap: gjenkjenn skrifttypen i dette bildet
+FontSnap: velg et område for å gjenkjenne skrifttype
+FontSnap: dra over teksten (Esc for å avbryte)
+FontSnap – resultater
+AI-skrifttypegjenkjenning · kjører på enheten din
+Lim inn (Ctrl+V) eller slipp et bilde med tekst, eller velg en fil.
+Velg bilde
+Tips: klikk på FontSnap-ikonet på en hvilken som helst side og dra over teksten.
+Hva modellen ser
+Laster inn modellen…
+Analyserer…
+Klar. Lim inn, slipp eller velg et bilde.
+Fant ingen tydelige tekstlinjer – resultatet kan være upålitelig. Gjør et strammere utvalg.
+Kunne ikke lese bildet.
+Opptak mislyktes: $ERR$ – prøv igjen eller lim inn et skjermbilde.
+Kunne ikke laste inn modellen: $ERR$
+Feil: $ERR$
+Forhåndsvisningstekst
+Skriv din egen tekst (standard: The quick brown fox…)
+Relativ poengsum blant topp 5
+finnes ikke på Google Fonts
+Kopier CSS
+Kopiert
+Finner Google Fonts-familier. Latin, kyrillisk og arabisk fungerer best; kinesisk/japansk er fortsatt svakt. Bilder forlater aldri datamaskinen din; forhåndsvisninger lastes fra Google Fonts.
+FontSnap er installert
+Fest FontSnap til verktøylinjen
+Klikk på puslespillikonet øverst til høyre i Chrome.
+Finn FontSnap i listen.
+Klikk på nålikonet ved siden av.
+Allerede festet? Se hvordan den brukes
+Slik gjenkjenner du en skrifttype
+Klikk på FontSnap-ikonet eller trykk Alt+Shift+F, og dra over tekst på siden.
+Høyreklikk på et bilde og velg «Gjenkjenn skrifttypen i dette bildet».
+Eller åpne FontSnap og lim inn, slipp eller last opp et skjermbilde.
+Få de 5 mest like Google Fonts, sammenlign forhåndsvisninger og kopier CSS.
+Prøv nå
+Slik fester du FontSnap
+Alt kjører på enheten din. Bilder lastes aldri opp.

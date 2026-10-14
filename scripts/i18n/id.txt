@@ -1,0 +1,41 @@
+FontSnap: Pendeteksi Font dari Gambar dengan AI
+Pendeteksi font dari gambar dengan AI: pilih teks, lalu font finder FontSnap menampilkan 5 font Google yang paling mirip.
+FontSnap: kenali font
+FontSnap: kenali font di gambar ini
+FontSnap: pilih area untuk mengenali font
+FontSnap: seret di atas teks (Esc untuk batal)
+FontSnap — hasil
+Pendeteksi font AI · berjalan di perangkat Anda
+Tempel (Ctrl+V) atau letakkan gambar berisi teks, atau pilih file.
+Pilih gambar
+Tips: di halaman mana pun, klik ikon FontSnap lalu seret di atas teks.
+Yang dilihat model
+Memuat model…
+Menganalisis…
+Siap. Tempel, letakkan, atau pilih gambar.
+Tidak ditemukan baris teks yang jelas — hasil mungkin kurang akurat. Persempit pilihan.
+Tidak dapat membaca gambar ini.
+Pengambilan gagal: $ERR$ — coba lagi atau tempel tangkapan layar.
+Model gagal dimuat: $ERR$
+Kesalahan: $ERR$
+Teks pratinjau
+Ketik teks Anda sendiri (bawaan: The quick brown fox…)
+Skor relatif di antara 5 teratas
+tidak ada di Google Fonts
+Salin CSS
+Disalin
+Mencocokkan keluarga Google Fonts. Latin, Sirilik, dan Arab paling akurat; Mandarin/Jepang masih lemah. Gambar tidak pernah keluar dari komputer Anda; pratinjau font dimuat dari Google Fonts.
+FontSnap telah terpasang
+Sematkan FontSnap ke toolbar
+Klik ikon puzzle di pojok kanan atas Chrome.
+Temukan FontSnap di daftar.
+Klik ikon pin di sebelahnya.
+Sudah disematkan? Lihat cara pakainya
+Cara mengenali font
+Klik ikon FontSnap atau tekan Alt+Shift+F, lalu seret di atas teks apa pun.
+Klik kanan gambar dan pilih "Kenali font di gambar ini".
+Atau buka FontSnap lalu tempel, letakkan, atau unggah tangkapan layar.
+Dapatkan 5 Google Fonts paling mirip, bandingkan pratinjau, dan salin CSS.
+Coba sekarang
+Cara menyematkan FontSnap
+Semua berjalan di perangkat Anda. Gambar tidak pernah diunggah.

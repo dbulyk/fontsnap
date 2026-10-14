@@ -18,14 +18,6 @@ export function previewText(typed, selected) {
   return s ? s.slice(0, 80) : DEFAULT_PREVIEW;
 }
 
-// Status line. On the first run the model load time is included in the total and shown separately.
-export function timingText(analysisMs, modelLoadMs) {
-  const a = Math.round(analysisMs);
-  if (!(modelLoadMs > 0)) return `Done in ${a} ms`;
-  const m = Math.round(modelLoadMs);
-  return `Done in ${a + m} ms (model load ${m} ms + analysis ${a} ms)`;
-}
-
 // Display filter. The ranker always returns k candidates (needed for the top-5 metric), but when the
 // model is confident the tail is filled by popular families (the rank^-0.5 prior lifts Roboto/Lato
 // over near-zero probabilities) and would show as "0%". Hide anything whose shown percentage rounds

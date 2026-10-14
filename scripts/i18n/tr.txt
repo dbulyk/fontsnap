@@ -1,0 +1,41 @@
+FontSnap: Resimden Yazı Tipi Bulma (Yapay Zeka)
+Resimden yazı tipi bulma aracı: metni seçin, yapay zeka ile font bulucu FontSnap en yakın 5 Google yazı tipini göstersin.
+FontSnap: yazı tipini bul
+FontSnap: bu resimdeki yazı tipini bul
+FontSnap: yazı tipini bulmak için alan seç
+FontSnap: metnin üzerinden sürükleyin (iptal için Esc)
+FontSnap — sonuçlar
+Yapay zeka ile yazı tipi bulucu · cihazınızda çalışır
+Metin içeren bir resmi yapıştırın (Ctrl+V) veya sürükleyin ya da dosya seçin.
+Resim seç
+İpucu: herhangi bir sayfada FontSnap simgesine tıklayın ve metnin üzerinden sürükleyin.
+Modelin gördüğü
+Model yükleniyor…
+Analiz ediliyor…
+Hazır. Bir resim yapıştırın, sürükleyin veya seçin.
+Net metin satırı bulunamadı — sonuç güvenilir olmayabilir. Seçimi daraltın.
+Bu resim okunamadı.
+Yakalama başarısız: $ERR$ — tekrar deneyin veya ekran görüntüsü yapıştırın.
+Model yüklenemedi: $ERR$
+Hata: $ERR$
+Önizleme metni
+Kendi metninizi yazın (varsayılan: The quick brown fox…)
+İlk 5 içindeki göreli puan
+Google Fonts'ta yok
+CSS'yi kopyala
+Kopyalandı
+Google Fonts ailelerini bulur. En iyi Latin, Kiril ve Arap alfabesiyle çalışır; Çince/Japonca henüz zayıf. Resimler bilgisayarınızdan asla çıkmaz; yazı tipi önizlemeleri Google Fonts'tan yüklenir.
+FontSnap yüklendi
+FontSnap'i araç çubuğuna sabitleyin
+Chrome'un sağ üst köşesindeki yapboz simgesine tıklayın.
+Listede FontSnap'i bulun.
+Yanındaki raptiye simgesine tıklayın.
+Zaten sabitlendi mi? Nasıl kullanılacağını göster
+Yazı tipi nasıl bulunur
+FontSnap simgesine tıklayın veya Alt+Shift+F'ye basın ve sayfadaki bir metnin üzerinden sürükleyin.
+Bir resme sağ tıklayıp "Bu resimdeki yazı tipini bul"u seçin.
+Ya da FontSnap'i açıp bir ekran görüntüsü yapıştırın, sürükleyin veya yükleyin.
+En yakın 5 Google yazı tipini alın, önizlemeleri karşılaştırın ve CSS'yi kopyalayın.
+Şimdi dene
+FontSnap nasıl sabitlenir
+Her şey cihazınızda çalışır. Resimler asla yüklenmez.

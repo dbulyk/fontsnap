@@ -1,0 +1,41 @@
+FontSnap: AI šrifto atpažinimas iš paveikslėlio
+Atpažinkite šriftą iš paveikslėlio su AI: pažymėkite tekstą ir FontSnap parodys 5 panašiausius Google šriftus. Šriftų paieška.
+FontSnap: atpažinti šriftą
+FontSnap: atpažinti šriftą šiame paveikslėlyje
+FontSnap: pažymėti sritį šriftui atpažinti
+FontSnap: vilkite per tekstą (Esc – atšaukti)
+FontSnap – rezultatai
+AI šriftų atpažinimas · veikia jūsų įrenginyje
+Įklijuokite (Ctrl+V) arba nutempkite paveikslėlį su tekstu, arba pasirinkite failą.
+Pasirinkti paveikslėlį
+Patarimas: bet kuriame puslapyje spustelėkite FontSnap piktogramą ir vilkite per tekstą.
+Ką mato modelis
+Įkeliamas modelis…
+Analizuojama…
+Paruošta. Įklijuokite, nutempkite arba pasirinkite paveikslėlį.
+Aiškių teksto eilučių nerasta – rezultatas gali būti netikslus. Pažymėkite siauriau.
+Nepavyko nuskaityti paveikslėlio.
+Nepavyko užfiksuoti: $ERR$ – bandykite dar kartą arba įklijuokite ekrano kopiją.
+Nepavyko įkelti modelio: $ERR$
+Klaida: $ERR$
+Peržiūros tekstas
+Įveskite savo tekstą (numatytasis: The quick brown fox…)
+Santykinis įvertinimas tarp pirmų 5
+nėra Google Fonts
+Kopijuoti CSS
+Nukopijuota
+Randa Google Fonts šeimas. Geriausiai veikia lotynų, kirilica ir arabų raštas; kinų/japonų dar silpnai. Paveikslėliai niekada nepalieka jūsų kompiuterio; šriftų peržiūros įkeliamos iš Google Fonts.
+FontSnap įdiegtas
+Prisekite FontSnap prie įrankių juostos
+Spustelėkite dėlionės piktogramą viršutiniame dešiniajame Chrome kampe.
+Sąraše raskite FontSnap.
+Spustelėkite šalia esančią smeigtuko piktogramą.
+Jau prisegta? Rodyti, kaip naudotis
+Kaip atpažinti šriftą
+Spustelėkite FontSnap piktogramą arba paspauskite Alt+Shift+F ir vilkite per bet kokį tekstą.
+Dešiniuoju pelės mygtuku spustelėkite paveikslėlį ir pasirinkite „Atpažinti šriftą šiame paveikslėlyje“.
+Arba atidarykite FontSnap ir įklijuokite, nutempkite ar įkelkite ekrano kopiją.
+Gaukite 5 panašiausius Google Fonts, palyginkite peržiūras ir nukopijuokite CSS.
+Išbandyti dabar
+Kaip prisegti FontSnap
+Viskas veikia jūsų įrenginyje. Paveikslėliai niekada neįkeliami.

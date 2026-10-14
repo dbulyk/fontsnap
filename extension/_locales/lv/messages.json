@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: AI fontu atpazīšana no attēla",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Atpazīstiet fontu no attēla ar AI: atlasiet tekstu, un FontSnap parāda 5 līdzīgākos Google fontus. Fontu meklētājs pārlūkam Chrome.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: atpazīt fontu"
+  },
+  "ctxImage": {
+    "message": "FontSnap: atpazīt fontu šajā attēlā"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: atlasīt apgabalu fonta atpazīšanai"
+  },
+  "selectHint": {
+    "message": "FontSnap: velciet pāri tekstam (Esc — atcelt)"
+  },
+  "resTitle": {
+    "message": "FontSnap — rezultāti"
+  },
+  "tagline": {
+    "message": "AI fontu atpazīšana · darbojas jūsu ierīcē"
+  },
+  "dropHint": {
+    "message": "Ielīmējiet (Ctrl+V) vai nometiet attēlu ar tekstu, vai izvēlieties failu."
+  },
+  "chooseImage": {
+    "message": "Izvēlēties attēlu"
+  },
+  "dropTip": {
+    "message": "Padoms: jebkurā lapā noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam."
+  },
+  "modelSees": {
+    "message": "Ko redz modelis"
+  },
+  "loading": {
+    "message": "Ielādē modeli…"
+  },
+  "analyzing": {
+    "message": "Analizē…"
+  },
+  "ready": {
+    "message": "Gatavs. Ielīmējiet, nometiet vai izvēlieties attēlu."
+  },
+  "noLines": {
+    "message": "Skaidras teksta rindas netika atrastas — rezultāts var būt neprecīzs. Atlasiet šaurāk."
+  },
+  "readFail": {
+    "message": "Šo attēlu nevarēja nolasīt."
+  },
+  "captureFail": {
+    "message": "Uzņemšana neizdevās: $ERR$ — mēģiniet vēlreiz vai ielīmējiet ekrānuzņēmumu.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Modeli neizdevās ielādēt: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Kļūda: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Priekšskatījuma teksts"
+  },
+  "previewPh": {
+    "message": "Ierakstiet savu tekstu (noklusējums: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relatīvais vērtējums starp pirmajiem 5"
+  },
+  "notOnGF": {
+    "message": "nav Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopēt CSS"
+  },
+  "copied": {
+    "message": "Nokopēts"
+  },
+  "note": {
+    "message": "Atrod Google Fonts saimes. Vislabāk darbojas latīņu, kirilica un arābu raksts; ķīniešu/japāņu vēl vāji. Attēli nekad nepamet jūsu datoru; fontu priekšskatījumi tiek ielādēti no Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap ir instalēts"
+  },
+  "wPinH": {
+    "message": "Piespraudiet FontSnap rīkjoslai"
+  },
+  "wPin1": {
+    "message": "Noklikšķiniet uz puzles ikonas Chrome augšējā labajā stūrī."
+  },
+  "wPin2": {
+    "message": "Atrodiet sarakstā FontSnap."
+  },
+  "wPin3": {
+    "message": "Noklikšķiniet uz piespraudes ikonas blakus tam."
+  },
+  "wPinned": {
+    "message": "Jau piesprausts? Parādīt, kā lietot"
+  },
+  "wUseH": {
+    "message": "Kā atpazīt fontu"
+  },
+  "wUse1": {
+    "message": "Noklikšķiniet uz FontSnap ikonas vai nospiediet Alt+Shift+F un velciet pāri jebkuram tekstam."
+  },
+  "wUse2": {
+    "message": "Ar peles labo pogu noklikšķiniet uz attēla un izvēlieties “Atpazīt fontu šajā attēlā”."
+  },
+  "wUse3": {
+    "message": "Vai atveriet FontSnap un ielīmējiet, nometiet vai augšupielādējiet ekrānuzņēmumu."
+  },
+  "wUse4": {
+    "message": "Saņemiet 5 līdzīgākos Google Fonts, salīdziniet priekšskatījumus un kopējiet CSS."
+  },
+  "wTry": {
+    "message": "Izmēģināt tagad"
+  },
+  "wShowPin": {
+    "message": "Kā piespraust FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Viss darbojas jūsu ierīcē. Attēli nekad netiek augšupielādēti."
+  }
+}

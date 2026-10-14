@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: AI fondituvastaja pildilt",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Tuvasta font pildilt tehisintellektiga: vali tekst ja FontSnap näitab 5 kõige sarnasemat Google'i fonti. Fondiotsija Chrome'ile.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: tuvasta font"
+  },
+  "ctxImage": {
+    "message": "FontSnap: tuvasta selle pildi font"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: vali ala fondi tuvastamiseks"
+  },
+  "selectHint": {
+    "message": "FontSnap: lohista üle teksti (Esc tühistab)"
+  },
+  "resTitle": {
+    "message": "FontSnap – tulemused"
+  },
+  "tagline": {
+    "message": "AI fondituvastaja · töötab sinu seadmes"
+  },
+  "dropHint": {
+    "message": "Kleebi (Ctrl+V) või lohista siia tekstiga pilt või vali fail."
+  },
+  "chooseImage": {
+    "message": "Vali pilt"
+  },
+  "dropTip": {
+    "message": "Nõuanne: klõpsa mis tahes lehel FontSnapi ikoonil ja lohista üle teksti."
+  },
+  "modelSees": {
+    "message": "Mida mudel näeb"
+  },
+  "loading": {
+    "message": "Mudeli laadimine…"
+  },
+  "analyzing": {
+    "message": "Analüüsimine…"
+  },
+  "ready": {
+    "message": "Valmis. Kleebi, lohista või vali pilt."
+  },
+  "noLines": {
+    "message": "Selgeid tekstiridu ei leitud – tulemus võib olla ebatäpne. Vali kitsam ala."
+  },
+  "readFail": {
+    "message": "Pilti ei õnnestunud lugeda."
+  },
+  "captureFail": {
+    "message": "Jäädvustamine ebaõnnestus: $ERR$ – proovi uuesti või kleebi ekraanipilt.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Mudeli laadimine ebaõnnestus: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Viga: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Eelvaate tekst"
+  },
+  "previewPh": {
+    "message": "Sisesta oma tekst (vaikimisi: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Suhteline skoor esimese 5 seas"
+  },
+  "notOnGF": {
+    "message": "pole Google Fontsis"
+  },
+  "copyCss": {
+    "message": "Kopeeri CSS"
+  },
+  "copied": {
+    "message": "Kopeeritud"
+  },
+  "note": {
+    "message": "Leiab Google Fontsi perekondi. Ladina, kirillitsa ja araabia kiri toimivad kõige paremini; hiina/jaapani veel nõrgalt. Pildid ei lahku kunagi sinu arvutist; fondieelvaated laaditakse Google Fontsist."
+  },
+  "wTitle": {
+    "message": "FontSnap on installitud"
+  },
+  "wPinH": {
+    "message": "Kinnita FontSnap tööriistaribale"
+  },
+  "wPin1": {
+    "message": "Klõpsa Chrome'i paremas ülanurgas pusleikoonil."
+  },
+  "wPin2": {
+    "message": "Leia loendist FontSnap."
+  },
+  "wPin3": {
+    "message": "Klõpsa selle kõrval oleval nööpnõela ikoonil."
+  },
+  "wPinned": {
+    "message": "Juba kinnitatud? Näita, kuidas kasutada"
+  },
+  "wUseH": {
+    "message": "Kuidas fonti tuvastada"
+  },
+  "wUse1": {
+    "message": "Klõpsa FontSnapi ikoonil või vajuta Alt+Shift+F ja lohista üle mis tahes teksti."
+  },
+  "wUse2": {
+    "message": "Paremklõpsa pildil ja vali „Tuvasta selle pildi font”."
+  },
+  "wUse3": {
+    "message": "Või ava FontSnap ja kleebi, lohista või laadi üles ekraanipilt."
+  },
+  "wUse4": {
+    "message": "Saad 5 kõige sarnasemat Google Fonti, võrdle eelvaateid ja kopeeri CSS."
+  },
+  "wTry": {
+    "message": "Proovi kohe"
+  },
+  "wShowPin": {
+    "message": "Kuidas FontSnap kinnitada"
+  },
+  "wPrivacy": {
+    "message": "Kõik töötab sinu seadmes. Pilte ei laadita kunagi üles."
+  }
+}

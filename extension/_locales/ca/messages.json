@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: identificador de fonts per imatge amb IA",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Identificador de fonts per imatge amb IA: selecciona un text i FontSnap troba la font i mostra les 5 fonts Google més semblants.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: identifica una font"
+  },
+  "ctxImage": {
+    "message": "FontSnap: identifica la font d'aquesta imatge"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: selecciona una àrea per identificar la font"
+  },
+  "selectHint": {
+    "message": "FontSnap: arrossega sobre el text (Esc per cancel·lar)"
+  },
+  "resTitle": {
+    "message": "FontSnap — resultats"
+  },
+  "tagline": {
+    "message": "Identificador de fonts amb IA · funciona al teu dispositiu"
+  },
+  "dropHint": {
+    "message": "Enganxa (Ctrl+V) o deixa anar una imatge amb text, o tria un fitxer."
+  },
+  "chooseImage": {
+    "message": "Tria una imatge"
+  },
+  "dropTip": {
+    "message": "Consell: a qualsevol pàgina, fes clic a la icona de FontSnap i arrossega sobre el text."
+  },
+  "modelSees": {
+    "message": "Què veu el model"
+  },
+  "loading": {
+    "message": "S'està carregant el model…"
+  },
+  "analyzing": {
+    "message": "S'està analitzant…"
+  },
+  "ready": {
+    "message": "A punt. Enganxa, deixa anar o tria una imatge."
+  },
+  "noLines": {
+    "message": "No s'han trobat línies de text clares; el resultat pot no ser fiable. Ajusta més la selecció."
+  },
+  "readFail": {
+    "message": "No s'ha pogut llegir aquesta imatge."
+  },
+  "captureFail": {
+    "message": "Ha fallat la captura: $ERR$. Torna-ho a provar o enganxa una captura de pantalla.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "No s'ha pogut carregar el model: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Error: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Text de previsualització"
+  },
+  "previewPh": {
+    "message": "Escriu el teu text (per defecte: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Puntuació relativa entre les 5 primeres"
+  },
+  "notOnGF": {
+    "message": "no és a Google Fonts"
+  },
+  "copyCss": {
+    "message": "Copia el CSS"
+  },
+  "copied": {
+    "message": "Copiat"
+  },
+  "note": {
+    "message": "Troba famílies de Google Fonts. Llatí, ciríl·lic i àrab funcionen millor; xinès/japonès encara són febles. Les imatges no surten mai del teu ordinador; les previsualitzacions es carreguen de Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap s'ha instal·lat"
+  },
+  "wPinH": {
+    "message": "Fixa FontSnap a la barra d'eines"
+  },
+  "wPin1": {
+    "message": "Fes clic a la icona del trencaclosques a dalt a la dreta de Chrome."
+  },
+  "wPin2": {
+    "message": "Cerca FontSnap a la llista."
+  },
+  "wPin3": {
+    "message": "Fes clic a la icona de xinxeta que hi ha al costat."
+  },
+  "wPinned": {
+    "message": "Ja l'has fixat? Mostra com fer-lo servir"
+  },
+  "wUseH": {
+    "message": "Com identificar una font"
+  },
+  "wUse1": {
+    "message": "Fes clic a la icona de FontSnap o prem Alt+Shift+F i arrossega sobre qualsevol text."
+  },
+  "wUse2": {
+    "message": "Fes clic dret en una imatge i tria «Identifica la font d'aquesta imatge»."
+  },
+  "wUse3": {
+    "message": "O obre FontSnap i enganxa, deixa anar o puja una captura de pantalla."
+  },
+  "wUse4": {
+    "message": "Obtén les 5 fonts Google més semblants, compara-les i copia el CSS."
+  },
+  "wTry": {
+    "message": "Prova-ho ara"
+  },
+  "wShowPin": {
+    "message": "Com fixar FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Tot funciona al teu dispositiu. Les imatges no es pugen mai."
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: rozpoznání fontu z obrázku pomocí AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Rozpoznání písma z obrázku pomocí AI: označte text a FontSnap najde font a ukáže 5 nejpodobnějších písem Google Fonts.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: rozpoznat písmo"
+  },
+  "ctxImage": {
+    "message": "FontSnap: rozpoznat písmo na tomto obrázku"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: vybrat oblast a rozpoznat písmo"
+  },
+  "selectHint": {
+    "message": "FontSnap: táhněte přes text (Esc pro zrušení)"
+  },
+  "resTitle": {
+    "message": "FontSnap – výsledky"
+  },
+  "tagline": {
+    "message": "Rozpoznávání písma pomocí AI · běží ve vašem zařízení"
+  },
+  "dropHint": {
+    "message": "Vložte (Ctrl+V) nebo přetáhněte obrázek s textem, nebo vyberte soubor."
+  },
+  "chooseImage": {
+    "message": "Vybrat obrázek"
+  },
+  "dropTip": {
+    "message": "Tip: na libovolné stránce klikněte na ikonu FontSnap a táhněte přes text."
+  },
+  "modelSees": {
+    "message": "Co vidí model"
+  },
+  "loading": {
+    "message": "Načítání modelu…"
+  },
+  "analyzing": {
+    "message": "Analýza…"
+  },
+  "ready": {
+    "message": "Připraveno. Vložte, přetáhněte nebo vyberte obrázek."
+  },
+  "noLines": {
+    "message": "Nenalezeny žádné jasné řádky textu – výsledek může být nespolehlivý. Vyberte oblast těsněji."
+  },
+  "readFail": {
+    "message": "Obrázek nelze načíst."
+  },
+  "captureFail": {
+    "message": "Snímek se nezdařil: $ERR$ – zkuste to znovu nebo vložte snímek obrazovky.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Model se nepodařilo načíst: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Chyba: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Text náhledu"
+  },
+  "previewPh": {
+    "message": "Napište vlastní text (výchozí: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relativní skóre mezi prvními 5"
+  },
+  "notOnGF": {
+    "message": "není v Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopírovat CSS"
+  },
+  "copied": {
+    "message": "Zkopírováno"
+  },
+  "note": {
+    "message": "Hledá rodiny Google Fonts. Nejlépe funguje latinka, cyrilice a arabština; čínština/japonština zatím slabě. Obrázky nikdy neopustí váš počítač; náhledy písem se načítají z Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap je nainstalován"
+  },
+  "wPinH": {
+    "message": "Připněte FontSnap na panel nástrojů"
+  },
+  "wPin1": {
+    "message": "Klikněte na ikonu puzzle v pravém horním rohu Chrome."
+  },
+  "wPin2": {
+    "message": "Najděte FontSnap v seznamu."
+  },
+  "wPin3": {
+    "message": "Klikněte na ikonu špendlíku vedle něj."
+  },
+  "wPinned": {
+    "message": "Už je připnuto? Ukázat, jak ho používat"
+  },
+  "wUseH": {
+    "message": "Jak rozpoznat písmo"
+  },
+  "wUse1": {
+    "message": "Klikněte na ikonu FontSnap nebo stiskněte Alt+Shift+F a táhněte přes libovolný text."
+  },
+  "wUse2": {
+    "message": "Klikněte pravým tlačítkem na obrázek a zvolte „Rozpoznat písmo na tomto obrázku“."
+  },
+  "wUse3": {
+    "message": "Nebo otevřete FontSnap a vložte, přetáhněte či nahrajte snímek obrazovky."
+  },
+  "wUse4": {
+    "message": "Získejte 5 nejpodobnějších Google Fonts, porovnejte náhledy a zkopírujte CSS."
+  },
+  "wTry": {
+    "message": "Vyzkoušet"
+  },
+  "wShowPin": {
+    "message": "Jak připnout FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Vše běží ve vašem zařízení. Obrázky se nikdy nenahrávají."
+  }
+}

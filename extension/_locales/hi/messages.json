@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: इमेज से फ़ॉन्ट पहचानें – AI फ़ॉन्ट आइडेंटिफ़ायर",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "इमेज से फ़ॉन्ट पहचानें AI से: टेक्स्ट चुनें और FontSnap फ़ॉन्ट ढूंढकर 5 सबसे मिलते-जुलते Google फ़ॉन्ट दिखाएगा।",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: फ़ॉन्ट पहचानें"
+  },
+  "ctxImage": {
+    "message": "FontSnap: इस इमेज का फ़ॉन्ट पहचानें"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: फ़ॉन्ट पहचानने के लिए क्षेत्र चुनें"
+  },
+  "selectHint": {
+    "message": "FontSnap: टेक्स्ट पर ड्रैग करें (रद्द करने के लिए Esc)"
+  },
+  "resTitle": {
+    "message": "FontSnap — नतीजे"
+  },
+  "tagline": {
+    "message": "AI फ़ॉन्ट पहचानकर्ता · आपके डिवाइस पर चलता है"
+  },
+  "dropHint": {
+    "message": "टेक्स्ट वाली इमेज पेस्ट (Ctrl+V) करें या ड्रॉप करें, या फ़ाइल चुनें।"
+  },
+  "chooseImage": {
+    "message": "इमेज चुनें"
+  },
+  "dropTip": {
+    "message": "सुझाव: किसी भी पेज पर FontSnap आइकन पर क्लिक करें और टेक्स्ट पर ड्रैग करें।"
+  },
+  "modelSees": {
+    "message": "मॉडल क्या देखता है"
+  },
+  "loading": {
+    "message": "मॉडल लोड हो रहा है…"
+  },
+  "analyzing": {
+    "message": "विश्लेषण हो रहा है…"
+  },
+  "ready": {
+    "message": "तैयार। इमेज पेस्ट करें, ड्रॉप करें या चुनें।"
+  },
+  "noLines": {
+    "message": "कोई साफ़ टेक्स्ट लाइन नहीं मिली — नतीजा सटीक न हो। छोटा क्षेत्र चुनकर देखें।"
+  },
+  "readFail": {
+    "message": "यह इमेज पढ़ी नहीं जा सकी।"
+  },
+  "captureFail": {
+    "message": "कैप्चर विफल: $ERR$ — फिर से कोशिश करें या स्क्रीनशॉट पेस्ट करें।",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "मॉडल लोड नहीं हो सका: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "त्रुटि: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "प्रीव्यू टेक्स्ट"
+  },
+  "previewPh": {
+    "message": "अपना टेक्स्ट लिखें (डिफ़ॉल्ट: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "टॉप 5 में सापेक्ष स्कोर"
+  },
+  "notOnGF": {
+    "message": "Google Fonts पर नहीं है"
+  },
+  "copyCss": {
+    "message": "CSS कॉपी करें"
+  },
+  "copied": {
+    "message": "कॉपी हो गया"
+  },
+  "note": {
+    "message": "Google Fonts फ़ैमिली से मिलान करता है। लैटिन, सिरिलिक और अरबी सबसे अच्छे चलते हैं; चीनी/जापानी अभी कमज़ोर हैं। इमेज आपके कंप्यूटर से बाहर नहीं जातीं; फ़ॉन्ट प्रीव्यू Google Fonts से लोड होते हैं।"
+  },
+  "wTitle": {
+    "message": "FontSnap इंस्टॉल हो गया"
+  },
+  "wPinH": {
+    "message": "FontSnap को टूलबार पर पिन करें"
+  },
+  "wPin1": {
+    "message": "Chrome के ऊपर दाएं कोने में पज़ल आइकन पर क्लिक करें।"
+  },
+  "wPin2": {
+    "message": "सूची में FontSnap ढूंढें।"
+  },
+  "wPin3": {
+    "message": "उसके पास पिन आइकन पर क्लिक करें।"
+  },
+  "wPinned": {
+    "message": "पहले से पिन है? इस्तेमाल का तरीका देखें"
+  },
+  "wUseH": {
+    "message": "फ़ॉन्ट कैसे पहचानें"
+  },
+  "wUse1": {
+    "message": "FontSnap आइकन पर क्लिक करें या Alt+Shift+F दबाएं, फिर पेज के किसी भी टेक्स्ट पर ड्रैग करें।"
+  },
+  "wUse2": {
+    "message": "किसी इमेज पर राइट-क्लिक करें और \"इस इमेज का फ़ॉन्ट पहचानें\" चुनें।"
+  },
+  "wUse3": {
+    "message": "या FontSnap खोलें और स्क्रीनशॉट पेस्ट, ड्रॉप या अपलोड करें।"
+  },
+  "wUse4": {
+    "message": "5 सबसे मिलते-जुलते Google Fonts पाएं, प्रीव्यू की तुलना करें और CSS कॉपी करें।"
+  },
+  "wTry": {
+    "message": "अभी आज़माएं"
+  },
+  "wShowPin": {
+    "message": "FontSnap कैसे पिन करें"
+  },
+  "wPrivacy": {
+    "message": "सब कुछ आपके डिवाइस पर चलता है। इमेज कभी अपलोड नहीं होतीं।"
+  }
+}

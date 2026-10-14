@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: AI betűtípus-felismerő képről",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Betűtípus felismerése képről AI-jal: jelölje ki a szöveget, és a FontSnap megmutatja az 5 leghasonlóbb Google-betűtípust.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: betűtípus felismerése"
+  },
+  "ctxImage": {
+    "message": "FontSnap: a kép betűtípusának felismerése"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: terület kijelölése a betűtípus felismeréséhez"
+  },
+  "selectHint": {
+    "message": "FontSnap: húzza át a szövegen (Esc: mégse)"
+  },
+  "resTitle": {
+    "message": "FontSnap – eredmények"
+  },
+  "tagline": {
+    "message": "AI betűtípus-felismerő · az Ön eszközén fut"
+  },
+  "dropHint": {
+    "message": "Illesszen be (Ctrl+V) vagy húzzon ide egy szöveges képet, vagy válasszon fájlt."
+  },
+  "chooseImage": {
+    "message": "Kép kiválasztása"
+  },
+  "dropTip": {
+    "message": "Tipp: bármely oldalon kattintson a FontSnap ikonra, és húzza át a szövegen."
+  },
+  "modelSees": {
+    "message": "Amit a modell lát"
+  },
+  "loading": {
+    "message": "Modell betöltése…"
+  },
+  "analyzing": {
+    "message": "Elemzés…"
+  },
+  "ready": {
+    "message": "Kész. Illesszen be, húzzon ide vagy válasszon egy képet."
+  },
+  "noLines": {
+    "message": "Nem találhatók tiszta szövegsorok – az eredmény pontatlan lehet. Jelöljön ki szűkebben."
+  },
+  "readFail": {
+    "message": "A kép nem olvasható."
+  },
+  "captureFail": {
+    "message": "A rögzítés sikertelen: $ERR$ – próbálja újra, vagy illesszen be egy képernyőképet.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "A modell betöltése sikertelen: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Hiba: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Előnézeti szöveg"
+  },
+  "previewPh": {
+    "message": "Írjon saját szöveget (alapértelmezés: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relatív pontszám az első 5 között"
+  },
+  "notOnGF": {
+    "message": "nincs a Google Fontsban"
+  },
+  "copyCss": {
+    "message": "CSS másolása"
+  },
+  "copied": {
+    "message": "Másolva"
+  },
+  "note": {
+    "message": "Google Fonts-családokat talál. A latin, cirill és arab írás működik a legjobban; a kínai/japán még gyenge. A képek sosem hagyják el a számítógépét; a betűtípus-előnézetek a Google Fontsból töltődnek be."
+  },
+  "wTitle": {
+    "message": "A FontSnap telepítve van"
+  },
+  "wPinH": {
+    "message": "Rögzítse a FontSnapet az eszköztáron"
+  },
+  "wPin1": {
+    "message": "Kattintson a Chrome jobb felső sarkában a puzzle ikonra."
+  },
+  "wPin2": {
+    "message": "Keresse meg a FontSnapet a listában."
+  },
+  "wPin3": {
+    "message": "Kattintson a mellette lévő gombostű ikonra."
+  },
+  "wPinned": {
+    "message": "Már rögzítette? Mutassa meg a használatát"
+  },
+  "wUseH": {
+    "message": "Így ismerhet fel egy betűtípust"
+  },
+  "wUse1": {
+    "message": "Kattintson a FontSnap ikonra vagy nyomja meg az Alt+Shift+F billentyűket, és húzza át a szövegen."
+  },
+  "wUse2": {
+    "message": "Kattintson jobb gombbal egy képre, és válassza „A kép betűtípusának felismerése” lehetőséget."
+  },
+  "wUse3": {
+    "message": "Vagy nyissa meg a FontSnapet, és illesszen be, húzzon ide vagy töltsön fel képernyőképet."
+  },
+  "wUse4": {
+    "message": "Kapja meg az 5 leghasonlóbb Google Fontsot, hasonlítsa össze, és másolja a CSS-t."
+  },
+  "wTry": {
+    "message": "Kipróbálom"
+  },
+  "wShowPin": {
+    "message": "A FontSnap rögzítése"
+  },
+  "wPrivacy": {
+    "message": "Minden az Ön eszközén fut. A képeket sosem tölti fel."
+  }
+}

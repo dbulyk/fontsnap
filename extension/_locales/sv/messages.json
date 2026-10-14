@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: AI-typsnittsidentifierare från bild",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Identifiera typsnitt från bild med AI: markera text så visar FontSnap de 5 mest lika Google-typsnitten. Typsnittssökare i Chrome.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: identifiera ett typsnitt"
+  },
+  "ctxImage": {
+    "message": "FontSnap: identifiera typsnittet i den här bilden"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: markera ett område för att identifiera typsnitt"
+  },
+  "selectHint": {
+    "message": "FontSnap: dra över texten (Esc för att avbryta)"
+  },
+  "resTitle": {
+    "message": "FontSnap – resultat"
+  },
+  "tagline": {
+    "message": "AI-typsnittsidentifierare · körs på din enhet"
+  },
+  "dropHint": {
+    "message": "Klistra in (Ctrl+V) eller släpp en bild med text, eller välj en fil."
+  },
+  "chooseImage": {
+    "message": "Välj bild"
+  },
+  "dropTip": {
+    "message": "Tips: klicka på FontSnap-ikonen på valfri sida och dra över texten."
+  },
+  "modelSees": {
+    "message": "Vad modellen ser"
+  },
+  "loading": {
+    "message": "Läser in modellen…"
+  },
+  "analyzing": {
+    "message": "Analyserar…"
+  },
+  "ready": {
+    "message": "Klart. Klistra in, släpp eller välj en bild."
+  },
+  "noLines": {
+    "message": "Inga tydliga textrader hittades – resultatet kan vara opålitligt. Gör en snävare markering."
+  },
+  "readFail": {
+    "message": "Det gick inte att läsa bilden."
+  },
+  "captureFail": {
+    "message": "Skärmbilden misslyckades: $ERR$ – försök igen eller klistra in en skärmbild.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Modellen kunde inte läsas in: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Fel: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Förhandsgranskningstext"
+  },
+  "previewPh": {
+    "message": "Skriv egen text (standard: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relativ poäng bland topp 5"
+  },
+  "notOnGF": {
+    "message": "finns inte på Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopiera CSS"
+  },
+  "copied": {
+    "message": "Kopierat"
+  },
+  "note": {
+    "message": "Hittar typsnittsfamiljer från Google Fonts. Latin, kyrilliska och arabiska fungerar bäst; kinesiska/japanska är fortfarande svaga. Bilder lämnar aldrig din dator; förhandsvisningar laddas från Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap är installerat"
+  },
+  "wPinH": {
+    "message": "Fäst FontSnap i verktygsfältet"
+  },
+  "wPin1": {
+    "message": "Klicka på pusselikonen uppe till höger i Chrome."
+  },
+  "wPin2": {
+    "message": "Hitta FontSnap i listan."
+  },
+  "wPin3": {
+    "message": "Klicka på nålikonen bredvid."
+  },
+  "wPinned": {
+    "message": "Redan fäst? Visa hur det används"
+  },
+  "wUseH": {
+    "message": "Så identifierar du ett typsnitt"
+  },
+  "wUse1": {
+    "message": "Klicka på FontSnap-ikonen eller tryck Alt+Shift+F och dra över valfri text på sidan."
+  },
+  "wUse2": {
+    "message": "Högerklicka på en bild och välj ”Identifiera typsnittet i den här bilden”."
+  },
+  "wUse3": {
+    "message": "Eller öppna FontSnap och klistra in, släpp eller ladda upp en skärmbild."
+  },
+  "wUse4": {
+    "message": "Få de 5 mest lika Google Fonts, jämför förhandsvisningar och kopiera CSS."
+  },
+  "wTry": {
+    "message": "Prova nu"
+  },
+  "wShowPin": {
+    "message": "Så fäster du FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Allt körs på din enhet. Bilder laddas aldrig upp."
+  }
+}

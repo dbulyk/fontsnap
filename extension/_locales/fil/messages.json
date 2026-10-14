@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: AI Font Identifier mula sa Larawan",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Alamin ang font mula sa larawan gamit ang AI: piliin ang teksto at ipapakita ng FontSnap ang 5 pinakakahawig na Google font.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: tukuyin ang font"
+  },
+  "ctxImage": {
+    "message": "FontSnap: tukuyin ang font sa larawang ito"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: pumili ng lugar para tukuyin ang font"
+  },
+  "selectHint": {
+    "message": "FontSnap: i-drag sa ibabaw ng teksto (Esc para kanselahin)"
+  },
+  "resTitle": {
+    "message": "FontSnap — mga resulta"
+  },
+  "tagline": {
+    "message": "AI font identifier · tumatakbo sa iyong device"
+  },
+  "dropHint": {
+    "message": "I-paste (Ctrl+V) o i-drop ang larawang may teksto, o pumili ng file."
+  },
+  "chooseImage": {
+    "message": "Pumili ng larawan"
+  },
+  "dropTip": {
+    "message": "Tip: sa anumang page, i-click ang icon ng FontSnap at i-drag sa ibabaw ng teksto."
+  },
+  "modelSees": {
+    "message": "Ang nakikita ng model"
+  },
+  "loading": {
+    "message": "Nilo-load ang model…"
+  },
+  "analyzing": {
+    "message": "Sinusuri…"
+  },
+  "ready": {
+    "message": "Handa na. I-paste, i-drop o pumili ng larawan."
+  },
+  "noLines": {
+    "message": "Walang malinaw na linya ng teksto — maaaring hindi tumpak ang resulta. Gawing mas masikip ang pagpili."
+  },
+  "readFail": {
+    "message": "Hindi mabasa ang larawang ito."
+  },
+  "captureFail": {
+    "message": "Nabigo ang pagkuha: $ERR$ — subukang muli o mag-paste ng screenshot.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Hindi na-load ang model: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Error: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Preview na teksto"
+  },
+  "previewPh": {
+    "message": "Mag-type ng sariling teksto (default: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Relatibong marka sa top 5"
+  },
+  "notOnGF": {
+    "message": "wala sa Google Fonts"
+  },
+  "copyCss": {
+    "message": "Kopyahin ang CSS"
+  },
+  "copied": {
+    "message": "Nakopya"
+  },
+  "note": {
+    "message": "Tumutugma sa mga pamilya ng Google Fonts. Pinakamahusay sa Latin, Cyrillic at Arabic; mahina pa sa Chinese/Japanese. Hindi kailanman umaalis ang mga larawan sa iyong computer; nilo-load ang mga preview mula sa Google Fonts."
+  },
+  "wTitle": {
+    "message": "Na-install na ang FontSnap"
+  },
+  "wPinH": {
+    "message": "I-pin ang FontSnap sa toolbar"
+  },
+  "wPin1": {
+    "message": "I-click ang icon na puzzle sa kanang itaas ng Chrome."
+  },
+  "wPin2": {
+    "message": "Hanapin ang FontSnap sa listahan."
+  },
+  "wPin3": {
+    "message": "I-click ang icon na pin sa tabi nito."
+  },
+  "wPinned": {
+    "message": "Naka-pin na? Ipakita kung paano gamitin"
+  },
+  "wUseH": {
+    "message": "Paano tukuyin ang font"
+  },
+  "wUse1": {
+    "message": "I-click ang icon ng FontSnap o pindutin ang Alt+Shift+F, saka i-drag sa anumang teksto."
+  },
+  "wUse2": {
+    "message": "I-right-click ang larawan at piliin ang \"Tukuyin ang font sa larawang ito\"."
+  },
+  "wUse3": {
+    "message": "O buksan ang FontSnap at i-paste, i-drop o i-upload ang screenshot."
+  },
+  "wUse4": {
+    "message": "Makuha ang 5 pinakakahawig na Google Fonts, ihambing ang mga preview at kopyahin ang CSS."
+  },
+  "wTry": {
+    "message": "Subukan ngayon"
+  },
+  "wShowPin": {
+    "message": "Paano i-pin ang FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Lahat ay tumatakbo sa iyong device. Hindi kailanman ina-upload ang mga larawan."
+  }
+}

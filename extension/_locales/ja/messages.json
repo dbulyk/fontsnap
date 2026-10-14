@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: 画像からフォントを判別するAIフォント検索",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "画像からフォントを判別するAIツール。テキストを選択するだけで、似ているGoogleフォントを5つ表示するフォント検索拡張機能です。",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: フォントを判別"
+  },
+  "ctxImage": {
+    "message": "FontSnap: この画像のフォントを判別"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: 範囲を選択してフォントを判別"
+  },
+  "selectHint": {
+    "message": "FontSnap: テキストの上をドラッグ(Escでキャンセル)"
+  },
+  "resTitle": {
+    "message": "FontSnap — 結果"
+  },
+  "tagline": {
+    "message": "AIフォント判別 · お使いのデバイス上で動作"
+  },
+  "dropHint": {
+    "message": "テキストを含む画像を貼り付け(Ctrl+V)またはドロップするか、ファイルを選択してください。"
+  },
+  "chooseImage": {
+    "message": "画像を選択"
+  },
+  "dropTip": {
+    "message": "ヒント: どのページでもFontSnapアイコンをクリックし、テキストの上をドラッグします。"
+  },
+  "modelSees": {
+    "message": "モデルが見ている画像"
+  },
+  "loading": {
+    "message": "モデルを読み込み中…"
+  },
+  "analyzing": {
+    "message": "分析中…"
+  },
+  "ready": {
+    "message": "準備完了。画像を貼り付け、ドロップ、または選択してください。"
+  },
+  "noLines": {
+    "message": "はっきりしたテキスト行が見つかりません。結果が不正確な可能性があります。範囲を狭めてください。"
+  },
+  "readFail": {
+    "message": "この画像を読み込めませんでした。"
+  },
+  "captureFail": {
+    "message": "キャプチャに失敗しました: $ERR$ — もう一度試すか、スクリーンショットを貼り付けてください。",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "モデルを読み込めませんでした: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "エラー: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "プレビューテキスト"
+  },
+  "previewPh": {
+    "message": "任意のテキストを入力(既定: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "上位5件内での相対スコア"
+  },
+  "notOnGF": {
+    "message": "Google Fontsにありません"
+  },
+  "copyCss": {
+    "message": "CSSをコピー"
+  },
+  "copied": {
+    "message": "コピーしました"
+  },
+  "note": {
+    "message": "Google Fontsのファミリーから判別します。ラテン文字・キリル文字・アラビア文字が得意で、中国語・日本語はまだ精度が低めです。画像がパソコンから外部に送信されることはありません。フォントのプレビューはGoogle Fontsから読み込みます。"
+  },
+  "wTitle": {
+    "message": "FontSnapをインストールしました"
+  },
+  "wPinH": {
+    "message": "FontSnapをツールバーに固定しましょう"
+  },
+  "wPin1": {
+    "message": "Chromeの右上にあるパズルのアイコンをクリックします。"
+  },
+  "wPin2": {
+    "message": "一覧からFontSnapを探します。"
+  },
+  "wPin3": {
+    "message": "横にあるピンのアイコンをクリックします。"
+  },
+  "wPinned": {
+    "message": "固定済みですか?使い方を見る"
+  },
+  "wUseH": {
+    "message": "フォントを判別する方法"
+  },
+  "wUse1": {
+    "message": "FontSnapアイコンをクリックするかAlt+Shift+Fを押し、ページ上のテキストをドラッグします。"
+  },
+  "wUse2": {
+    "message": "画像を右クリックして「この画像のフォントを判別」を選びます。"
+  },
+  "wUse3": {
+    "message": "またはFontSnapを開き、スクリーンショットを貼り付け・ドロップ・アップロードします。"
+  },
+  "wUse4": {
+    "message": "似ているGoogleフォント5件を確認し、プレビューを比べてCSSをコピーできます。"
+  },
+  "wTry": {
+    "message": "今すぐ試す"
+  },
+  "wShowPin": {
+    "message": "FontSnapを固定する方法"
+  },
+  "wPrivacy": {
+    "message": "すべてお使いのデバイス上で動作します。画像がアップロードされることはありません。"
+  }
+}

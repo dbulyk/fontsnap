@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: చిత్రం నుండి ఫాంట్ గుర్తింపు AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "AIతో చిత్రం నుండి ఫాంట్‌ను గుర్తించండి: టెక్స్ట్‌ను ఎంచుకోండి, FontSnap 5 దగ్గరి Google ఫాంట్‌లను చూపిస్తుంది.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: ఫాంట్‌ను గుర్తించు"
+  },
+  "ctxImage": {
+    "message": "FontSnap: ఈ చిత్రంలోని ఫాంట్‌ను గుర్తించు"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: ఫాంట్ గుర్తించడానికి ప్రాంతాన్ని ఎంచుకో"
+  },
+  "selectHint": {
+    "message": "FontSnap: టెక్స్ట్‌పై లాగండి (రద్దు చేయడానికి Esc)"
+  },
+  "resTitle": {
+    "message": "FontSnap — ఫలితాలు"
+  },
+  "tagline": {
+    "message": "AI ఫాంట్ గుర్తింపు · మీ పరికరంలో పనిచేస్తుంది"
+  },
+  "dropHint": {
+    "message": "టెక్స్ట్ ఉన్న చిత్రాన్ని పేస్ట్ (Ctrl+V) చేయండి లేదా డ్రాప్ చేయండి, లేదా ఫైల్ ఎంచుకోండి."
+  },
+  "chooseImage": {
+    "message": "చిత్రాన్ని ఎంచుకోండి"
+  },
+  "dropTip": {
+    "message": "చిట్కా: ఏ పేజీలోనైనా FontSnap చిహ్నంపై క్లిక్ చేసి టెక్స్ట్‌పై లాగండి."
+  },
+  "modelSees": {
+    "message": "మోడల్ ఏమి చూస్తుంది"
+  },
+  "loading": {
+    "message": "మోడల్ లోడ్ అవుతోంది…"
+  },
+  "analyzing": {
+    "message": "విశ్లేషిస్తోంది…"
+  },
+  "ready": {
+    "message": "సిద్ధం. చిత్రాన్ని పేస్ట్ చేయండి, డ్రాప్ చేయండి లేదా ఎంచుకోండి."
+  },
+  "noLines": {
+    "message": "స్పష్టమైన టెక్స్ట్ లైన్లు కనబడలేదు — ఫలితం ఖచ్చితంగా ఉండకపోవచ్చు. చిన్న ప్రాంతాన్ని ఎంచుకోండి."
+  },
+  "readFail": {
+    "message": "ఈ చిత్రాన్ని చదవడం సాధ్యం కాలేదు."
+  },
+  "captureFail": {
+    "message": "క్యాప్చర్ విఫలమైంది: $ERR$ — మళ్లీ ప్రయత్నించండి లేదా స్క్రీన్‌షాట్ పేస్ట్ చేయండి.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "మోడల్‌ను లోడ్ చేయలేకపోయింది: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "లోపం: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "ప్రివ్యూ టెక్స్ట్"
+  },
+  "previewPh": {
+    "message": "మీ టెక్స్ట్ టైప్ చేయండి (డిఫాల్ట్: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "టాప్ 5లో సాపేక్ష స్కోరు"
+  },
+  "notOnGF": {
+    "message": "Google Fontsలో లేదు"
+  },
+  "copyCss": {
+    "message": "CSS కాపీ చేయి"
+  },
+  "copied": {
+    "message": "కాపీ అయింది"
+  },
+  "note": {
+    "message": "Google Fonts కుటుంబాలతో సరిపోలుస్తుంది. లాటిన్, సిరిలిక్, అరబిక్ ఉత్తమంగా పనిచేస్తాయి; చైనీస్/జపనీస్ ఇంకా బలహీనం. చిత్రాలు మీ కంప్యూటర్‌ను వదిలి వెళ్లవు; ఫాంట్ ప్రివ్యూలు Google Fonts నుండి లోడ్ అవుతాయి."
+  },
+  "wTitle": {
+    "message": "FontSnap ఇన్‌స్టాల్ అయింది"
+  },
+  "wPinH": {
+    "message": "FontSnapను టూల్‌బార్‌కు పిన్ చేయండి"
+  },
+  "wPin1": {
+    "message": "Chrome ఎగువ కుడి మూలలో ఉన్న పజిల్ చిహ్నంపై క్లిక్ చేయండి."
+  },
+  "wPin2": {
+    "message": "జాబితాలో FontSnapను కనుగొనండి."
+  },
+  "wPin3": {
+    "message": "దాని పక్కన ఉన్న పిన్ చిహ్నంపై క్లిక్ చేయండి."
+  },
+  "wPinned": {
+    "message": "ఇప్పటికే పిన్ చేశారా? ఉపయోగించే విధానం చూపించు"
+  },
+  "wUseH": {
+    "message": "ఫాంట్‌ను ఎలా గుర్తించాలి"
+  },
+  "wUse1": {
+    "message": "FontSnap చిహ్నంపై క్లిక్ చేయండి లేదా Alt+Shift+F నొక్కి ఏదైనా టెక్స్ట్‌పై లాగండి."
+  },
+  "wUse2": {
+    "message": "చిత్రంపై రైట్-క్లిక్ చేసి \"ఈ చిత్రంలోని ఫాంట్‌ను గుర్తించు\" ఎంచుకోండి."
+  },
+  "wUse3": {
+    "message": "లేదా FontSnap తెరిచి స్క్రీన్‌షాట్‌ను పేస్ట్, డ్రాప్ లేదా అప్‌లోడ్ చేయండి."
+  },
+  "wUse4": {
+    "message": "5 దగ్గరి Google Fonts పొందండి, ప్రివ్యూలను పోల్చి CSS కాపీ చేయండి."
+  },
+  "wTry": {
+    "message": "ఇప్పుడే ప్రయత్నించండి"
+  },
+  "wShowPin": {
+    "message": "FontSnapను ఎలా పిన్ చేయాలి"
+  },
+  "wPrivacy": {
+    "message": "అంతా మీ పరికరంలోనే పనిచేస్తుంది. చిత్రాలు ఎప్పుడూ అప్‌లోడ్ కావు."
+  }
+}

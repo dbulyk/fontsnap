@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: identificador de tipos de letra por imagem com IA",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Identificador de tipos de letra por imagem com IA: selecione um texto e veja as 5 fontes Google mais parecidas com a da imagem.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: identificar um tipo de letra"
+  },
+  "ctxImage": {
+    "message": "FontSnap: identificar o tipo de letra desta imagem"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: selecionar uma área para identificar o tipo de letra"
+  },
+  "selectHint": {
+    "message": "FontSnap: arraste sobre o texto (Esc para cancelar)"
+  },
+  "resTitle": {
+    "message": "FontSnap — resultados"
+  },
+  "tagline": {
+    "message": "Identificador de tipos de letra com IA · funciona no seu dispositivo"
+  },
+  "dropHint": {
+    "message": "Cole (Ctrl+V) ou largue uma imagem com texto, ou escolha um ficheiro."
+  },
+  "chooseImage": {
+    "message": "Escolher imagem"
+  },
+  "dropTip": {
+    "message": "Dica: em qualquer página, clique no ícone do FontSnap e arraste sobre o texto."
+  },
+  "modelSees": {
+    "message": "O que o modelo vê"
+  },
+  "loading": {
+    "message": "A carregar o modelo…"
+  },
+  "analyzing": {
+    "message": "A analisar…"
+  },
+  "ready": {
+    "message": "Pronto. Cole, largue ou escolha uma imagem."
+  },
+  "noLines": {
+    "message": "Não foram encontradas linhas de texto nítidas — o resultado pode não ser fiável. Faça uma seleção mais justa."
+  },
+  "readFail": {
+    "message": "Não foi possível ler esta imagem."
+  },
+  "captureFail": {
+    "message": "Falha na captura: $ERR$ — tente novamente ou cole uma captura de ecrã.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Falha ao carregar o modelo: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Erro: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Texto de pré-visualização"
+  },
+  "previewPh": {
+    "message": "Escreva o seu texto (predefinição: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Pontuação relativa entre os 5 primeiros"
+  },
+  "notOnGF": {
+    "message": "não está no Google Fonts"
+  },
+  "copyCss": {
+    "message": "Copiar CSS"
+  },
+  "copied": {
+    "message": "Copiado"
+  },
+  "note": {
+    "message": "Encontra famílias do Google Fonts. Latim, cirílico e árabe funcionam melhor; chinês/japonês ainda são fracos. As imagens nunca saem do seu computador; as pré-visualizações são carregadas do Google Fonts."
+  },
+  "wTitle": {
+    "message": "O FontSnap foi instalado"
+  },
+  "wPinH": {
+    "message": "Afixe o FontSnap na barra de ferramentas"
+  },
+  "wPin1": {
+    "message": "Clique no ícone de peça de puzzle no canto superior direito do Chrome."
+  },
+  "wPin2": {
+    "message": "Encontre o FontSnap na lista."
+  },
+  "wPin3": {
+    "message": "Clique no ícone de pionés ao lado."
+  },
+  "wPinned": {
+    "message": "Já afixou? Ver como utilizar"
+  },
+  "wUseH": {
+    "message": "Como identificar um tipo de letra"
+  },
+  "wUse1": {
+    "message": "Clique no ícone do FontSnap ou prima Alt+Shift+F e arraste sobre qualquer texto da página."
+  },
+  "wUse2": {
+    "message": "Clique com o botão direito numa imagem e escolha \"Identificar o tipo de letra desta imagem\"."
+  },
+  "wUse3": {
+    "message": "Ou abra o FontSnap e cole, largue ou carregue uma captura de ecrã."
+  },
+  "wUse4": {
+    "message": "Obtenha as 5 fontes Google mais parecidas, compare as pré-visualizações e copie o CSS."
+  },
+  "wTry": {
+    "message": "Experimentar agora"
+  },
+  "wShowPin": {
+    "message": "Como afixar o FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Tudo funciona no seu dispositivo. As imagens nunca são enviadas."
+  }
+}

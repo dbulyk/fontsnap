@@ -1,0 +1,41 @@
+FontSnap: identificare font din imagine cu AI
+Identificator de fonturi din imagine cu AI: selectați un text, iar FontSnap găsește fontul și arată 5 fonturi Google similare.
+FontSnap: identifică un font
+FontSnap: identifică fontul din această imagine
+FontSnap: selectează o zonă pentru a identifica fontul
+FontSnap: trageți peste text (Esc pentru anulare)
+FontSnap — rezultate
+Identificator de fonturi cu AI · rulează pe dispozitivul dvs.
+Lipiți (Ctrl+V) sau plasați o imagine cu text ori alegeți un fișier.
+Alege imaginea
+Sfat: pe orice pagină, faceți clic pe pictograma FontSnap și trageți peste text.
+Ce vede modelul
+Se încarcă modelul…
+Se analizează…
+Gata. Lipiți, plasați sau alegeți o imagine.
+Nu s-au găsit rânduri clare de text — rezultatul poate fi nesigur. Faceți o selecție mai strânsă.
+Imaginea nu a putut fi citită.
+Captura a eșuat: $ERR$ — încercați din nou sau lipiți o captură de ecran.
+Modelul nu s-a putut încărca: $ERR$
+Eroare: $ERR$
+Text de previzualizare
+Scrieți propriul text (implicit: The quick brown fox…)
+Scor relativ între primele 5
+nu este pe Google Fonts
+Copiază CSS
+Copiat
+Găsește familii Google Fonts. Latina, chirilica și araba merg cel mai bine; chineza/japoneza încă slab. Imaginile nu părăsesc niciodată computerul; previzualizările fonturilor se încarcă de pe Google Fonts.
+FontSnap a fost instalat
+Fixați FontSnap în bara de instrumente
+Faceți clic pe pictograma puzzle din colțul dreapta sus din Chrome.
+Găsiți FontSnap în listă.
+Faceți clic pe pictograma pioneză de lângă el.
+Deja fixat? Vezi cum se folosește
+Cum identificați un font
+Faceți clic pe pictograma FontSnap sau apăsați Alt+Shift+F și trageți peste orice text.
+Clic dreapta pe o imagine și alegeți „Identifică fontul din această imagine”.
+Sau deschideți FontSnap și lipiți, plasați sau încărcați o captură de ecran.
+Primiți cele mai apropiate 5 fonturi Google, comparați previzualizările și copiați CSS.
+Încearcă acum
+Cum fixați FontSnap
+Totul rulează pe dispozitivul dvs. Imaginile nu sunt încărcate niciodată.

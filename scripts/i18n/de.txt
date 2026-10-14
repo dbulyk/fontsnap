@@ -1,0 +1,41 @@
+FontSnap: KI-Schriftarterkennung aus Bild
+Schriftart erkennen per KI: Text markieren, und der Font Finder zeigt die 5 ähnlichsten Google-Schriften. Schrift aus Bild finden.
+FontSnap: Schriftart erkennen
+FontSnap: Schriftart in diesem Bild erkennen
+FontSnap: Bereich auswählen und Schriftart erkennen
+FontSnap: Ziehen Sie über den Text (Esc zum Abbrechen)
+FontSnap – Ergebnisse
+KI-Schriftarterkennung · läuft auf Ihrem Gerät
+Bild mit Text einfügen (Strg+V), hierher ziehen oder Datei auswählen.
+Bild auswählen
+Tipp: Klicken Sie auf einer beliebigen Seite auf das FontSnap-Symbol und ziehen Sie über den Text.
+Was das Modell sieht
+Modell wird geladen…
+Wird analysiert…
+Bereit. Bild einfügen, hierher ziehen oder auswählen.
+Keine klaren Textzeilen gefunden – das Ergebnis ist evtl. ungenau. Wählen Sie den Bereich enger.
+Dieses Bild konnte nicht gelesen werden.
+Aufnahme fehlgeschlagen: $ERR$ – erneut versuchen oder einen Screenshot einfügen.
+Modell konnte nicht geladen werden: $ERR$
+Fehler: $ERR$
+Vorschautext
+Eigenen Text eingeben (Standard: The quick brown fox…)
+Relative Bewertung unter den Top 5
+nicht bei Google Fonts
+CSS kopieren
+Kopiert
+Findet Schriften aus Google Fonts. Lateinisch, Kyrillisch und Arabisch funktionieren am besten; Chinesisch/Japanisch noch schwächer. Bilder verlassen Ihren Computer nie; Schriftvorschauen werden von Google Fonts geladen.
+FontSnap ist installiert
+FontSnap an die Symbolleiste anheften
+Klicken Sie oben rechts in Chrome auf das Puzzle-Symbol.
+Suchen Sie FontSnap in der Liste.
+Klicken Sie auf die Stecknadel daneben.
+Schon angeheftet? So funktioniert es
+So erkennen Sie eine Schriftart
+Klicken Sie auf das FontSnap-Symbol oder drücken Sie Alt+Shift+F und ziehen Sie über einen Text.
+Rechtsklick auf ein Bild und „Schriftart in diesem Bild erkennen“ wählen.
+Oder FontSnap öffnen und einen Screenshot einfügen, hineinziehen oder hochladen.
+Die 5 ähnlichsten Google Fonts erhalten, Vorschauen vergleichen und CSS kopieren.
+Jetzt ausprobieren
+So heften Sie FontSnap an
+Alles läuft auf Ihrem Gerät. Bilder werden nie hochgeladen.

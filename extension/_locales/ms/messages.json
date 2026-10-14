@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: Pengecam Fon daripada Imej dengan AI",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Pengecam fon daripada imej dengan AI: pilih teks dan FontSnap menunjukkan 5 fon Google yang paling hampir. Pencari fon untuk Chrome.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: kenal pasti fon"
+  },
+  "ctxImage": {
+    "message": "FontSnap: kenal pasti fon dalam imej ini"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: pilih kawasan untuk mengenal pasti fon"
+  },
+  "selectHint": {
+    "message": "FontSnap: seret di atas teks (Esc untuk batal)"
+  },
+  "resTitle": {
+    "message": "FontSnap — keputusan"
+  },
+  "tagline": {
+    "message": "Pengecam fon AI · berjalan pada peranti anda"
+  },
+  "dropHint": {
+    "message": "Tampal (Ctrl+V) atau lepaskan imej berteks, atau pilih fail."
+  },
+  "chooseImage": {
+    "message": "Pilih imej"
+  },
+  "dropTip": {
+    "message": "Petua: pada mana-mana halaman, klik ikon FontSnap dan seret di atas teks."
+  },
+  "modelSees": {
+    "message": "Apa yang dilihat model"
+  },
+  "loading": {
+    "message": "Memuatkan model…"
+  },
+  "analyzing": {
+    "message": "Menganalisis…"
+  },
+  "ready": {
+    "message": "Sedia. Tampal, lepaskan atau pilih imej."
+  },
+  "noLines": {
+    "message": "Tiada baris teks yang jelas ditemui — hasil mungkin kurang tepat. Kecilkan pilihan."
+  },
+  "readFail": {
+    "message": "Tidak dapat membaca imej ini."
+  },
+  "captureFail": {
+    "message": "Tangkapan gagal: $ERR$ — cuba lagi atau tampal tangkapan skrin.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Model gagal dimuatkan: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Ralat: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Teks pratonton"
+  },
+  "previewPh": {
+    "message": "Taip teks anda sendiri (lalai: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Skor relatif antara 5 teratas"
+  },
+  "notOnGF": {
+    "message": "tiada dalam Google Fonts"
+  },
+  "copyCss": {
+    "message": "Salin CSS"
+  },
+  "copied": {
+    "message": "Disalin"
+  },
+  "note": {
+    "message": "Memadankan keluarga Google Fonts. Latin, Cyril dan Arab paling baik; Cina/Jepun masih lemah. Imej tidak pernah meninggalkan komputer anda; pratonton fon dimuatkan daripada Google Fonts."
+  },
+  "wTitle": {
+    "message": "FontSnap telah dipasang"
+  },
+  "wPinH": {
+    "message": "Sematkan FontSnap pada bar alat"
+  },
+  "wPin1": {
+    "message": "Klik ikon teka-teki di penjuru kanan atas Chrome."
+  },
+  "wPin2": {
+    "message": "Cari FontSnap dalam senarai."
+  },
+  "wPin3": {
+    "message": "Klik ikon pin di sebelahnya."
+  },
+  "wPinned": {
+    "message": "Sudah disematkan? Tunjukkan cara menggunakannya"
+  },
+  "wUseH": {
+    "message": "Cara mengenal pasti fon"
+  },
+  "wUse1": {
+    "message": "Klik ikon FontSnap atau tekan Alt+Shift+F, kemudian seret di atas mana-mana teks."
+  },
+  "wUse2": {
+    "message": "Klik kanan imej dan pilih \"Kenal pasti fon dalam imej ini\"."
+  },
+  "wUse3": {
+    "message": "Atau buka FontSnap dan tampal, lepaskan atau muat naik tangkapan skrin."
+  },
+  "wUse4": {
+    "message": "Dapatkan 5 Google Fonts paling hampir, bandingkan pratonton dan salin CSS."
+  },
+  "wTry": {
+    "message": "Cuba sekarang"
+  },
+  "wShowPin": {
+    "message": "Cara menyematkan FontSnap"
+  },
+  "wPrivacy": {
+    "message": "Semuanya berjalan pada peranti anda. Imej tidak pernah dimuat naik."
+  }
+}

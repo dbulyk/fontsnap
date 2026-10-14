@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: tekoälyfonttien tunnistus kuvasta",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "Tunnista fontti kuvasta tekoälyllä: valitse teksti, niin FontSnap näyttää 5 lähintä Google-fonttia. Fonttihaku Chromeen.",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: tunnista fontti"
+  },
+  "ctxImage": {
+    "message": "FontSnap: tunnista tämän kuvan fontti"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: valitse alue fontin tunnistamiseksi"
+  },
+  "selectHint": {
+    "message": "FontSnap: vedä tekstin yli (Esc peruuttaa)"
+  },
+  "resTitle": {
+    "message": "FontSnap – tulokset"
+  },
+  "tagline": {
+    "message": "Tekoälyfonttien tunnistus · toimii laitteellasi"
+  },
+  "dropHint": {
+    "message": "Liitä (Ctrl+V) tai pudota kuva, jossa on tekstiä, tai valitse tiedosto."
+  },
+  "chooseImage": {
+    "message": "Valitse kuva"
+  },
+  "dropTip": {
+    "message": "Vinkki: napsauta millä tahansa sivulla FontSnap-kuvaketta ja vedä tekstin yli."
+  },
+  "modelSees": {
+    "message": "Mitä malli näkee"
+  },
+  "loading": {
+    "message": "Ladataan mallia…"
+  },
+  "analyzing": {
+    "message": "Analysoidaan…"
+  },
+  "ready": {
+    "message": "Valmis. Liitä, pudota tai valitse kuva."
+  },
+  "noLines": {
+    "message": "Selkeitä tekstirivejä ei löytynyt – tulos voi olla epäluotettava. Tee tiiviimpi valinta."
+  },
+  "readFail": {
+    "message": "Kuvaa ei voitu lukea."
+  },
+  "captureFail": {
+    "message": "Kaappaus epäonnistui: $ERR$ – yritä uudelleen tai liitä kuvakaappaus.",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "Mallin lataus epäonnistui: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "Virhe: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "Esikatseluteksti"
+  },
+  "previewPh": {
+    "message": "Kirjoita oma teksti (oletus: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "Suhteellinen pistemäärä 5 parhaan joukossa"
+  },
+  "notOnGF": {
+    "message": "ei Google Fontsissa"
+  },
+  "copyCss": {
+    "message": "Kopioi CSS"
+  },
+  "copied": {
+    "message": "Kopioitu"
+  },
+  "note": {
+    "message": "Löytää Google Fonts -perheitä. Latinalainen, kyrillinen ja arabialainen kirjoitus toimivat parhaiten; kiina/japani vielä heikosti. Kuvat eivät koskaan poistu tietokoneeltasi; esikatselut ladataan Google Fontsista."
+  },
+  "wTitle": {
+    "message": "FontSnap on asennettu"
+  },
+  "wPinH": {
+    "message": "Kiinnitä FontSnap työkalupalkkiin"
+  },
+  "wPin1": {
+    "message": "Napsauta Chromen oikeassa yläkulmassa olevaa palapelikuvaketta."
+  },
+  "wPin2": {
+    "message": "Etsi FontSnap luettelosta."
+  },
+  "wPin3": {
+    "message": "Napsauta sen vieressä olevaa nastakuvaketta."
+  },
+  "wPinned": {
+    "message": "Jo kiinnitetty? Näytä, miten sitä käytetään"
+  },
+  "wUseH": {
+    "message": "Näin tunnistat fontin"
+  },
+  "wUse1": {
+    "message": "Napsauta FontSnap-kuvaketta tai paina Alt+Shift+F ja vedä minkä tahansa tekstin yli."
+  },
+  "wUse2": {
+    "message": "Napsauta kuvaa hiiren oikealla ja valitse ”Tunnista tämän kuvan fontti”."
+  },
+  "wUse3": {
+    "message": "Tai avaa FontSnap ja liitä, pudota tai lataa kuvakaappaus."
+  },
+  "wUse4": {
+    "message": "Saat 5 lähintä Google-fonttia, vertaa esikatseluja ja kopioi CSS."
+  },
+  "wTry": {
+    "message": "Kokeile nyt"
+  },
+  "wShowPin": {
+    "message": "Näin kiinnität FontSnapin"
+  },
+  "wPrivacy": {
+    "message": "Kaikki toimii laitteellasi. Kuvia ei koskaan ladata palvelimelle."
+  }
+}

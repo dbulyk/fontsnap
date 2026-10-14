@@ -1,0 +1,142 @@
+{
+  "appName": {
+    "message": "FontSnap: AI ค้นหาฟอนต์จากรูปภาพ",
+    "description": "Extension name (Chrome Web Store, max 75 chars)"
+  },
+  "appDesc": {
+    "message": "ค้นหาฟอนต์จากรูปภาพด้วย AI: เลือกข้อความแล้ว FontSnap จะแสดง 5 ฟอนต์ Google ที่ใกล้เคียงที่สุด เครื่องมือหาฟอนต์สำหรับ Chrome",
+    "description": "Short description (max 132 chars)"
+  },
+  "actionTitle": {
+    "message": "FontSnap: ระบุฟอนต์"
+  },
+  "ctxImage": {
+    "message": "FontSnap: ระบุฟอนต์ในรูปภาพนี้"
+  },
+  "ctxSelect": {
+    "message": "FontSnap: เลือกพื้นที่เพื่อระบุฟอนต์"
+  },
+  "selectHint": {
+    "message": "FontSnap: ลากผ่านข้อความ (กด Esc เพื่อยกเลิก)"
+  },
+  "resTitle": {
+    "message": "FontSnap — ผลลัพธ์"
+  },
+  "tagline": {
+    "message": "AI ระบุฟอนต์ · ทำงานบนอุปกรณ์ของคุณ"
+  },
+  "dropHint": {
+    "message": "วาง (Ctrl+V) หรือลากรูปภาพที่มีข้อความมาวาง หรือเลือกไฟล์"
+  },
+  "chooseImage": {
+    "message": "เลือกรูปภาพ"
+  },
+  "dropTip": {
+    "message": "เคล็ดลับ: ในหน้าใดก็ได้ คลิกไอคอน FontSnap แล้วลากผ่านข้อความ"
+  },
+  "modelSees": {
+    "message": "สิ่งที่โมเดลเห็น"
+  },
+  "loading": {
+    "message": "กำลังโหลดโมเดล…"
+  },
+  "analyzing": {
+    "message": "กำลังวิเคราะห์…"
+  },
+  "ready": {
+    "message": "พร้อมแล้ว วาง ลาก หรือเลือกรูปภาพ"
+  },
+  "noLines": {
+    "message": "ไม่พบบรรทัดข้อความที่ชัดเจน ผลลัพธ์อาจไม่แม่นยำ ลองเลือกให้แคบลง"
+  },
+  "readFail": {
+    "message": "ไม่สามารถอ่านรูปภาพนี้ได้"
+  },
+  "captureFail": {
+    "message": "จับภาพไม่สำเร็จ: $ERR$ ลองอีกครั้งหรือวางภาพหน้าจอ",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "modelFail": {
+    "message": "โหลดโมเดลไม่สำเร็จ: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "errorMsg": {
+    "message": "ข้อผิดพลาด: $ERR$",
+    "placeholders": {
+      "err": {
+        "content": "$1"
+      }
+    }
+  },
+  "previewLabel": {
+    "message": "ข้อความตัวอย่าง"
+  },
+  "previewPh": {
+    "message": "พิมพ์ข้อความของคุณ (ค่าเริ่มต้น: The quick brown fox…)"
+  },
+  "scoreTitle": {
+    "message": "คะแนนสัมพัทธ์ใน 5 อันดับแรก"
+  },
+  "notOnGF": {
+    "message": "ไม่มีใน Google Fonts"
+  },
+  "copyCss": {
+    "message": "คัดลอก CSS"
+  },
+  "copied": {
+    "message": "คัดลอกแล้ว"
+  },
+  "note": {
+    "message": "จับคู่กับฟอนต์ใน Google Fonts ใช้ได้ดีที่สุดกับละติน ซีริลลิก และอาหรับ ส่วนจีน/ญี่ปุ่นยังไม่แม่นยำ รูปภาพไม่เคยออกจากคอมพิวเตอร์ของคุณ ตัวอย่างฟอนต์โหลดจาก Google Fonts"
+  },
+  "wTitle": {
+    "message": "ติดตั้ง FontSnap แล้ว"
+  },
+  "wPinH": {
+    "message": "ปักหมุด FontSnap ไว้ที่แถบเครื่องมือ"
+  },
+  "wPin1": {
+    "message": "คลิกไอคอนจิ๊กซอว์ที่มุมขวาบนของ Chrome"
+  },
+  "wPin2": {
+    "message": "ค้นหา FontSnap ในรายการ"
+  },
+  "wPin3": {
+    "message": "คลิกไอคอนหมุดข้างๆ"
+  },
+  "wPinned": {
+    "message": "ปักหมุดแล้ว? ดูวิธีใช้งาน"
+  },
+  "wUseH": {
+    "message": "วิธีระบุฟอนต์"
+  },
+  "wUse1": {
+    "message": "คลิกไอคอน FontSnap หรือกด Alt+Shift+F แล้วลากผ่านข้อความใดก็ได้บนหน้า"
+  },
+  "wUse2": {
+    "message": "คลิกขวาที่รูปภาพแล้วเลือก \"ระบุฟอนต์ในรูปภาพนี้\""
+  },
+  "wUse3": {
+    "message": "หรือเปิด FontSnap แล้ววาง ลาก หรืออัปโหลดภาพหน้าจอ"
+  },
+  "wUse4": {
+    "message": "รับ 5 ฟอนต์ Google ที่ใกล้เคียงที่สุด เปรียบเทียบตัวอย่าง และคัดลอก CSS"
+  },
+  "wTry": {
+    "message": "ลองเลย"
+  },
+  "wShowPin": {
+    "message": "วิธีปักหมุด FontSnap"
+  },
+  "wPrivacy": {
+    "message": "ทุกอย่างทำงานบนอุปกรณ์ของคุณ ไม่มีการอัปโหลดรูปภาพ"
+  }
+}
