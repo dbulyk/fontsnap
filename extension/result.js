@@ -1,5 +1,6 @@
 import * as ort from './ort/ort.wasm.min.mjs';
 import { fromRGBA, textLines, cropNormalize, prep, softmax, makeRanker } from './lib/fontsnap-core.js';
+import { genericFamily, cssFontFamily, previewText, timingText } from './lib/ui.js';
 const $ = (id) => document.getElementById(id),
   status = (t, err) => {
     $('status').textContent = t;
@@ -10,25 +11,30 @@ ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardw
 let session,
   ranker,
   lastImg,
-  runId = 0;
+  runId = 0,
+  modelLoadMs = 0,
+  loadCounted = false;
 const MAX_SIDE = 2400; // very large uploads are downscaled first (textcrop cost grows with kernel x pixels)
 const ready = (async () => {
+  const tLoad = performance.now();
   const meta = await (await fetch('model/meta.json')).json();
   ranker = makeRanker(meta);
   session = await ort.InferenceSession.create(chrome.runtime.getURL('model/model_fp16.onnx'), {
     executionProviders: ['wasm'],
     graphOptimizationLevel: 'all',
   });
+  modelLoadMs = performance.now() - tLoad;
 })();
 function drawGray(cv, im) {
   cv.width = im.w;
   cv.height = im.h;
-  const id = cv.getContext('2d').createImageData(im.w, im.h);
+  const ctx = cv.getContext('2d', { willReadFrequently: true });
+  const id = ctx.createImageData(im.w, im.h);
   for (let i = 0; i < im.w * im.h; i++) {
     const v = im.c === 1 ? [im.data[i], im.data[i], im.data[i]] : im.data.subarray(i * 3, i * 3 + 3);
     id.data.set([v[0], v[1], v[2], 255], i * 4);
   }
-  cv.getContext('2d').putImageData(id, 0, 0);
+  ctx.putImageData(id, 0, 0);
 }
 async function identify(canvas) {
   $('shot').style.display = 'block';
@@ -49,17 +55,16 @@ async function identify(canvas) {
     probs.push(softmax(out.logits.data));
   }
   if (my !== runId) return; // a newer image superseded this run
+  const analysisMs = performance.now() - t0;
+  const loadMs = loadCounted ? 0 : modelLoadMs; // the first analysis also pays for loading the model
+  loadCounted = true;
   lastImg = ranker.rank(probs, { alpha: 0.5, merge: true, k: 5 });
   render(lastImg);
   status(
-    pre.lines.length
-      ? `Done in ${Math.round(performance.now() - t0)} ms`
-      : 'No clear text lines found — result may be unreliable. Try a tighter selection.',
+    pre.lines.length ? timingText(analysisMs, loadMs) : 'No clear text lines found — result may be unreliable. Try a tighter selection.',
     !pre.lines.length,
   );
 }
-const GENERIC = { Serif: 'serif', 'Sans Serif': 'sans-serif', Monospace: 'monospace', Handwriting: 'cursive', Display: 'sans-serif' };
-const genericFamily = (cat) => GENERIC[cat] || 'sans-serif';
 const loaded = new Set();
 function loadFont(name) {
   const href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(name).replace(/%20/g, '+')}&display=swap`;
@@ -71,7 +76,7 @@ function loadFont(name) {
   document.head.appendChild(l);
 }
 function render(list) {
-  const text = $('pvText').value || 'The quick brown fox',
+  const text = previewText($('pvText').value, ''),
     ol = $('results');
   ol.innerHTML = '';
   list.forEach((r, i) => {
@@ -85,13 +90,13 @@ function render(list) {
     li.querySelector('.bar i').style.width = `${Math.max(2, r.conf * 100)}%`;
     const s = li.querySelector('.sample');
     s.textContent = text;
-    s.style.fontFamily = `'${r.name}', sans-serif`;
+    s.style.fontFamily = `'${r.name}', ${genericFamily(r.category)}`;
     li.querySelectorAll('.meta')[1].textContent = r.category || (r.inGF ? '' : 'not on Google Fonts');
     const acts = li.querySelector('.acts'),
       cp = document.createElement('button');
     cp.textContent = 'Copy CSS';
     cp.onclick = () =>
-      navigator.clipboard.writeText(`font-family: '${r.name}', ${genericFamily(r.category)};`).then(() => {
+      navigator.clipboard.writeText(cssFontFamily(r.name, r.category)).then(() => {
         cp.textContent = 'Copied';
         setTimeout(() => (cp.textContent = 'Copy CSS'), 1200);
       });
