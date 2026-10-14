@@ -1,0 +1,74 @@
+name: CI
+on:
+  push:
+    branches: [main, 'review/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # regression thresholds (defaults live in tests/thresholds.json; override here or via repo variables)
+  FONTSNAP_MIN_BEST_TOP1: ${{ vars.FONTSNAP_MIN_BEST_TOP1 }}
+  FONTSNAP_MIN_BEST_TOP5: ${{ vars.FONTSNAP_MIN_BEST_TOP5 }}
+  FONTSNAP_MIN_BARE_TOP1: ${{ vars.FONTSNAP_MIN_BARE_TOP1 }}
+  FONTSNAP_MIN_BARE_TOP5: ${{ vars.FONTSNAP_MIN_BARE_TOP5 }}
+  FONTSNAP_MIN_PARITY: ${{ vars.FONTSNAP_MIN_PARITY }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      # LFS objects are cached to save GitHub LFS bandwidth (free quota is small)
+      - name: LFS cache key
+        run: git lfs ls-files --long | cut -d ' ' -f1 | sort > .lfs-assets-id
+      - uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+      - name: Pull LFS objects
+        run: git lfs pull && git lfs checkout
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: python/requirements.txt
+      - run: npm ci
+      - run: pip install -r python/requirements.txt
+
+      - name: Lint JS (ESLint)
+        run: npm run lint
+      - name: Format check (Prettier)
+        run: npm run format:check
+      - name: Lint Python (ruff)
+        run: ruff check . && ruff format --check python tests
+
+      - name: Unit tests (JS, node:test)
+        run: npm run test:unit
+      - name: Unit tests (Python, pytest)
+        run: python -m pytest -q
+
+      - name: Python reference eval on realset3
+        working-directory: python
+        run: python -m fontsnap_ref.evaluate --out ../out/py_realset3.json
+      - name: Model regression + JS/Python parity (realset3)
+        run: npm run test:regression
+
+      - name: Build extension zip
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fontsnap-results
+          path: |
+            out/*.json
+            dist/*.zip
+          if-no-files-found: ignore

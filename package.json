@@ -1,0 +1,33 @@
+{
+  "name": "fontsnap",
+  "version": "0.1.0",
+  "description": "FontSnap: AI Font Identifier from Image (Chrome MV3)",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "fetch-ort": "node scripts/fetch-ort.mjs",
+    "postinstall": "node scripts/fetch-ort.mjs",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "test:unit": "node --test tests/js/unit/",
+    "eval:js": "node scripts/eval-js.mjs",
+    "test:regression": "node --test tests/js/regression/",
+    "build": "node scripts/build-zip.mjs"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.12.0",
+    "fflate": "^0.8.3",
+    "globals": "^17.13.0",
+    "onnxruntime-node": "1.30.0",
+    "onnxruntime-web": "1.30.0",
+    "playwright-core": "^1.64.0",
+    "pngjs": "^7.0.0",
+    "prettier": "^3.9.10"
+  }
+}

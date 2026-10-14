@@ -1,18 +1,40 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>FontSnap — results</title><link rel="stylesheet" href="result.css"></head>
-<body>
-<header><img src="icons/icon48.png" alt=""><h1>FontSnap</h1><span class="sub">AI font identifier · runs on your device</span></header>
-<main>
-  <section class="left">
-    <div id="drop" class="drop"><canvas id="shot"></canvas><p id="dropHint">Paste (Ctrl+V), drop or <label class="link">choose an image<input type="file" id="file" accept="image/*" hidden></label> with text.<br>Tip: click the FontSnap toolbar icon on any page and drag over text.</p></div>
-    <details><summary>What the model sees</summary><canvas id="seen"></canvas></details>
-  </section>
-  <section class="right">
-    <div id="status" class="status">Loading model…</div>
-    <label class="pv">Preview text <input id="pvText" value="The quick brown fox jumps over the lazy dog"></label>
-    <ol id="results"></ol>
-    <p class="note">Matches Google Fonts families. Latin, Cyrillic, Arabic work best; Chinese/Japanese are still weak. Images never leave your computer; font previews are loaded from Google Fonts.</p>
-  </section>
-</main>
-<script type="module" src="result.js"></script>
-</body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FontSnap — results</title>
+    <link rel="stylesheet" href="result.css" />
+  </head>
+  <body>
+    <header>
+      <img src="icons/icon48.png" alt="" />
+      <h1>FontSnap</h1>
+      <span class="sub">AI font identifier · runs on your device</span>
+    </header>
+    <main>
+      <section class="left">
+        <div id="drop" class="drop">
+          <canvas id="shot"></canvas>
+          <p id="dropHint">
+            Paste (Ctrl+V), drop or <label class="link">choose an image<input type="file" id="file" accept="image/*" hidden /></label> with
+            text.<br />Tip: click the FontSnap toolbar icon on any page and drag over text.
+          </p>
+        </div>
+        <details>
+          <summary>What the model sees</summary>
+          <canvas id="seen"></canvas>
+        </details>
+      </section>
+      <section class="right">
+        <div id="status" class="status">Loading model…</div>
+        <label class="pv">Preview text <input id="pvText" value="The quick brown fox jumps over the lazy dog" /></label>
+        <ol id="results"></ol>
+        <p class="note">
+          Matches Google Fonts families. Latin, Cyrillic, Arabic work best; Chinese/Japanese are still weak. Images never leave your
+          computer; font previews are loaded from Google Fonts.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="result.js"></script>
+  </body>
+</html>
