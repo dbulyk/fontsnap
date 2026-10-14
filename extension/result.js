@@ -1,6 +1,6 @@
 import * as ort from './ort/ort.wasm.min.mjs';
 import { fromRGBA, textLines, cropNormalize, prep, softmax, makeRanker } from './lib/fontsnap-core.js';
-import { genericFamily, cssFontFamily, previewText, timingText } from './lib/ui.js';
+import { genericFamily, cssFontFamily, previewText, timingText, visibleResults } from './lib/ui.js';
 const $ = (id) => document.getElementById(id),
   status = (t, err) => {
     $('status').textContent = t;
@@ -75,7 +75,8 @@ function loadFont(name) {
   l.href = href;
   document.head.appendChild(l);
 }
-function render(list) {
+function render(all) {
+  const list = visibleResults(all);
   const text = previewText($('pvText').value, ''),
     ol = $('results');
   ol.innerHTML = '';
