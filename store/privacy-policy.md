@@ -1,6 +1,6 @@
 # FontSnap — Privacy Policy
 
-_Last updated: [DATE]_
+_Last updated: 14 October 2026_
 
 FontSnap ("the extension") is a Chrome extension that identifies the font in a selected area of a web page or in an image you provide. This policy explains what the extension does with data. Short version: **your images are processed on your device and are never sent to us or to anyone else.**
 
@@ -39,4 +39,4 @@ If this policy changes, the new version will be published at this address with a
 
 ## Contact
 
-Questions: [EMAIL ADDRESS]
+Questions: fontsnap.support@proton.me
