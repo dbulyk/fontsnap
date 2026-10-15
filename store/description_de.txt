@@ -51,6 +51,7 @@ Ein CSS-Inspektor liest die Stile von echtem Webtext, sieht aber keinen Text in 
 
 💡 Tipps für genaue Ergebnisse
 • Markieren Sie ein oder zwei Textzeilen, nicht die ganze Seite.
+• Ziehen Sie nur über Text, der auf dem Bildschirm sichtbar ist — FontSnap erfasst den aktuellen Viewport, nicht außerhalb gescrollten Inhalt.
 • Großer Text liefert bessere Ergebnisse als winzige Bildunterschriften.
 • Passt der erste Treffer nicht, prüfen Sie die anderen vier: Die richtige Familie ist oft in den Top 5.
 

@@ -17,7 +17,7 @@
     "message": "FontSnap: 範囲を選択してフォントを判別"
   },
   "selectHint": {
-    "message": "FontSnap: テキストの上をドラッグ(Escでキャンセル)"
+    "message": "FontSnap: 画面に見えている文字だけをドラッグ（Escでキャンセル）"
   },
   "resTitle": {
     "message": "FontSnap — 結果"
@@ -32,7 +32,7 @@
     "message": "画像を選択"
   },
   "dropTip": {
-    "message": "ヒント: どのページでもFontSnapアイコンをクリックし、テキストの上をドラッグします。"
+    "message": "ヒント: FontSnapアイコンをクリックし、画面に見えている文字だけをドラッグしてください（画面外にスクロールした内容は撮影されません）。"
   },
   "modelSees": {
     "message": "モデルが見ている画像"
@@ -119,7 +119,7 @@
     "message": "フォントを判別する方法"
   },
   "wUse1": {
-    "message": "FontSnapアイコンをクリックするかAlt+Shift+Fを押し、ページ上のテキストをドラッグします。"
+    "message": "FontSnapアイコンをクリックするか Alt+Shift+F を押し、画面に見えている文字をドラッグします（画面外の文字は対象外）。"
   },
   "wUse2": {
     "message": "画像を右クリックして「この画像のフォントを判別」を選びます。"

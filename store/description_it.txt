@@ -51,6 +51,7 @@ Un ispettore CSS legge gli stili del testo reale di una pagina, ma non vede il t
 
 💡 Consigli per risultati precisi
 • Seleziona una o due righe di testo, non l'intera pagina.
+• Trascina solo sul testo visibile sullo schermo: FontSnap cattura il viewport corrente, non il contenuto fuori schermo.
 • Il testo grande dà risultati migliori delle didascalie minuscole.
 • Se il primo risultato non convince, guarda gli altri quattro: la famiglia giusta è spesso nella top 5.
 

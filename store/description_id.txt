@@ -51,6 +51,7 @@ Pemeriksa CSS membaca gaya teks asli di halaman, tetapi tidak bisa melihat teks 
 
 💡 Tips agar hasil akurat
 • Pilih satu atau dua baris teks, bukan seluruh halaman.
+• Seret hanya di atas teks yang terlihat di layar — FontSnap mengambil viewport saat ini, bukan konten di luar layar.
 • Teks besar memberi hasil lebih baik daripada keterangan kecil.
 • Jika tebakan pertama kurang cocok, lihat empat lainnya: keluarga yang tepat sering ada di 5 teratas.
 

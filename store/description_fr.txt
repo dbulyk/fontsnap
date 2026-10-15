@@ -51,6 +51,7 @@ Un inspecteur CSS lit les styles du texte réel d'une page mais ne voit pas le t
 
 💡 Conseils pour des résultats précis
 • Sélectionnez une ou deux lignes de texte, pas toute la page.
+• Sélectionnez uniquement le texte visible à l’écran — FontSnap capture la zone visible, pas le contenu hors écran.
 • Un grand texte donne de meilleurs résultats que de petites légendes.
 • Si la première proposition ne convient pas, regardez les quatre autres : la bonne famille est souvent dans le top 5.
 

@@ -17,7 +17,7 @@
     "message": "FontSnap: valitse alue fontin tunnistamiseksi"
   },
   "selectHint": {
-    "message": "FontSnap: vedä tekstin yli (Esc peruuttaa)"
+    "message": "FontSnap: vedä vain näkyvän tekstin yli (Esc peruuttaa)"
   },
   "resTitle": {
     "message": "FontSnap – tulokset"
@@ -32,7 +32,7 @@
     "message": "Valitse kuva"
   },
   "dropTip": {
-    "message": "Vinkki: napsauta millä tahansa sivulla FontSnap-kuvaketta ja vedä tekstin yli."
+    "message": "Vinkki: napsauta FontSnap-kuvaketta ja vedä tekstin yli näkyvässä näkymässä (ruudun ulkopuolelle vieritettyä sisältöä ei kaapata)."
   },
   "modelSees": {
     "message": "Mitä malli näkee"
@@ -119,7 +119,7 @@
     "message": "Näin tunnistat fontin"
   },
   "wUse1": {
-    "message": "Napsauta FontSnap-kuvaketta tai paina Alt+Shift+F ja vedä minkä tahansa tekstin yli."
+    "message": "Napsauta FontSnap-kuvaketta tai paina Alt+Shift+F ja vedä tekstin yli näkyvässä näkymässä (ei ruudun ulkopuolella)."
   },
   "wUse2": {
     "message": "Napsauta kuvaa hiiren oikealla ja valitse ”Tunnista tämän kuvan fontti”."

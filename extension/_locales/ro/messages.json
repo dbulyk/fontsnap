@@ -17,7 +17,7 @@
     "message": "FontSnap: selectează o zonă pentru a identifica fontul"
   },
   "selectHint": {
-    "message": "FontSnap: trageți peste text (Esc pentru anulare)"
+    "message": "FontSnap: trageți doar peste textul vizibil (Esc pentru anulare)"
   },
   "resTitle": {
     "message": "FontSnap — rezultate"
@@ -32,7 +32,7 @@
     "message": "Alege imaginea"
   },
   "dropTip": {
-    "message": "Sfat: pe orice pagină, faceți clic pe pictograma FontSnap și trageți peste text."
+    "message": "Sfat: faceți clic pe pictograma FontSnap și trageți peste textul din zona vizibilă (conținutul derulat în afara ecranului nu este capturat)."
   },
   "modelSees": {
     "message": "Ce vede modelul"
@@ -119,7 +119,7 @@
     "message": "Cum identificați un font"
   },
   "wUse1": {
-    "message": "Faceți clic pe pictograma FontSnap sau apăsați Alt+Shift+F și trageți peste orice text."
+    "message": "Faceți clic pe pictograma FontSnap sau apăsați Alt+Shift+F, apoi trageți peste textul din zona vizibilă (nu în afara ecranului)."
   },
   "wUse2": {
     "message": "Clic dreapta pe o imagine și alegeți „Identifică fontul din această imagine”."

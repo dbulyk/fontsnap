@@ -17,7 +17,7 @@
     "message": "FontSnap : sélectionner une zone pour identifier la police"
   },
   "selectHint": {
-    "message": "FontSnap : faites glisser sur le texte (Échap pour annuler)"
+    "message": "FontSnap : sélectionnez uniquement le texte visible (Échap pour annuler)"
   },
   "resTitle": {
     "message": "FontSnap — résultats"
@@ -32,7 +32,7 @@
     "message": "Choisir une image"
   },
   "dropTip": {
-    "message": "Astuce : sur n'importe quelle page, cliquez sur l'icône FontSnap et faites glisser sur le texte."
+    "message": "Astuce : cliquez sur l’icône FontSnap et sélectionnez le texte dans la zone visible (le contenu hors écran n’est pas capturé)."
   },
   "modelSees": {
     "message": "Ce que voit le modèle"
@@ -119,7 +119,7 @@
     "message": "Comment identifier une police"
   },
   "wUse1": {
-    "message": "Cliquez sur l'icône FontSnap ou appuyez sur Alt+Shift+F, puis faites glisser sur un texte."
+    "message": "Cliquez sur l’icône FontSnap ou appuyez sur Alt+Shift+F, puis sélectionnez le texte dans la zone visible (pas hors écran)."
   },
   "wUse2": {
     "message": "Faites un clic droit sur une image et choisissez « Identifier la police de cette image »."

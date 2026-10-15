@@ -51,6 +51,7 @@ CSS denetleyicisi sayfadaki gerçek metnin stillerini okur ama JPG veya canvas i
 
 💡 Doğru sonuçlar için ipuçları
 • Tüm sayfayı değil, bir veya iki satır metni seçin.
+• Yalnızca ekranda görünen metnin üzerinde sürükleyin — FontSnap geçerli görünüm alanını yakalar, ekran dışına kaydırılmış içeriği değil.
 • Büyük metin, küçük altyazılardan daha iyi sonuç verir.
 • İlk tahmin uymazsa diğer dördüne bakın: doğru aile çoğu zaman ilk 5'tedir.
 

@@ -17,7 +17,7 @@
     "message": "FontSnap: seleziona un'area per riconoscere il font"
   },
   "selectHint": {
-    "message": "FontSnap: trascina sul testo (Esc per annullare)"
+    "message": "FontSnap: trascina solo sul testo visibile (Esc per annullare)"
   },
   "resTitle": {
     "message": "FontSnap — risultati"
@@ -32,7 +32,7 @@
     "message": "Scegli immagine"
   },
   "dropTip": {
-    "message": "Suggerimento: su qualsiasi pagina fai clic sull'icona di FontSnap e trascina sul testo."
+    "message": "Suggerimento: fai clic sull’icona di FontSnap e trascina sul testo nell’area visibile (il contenuto fuori schermo non viene catturato)."
   },
   "modelSees": {
     "message": "Cosa vede il modello"
@@ -119,7 +119,7 @@
     "message": "Come riconoscere un font"
   },
   "wUse1": {
-    "message": "Fai clic sull'icona di FontSnap o premi Alt+Shift+F, poi trascina su un testo della pagina."
+    "message": "Fai clic sull’icona di FontSnap o premi Alt+Shift+F, poi trascina sul testo nell’area visibile (non fuori schermo)."
   },
   "wUse2": {
     "message": "Fai clic destro su un'immagine e scegli «Riconosci il font in questa immagine»."

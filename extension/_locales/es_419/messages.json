@@ -17,7 +17,7 @@
     "message": "FontSnap: seleccionar un área para identificar la fuente"
   },
   "selectHint": {
-    "message": "FontSnap: arrastra sobre el texto (Esc para cancelar)"
+    "message": "FontSnap: arrastra solo sobre el texto visible (Esc para cancelar)"
   },
   "resTitle": {
     "message": "FontSnap — resultados"
@@ -32,7 +32,7 @@
     "message": "Elegir imagen"
   },
   "dropTip": {
-    "message": "Consejo: en cualquier página, haz clic en el icono de FontSnap y arrastra sobre el texto."
+    "message": "Consejo: haz clic en el icono de FontSnap y arrastra sobre el texto en el área visible (el contenido fuera de pantalla no se captura)."
   },
   "modelSees": {
     "message": "Lo que ve el modelo"
@@ -119,7 +119,7 @@
     "message": "Cómo identificar una fuente"
   },
   "wUse1": {
-    "message": "Haz clic en el icono de FontSnap o pulsa Alt+Shift+F y arrastra sobre cualquier texto."
+    "message": "Haz clic en el icono de FontSnap o pulsa Alt+Shift+F y arrastra sobre el texto en el área visible (no fuera de pantalla)."
   },
   "wUse2": {
     "message": "Haz clic derecho en una imagen y elige «Identificar la fuente de esta imagen»."
