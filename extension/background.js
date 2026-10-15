@@ -5,6 +5,7 @@ import {
   MAX_IMAGE_BYTES,
   assertFitsSessionQuota,
   clipCropRect,
+  encodeWithinSessionQuota,
   errorResultHash,
   newCaptureId,
   planOpenResult,
@@ -38,9 +39,11 @@ async function cropToDataUrl(dataUrl, rect, dpr) {
   const cv = new OffscreenCanvas(sized.width, sized.height);
   cv.getContext('2d').drawImage(bmp, x, y, w, h, 0, 0, sized.width, sized.height);
   bmp.close();
-  const out = bytesToDataUrl(new Uint8Array(await (await cv.convertToBlob({ type: 'image/png' })).arrayBuffer()), 'image/png');
-  assertFitsSessionQuota(out);
-  return out;
+  // Prefer PNG; if it still exceeds session quota after the 2400px side cap, re-encode as JPEG.
+  return encodeWithinSessionQuota(async ({ type, quality }) => {
+    const blob = await cv.convertToBlob(type === 'image/jpeg' ? { type, quality } : { type });
+    return bytesToDataUrl(new Uint8Array(await blob.arrayBuffer()), type);
+  });
 }
 
 // Right-click on an image: analyse that image. First try to download it (works for data: URLs and

@@ -20,6 +20,9 @@ export const MAX_CROP_SIDE = 2400;
 
 export const MIN_CROP_PX = 4;
 
+/** JPEG qualities tried (high → low) when a PNG crop still exceeds the session budget. */
+export const JPEG_QUALITY_LADDER = [0.92, 0.85, 0.75, 0.6, 0.45];
+
 let captureCounter = 0;
 
 export function validRect(r) {
@@ -49,13 +52,31 @@ export function scaleToMaxSide(width, height, maxSide = MAX_CROP_SIDE) {
   };
 }
 
+export function fitsSessionQuota(dataUrl, maxChars = MAX_DATA_URL_CHARS) {
+  return typeof dataUrl === 'string' && dataUrl.startsWith('data:') && dataUrl.length <= maxChars;
+}
+
 export function assertFitsSessionQuota(dataUrl, maxChars = MAX_DATA_URL_CHARS) {
   if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
     throw new Error('Invalid image payload');
   }
-  if (dataUrl.length > maxChars) {
+  if (!fitsSessionQuota(dataUrl, maxChars)) {
     throw new Error('Image too large for temporary storage');
   }
+}
+
+/**
+ * Encode a crop for session storage: try PNG first, then JPEG quality ladder.
+ * @param {(opts: { type: string, quality?: number }) => Promise<string>} encode returns a data URL
+ */
+export async function encodeWithinSessionQuota(encode, maxChars = MAX_DATA_URL_CHARS) {
+  const png = await encode({ type: 'image/png' });
+  if (fitsSessionQuota(png, maxChars)) return png;
+  for (const quality of JPEG_QUALITY_LADDER) {
+    const jpg = await encode({ type: 'image/jpeg', quality });
+    if (fitsSessionQuota(jpg, maxChars)) return jpg;
+  }
+  throw new Error('Image too large for temporary storage');
 }
 
 /** Unique chrome.storage.session key; prefers crypto.randomUUID(). */
