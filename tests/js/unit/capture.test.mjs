@@ -132,8 +132,8 @@ describe('newCaptureId', () => {
 describe('openResult error wrapping helpers', () => {
   test('errorResultHash encodes a message that parseResultHash can recover', () => {
     const hash = errorResultHash('quota exceeded');
-    assert.equal(parseResultHash(hash), { kind: 'error', message: 'quota exceeded' });
-    assert.equal(parseResultHash('#' + hash), { kind: 'error', message: 'quota exceeded' });
+    assert.deepEqual(parseResultHash(hash), { kind: 'error', message: 'quota exceeded' });
+    assert.deepEqual(parseResultHash('#' + hash), { kind: 'error', message: 'quota exceeded' });
   });
 
   test('parseResultHash treats normal capture ids as session keys', () => {
