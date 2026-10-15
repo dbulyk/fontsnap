@@ -56,6 +56,14 @@ jobs:
       - name: Unit tests (Python, pytest)
         run: python -m pytest -q
 
+      # Capture handoff smoke: crop→encode (PNG/JPEG ladder)→session on Playwright Chromium.
+      # Needs headed Chromium under xvfb (branded Chrome 137+ dropped --load-extension).
+      # Does not exercise captureVisibleTab (activeTab user gesture); covers everything after the shot.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Capture handoff smoke
+        run: xvfb-run -a npm run test:capture-smoke
+
       - name: Python reference eval on realset3
         working-directory: python
         run: python -m fontsnap_ref.evaluate --out ../out/py_realset3.json
