@@ -4,13 +4,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from '../../../scripts/lib/evaljs.mjs';
 import {
+  JPEG_QUALITY_LADDER,
   MAX_CROP_SIDE,
   MAX_DATA_URL_CHARS,
   MAX_IMAGE_BYTES,
   SESSION_QUOTA_BYTES,
   assertFitsSessionQuota,
   clipCropRect,
+  encodeWithinSessionQuota,
   errorResultHash,
+  fitsSessionQuota,
   newCaptureId,
   parseResultHash,
   planOpenResult,
@@ -111,6 +114,72 @@ describe('session quota / payload caps', () => {
     const huge = 'data:image/png;base64,' + 'a'.repeat(MAX_DATA_URL_CHARS);
     assert.throws(() => assertFitsSessionQuota(huge), /too large for temporary storage/);
   });
+
+  test('fitsSessionQuota is the boolean counterpart of assertFitsSessionQuota', () => {
+    assert.equal(fitsSessionQuota('data:image/png;base64,aa'), true);
+    assert.equal(fitsSessionQuota('data:image/png;base64,' + 'a'.repeat(MAX_DATA_URL_CHARS)), false);
+    assert.equal(fitsSessionQuota('nope'), false);
+  });
+});
+
+describe('encodeWithinSessionQuota (JPEG ladder)', () => {
+  test('exposes a descending JPEG quality ladder', () => {
+    assert.ok(JPEG_QUALITY_LADDER.length >= 3);
+    for (let i = 1; i < JPEG_QUALITY_LADDER.length; i++) {
+      assert.ok(JPEG_QUALITY_LADDER[i] < JPEG_QUALITY_LADDER[i - 1]);
+    }
+    assert.ok(JPEG_QUALITY_LADDER.every((q) => q > 0 && q <= 1));
+  });
+
+  test('keeps PNG when it already fits', async () => {
+    const calls = [];
+    const out = await encodeWithinSessionQuota(async (opts) => {
+      calls.push(opts);
+      return 'data:image/png;base64,ok';
+    });
+    assert.equal(out, 'data:image/png;base64,ok');
+    assert.deepEqual(calls, [{ type: 'image/png' }]);
+  });
+
+  test('falls back to JPEG when PNG exceeds the budget', async () => {
+    const hugePng = 'data:image/png;base64,' + 'P'.repeat(MAX_DATA_URL_CHARS);
+    const smallJpg = 'data:image/jpeg;base64,small';
+    const calls = [];
+    const out = await encodeWithinSessionQuota(async (opts) => {
+      calls.push(opts);
+      return opts.type === 'image/png' ? hugePng : smallJpg;
+    });
+    assert.equal(out, smallJpg);
+    assert.equal(calls[0].type, 'image/png');
+    assert.equal(calls[1].type, 'image/jpeg');
+    assert.equal(calls[1].quality, JPEG_QUALITY_LADDER[0]);
+  });
+
+  test('walks the quality ladder until a JPEG fits', async () => {
+    const huge = 'data:image/png;base64,' + 'X'.repeat(MAX_DATA_URL_CHARS);
+    const calls = [];
+    const out = await encodeWithinSessionQuota(async (opts) => {
+      calls.push(opts);
+      if (opts.type === 'image/png') return huge;
+      // only the third JPEG quality fits
+      if (opts.quality === JPEG_QUALITY_LADDER[2]) return 'data:image/jpeg;base64,fit';
+      return huge.replace('png', 'jpeg');
+    });
+    assert.equal(out, 'data:image/jpeg;base64,fit');
+    assert.equal(calls.filter((c) => c.type === 'image/jpeg').length, 3);
+  });
+
+  test('throws a clear error when even the lowest JPEG quality cannot fit', async () => {
+    const huge = 'data:image/png;base64,' + 'Z'.repeat(MAX_DATA_URL_CHARS);
+    await assert.rejects(
+      () =>
+        encodeWithinSessionQuota(async (opts) => {
+          if (opts.type === 'image/png') return huge;
+          return 'data:image/jpeg;base64,' + 'Z'.repeat(MAX_DATA_URL_CHARS);
+        }),
+      /too large for temporary storage/,
+    );
+  });
 });
 
 describe('newCaptureId', () => {
@@ -183,6 +252,10 @@ describe('background wiring (source contracts)', () => {
   test('background wraps openResult failures so a result tab still opens', () => {
     assert.match(bg, /errorResultHash|planOpenResult/);
     assert.match(bg, /assertFitsSessionQuota|MAX_DATA_URL/);
+  });
+
+  test('background uses encodeWithinSessionQuota for crop output (JPEG ladder)', () => {
+    assert.match(bg, /encodeWithinSessionQuota/);
   });
 
   test('result.js surfaces err= hashes without requiring session storage', () => {
