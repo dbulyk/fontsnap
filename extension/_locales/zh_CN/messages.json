@@ -17,7 +17,7 @@
     "message": "FontSnap:选择区域以识别字体"
   },
   "selectHint": {
-    "message": "FontSnap:在文字上拖动选择(按 Esc 取消)"
+    "message": "FontSnap：只拖选屏幕上可见的文字（Esc 取消）"
   },
   "resTitle": {
     "message": "FontSnap — 结果"
@@ -32,7 +32,7 @@
     "message": "选择图片"
   },
   "dropTip": {
-    "message": "提示:在任意网页上点击工具栏中的 FontSnap 图标,然后在文字上拖动。"
+    "message": "提示：点击 FontSnap 图标，在可见视口内拖选文字（滚出屏幕的内容不会被捕获）。"
   },
   "modelSees": {
     "message": "模型看到的内容"
@@ -119,7 +119,7 @@
     "message": "如何识别字体"
   },
   "wUse1": {
-    "message": "点击 FontSnap 图标或按 Alt+Shift+F,然后在网页上的任意文字上拖动。"
+    "message": "点击 FontSnap 图标或按 Alt+Shift+F，然后在可见视口内拖选文字（不要选滚出屏幕的内容）。"
   },
   "wUse2": {
     "message": "右键点击图片并选择“识别此图片中的字体”。"

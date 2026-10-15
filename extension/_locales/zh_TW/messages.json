@@ -17,7 +17,7 @@
     "message": "FontSnap:選取區域以辨識字型"
   },
   "selectHint": {
-    "message": "FontSnap:在文字上拖曳選取(按 Esc 取消)"
+    "message": "FontSnap：只拖曳畫面上可見的文字（Esc 取消）"
   },
   "resTitle": {
     "message": "FontSnap — 結果"
@@ -32,7 +32,7 @@
     "message": "選擇圖片"
   },
   "dropTip": {
-    "message": "提示:在任何網頁上按一下工具列中的 FontSnap 圖示,然後在文字上拖曳。"
+    "message": "提示：按一下 FontSnap 圖示，在可見檢視區內拖曳文字（捲出螢幕的內容不會被擷取）。"
   },
   "modelSees": {
     "message": "模型看到的內容"
@@ -119,7 +119,7 @@
     "message": "如何辨識字型"
   },
   "wUse1": {
-    "message": "按一下 FontSnap 圖示或按 Alt+Shift+F,然後在網頁上的任何文字上拖曳。"
+    "message": "按一下 FontSnap 圖示或按 Alt+Shift+F，然後在可見檢視區內拖曳文字（不要選捲出螢幕的內容）。"
   },
   "wUse2": {
     "message": "在圖片上按右鍵並選擇「辨識這張圖片中的字型」。"

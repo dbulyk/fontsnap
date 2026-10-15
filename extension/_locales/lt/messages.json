@@ -17,7 +17,7 @@
     "message": "FontSnap: pažymėti sritį šriftui atpažinti"
   },
   "selectHint": {
-    "message": "FontSnap: vilkite per tekstą (Esc – atšaukti)"
+    "message": "FontSnap: vilkite tik per matomą tekstą (Esc atšaukti)"
   },
   "resTitle": {
     "message": "FontSnap – rezultatai"
@@ -32,7 +32,7 @@
     "message": "Pasirinkti paveikslėlį"
   },
   "dropTip": {
-    "message": "Patarimas: bet kuriame puslapyje spustelėkite FontSnap piktogramą ir vilkite per tekstą."
+    "message": "Patarimas: spustelėkite FontSnap piktogramą ir vilkite per tekstą matomoje srityje (už ekrano ribų nuslinkęs turinys nefiksuojamas)."
   },
   "modelSees": {
     "message": "Ką mato modelis"
@@ -119,7 +119,7 @@
     "message": "Kaip atpažinti šriftą"
   },
   "wUse1": {
-    "message": "Spustelėkite FontSnap piktogramą arba paspauskite Alt+Shift+F ir vilkite per bet kokį tekstą."
+    "message": "Spustelėkite FontSnap piktogramą arba paspauskite Alt+Shift+F ir vilkite per tekstą matomoje srityje (ne už ekrano)."
   },
   "wUse2": {
     "message": "Dešiniuoju pelės mygtuku spustelėkite paveikslėlį ir pasirinkite „Atpažinti šriftą šiame paveikslėlyje“."

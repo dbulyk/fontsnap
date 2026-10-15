@@ -17,7 +17,7 @@
     "message": "FontSnap: pumili ng lugar para tukuyin ang font"
   },
   "selectHint": {
-    "message": "FontSnap: i-drag sa ibabaw ng teksto (Esc para kanselahin)"
+    "message": "FontSnap: i-drag lang sa nakikitang text (Esc para kanselahin)"
   },
   "resTitle": {
     "message": "FontSnap — mga resulta"
@@ -32,7 +32,7 @@
     "message": "Pumili ng larawan"
   },
   "dropTip": {
-    "message": "Tip: sa anumang page, i-click ang icon ng FontSnap at i-drag sa ibabaw ng teksto."
+    "message": "Tip: i-click ang icon ng FontSnap at i-drag sa text sa nakikitang viewport (hindi kinukuha ang content na nasa labas ng screen)."
   },
   "modelSees": {
     "message": "Ang nakikita ng model"
@@ -119,7 +119,7 @@
     "message": "Paano tukuyin ang font"
   },
   "wUse1": {
-    "message": "I-click ang icon ng FontSnap o pindutin ang Alt+Shift+F, saka i-drag sa anumang teksto."
+    "message": "I-click ang icon ng FontSnap o pindutin ang Alt+Shift+F, pagkatapos i-drag sa text sa nakikitang viewport (hindi sa labas ng screen)."
   },
   "wUse2": {
     "message": "I-right-click ang larawan at piliin ang \"Tukuyin ang font sa larawang ito\"."

@@ -17,7 +17,7 @@
     "message": "FontSnap: chagua eneo ili kutambua fonti"
   },
   "selectHint": {
-    "message": "FontSnap: buruta juu ya maandishi (Esc kughairi)"
+    "message": "FontSnap: buruta tu juu ya maandishi yanayoonekana (Esc kughairi)"
   },
   "resTitle": {
     "message": "FontSnap — matokeo"
@@ -32,7 +32,7 @@
     "message": "Chagua picha"
   },
   "dropTip": {
-    "message": "Kidokezo: kwenye ukurasa wowote, bofya aikoni ya FontSnap na uburute juu ya maandishi."
+    "message": "Kidokezo: bofya aikoni ya FontSnap kisha uburute juu ya maandishi katika eneo linaloonekana (maudhui nje ya skrini hayanaswi)."
   },
   "modelSees": {
     "message": "Kile ambacho modeli inaona"
@@ -119,7 +119,7 @@
     "message": "Jinsi ya kutambua fonti"
   },
   "wUse1": {
-    "message": "Bofya aikoni ya FontSnap au bonyeza Alt+Shift+F, kisha uburute juu ya maandishi yoyote."
+    "message": "Bofya aikoni ya FontSnap au bonyeza Alt+Shift+F, kisha uburute juu ya maandishi katika eneo linaloonekana (si nje ya skrini)."
   },
   "wUse2": {
     "message": "Bofya kulia kwenye picha na uchague \"Tambua fonti kwenye picha hii\"."

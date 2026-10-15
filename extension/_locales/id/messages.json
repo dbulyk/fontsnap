@@ -17,7 +17,7 @@
     "message": "FontSnap: pilih area untuk mengenali font"
   },
   "selectHint": {
-    "message": "FontSnap: seret di atas teks (Esc untuk batal)"
+    "message": "FontSnap: seret hanya di atas teks yang terlihat (Esc untuk batal)"
   },
   "resTitle": {
     "message": "FontSnap — hasil"
@@ -32,7 +32,7 @@
     "message": "Pilih gambar"
   },
   "dropTip": {
-    "message": "Tips: di halaman mana pun, klik ikon FontSnap lalu seret di atas teks."
+    "message": "Tips: klik ikon FontSnap lalu seret di atas teks di area yang terlihat (konten di luar layar tidak diambil)."
   },
   "modelSees": {
     "message": "Yang dilihat model"
@@ -119,7 +119,7 @@
     "message": "Cara mengenali font"
   },
   "wUse1": {
-    "message": "Klik ikon FontSnap atau tekan Alt+Shift+F, lalu seret di atas teks apa pun."
+    "message": "Klik ikon FontSnap atau tekan Alt+Shift+F, lalu seret di atas teks di area yang terlihat (bukan di luar layar)."
   },
   "wUse2": {
     "message": "Klik kanan gambar dan pilih \"Kenali font di gambar ini\"."

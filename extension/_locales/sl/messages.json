@@ -17,7 +17,7 @@
     "message": "FontSnap: izberi območje za prepoznavanje pisave"
   },
   "selectHint": {
-    "message": "FontSnap: povlecite čez besedilo (Esc za preklic)"
+    "message": "FontSnap: povlecite samo čez vidno besedilo (Esc za preklic)"
   },
   "resTitle": {
     "message": "FontSnap – rezultati"
@@ -32,7 +32,7 @@
     "message": "Izberi sliko"
   },
   "dropTip": {
-    "message": "Namig: na kateri koli strani kliknite ikono FontSnap in povlecite čez besedilo."
+    "message": "Namig: kliknite ikono FontSnap in povlecite čez besedilo v vidnem pogledu (vsebina zunaj zaslona se ne zajame)."
   },
   "modelSees": {
     "message": "Kaj vidi model"
@@ -119,7 +119,7 @@
     "message": "Kako prepoznati pisavo"
   },
   "wUse1": {
-    "message": "Kliknite ikono FontSnap ali pritisnite Alt+Shift+F in povlecite čez poljubno besedilo."
+    "message": "Kliknite ikono FontSnap ali pritisnite Alt+Shift+F, nato povlecite čez besedilo v vidnem pogledu (ne zunaj zaslona)."
   },
   "wUse2": {
     "message": "Z desno tipko kliknite sliko in izberite »Prepoznaj pisavo na tej sliki«."

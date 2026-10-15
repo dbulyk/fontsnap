@@ -17,7 +17,7 @@
     "message": "FontSnap፦ ፊደል ለመለየት ቦታ ምረጥ"
   },
   "selectHint": {
-    "message": "FontSnap፦ በጽሑፉ ላይ ይጎትቱ (ለመሰረዝ Esc)"
+    "message": "FontSnap: የሚታይ ጽሑፍ ላይ ብቻ ይጎትቱ (Esc ለመሰረዝ)"
   },
   "resTitle": {
     "message": "FontSnap — ውጤቶች"
@@ -32,7 +32,7 @@
     "message": "ምስል ይምረጡ"
   },
   "dropTip": {
-    "message": "ጠቃሚ ምክር፦ በማንኛውም ገጽ ላይ የFontSnap አዶን ጠቅ አድርገው በጽሑፉ ላይ ይጎትቱ።"
+    "message": "ጠቃሚ ምክር፦ የFontSnap አዶን ጠቅ አድርገው በሚታየው የማያ ገጽ ክፍል ላይ ባለ ጽሑፍ ላይ ይጎትቱ (ከማያ ውጭ የተሸረበ ይዘት አይቀረጽም)።"
   },
   "modelSees": {
     "message": "ሞዴሉ የሚያየው"
@@ -119,7 +119,7 @@
     "message": "ፊደልን እንዴት መለየት እንደሚቻል"
   },
   "wUse1": {
-    "message": "የFontSnap አዶን ጠቅ ያድርጉ ወይም Alt+Shift+F ይጫኑ፣ ከዚያ በማንኛውም ጽሑፍ ላይ ይጎትቱ።"
+    "message": "የFontSnap አዶን ጠቅ ያድርጉ ወይም Alt+Shift+F ይጫኑ፣ ከዚያ በሚታየው የማያ ክፍል ላይ ባለ ጽሑፍ ላይ ይጎትቱ (ከማያ ውጭ አይደለም)።"
   },
   "wUse2": {
     "message": "ምስል ላይ በቀኝ ጠቅ አድርገው «በዚህ ምስል ያለውን ፊደል ለይ»ን ይምረጡ።"

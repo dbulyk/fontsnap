@@ -51,6 +51,7 @@ Um inspetor de CSS lê os estilos do texto real da página, mas não enxerga tex
 
 💡 Dicas para resultados precisos
 • Selecione uma ou duas linhas de texto, não a página inteira.
+• Arraste apenas sobre o texto visível na tela — o FontSnap captura o viewport atual, não o conteúdo fora da tela.
 • Texto grande dá resultados melhores que legendas pequenas.
 • Se o primeiro palpite não servir, veja os outros quatro: a família certa costuma estar no top 5.
 

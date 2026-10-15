@@ -17,7 +17,7 @@
     "message": "FontSnap: selecionar uma área para identificar o tipo de letra"
   },
   "selectHint": {
-    "message": "FontSnap: arraste sobre o texto (Esc para cancelar)"
+    "message": "FontSnap: arraste apenas sobre o texto visível (Esc para cancelar)"
   },
   "resTitle": {
     "message": "FontSnap — resultados"
@@ -32,7 +32,7 @@
     "message": "Escolher imagem"
   },
   "dropTip": {
-    "message": "Dica: em qualquer página, clique no ícone do FontSnap e arraste sobre o texto."
+    "message": "Dica: clique no ícone do FontSnap e arraste sobre o texto na área visível (conteúdo fora do ecrã não é capturado)."
   },
   "modelSees": {
     "message": "O que o modelo vê"
@@ -119,7 +119,7 @@
     "message": "Como identificar um tipo de letra"
   },
   "wUse1": {
-    "message": "Clique no ícone do FontSnap ou prima Alt+Shift+F e arraste sobre qualquer texto da página."
+    "message": "Clique no ícone do FontSnap ou prima Alt+Shift+F e arraste sobre o texto na área visível (não fora do ecrã)."
   },
   "wUse2": {
     "message": "Clique com o botão direito numa imagem e escolha \"Identificar o tipo de letra desta imagem\"."

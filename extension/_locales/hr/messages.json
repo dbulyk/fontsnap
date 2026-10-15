@@ -17,7 +17,7 @@
     "message": "FontSnap: odaberi područje za prepoznavanje fonta"
   },
   "selectHint": {
-    "message": "FontSnap: povucite preko teksta (Esc za odustajanje)"
+    "message": "FontSnap: povucite samo preko vidljivog teksta (Esc za odustajanje)"
   },
   "resTitle": {
     "message": "FontSnap – rezultati"
@@ -32,7 +32,7 @@
     "message": "Odaberi sliku"
   },
   "dropTip": {
-    "message": "Savjet: na bilo kojoj stranici kliknite ikonu FontSnap i povucite preko teksta."
+    "message": "Savjet: kliknite ikonu FontSnap i povucite preko teksta u vidljivom području (sadržaj izvan ekrana se ne snima)."
   },
   "modelSees": {
     "message": "Što model vidi"
@@ -119,7 +119,7 @@
     "message": "Kako prepoznati font"
   },
   "wUse1": {
-    "message": "Kliknite ikonu FontSnap ili pritisnite Alt+Shift+F i povucite preko bilo kojeg teksta."
+    "message": "Kliknite ikonu FontSnap ili pritisnite Alt+Shift+F, zatim povucite preko teksta u vidljivom području (ne izvan ekrana)."
   },
   "wUse2": {
     "message": "Desnom tipkom kliknite sliku i odaberite „Prepoznaj font na ovoj slici”."

@@ -17,7 +17,7 @@
     "message": "FontSnap: vælg et område for at genkende skrifttype"
   },
   "selectHint": {
-    "message": "FontSnap: træk hen over teksten (Esc for at annullere)"
+    "message": "FontSnap: træk kun over synlig tekst (Esc for at annullere)"
   },
   "resTitle": {
     "message": "FontSnap – resultater"
@@ -32,7 +32,7 @@
     "message": "Vælg billede"
   },
   "dropTip": {
-    "message": "Tip: klik på FontSnap-ikonet på en hvilken som helst side, og træk hen over teksten."
+    "message": "Tip: klik på FontSnap-ikonet, og træk over tekst i det synlige viewport (indhold uden for skærmen optages ikke)."
   },
   "modelSees": {
     "message": "Hvad modellen ser"
@@ -119,7 +119,7 @@
     "message": "Sådan genkender du en skrifttype"
   },
   "wUse1": {
-    "message": "Klik på FontSnap-ikonet eller tryk Alt+Shift+F, og træk hen over tekst på siden."
+    "message": "Klik på FontSnap-ikonet eller tryk Alt+Shift+F, og træk over tekst i det synlige viewport (ikke uden for skærmen)."
   },
   "wUse2": {
     "message": "Højreklik på et billede, og vælg \"Genkend skrifttypen i dette billede\"."

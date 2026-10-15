@@ -17,7 +17,7 @@
     "message": "FontSnap: atlasīt apgabalu fonta atpazīšanai"
   },
   "selectHint": {
-    "message": "FontSnap: velciet pāri tekstam (Esc — atcelt)"
+    "message": "FontSnap: velciet tikai pār redzamo tekstu (Esc, lai atceltu)"
   },
   "resTitle": {
     "message": "FontSnap — rezultāti"
@@ -32,7 +32,7 @@
     "message": "Izvēlēties attēlu"
   },
   "dropTip": {
-    "message": "Padoms: jebkurā lapā noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam."
+    "message": "Padoms: noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam redzamajā skatā (ārpus ekrāna ritinātais saturs netiek uztverts)."
   },
   "modelSees": {
     "message": "Ko redz modelis"
@@ -119,7 +119,7 @@
     "message": "Kā atpazīt fontu"
   },
   "wUse1": {
-    "message": "Noklikšķiniet uz FontSnap ikonas vai nospiediet Alt+Shift+F un velciet pāri jebkuram tekstam."
+    "message": "Noklikšķiniet uz FontSnap ikonas vai nospiediet Alt+Shift+F un velciet pāri tekstam redzamajā skatā (ne ārpus ekrāna)."
   },
   "wUse2": {
     "message": "Ar peles labo pogu noklikšķiniet uz attēla un izvēlieties “Atpazīt fontu šajā attēlā”."

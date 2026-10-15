@@ -17,7 +17,7 @@
     "message": "FontSnap: chọn vùng để nhận diện font"
   },
   "selectHint": {
-    "message": "FontSnap: kéo chuột qua đoạn chữ (Esc để hủy)"
+    "message": "FontSnap: chỉ kéo trên chữ đang hiện (Esc để hủy)"
   },
   "resTitle": {
     "message": "FontSnap — kết quả"
@@ -32,7 +32,7 @@
     "message": "Chọn ảnh"
   },
   "dropTip": {
-    "message": "Mẹo: trên bất kỳ trang nào, nhấp biểu tượng FontSnap rồi kéo chuột qua đoạn chữ."
+    "message": "Mẹo: nhấp biểu tượng FontSnap rồi kéo trên chữ trong vùng nhìn thấy (nội dung cuộn ra ngoài màn hình không được chụp)."
   },
   "modelSees": {
     "message": "Mô hình nhìn thấy gì"
@@ -119,7 +119,7 @@
     "message": "Cách nhận diện font chữ"
   },
   "wUse1": {
-    "message": "Nhấp biểu tượng FontSnap hoặc nhấn Alt+Shift+F, rồi kéo chuột qua đoạn chữ bất kỳ."
+    "message": "Nhấp biểu tượng FontSnap hoặc nhấn Alt+Shift+F, rồi kéo trên chữ trong vùng nhìn thấy (không phải ngoài màn hình)."
   },
   "wUse2": {
     "message": "Nhấp chuột phải vào ảnh và chọn \"Nhận diện font trong ảnh này\"."

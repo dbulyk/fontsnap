@@ -17,7 +17,7 @@
     "message": "FontSnap: markera ett område för att identifiera typsnitt"
   },
   "selectHint": {
-    "message": "FontSnap: dra över texten (Esc för att avbryta)"
+    "message": "FontSnap: dra bara över synlig text (Esc för att avbryta)"
   },
   "resTitle": {
     "message": "FontSnap – resultat"
@@ -32,7 +32,7 @@
     "message": "Välj bild"
   },
   "dropTip": {
-    "message": "Tips: klicka på FontSnap-ikonen på valfri sida och dra över texten."
+    "message": "Tips: klicka på FontSnap-ikonen och dra över text i den synliga vyn (innehåll utanför skärmen fångas inte)."
   },
   "modelSees": {
     "message": "Vad modellen ser"
@@ -119,7 +119,7 @@
     "message": "Så identifierar du ett typsnitt"
   },
   "wUse1": {
-    "message": "Klicka på FontSnap-ikonen eller tryck Alt+Shift+F och dra över valfri text på sidan."
+    "message": "Klicka på FontSnap-ikonen eller tryck Alt+Shift+F och dra över text i den synliga vyn (inte utanför skärmen)."
   },
   "wUse2": {
     "message": "Högerklicka på en bild och välj ”Identifiera typsnittet i den här bilden”."

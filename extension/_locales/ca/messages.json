@@ -17,7 +17,7 @@
     "message": "FontSnap: selecciona una àrea per identificar la font"
   },
   "selectHint": {
-    "message": "FontSnap: arrossega sobre el text (Esc per cancel·lar)"
+    "message": "FontSnap: arrossega només sobre el text visible (Esc per cancel·lar)"
   },
   "resTitle": {
     "message": "FontSnap — resultats"
@@ -32,7 +32,7 @@
     "message": "Tria una imatge"
   },
   "dropTip": {
-    "message": "Consell: a qualsevol pàgina, fes clic a la icona de FontSnap i arrossega sobre el text."
+    "message": "Consell: feu clic a la icona de FontSnap i arrossegueu sobre el text a l’àrea visible (el contingut fora de pantalla no es captura)."
   },
   "modelSees": {
     "message": "Què veu el model"
@@ -119,7 +119,7 @@
     "message": "Com identificar una font"
   },
   "wUse1": {
-    "message": "Fes clic a la icona de FontSnap o prem Alt+Shift+F i arrossega sobre qualsevol text."
+    "message": "Feu clic a la icona de FontSnap o premeu Alt+Shift+F i arrossegueu sobre el text a l’àrea visible (no fora de pantalla)."
   },
   "wUse2": {
     "message": "Fes clic dret en una imatge i tria «Identifica la font d'aquesta imatge»."

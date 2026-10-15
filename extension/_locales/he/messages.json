@@ -17,7 +17,7 @@
     "message": "FontSnap: בחירת אזור לזיהוי גופן"
   },
   "selectHint": {
-    "message": "FontSnap: גררו מעל הטקסט (Esc לביטול)"
+    "message": "FontSnap: גררו רק מעל טקסט גלוי (Esc לביטול)"
   },
   "resTitle": {
     "message": "FontSnap — תוצאות"
@@ -32,7 +32,7 @@
     "message": "בחירת תמונה"
   },
   "dropTip": {
-    "message": "טיפ: בכל דף, לחצו על סמל FontSnap וגררו מעל הטקסט."
+    "message": "טיפ: לחצו על סמל FontSnap וגררו מעל טקסט באזור הגלוי (תוכן מחוץ למסך לא נלכד)."
   },
   "modelSees": {
     "message": "מה המודל רואה"
@@ -119,7 +119,7 @@
     "message": "איך מזהים גופן"
   },
   "wUse1": {
-    "message": "לחצו על סמל FontSnap או הקישו Alt+Shift+F, וגררו מעל טקסט כלשהו בדף."
+    "message": "לחצו על סמל FontSnap או Alt+Shift+F, ואז גררו מעל טקסט באזור הגלוי (לא מחוץ למסך)."
   },
   "wUse2": {
     "message": "לחצו לחיצה ימנית על תמונה ובחרו „זיהוי הגופן בתמונה זו”."

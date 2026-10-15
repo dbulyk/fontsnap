@@ -17,7 +17,7 @@
     "message": "FontSnap: zaznacz obszar, aby rozpoznać czcionkę"
   },
   "selectHint": {
-    "message": "FontSnap: przeciągnij nad tekstem (Esc, aby anulować)"
+    "message": "FontSnap: przeciągnij tylko po widocznym tekście (Esc — anuluj)"
   },
   "resTitle": {
     "message": "FontSnap — wyniki"
@@ -32,7 +32,7 @@
     "message": "Wybierz obraz"
   },
   "dropTip": {
-    "message": "Wskazówka: na dowolnej stronie kliknij ikonę FontSnap i przeciągnij nad tekstem."
+    "message": "Wskazówka: kliknij ikonę FontSnap i przeciągnij po tekście w widocznym obszarze (treść poza ekranem nie jest przechwytywana)."
   },
   "modelSees": {
     "message": "Co widzi model"
@@ -119,7 +119,7 @@
     "message": "Jak rozpoznać czcionkę"
   },
   "wUse1": {
-    "message": "Kliknij ikonę FontSnap lub naciśnij Alt+Shift+F i przeciągnij nad dowolnym tekstem."
+    "message": "Kliknij ikonę FontSnap lub naciśnij Alt+Shift+F, a następnie przeciągnij po tekście w widocznym obszarze (nie poza ekranem)."
   },
   "wUse2": {
     "message": "Kliknij obraz prawym przyciskiem i wybierz „Rozpoznaj czcionkę na tym obrazie”."

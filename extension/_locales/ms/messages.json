@@ -17,7 +17,7 @@
     "message": "FontSnap: pilih kawasan untuk mengenal pasti fon"
   },
   "selectHint": {
-    "message": "FontSnap: seret di atas teks (Esc untuk batal)"
+    "message": "FontSnap: seret hanya pada teks yang kelihatan (Esc untuk batal)"
   },
   "resTitle": {
     "message": "FontSnap — keputusan"
@@ -32,7 +32,7 @@
     "message": "Pilih imej"
   },
   "dropTip": {
-    "message": "Petua: pada mana-mana halaman, klik ikon FontSnap dan seret di atas teks."
+    "message": "Petua: klik ikon FontSnap dan seret pada teks dalam kawasan yang kelihatan (kandungan di luar skrin tidak ditangkap)."
   },
   "modelSees": {
     "message": "Apa yang dilihat model"
@@ -119,7 +119,7 @@
     "message": "Cara mengenal pasti fon"
   },
   "wUse1": {
-    "message": "Klik ikon FontSnap atau tekan Alt+Shift+F, kemudian seret di atas mana-mana teks."
+    "message": "Klik ikon FontSnap atau tekan Alt+Shift+F, kemudian seret pada teks dalam kawasan yang kelihatan (bukan di luar skrin)."
   },
   "wUse2": {
     "message": "Klik kanan imej dan pilih \"Kenal pasti fon dalam imej ini\"."

@@ -17,7 +17,7 @@
     "message": "FontSnap: gebied selecteren om lettertype te herkennen"
   },
   "selectHint": {
-    "message": "FontSnap: sleep over de tekst (Esc om te annuleren)"
+    "message": "FontSnap: sleep alleen over zichtbare tekst (Esc om te annuleren)"
   },
   "resTitle": {
     "message": "FontSnap — resultaten"
@@ -32,7 +32,7 @@
     "message": "Afbeelding kiezen"
   },
   "dropTip": {
-    "message": "Tip: klik op elke pagina op het FontSnap-pictogram en sleep over de tekst."
+    "message": "Tip: klik op het FontSnap-pictogram en sleep over tekst in het zichtbare viewport (buiten beeld gescrolde inhoud wordt niet vastgelegd)."
   },
   "modelSees": {
     "message": "Wat het model ziet"
@@ -119,7 +119,7 @@
     "message": "Zo herken je een lettertype"
   },
   "wUse1": {
-    "message": "Klik op het FontSnap-pictogram of druk op Alt+Shift+F en sleep over tekst op de pagina."
+    "message": "Klik op het FontSnap-pictogram of druk op Alt+Shift+F en sleep over tekst in het zichtbare viewport (niet buiten beeld)."
   },
   "wUse2": {
     "message": "Klik met rechts op een afbeelding en kies 'Lettertype in deze afbeelding herkennen'."

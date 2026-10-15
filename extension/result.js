@@ -2,6 +2,7 @@ import * as ort from './ort/ort.wasm.min.mjs';
 import { fromRGBA, textLines, cropNormalize, prep, softmax, makeRanker } from './lib/fontsnap-core.js';
 import { t, applyI18n } from './lib/i18n.js';
 import { genericFamily, cssFontFamily, previewText, visibleResults } from './lib/ui.js';
+import { parseResultHash } from './lib/capture.js';
 applyI18n();
 const $ = (id) => document.getElementById(id),
   status = (t, err) => {
@@ -145,11 +146,12 @@ drop.addEventListener('drop', (e) => {
     status(t('modelFail', [e.message]), true);
     return;
   }
-  const id = location.hash.slice(1);
-  if (!id) return;
-  const st = (await chrome.storage.session.get(id))[id];
+  const handoff = parseResultHash(location.hash);
+  if (!handoff) return;
+  if (handoff.kind === 'error') return status(t('captureFail', [handoff.message]), true);
+  const st = (await chrome.storage.session.get(handoff.id))[handoff.id];
   if (!st) return;
-  chrome.storage.session.remove(id);
+  chrome.storage.session.remove(handoff.id);
   if (st.error) return status(t('captureFail', [st.error]), true);
   if (st.text) $('pvText').value = st.text;
   fromBlob(await (await fetch(st.dataUrl)).blob());

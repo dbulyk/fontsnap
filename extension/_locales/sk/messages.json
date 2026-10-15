@@ -17,7 +17,7 @@
     "message": "FontSnap: vybrať oblasť a rozpoznať písmo"
   },
   "selectHint": {
-    "message": "FontSnap: potiahnite cez text (Esc na zrušenie)"
+    "message": "FontSnap: ťahajte len cez viditeľný text (Esc na zrušenie)"
   },
   "resTitle": {
     "message": "FontSnap – výsledky"
@@ -32,7 +32,7 @@
     "message": "Vybrať obrázok"
   },
   "dropTip": {
-    "message": "Tip: na ľubovoľnej stránke kliknite na ikonu FontSnap a potiahnite cez text."
+    "message": "Tip: kliknite na ikonu FontSnap a potiahnite cez text vo viditeľnej oblasti (obsah mimo obrazovky sa nezachytí)."
   },
   "modelSees": {
     "message": "Čo vidí model"
@@ -119,7 +119,7 @@
     "message": "Ako rozpoznať písmo"
   },
   "wUse1": {
-    "message": "Kliknite na ikonu FontSnap alebo stlačte Alt+Shift+F a potiahnite cez ľubovoľný text."
+    "message": "Kliknite na ikonu FontSnap alebo stlačte Alt+Shift+F a potiahnite cez text vo viditeľnej oblasti (nie mimo obrazovky)."
   },
   "wUse2": {
     "message": "Kliknite pravým tlačidlom na obrázok a zvoľte „Rozpoznať písmo na tomto obrázku“."

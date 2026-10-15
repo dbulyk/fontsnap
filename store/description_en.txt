@@ -51,6 +51,7 @@ A CSS checker reads the styles of live web text but cannot see text in a JPG or 
 
 💡 Tips for accurate results
 • Select one or two lines of text, not a whole page.
+• Drag only over text that is visible on screen — FontSnap captures the current viewport, not content scrolled off-screen.
 • Bigger text gives better results than tiny captions.
 • If the first guess looks wrong, check the other four: the right family is often in the top 5.
 

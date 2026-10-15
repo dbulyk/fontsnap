@@ -51,6 +51,7 @@ Un inspector de CSS lee los estilos del texto real de la web, pero no ve el text
 
 💡 Consejos para resultados precisos
 • Selecciona una o dos líneas de texto, no la página entera.
+• Arrastra solo sobre el texto visible en pantalla: FontSnap captura el viewport actual, no el contenido fuera de pantalla.
 • El texto grande da mejores resultados que los pies de foto pequeños.
 • Si la primera opción no encaja, mira las otras cuatro: la familia correcta suele estar en el top 5.
 

@@ -17,7 +17,7 @@
     "message": "FontSnap: select an area to identify font"
   },
   "selectHint": {
-    "message": "FontSnap: drag over the text (Esc to cancel)"
+    "message": "FontSnap: drag over visible text only (Esc to cancel)"
   },
   "resTitle": {
     "message": "FontSnap — results"
@@ -32,7 +32,7 @@
     "message": "Choose image"
   },
   "dropTip": {
-    "message": "Tip: click the FontSnap toolbar icon on any page and drag over text."
+    "message": "Tip: click the FontSnap icon and drag over text in the visible viewport (scrolled-off content is not captured)."
   },
   "modelSees": {
     "message": "What the model sees"
@@ -119,7 +119,7 @@
     "message": "How to identify a font"
   },
   "wUse1": {
-    "message": "Click the FontSnap icon or press Alt+Shift+F, then drag over any text on the page."
+    "message": "Click the FontSnap icon or press Alt+Shift+F, then drag over text in the visible viewport (not scrolled off-screen)."
   },
   "wUse2": {
     "message": "Right-click an image and choose “Identify font in this image”."

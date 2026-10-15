@@ -17,7 +17,7 @@
     "message": "FontSnap: vali ala fondi tuvastamiseks"
   },
   "selectHint": {
-    "message": "FontSnap: lohista üle teksti (Esc tühistab)"
+    "message": "FontSnap: lohista ainult nähtava teksti kohal (Esc tühistab)"
   },
   "resTitle": {
     "message": "FontSnap – tulemused"
@@ -32,7 +32,7 @@
     "message": "Vali pilt"
   },
   "dropTip": {
-    "message": "Nõuanne: klõpsa mis tahes lehel FontSnapi ikoonil ja lohista üle teksti."
+    "message": "Nõuanne: klõpsake FontSnapi ikoonil ja lohistage üle teksti nähtavas vaates (ekraanilt välja keritud sisu ei jäädvustata)."
   },
   "modelSees": {
     "message": "Mida mudel näeb"
@@ -119,7 +119,7 @@
     "message": "Kuidas fonti tuvastada"
   },
   "wUse1": {
-    "message": "Klõpsa FontSnapi ikoonil või vajuta Alt+Shift+F ja lohista üle mis tahes teksti."
+    "message": "Klõpsake FontSnapi ikoonil või vajutage Alt+Shift+F ning lohistage üle teksti nähtavas vaates (mitte ekraanilt väljas)."
   },
   "wUse2": {
     "message": "Paremklõpsa pildil ja vali „Tuvasta selle pildi font”."
