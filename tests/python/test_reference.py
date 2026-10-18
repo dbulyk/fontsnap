@@ -122,6 +122,19 @@ def test_to_rgb_composites_over_white_like_js():
     assert (np.array(to_rgb(im)) == np.array([c["rgb"] for c in ALPHA_TABLE], np.uint8)[None]).all()
 
 
+def test_to_rgb_composites_every_c_a_pair_like_an_independent_rounding():
+    # Pixel (a, c) holds (c, 255 - c, c, a); round to nearest from quotient and remainder (no ties: 255 is odd).
+    a, c = np.meshgrid(np.arange(256, dtype=np.int64), np.arange(256, dtype=np.int64), indexing="ij")
+    rgba = np.stack([c, 255 - c, c, a], axis=-1)
+    n = rgba[..., :3] * a[..., None] + 255 * (255 - a[..., None])
+    q, r = np.divmod(n, 255)
+    expected = q + (2 * r > 255)
+    got = np.array(to_rgb(Image.fromarray(rgba.astype(np.uint8), "RGBA")), np.int64)
+    assert got.shape == (256, 256, 3)
+    wrong = np.argwhere((got != expected).any(axis=-1))
+    assert wrong.size == 0, [(int(c[i, j]), int(a[i, j])) for i, j in wrong[:10]]
+
+
 def test_to_rgb_composites_gray_with_alpha_and_palette_transparency():
     la = Image.fromarray(np.array([[[0, 0], [0, 255], [90, 100]]], np.uint8), "LA")
     assert np.array(to_rgb(la))[0].tolist() == [[255] * 3, [0] * 3, [over_white(90, 100)] * 3]

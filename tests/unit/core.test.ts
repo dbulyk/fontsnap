@@ -128,6 +128,28 @@ describe('textcrop primitives', () => {
     );
   });
 
+  it('composites every (c, a) pair like an independent integer rounding', () => {
+    // Pixel a * 256 + c holds (c, 255 - c, c, a); round to nearest from quotient and remainder (no ties: 255 is odd).
+    const over = (c: number, a: number) => {
+      const n = c * a + 255 * (255 - a);
+      return Math.floor(n / 255) + (2 * (n % 255) > 255 ? 1 : 0);
+    };
+    const rgba = new Uint8Array(256 * 256 * 4);
+    for (let a = 0; a < 256; a++)
+      for (let c = 0; c < 256; c++) rgba.set([c, 255 - c, c, a], (a * 256 + c) * 4);
+    const rgb = fromRGBA(rgba, 256 * 256, 1).data;
+    const wrong: string[] = [];
+    for (let a = 0; a < 256; a++)
+      for (let c = 0; c < 256; c++) {
+        const i = (a * 256 + c) * 3;
+        const want = [over(c, a), over(255 - c, a), over(c, a)];
+        const got = [...rgb.subarray(i, i + 3)];
+        if (got.join() !== want.join())
+          wrong.push(`c=${c} a=${a}: ${got.join()} != ${want.join()}`);
+      }
+    expect(wrong.slice(0, 10)).toEqual([]);
+  });
+
   it('leaves every opaque pixel byte for byte as it was', () => {
     const rgba = new Uint8Array(256 * 4);
     for (let i = 0; i < 256; i++) rgba.set([i, 255 - i, (i * 7) % 256, 255], i * 4);
