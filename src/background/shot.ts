@@ -68,39 +68,31 @@ async function measureImage(src: string): Promise<MeasuredImage | null> {
   };
 }
 
-/**
- * A download from the network. The CSP of the extension pages says `connect-src 'self'` (src/manifest.ts), which applies to
- * this worker too, so a request to another origin is refused and the caller falls back to the screenshot. It stays a fetch,
- * not removed: allowing a source in connect-src is the whole change it would take to download images again.
- */
-async function downloadImage(srcUrl: string): Promise<Blob | null> {
-  const r = await fetch(srcUrl, { credentials: 'omit' });
-  return r.ok ? await r.blob() : null;
-}
-
-// Right-click on an image: analyse that image. A data: URL is decoded here (no request); another image is downloaded
-// first (refused by the CSP, see downloadImage); otherwise screenshot the tab and crop to the image's on-screen box (activeTab).
+// Right-click on an image: analyse that image. A data: URL is decoded here, without a request. Any other image is read from a
+// screenshot of the tab, cropped to the image's on-screen box (activeTab): the CSP of the extension (connect-src 'self',
+// src/manifest.ts) applies to this worker too, so the image can not be downloaded from its own origin any more.
 export async function imageToDataUrl(
   srcUrl: string,
   tab: chrome.tabs.Tab | undefined,
 ): Promise<string> {
-  try {
-    const blob = /^data:/i.test(srcUrl) ? dataUrlToBlob(srcUrl) : await downloadImage(srcUrl);
-    if (
-      blob &&
-      blob.type.startsWith('image/') &&
-      blob.type !== 'image/svg+xml' &&
-      blob.size < MAX_IMAGE_BYTES
-    ) {
-      await createImageBitmap(blob).then((b) => {
-        b.close();
-      }); // decodable?
-      const dataUrl = bytesToDataUrl(new Uint8Array(await blob.arrayBuffer()), blob.type);
-      assertFitsSessionQuota(dataUrl);
-      return dataUrl;
+  if (/^data:/i.test(srcUrl)) {
+    try {
+      const blob = dataUrlToBlob(srcUrl);
+      if (
+        blob.type.startsWith('image/') &&
+        blob.type !== 'image/svg+xml' &&
+        blob.size < MAX_IMAGE_BYTES
+      ) {
+        await createImageBitmap(blob).then((b) => {
+          b.close();
+        }); // decodable?
+        const dataUrl = bytesToDataUrl(new Uint8Array(await blob.arrayBuffer()), blob.type);
+        assertFitsSessionQuota(dataUrl);
+        return dataUrl;
+      }
+    } catch {
+      // malformed, not decodable or too big for the session quota: fall back to a screenshot of the image
     }
-  } catch {
-    // CORS / network: fall back to a screenshot of the image
   }
   if (tab?.id === undefined) throw new Error('Could not access this image');
   const results = await chrome.scripting.executeScript({
