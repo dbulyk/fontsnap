@@ -6,6 +6,8 @@ import {
   META_PATH,
   MODEL_PATH,
   RUNTIME_DIR,
+  assertNoOutsideLoads,
+  assertPinnedRuntime,
   configureRuntime,
   loadModel,
   metaUrl,
@@ -210,9 +212,15 @@ describe('the runtime is configured to load only the packaged, pinned files', ()
     }
 
     it('uses the runtime in exactly three ways: its environment (handed to configureRuntime), InferenceSession.create, Tensor', () => {
-      expect(ortChains().sort()).toEqual(['ort.InferenceSession.create', 'ort.Tensor', 'ort.env']);
-      expect(text.match(/\bort\.env\b/g)).toHaveLength(1);
+      expect(ortChains().sort()).toEqual([
+        'ort.InferenceSession.create',
+        'ort.Tensor',
+        'ort.env',
+        'ort.env',
+      ]);
+      expect(text.match(/\bort\.env\b/g)).toHaveLength(2);
       expect(text).toContain('configureRuntime(ort.env);');
+      expect(text).toContain('assertPinnedRuntime(ort.env, runtimeUrl());');
     });
 
     it('assigns to the environment in exactly two places: wasmPaths and numThreads', () => {
@@ -234,7 +242,7 @@ describe('the runtime is configured to load only the packaged, pinned files', ()
 
     it('has no way around that: no wasmBinary, no object for wasmPaths, no Object.assign/Reflect/defineProperty, no other import', () => {
       expect(text).not.toMatch(
-        /wasmBinary|Object\.(assign|defineProperty|defineProperties)|Reflect\.|\bWebAssembly\b/,
+        /Object\.(assign|defineProperty|defineProperties)|Reflect\.|\bWebAssembly\b/,
       );
       expect(text).not.toMatch(/\bimport\s*\(|(^|[^-\w])eval\s*\(|\bnew Function\b/);
       const imports = source.statements
@@ -244,15 +252,180 @@ describe('the runtime is configured to load only the packaged, pinned files', ()
       expect(imports.slice(1).every((specifier) => specifier.startsWith("'../shared/core/"))).toBe(
         true,
       );
-      expect(text.match(/wasmPaths/g)).toHaveLength(2); // the type of the parameter and the one assignment
     });
 
     it('takes every URL from runtimeUrl(), modelUrl() and metaUrl(), which are built from chrome.runtime.getURL', () => {
       const urls = [...text.matchAll(/chrome\.runtime\.getURL\(([^)]*)\)/g)].map(
         (match) => match[1],
       );
-      expect(urls.sort()).toEqual(['META_PATH', 'MODEL_PATH', 'RUNTIME_DIR']);
+      expect(urls.sort()).toEqual(["''", 'META_PATH', 'MODEL_PATH', 'RUNTIME_DIR']);
       expect(text).not.toMatch(/https?:|\/\/cdn|'\/\/'/);
     });
+  });
+});
+
+// The values are checked, not only the way they are set (review of PR #6): whatever source line set them, the
+// runtime must still point at the packaged directory, with no override of its bytes, when the session is created.
+describe('assertPinnedRuntime: the runtime points only at the packaged files when it starts', () => {
+  const PINNED = 'chrome-extension://test-extension-id/ort/';
+  const envWith = (wasm: object) => ({ wasm });
+
+  it('accepts the packaged directory and no binary', () => {
+    expect(() => {
+      assertPinnedRuntime(envWith({ wasmPaths: PINNED, numThreads: 4 }), PINNED);
+    }).not.toThrow();
+  });
+
+  it.each([
+    ['another origin', 'https://evil.example/ort/'],
+    ['an encoded origin', '%68ttps://evil.example/ort/'],
+    ['a protocol-relative URL', '//evil.example/ort/'],
+    ['the packaged directory plus a suffix', `${PINNED}x/`],
+    ['the packaged directory without its slash', PINNED.slice(0, -1)],
+    ['another extension', 'chrome-extension://other-id/ort/'],
+    ['an upper-case spelling', PINNED.toUpperCase()],
+    ['a data: URL', 'data:text/javascript,1'],
+    ['an empty string', ''],
+  ])('refuses wasmPaths %s', (_what, value) => {
+    expect(() => {
+      assertPinnedRuntime(envWith({ wasmPaths: value }), PINNED);
+    }).toThrow(/wasmPaths/);
+  });
+
+  it.each([
+    ['an object', { mjs: `${PINNED}ort-wasm-simd-threaded.mjs`, wasm: 'https://evil.example/x' }],
+    ['a frozen object', Object.freeze({ mjs: PINNED, wasm: PINNED })],
+    ['a URL object', new URL('https://evil.example/ort/')],
+    ['a String object', new String(PINNED)],
+    ['an array', [PINNED]],
+    ['null', null],
+    ['undefined', undefined],
+    ['a number', 1],
+  ])('refuses wasmPaths that is %s, even if it prints like the right string', (_what, value) => {
+    expect(() => {
+      assertPinnedRuntime(envWith({ wasmPaths: value }), PINNED);
+    }).toThrow(/wasmPaths/);
+  });
+
+  it('refuses a wasmPaths that is a getter (it could answer differently later)', () => {
+    const wasm = {};
+    Object.defineProperty(wasm, 'wasmPaths', { get: () => PINNED, enumerable: true });
+    expect(() => {
+      assertPinnedRuntime(envWith(wasm), PINNED);
+    }).toThrow(/wasmPaths/);
+  });
+
+  it.each([
+    ['bytes', new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])],
+    ['an ArrayBuffer', new ArrayBuffer(8)],
+    ['an empty array', []],
+    ['false', false],
+    ['zero', 0],
+    ['an empty string', ''],
+    ['null', null],
+  ])('refuses a wasmBinary that is %s', (_what, value) => {
+    expect(() => {
+      assertPinnedRuntime(envWith({ wasmPaths: PINNED, wasmBinary: value }), PINNED);
+    }).toThrow(/wasmBinary/);
+  });
+
+  it('refuses a wasmBinary that is defined but undefined, or a getter, or inherited', () => {
+    expect(() => {
+      assertPinnedRuntime(envWith({ wasmPaths: PINNED, wasmBinary: undefined }), PINNED);
+    }).toThrow(/wasmBinary/);
+    const getter = { wasmPaths: PINNED };
+    Object.defineProperty(getter, 'wasmBinary', { get: () => undefined });
+    expect(() => {
+      assertPinnedRuntime(envWith(getter), PINNED);
+    }).toThrow(/wasmBinary/);
+    const inherited = Object.create({ wasmBinary: new Uint8Array(1) }) as Record<string, unknown>;
+    inherited['wasmPaths'] = PINNED;
+    expect(() => {
+      assertPinnedRuntime(envWith(inherited), PINNED);
+    }).toThrow(/wasmBinary/);
+  });
+
+  it('refuses a wasmBinary that arrives through Object.prototype (prototype pollution)', () => {
+    Object.defineProperty(Object.prototype, 'wasmBinary', {
+      value: new Uint8Array(1),
+      configurable: true,
+    });
+    try {
+      expect(() => {
+        assertPinnedRuntime(envWith({ wasmPaths: PINNED }), PINNED);
+      }).toThrow(/wasmBinary/);
+    } finally {
+      Reflect.deleteProperty(Object.prototype, 'wasmBinary');
+    }
+  });
+});
+
+describe('assertNoOutsideLoads: nothing came from outside the extension while the runtime started', () => {
+  const BASE = 'chrome-extension://test-extension-id/';
+  const entry = (name: string) => ({ name }) as PerformanceEntry;
+
+  it('accepts no entries, and entries of the extension itself', () => {
+    expect(() => {
+      assertNoOutsideLoads([], BASE);
+    }).not.toThrow();
+    expect(() => {
+      assertNoOutsideLoads(
+        [entry(`${BASE}ort/ort-wasm-simd-threaded.wasm`), entry(`${BASE}model/model_fp16.onnx`)],
+        BASE,
+      );
+    }).not.toThrow();
+  });
+
+  it.each([
+    'https://evil.example/b',
+    'http://127.0.0.1/x',
+    'blob:chrome-extension://test-extension-id/1',
+    'data:application/wasm;base64,AGFzbQ==',
+    'chrome-extension://other-id/ort/ort-wasm-simd-threaded.wasm',
+    `${BASE.slice(0, -1)}evil/x`,
+    '//evil.example/b',
+  ])('refuses a load from %s', (name) => {
+    expect(() => {
+      assertNoOutsideLoads([entry(`${BASE}a`), entry(name)], BASE);
+    }).toThrow(/outside the extension/);
+  });
+});
+
+describe('loadModel starts the runtime only when the checks hold', () => {
+  it('stops before the session exists when something resets wasmPaths after it was set', async () => {
+    let stored: unknown;
+    Object.defineProperty(ortMock.env.wasm, 'wasmPaths', {
+      get: () => 'https://evil.example/ort/',
+      set: (value: unknown) => {
+        stored = value;
+      },
+      configurable: true,
+      enumerable: true,
+    });
+    await expect(loadModel()).rejects.toThrow(/wasmPaths/);
+    expect(stored).toBe('chrome-extension://test-extension-id/ort/');
+    expect(ortMock.InferenceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('stops before the session exists when a binary is present', async () => {
+    ortMock.env.wasm['wasmBinary'] = new Uint8Array([0, 97, 115, 109]);
+    await expect(loadModel()).rejects.toThrow(/wasmBinary/);
+    expect(ortMock.InferenceSession.create).not.toHaveBeenCalled();
+  });
+
+  it('fails after the session when a resource was loaded from outside the extension', async () => {
+    vi.stubGlobal('performance', {
+      getEntriesByType: () => [{ name: 'https://evil.example/b' }],
+    });
+    await expect(loadModel()).rejects.toThrow(/outside the extension/);
+  });
+
+  it('succeeds with the resource entries of the extension only', async () => {
+    vi.stubGlobal('performance', {
+      getEntriesByType: () => [
+        { name: 'chrome-extension://test-extension-id/ort/ort-wasm-simd-threaded.wasm' },
+      ],
+    });
+    await expect(loadModel()).resolves.toBeDefined();
   });
 });

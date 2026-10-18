@@ -7,7 +7,7 @@ import { WASM_MESSAGE } from './src-only';
 import { hasAllowedMediaExtension, isAllowedDistMedia, isStaticAsset } from './static-assets';
 import { expectedManifest } from './expected-manifest';
 import { VENDOR_FILES, vendorDistProblems, vendorFileProblem, type VendorFile } from './vendor';
-import { scriptProblems } from './wasm-scan';
+import { importsRuntime, scriptProblems } from './wasm-scan';
 
 /** True when the source uses ES module syntax (import/export statements, import.meta). */
 export function findEsmSyntax(source: string): boolean {
@@ -172,14 +172,24 @@ function unresolvedImports(dir: string): string[] {
  * like any other script, besides being reported by vendorDistProblems).
  */
 function scriptContentProblems(dir: string, vendor: ReadonlyMap<string, VendorFile>): string[] {
-  return filesBelow(dir)
+  const importers: string[] = [];
+  const problems = filesBelow(dir)
     .filter((file) => /\.m?js$/.test(file))
     .flatMap((file) => {
       const bytes = readFileSync(join(dir, file));
       const pinned = vendor.get(file);
       if (pinned !== undefined && vendorFileProblem(file, bytes, pinned) === undefined) return [];
-      return scriptProblems(file, bytes.toString('latin1'));
+      const text = bytes.toString('latin1');
+      if (importsRuntime(text)) importers.push(file);
+      return scriptProblems(file, text);
     });
+  // exactly one chunk (the one with src/result/model.ts) imports the runtime, so exactly one may configure it
+  if (importers.length !== 1) {
+    problems.push(
+      `exactly one script of the build imports the vendored runtime (../ort/ort.wasm.min.mjs), found ${String(importers.length)}: ${importers.join(', ') || 'none'}`,
+    );
+  }
+  return problems;
 }
 
 /** <script> tags in built pages that are inline, external or do not point at a chunk the bundler emitted. */

