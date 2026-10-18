@@ -7,6 +7,7 @@ import {
   SESSION_QUOTA_BYTES,
   assertFitsSessionQuota,
   clipCropRect,
+  frameRect,
   encodeWithinSessionQuota,
   errorResultHash,
   fitsSessionQuota,
@@ -336,5 +337,61 @@ describe('openResult error wrapping helpers', () => {
         id: 'x',
       }).entry.error,
     ).toBe('plain');
+  });
+});
+
+describe('frameRect: an image rect of an iframe in the viewport of the tab', () => {
+  const iframe = { x: 10, y: 20, w: 300, h: 200 };
+  const box = { x: 1, y: 1, w: 298, h: 198 };
+  const view = { x: 0, y: 0, w: 298, h: 198 };
+
+  it('moves the rect by the frame position and its border', () => {
+    expect(frameRect({ x: 5, y: 6, w: 40, h: 30 }, view, iframe, box)).toEqual({
+      x: 16,
+      y: 27,
+      w: 40,
+      h: 30,
+    });
+  });
+
+  it('follows a CSS scale of the frame', () => {
+    const half = { x: 10, y: 20, w: 150, h: 100 };
+    expect(frameRect({ x: 20, y: 40, w: 100, h: 60 }, view, half, box)).toEqual({
+      x: 10 + (1 + 20) * 0.5,
+      y: 20 + (1 + 40) * 0.5,
+      w: 50,
+      h: 30,
+    });
+  });
+
+  it('keeps only the part the frame shows', () => {
+    expect(frameRect({ x: -10, y: -10, w: 50, h: 50 }, view, iframe, box)).toEqual({
+      x: 11,
+      y: 21,
+      w: 40,
+      h: 40,
+    });
+    expect(frameRect({ x: 280, y: 190, w: 100, h: 100 }, view, iframe, box)).toEqual({
+      x: 291,
+      y: 211,
+      w: 18,
+      h: 8,
+    });
+  });
+
+  it('throws when nothing of the image is inside the frame', () => {
+    expect(() => frameRect({ x: 400, y: 0, w: 10, h: 10 }, view, iframe, box)).toThrow(
+      'Selection is outside the visible area',
+    );
+  });
+
+  it.each([1, 2])('lands on the same screenshot pixels at DPR %i', (dpr) => {
+    const rect = frameRect({ x: 5, y: 6, w: 40, h: 30 }, view, iframe, box);
+    expect(clipCropRect(rect, dpr, 1000, 1000)).toEqual({
+      x: 16 * dpr,
+      y: 27 * dpr,
+      w: 40 * dpr,
+      h: 30 * dpr,
+    });
   });
 });

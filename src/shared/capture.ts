@@ -13,6 +13,8 @@ export interface CaptureEntry {
   dataUrl?: string;
   text?: string;
   error?: string;
+  /** The clicked image could not be isolated: `dataUrl` is the whole visible area and the result page says so. */
+  note?: 'whole-view';
 }
 
 export interface EncodeOptions {
@@ -73,6 +75,31 @@ export function clipCropRect(rect: Rect, dpr: number, bmpWidth: number, bmpHeigh
   const h = Math.min(Math.round((rect.h + Math.min(0, rect.y)) * scale), bmpHeight - y);
   if (w < MIN_CROP_PX || h < MIN_CROP_PX) throw new Error('Selection is outside the visible area');
   return { x, y, w, h };
+}
+
+/**
+ * Map the rect of an image inside an iframe (CSS pixels of the frame's viewport `view`) to the viewport of the tab, from the border
+ * box `iframe` of the `<iframe>` there and its client box `box` (border widths and inner size). A CSS scale of the frame is followed.
+ * Only the part of the image that the frame shows is kept.
+ * @throws {Error} when nothing of the image is inside the frame
+ */
+export function frameRect(image: Rect, view: Rect, iframe: Rect, box: Rect): Rect {
+  const left = Math.max(image.x, view.x);
+  const top = Math.max(image.y, view.y);
+  const right = Math.min(image.x + image.w, view.x + view.w);
+  const bottom = Math.min(image.y + image.h, view.y + view.h);
+  if (right - left <= 0 || bottom - top <= 0)
+    throw new Error('Selection is outside the visible area');
+  const kx = box.w / view.w;
+  const ky = box.h / view.h;
+  const sx = iframe.w / (box.w + 2 * box.x);
+  const sy = iframe.h / (box.h + 2 * box.y);
+  return {
+    x: iframe.x + (box.x + left * kx) * sx,
+    y: iframe.y + (box.y + top * ky) * sy,
+    w: (right - left) * kx * sx,
+    h: (bottom - top) * ky * sy,
+  };
 }
 
 export function scaleToMaxSide(
