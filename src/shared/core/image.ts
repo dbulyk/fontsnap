@@ -10,12 +10,18 @@ export interface Img {
 
 export type ResizeMode = 'area' | 'linear' | 'cubic';
 
+/**
+ * RGBA from a canvas (not premultiplied) → RGB over white: c' = round((c·a + 255·(255 − a)) / 255).
+ * An opaque pixel keeps its bytes; python/fontsnap_ref/image.py does the same sum.
+ */
 export function fromRGBA(rgba: Uint8Array | Uint8ClampedArray, w: number, h: number): Img {
   const d = new Uint8Array(w * h * 3);
   for (let i = 0, j = 0; i < w * h; i++, j += 4) {
-    d[i * 3] = atU8(rgba, j);
-    d[i * 3 + 1] = atU8(rgba, j + 1);
-    d[i * 3 + 2] = atU8(rgba, j + 2);
+    const a = atU8(rgba, j + 3);
+    for (let ch = 0; ch < 3; ch++) {
+      const c = atU8(rgba, j + ch);
+      d[i * 3 + ch] = a === 255 ? c : Math.floor((c * a + 255 * (255 - a) + 127) / 255);
+    }
   }
   return { w, h, c: 3, data: d };
 }
