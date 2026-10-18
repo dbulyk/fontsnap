@@ -43,6 +43,9 @@ Setup: `git lfs pull` (model and test images), `npm ci`, then once `npx playwrig
   string with `'wasm-unsafe-eval'` (never `'unsafe-eval'`). Any other `.wasm`/`.onnx`, other bytes under these
   names, another CSP source or a missing COEP/COOP fails `verify-dist` and the tests. Changing the runtime or the
   model means editing the table AND its second copy in `tests/unit/vendor.test.ts` in the same commit, with a reason.
+  onnxruntime-web is imported and configured ONLY in `src/result/model.ts` (lint refuses `env`, `wasmPaths`, `wasmBinary` and the
+  import elsewhere; `model.test.ts` pins what that file sets; `verify-dist` scans built scripts for WebAssembly bytes and for those
+  settings): never set `wasmBinary`, never give `wasmPaths` anything but `chrome.runtime.getURL('ort/')`.
   The Python reference (`python/`), `data/`, `store/` and `scripts/i18n/` are outside the Node toolchain and are
   never formatted or linted by it; `store/` is not touched at all (the Web Store texts and privacy policy).
 - **Allowlists are `Map`/`Set` (or arrays searched by value), or checked with `Object.hasOwn`; never `obj[key]` or

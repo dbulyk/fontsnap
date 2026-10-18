@@ -113,6 +113,17 @@ each is declared once and held by tests that fail on any deviation.
 | `cross_origin_embedder_policy` credentialless, `cross_origin_opener_policy` same-origin (SharedArrayBuffer for multithreaded WASM)              | `src/manifest.ts`                                        | `manifest.test.ts`, `dist.test.ts`                                                                                                                                                                        |
 | The one external import of the build, `onnxruntime-web/wasm` → `ort/ort.wasm.min.mjs`                                                           | `ORT_SPECIFIER`, `ORT_EXTERNAL` in `vendor.ts`           | `src-only.test.ts` (that id passes, eleven look-alikes are refused), `vite-configs.test.ts` (`vendorPlugin` answers only that specifier), `dist.test.ts` (the import must resolve to a file of the build) |
 
+**The runtime cannot be pointed elsewhere.** onnxruntime-web has two settings that would run WebAssembly other than the
+pinned files with every check above green: `env.wasm.wasmPaths` (another URL, another `.wasm`) and `env.wasm.wasmBinary`
+(other bytes). Three layers close them: (1) ESLint refuses the identifiers `env`, `wasmPaths`, `wasmBinary` (also as strings,
+templates, keys, destructured names) and any import of `onnxruntime-*` in every `src/` context except `src/result/model.ts`;
+(2) `model.test.ts` pins that file, source included: `wasmPaths` is the one string `chrome.runtime.getURL('ort/')`, nothing else
+is assigned to the environment, `wasmBinary` is never set, the model and the family table come from their packaged URLs;
+(3) `verify-dist` scans every built `.js`/`.mjs` for the header of a module in any spelling (raw, escapes, base64, hex, number
+lists, a `.wasm` name), for `wasmBinary`, and for `wasmPaths` anywhere but once, from a call, in `assets/result-*.js`; the vendor
+files are exempt by exact path and sha256 only (`scripts/lib/wasm-scan.ts`). Names assembled at run time remain the accepted
+boundary of the template, but without `env` or the import they cannot reach the runtime.
+
 Everything else of the template stays: no `eval`/`new Function`/injected scripts, no remote code, no other `.wasm` or media, `public/`
 holds locales and icons only. The only network access of the extension is the Google Fonts preview: the result page links
 `https://fonts.googleapis.com/css2?family=<name>&display=swap` stylesheets (family names only, never page text) and
