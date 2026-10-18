@@ -1,9 +1,10 @@
 import { ESLint, Linter } from 'eslint';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
 import { CSS_LOADING_SOURCE, cssUnescape, fontsnapPlugin } from '../../eslint.config.js';
-import { domMembers } from './helpers/typed-lint';
+import { domMembers, pageTypes } from './helpers/typed-lint';
 
 // What guards.test.ts cannot show: that the selectors in eslint.config.js really match the code
 // they are meant to stop. The config itself (rules and options) is pinned by the guard snapshots.
@@ -2021,5 +2022,144 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   it('a window is left to the allowlist of globals (win.document is read, nothing else on it)', async () => {
     expect(await domMembers(OVERLAY, inStart('  void win.document;'))).toEqual([]);
     expect(await reached(OVERLAY, inStart('  void win.fetch;'))).not.toEqual([]);
+  });
+});
+
+// Round 9 of the review of PR #6 (r4308642691): `dom-members` judges a member by where its symbol is declared, so a DOM value handed to
+// a variable, parameter or return of an own `interface` or object type loses its DOM-ness and the members of that type are free
+// (`querySelector('a')` with `host` and `click()`, `createElementNS('style')` with a text from run time, in measure.ts
+// `ownerDocument.createElementNS('style')`). The class is closed at its source (PAGE_TYPES, the rule fontsnap/page-types): the code of
+// the page has no type of its own - no interface but the listed ones, no type literal, mapped type, class or enum, no type name that is
+// not a library type, a type parameter or a listed name, and no object literal whose type is inferred. Every fixture is a form of it.
+describe('page code has no types of its own', () => {
+  const OVERLAY = 'src/select/overlay.ts';
+  const NEW_FILE = 'src/select/a-new-file.ts';
+  const MEASURE = 'src/background/measure.ts';
+  const inSelect = (body: string): string =>
+    `export function startSelection(win: Window, u: string, k: string, n: number): void {\n  const doc = win.document;\n  const box = doc.createElement("div");\n  ${body}\n  void [doc, box, u, k, n];\n}`;
+  const inMeasure = (body: string): string =>
+    `export function measureImage(u: string): void {\n  const box = [...document.images][0]!;\n  ${body}\n  void [box, u];\n}`;
+  const DOC =
+    'interface D { createElementNS(ns: string | null, n: string): { textContent: string | null }; getElementById(id: string): { click(): void } | null }\n  interface B { ownerDocument: D }\n';
+  const FORMS: [string, string][] = [
+    [
+      'P1 own interfaces: ownerDocument, createElementNS(style), click()',
+      `${DOC}  const b: B = box;\n  const st = b.ownerDocument.createElementNS(null, 'style');\n  st.textContent = ['html{background:ur', 'l(', u, ')}'].join('');\n  b.ownerDocument.getElementById('x')?.click();`,
+    ],
+    [
+      'P2 a type literal as the annotation of a parameter',
+      "const f = (b: { ownerDocument: { createElementNS(ns: string | null, n: string): { textContent: string | null } } }): void => { b.ownerDocument.createElementNS(null, 'style'); };\n  f(box);",
+    ],
+    [
+      'P3 an own type as a return type',
+      `${DOC}  const g = (): B => box;\n  g().ownerDocument.getElementById('x')?.click();`,
+    ],
+    [
+      'P4 satisfies a type literal',
+      'const same = box satisfies { ownerDocument: unknown };\n  void same;',
+    ],
+    [
+      'P5 an own type for an element, written through it',
+      'interface Im { src: string }\n  const f = (im: Im): void => { im.src = u; };\n  f(box as never);',
+    ],
+    [
+      'P7 a type inferred from a default parameter',
+      'const f = (a = { src: "", click() { return; } }): void => { a.src = u; a.click(); };\n  f(box);',
+    ],
+    [
+      'P8 an array inferred from an object literal, then push',
+      'const list = [{ src: "", click() { return; } }];\n  list.push(box);\n  list[0]!.click();',
+    ],
+    [
+      'P9 a class with the members of an element',
+      'class A { src = ""; click(): void { return; } }\n  const a: A = box;\n  a.click();',
+    ],
+    [
+      'P10 a mapped type',
+      'type M = { [K in "src" | "click"]: unknown };\n  const m: M = box;\n  void m;',
+    ],
+    [
+      'P11 a listed interface declared with a method',
+      'interface MeasuredImage { rect: unknown; click(): void }\n  void (0 as unknown as MeasuredImage);',
+    ],
+    [
+      'P12 a listed interface declared with a property that is not listed',
+      'interface MeasuredImage { rect: number; src: string }\n  void (0 as unknown as MeasuredImage);',
+    ],
+    ['P14 an enum', 'enum E { A, B }\n  void E.A;'],
+    [
+      'P15 a generic with an own constraint',
+      'const f = <T extends { src: string }>(t: T): string => t.src;\n  void f;',
+    ],
+    [
+      'P16 a type alias of a type literal',
+      'type T = { src: string };\n  void (0 as unknown as T);',
+    ],
+    [
+      'P17 an object literal with no library or listed contextual type',
+      'const o = { src: u };\n  void o;',
+    ],
+    [
+      'P18 an object literal as the second argument of something that is not Object.assign',
+      'const o = [1].map(() => ({ src: u }));\n  void o;',
+    ],
+  ];
+
+  it.each(FORMS)('refuses %s', async (_what, body) => {
+    for (const [file, code] of [
+      [OVERLAY, inSelect(body)],
+      [NEW_FILE, inSelect(body)],
+      [MEASURE, inMeasure(body)],
+    ] as const) {
+      expect(await pageTypes(file, code), `${file}: ${body}`).not.toEqual([]);
+    }
+  });
+
+  it('refuses an import type of a name that is not listed, and one listed name from the wrong file', async () => {
+    for (const code of [
+      "import type { Request } from '../shared/messages';\nexport function startSelection(win: Window, r?: Request): void {\n  void [win, r];\n}",
+      "import type { Rect } from '../shared/messages';\nexport function startSelection(win: Window, r?: Rect): void {\n  void [win, r];\n}",
+    ]) {
+      expect(await pageTypes(NEW_FILE, code), code).not.toEqual([]);
+    }
+  });
+
+  it('accepts what the page code really uses: library types, listed types, type parameters, option objects, style objects', async () => {
+    expect(
+      await pageTypes(
+        NEW_FILE,
+        `import type { Rect } from '../shared/capture';
+export function startSelection(win: Window, r: Rect): void {
+  const doc = win.document;
+  const box = doc.createElement('div');
+  const pick = <T extends Node>(t: T): T => t;
+  const list: HTMLElement[] = [pick(box)];
+  Object.assign(box.style, { position: 'fixed', left: '0' });
+  box.addEventListener('click', () => undefined, { passive: true });
+  void [list, r];
+}`,
+      ),
+    ).toEqual([]);
+    expect(
+      await pageTypes(
+        MEASURE,
+        `import type { Rect } from '../shared/capture';
+interface MeasuredImage { rect: Rect; dpr: number; saved: number[]; box: Rect }
+export async function measureImage(src: string): Promise<MeasuredImage | null> {
+  const img = [...document.images].find((i) => i.currentSrc === src);
+  if (!img) return null;
+  img.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  const b = img.getBoundingClientRect();
+  const rect: Rect = { x: b.left, y: b.top, w: b.width, h: b.height };
+  return { rect, dpr: 1, saved: [], box: rect };
+}`,
+      ),
+    ).toEqual([]);
+  });
+
+  it('the files of the page code as they are in the repository are clean', async () => {
+    for (const file of [OVERLAY, 'src/select/chrome.ts', 'src/select/index.ts', MEASURE]) {
+      expect(await pageTypes(file, readFileSync(file, 'utf8')), file).toEqual([]);
+    }
   });
 });

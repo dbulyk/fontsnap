@@ -712,8 +712,182 @@ export const domMembersRule = {
     };
   },
 };
+// --- the code of the page has no types of its own (review round 9 of PR #6, r4308642691) ----------------------------------------------
+// `dom-members` knows a DOM value by where the symbol of the member is declared. A DOM value handed to a variable, a parameter or a
+// return of an `interface` or an object type of the code's own is no longer seen: the members of that type are free (`querySelector('a')`
+// with `host` and `click()`, `createElementNS('style')`, in measure.ts `ownerDocument.createElementNS('style')`). Following every place
+// a value can flow into such a type (an annotation, an argument, a return, `satisfies`, a default parameter, an array inferred from a
+// literal, the parameter of a callback) is a list that grows with the language; so the class is closed where such a type is BORN. In the
+// code of the page the only object types are library types (lib.*.d.ts), type parameters, and the names of this table: the interfaces
+// that may be declared here, with the property names each may have, and the type names that may be imported (`import type`) with the
+// file each must come from. Writing a type of its own is a deliberate edit of this table, like a permission.
+const PAGE_TYPES = [
+  {
+    match: 'src/select/',
+    // library types that ambient declarations add properties to (src/env.d.ts: the marker of the overlay; @types/chrome); the Window is
+    // judged by GLOBAL_ACCESS
+    augmented: ['Window'],
+    interfaces: {},
+    imports: {
+      Rect: 'src/shared/capture.ts',
+      RequestOf: 'src/shared/messages.ts',
+      MessageKey: 'src/shared/i18n.ts',
+    },
+  },
+  {
+    match: MEASURE_FILE,
+    augmented: [],
+    interfaces: { MeasuredImage: ['rect', 'dpr', 'saved', 'box'] },
+    imports: { Rect: 'src/shared/capture.ts' },
+  },
+];
+
+/** Local rule (type-aware): see PAGE_TYPES. Plain JavaScript; exported so that tests can run it. */
+export const pageTypesRule = {
+  meta: { type: 'problem', schema: [{ type: 'array' }] },
+  create(context) {
+    const relative = context.filename
+      .slice(context.cwd.length + 1)
+      .split('\\')
+      .join('/');
+    const entry = context.options[0].find(
+      (candidate) =>
+        relative === candidate.match ||
+        (candidate.match.endsWith('/') && relative.startsWith(candidate.match)),
+    );
+    if (entry === undefined) return {};
+    const services = context.sourceCode.parserServices;
+    if (services.program === undefined || services.program === null) {
+      throw new Error('fontsnap/page-types needs type information (parserOptions.project)');
+    }
+    const { program } = services;
+    const checker = program.getTypeChecker();
+    const tsOf = (node) => services.esTreeNodeToTSNodeMap.get(node);
+    const fileOf = (declaration) => declaration.getSourceFile().fileName.split('\\').join('/');
+    const inLibrary = (declaration) =>
+      program.isSourceFileDefaultLibrary(declaration.getSourceFile());
+    const here = (declaration) => fileOf(declaration).endsWith(`/${relative}`);
+    const comesFrom = (declaration, path) => fileOf(declaration).endsWith(`/${path}`);
+    const listed = (table, name) => Object.hasOwn(table, name);
+    // a library type, or one of the global types that ambient declarations (src/env.d.ts, @types/*) add properties to
+    const library = (declaration, name) => inLibrary(declaration) || entry.augmented.includes(name);
+    const report = (node, what) => {
+      context.report({
+        node,
+        message: `${what}: the code that runs in the web page's process has no types of its own (PAGE_TYPES in eslint.config.js) - a DOM value typed by one is no longer checked by fontsnap/dom-members. Library types, type parameters and the listed names only.`,
+      });
+    };
+    const declared = new Set();
+    /** Is a type of a library, or of this table? Used for the contextual type of an object literal. */
+    const acceptable = (type) => {
+      if (type.isUnionOrIntersection()) return type.types.every(acceptable);
+      if ((type.flags & ts.TypeFlags.Object) === 0) {
+        return (type.flags & ts.TypeFlags.TypeParameter) === 0;
+      }
+      const declarations = type.symbol?.declarations ?? [];
+      const name = type.symbol?.name ?? '';
+      return (
+        declarations.length > 0 &&
+        declarations.every(
+          (declaration) =>
+            library(declaration, name) ||
+            (listed(entry.interfaces, name) && here(declaration)) ||
+            Object.values(entry.imports).some((path) => comesFrom(declaration, path)),
+        )
+      );
+    };
+    return {
+      TSInterfaceDeclaration(node) {
+        const name = node.id.name;
+        if (!listed(entry.interfaces, name) || declared.has(name)) {
+          report(node, `The interface ${name} is not on the list (or is declared twice)`);
+          return;
+        }
+        declared.add(name);
+        const properties = entry.interfaces[name];
+        if (node.extends.length > 0) report(node, `The interface ${name} extends another`);
+        for (const member of node.body.body) {
+          if (
+            member.type !== 'TSPropertySignature' ||
+            member.computed ||
+            member.key.type !== 'Identifier' ||
+            !properties.includes(member.key.name)
+          ) {
+            report(
+              member,
+              `A member of ${name} that is not a listed property (${properties.join(', ')})`,
+            );
+          }
+        }
+      },
+      TSTypeLiteral(node) {
+        report(node, 'A type literal');
+      },
+      TSMappedType(node) {
+        report(node, 'A mapped type');
+      },
+      ClassDeclaration(node) {
+        report(node, 'A class');
+      },
+      ClassExpression(node) {
+        report(node, 'A class');
+      },
+      TSEnumDeclaration(node) {
+        report(node, 'An enum');
+      },
+      TSTypeReference(node) {
+        const leaf = node.typeName.type === 'TSQualifiedName' ? node.typeName.right : node.typeName;
+        if (leaf.type === 'Identifier' && leaf.name === 'const') return; // `as const`
+        const found = checker.getSymbolAtLocation(tsOf(leaf));
+        const symbol =
+          found !== undefined && (found.flags & ts.SymbolFlags.Alias) !== 0
+            ? checker.getAliasedSymbol(found)
+            : found;
+        const declarations = symbol?.declarations ?? [];
+        const name = leaf.name;
+        const fine =
+          symbol !== undefined &&
+          ((symbol.flags & ts.SymbolFlags.TypeParameter) !== 0 ||
+            (declarations.length > 0 &&
+              declarations.every(
+                (declaration) =>
+                  library(declaration, name) ||
+                  (listed(entry.interfaces, name) && here(declaration)) ||
+                  (listed(entry.imports, name) && comesFrom(declaration, entry.imports[name])),
+              )));
+        if (!fine)
+          report(node, `The type ${name} is not a library type, a type parameter or a listed name`);
+      },
+      ObjectExpression(node) {
+        const parent = node.parent;
+        if (
+          parent.type === 'CallExpression' &&
+          parent.callee.type === 'MemberExpression' &&
+          parent.callee.object.type === 'Identifier' &&
+          parent.callee.object.name === 'Object' &&
+          parent.callee.property.type === 'Identifier' &&
+          parent.callee.property.name === 'assign' &&
+          parent.arguments[1] === node
+        ) {
+          return;
+        }
+        const contextual = checker.getContextualType(tsOf(node));
+        if (contextual === undefined || !acceptable(contextual)) {
+          report(
+            node,
+            'An object literal whose type is inferred, or is not a library or a listed type',
+          );
+        }
+      },
+    };
+  },
+};
 export const fontsnapPlugin = {
-  rules: { 'global-access': globalAccessRule, 'dom-members': domMembersRule },
+  rules: {
+    'global-access': globalAccessRule,
+    'dom-members': domMembersRule,
+    'page-types': pageTypesRule,
+  },
 };
 // Values that are a Window, or a stand-in for one, however they are reached: document.defaultView, iframe.contentWindow,
 // event.view, message.source, event.currentTarget (the window an event was added to), getBackgroundPage(). GLOBAL_ACCESS closes
@@ -1139,7 +1313,10 @@ export default tseslint.config(
   {
     // The members of every DOM object in the code of the web page: an allowlist by type, see DOM_MEMBERS.
     files: PAGE_PROCESS_GLOBS,
-    rules: { 'fontsnap/dom-members': ['error', DOM_MEMBERS] },
+    rules: {
+      'fontsnap/dom-members': ['error', DOM_MEMBERS],
+      'fontsnap/page-types': ['error', PAGE_TYPES],
+    },
   },
   {
     // The one file that configures onnxruntime-web: every other src rule applies to it.
