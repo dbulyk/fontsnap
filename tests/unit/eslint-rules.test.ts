@@ -1726,6 +1726,7 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   /** Everything that judges the code of the page: the type-aware rule, the global allowlist, the selectors. */
   const verdict = async (file: string, code: string): Promise<string[]> => [
     ...(await domMembers(file, code)),
+    ...(await pageTypes(file, code)),
     ...(await reached(file, code)),
     ...(await flagged(file, code)),
   ];
@@ -1974,13 +1975,7 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   });
 
   it('accepts measureImage as it is, and refuses the DOM members it does not use', async () => {
-    const real = `export async function measureImage(src: string): Promise<{ dpr: number } | null> {
-  const img = [...document.images].find((i) => i.currentSrc === src || i.src === src);
-  if (!img) return null;
-  img.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  const b = img.getBoundingClientRect();
-  return { dpr: window.devicePixelRatio || 1 + b.left + b.width };
-}`;
+    const real = readFileSync(MEASURE, 'utf8');
     expect(await verdict(MEASURE, real)).toEqual([]);
     for (const body of [
       '[img.src] = [src];',
@@ -1992,8 +1987,9 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
       "try { void img.ownerDocument.createElementNS('x', 'style'); } catch { void 0; }",
       'img.click();',
       'img.setAttribute("src", src);',
-      'void img.parentElement;',
+      'void img.parentNode;',
       'void img.naturalWidth;',
+      'img.scrollTop = 1; void img.offsetParent;',
       'void document.body;',
       'void document.head;',
       'void document.createElement("div");',

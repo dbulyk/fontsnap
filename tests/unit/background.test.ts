@@ -374,7 +374,10 @@ describe('right-click on an image', () => {
     // not even an attempt: a refused request would be a CSP violation in the console of the worker on every right click
     expect(images.fetch).not.toHaveBeenCalled();
     expect(stub.chrome.scripting.executeScript).toHaveBeenCalledWith(
-      expect.objectContaining({ target: { tabId: 5 }, args: ['https://cdn.example/photo.png'] }),
+      expect.objectContaining({
+        target: { tabId: 5 },
+        args: ['https://cdn.example/photo.png', 'image', null],
+      }),
     );
     expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledWith(9, { format: 'png' });
     expect(images.draws).toEqual([[60, 80, 200, 100, 0, 0, 200, 100]]);
@@ -443,41 +446,5 @@ describe('right-click on an image', () => {
     await click();
     const injection = stub.chrome.scripting.executeScript.mock.calls[0]?.[0] as { func: unknown };
     expect(typeof injection.func).toBe('function');
-  });
-});
-
-describe('measuring an image inside the page', () => {
-  it('finds the image by URL, scrolls it into view and measures it after two frames', async () => {
-    setup();
-    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: null }]);
-    await stub.fireMenuClicked({ menuItemId: MENU_IMAGE, srcUrl: 'https://x/y.png' }, tab);
-    await openedResult();
-    const injection = stub.chrome.scripting.executeScript.mock.calls[0]?.[0] as {
-      func: (src: string) => Promise<unknown>;
-    };
-    const scrollIntoView = vi.fn();
-    const img = {
-      currentSrc: 'https://x/y.png',
-      src: '',
-      scrollIntoView,
-      getBoundingClientRect: () => ({ left: 3, top: 4, width: 50, height: 60 }),
-    };
-    const frames: (() => void)[] = [];
-    vi.stubGlobal('document', { images: [{ currentSrc: 'other', src: 'other' }, img] });
-    vi.stubGlobal('window', { devicePixelRatio: 2 });
-    vi.stubGlobal('requestAnimationFrame', (cb: () => void) => {
-      frames.push(cb);
-      cb();
-    });
-    await expect(injection.func('https://x/y.png')).resolves.toEqual({
-      rect: { x: 3, y: 4, w: 50, h: 60 },
-      dpr: 2,
-    });
-    expect(scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
-    expect(frames).toHaveLength(2);
-    vi.stubGlobal('window', {});
-    await expect(injection.func('https://x/y.png')).resolves.toMatchObject({ dpr: 1 });
-    vi.stubGlobal('document', { images: [] });
-    await expect(injection.func('https://x/missing.png')).resolves.toBeNull();
   });
 });

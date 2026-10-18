@@ -76,7 +76,7 @@ export async function imageToDataUrl(
   if (tab?.id === undefined) throw new Error('Could not access this image');
   const results = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    args: [srcUrl],
+    args: [srcUrl, 'image', null],
     func: measureImage,
   });
   const result = results[0]?.result;

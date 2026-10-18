@@ -155,7 +155,7 @@ const HOST_OBJECTS =
   '/^(globalThis|self|window|chrome|navigator|performance|crypto|fetch|Object|Reflect|JSON|Math|Promise|Array|Function|Response|Request|Headers|URL|Blob|XMLHttpRequest|WebSocket|EventSource)$/';
 // the only properties of the global object that src/ reads
 const READABLE_GLOBALS =
-  '/^(crossOriginIsolated|crypto|devicePixelRatio|setTimeout|clearTimeout|setInterval|clearInterval|requestAnimationFrame)$/';
+  '/^(crossOriginIsolated|crypto|devicePixelRatio|innerWidth|innerHeight|setTimeout|clearTimeout|setInterval|clearInterval|requestAnimationFrame)$/';
 // the primitives that change properties, prototypes or what an object is
 const TAMPER_NAMES =
   '/^(defineProperty|defineProperties|setPrototypeOf|getPrototypeOf|getOwnPropertyDescriptors|__proto__|__defineGetter__|__defineSetter__|__lookupGetter__|__lookupSetter__|prototype|Proxy|Reflect)$/';
@@ -272,6 +272,14 @@ const DOM_MEMBERS = [
       top: 'r',
       width: 'r',
       height: 'r',
+      parentElement: 'r',
+      scrollLeft: 'rw',
+      scrollTop: 'rw',
+      clientLeft: 'r',
+      clientTop: 'r',
+      clientWidth: 'r',
+      clientHeight: 'r',
+      getElementsByTagName: 'c',
       scrollIntoView: 'c',
       getBoundingClientRect: 'c',
     },
@@ -339,9 +347,9 @@ const GLOBAL_ACCESS = {
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
     // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_GLOBS): the images of the page, its pixel ratio
     'src/background/measure.ts': {
-      document: ['images'],
+      document: ['images', 'getElementsByTagName'],
       requestAnimationFrame: true,
-      window: ['devicePixelRatio'],
+      window: ['devicePixelRatio', 'innerWidth', 'innerHeight'],
     },
     // the entry scripts of the extension pages hand their document to the page script, and do nothing else with it
     'src/result/index.ts': { document: [''] },
