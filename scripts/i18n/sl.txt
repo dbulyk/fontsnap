@@ -39,3 +39,4 @@ Dobite 5 najbolj podobnih Google Fonts, primerjajte predoglede in kopirajte CSS.
 Preizkusi zdaj
 Kako pripeti FontSnap
 Vse deluje v vaši napravi. Slike se nikoli ne naložijo.
+Slike, na katero ste kliknili, ni bilo mogoče izolirati, zato je bilo analizirano celotno vidno območje. Za boljši rezultat kliknite ikono FontSnap in povlecite čez besedilo.

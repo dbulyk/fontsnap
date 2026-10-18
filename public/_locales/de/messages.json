@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Alles läuft auf Ihrem Gerät. Bilder werden nie hochgeladen."
+  },
+  "wholeNote": {
+    "message": "Das angeklickte Bild konnte nicht herausgelöst werden, daher wurde der gesamte sichtbare Bereich analysiert. Für ein besseres Ergebnis klicken Sie auf das FontSnap-Symbol und ziehen Sie über den Text."
   }
 }

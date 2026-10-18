@@ -39,3 +39,4 @@ Få de 5 mest like Google Fonts, sammenlign forhåndsvisninger og kopier CSS.
 Prøv nå
 Slik fester du FontSnap
 Alt kjører på enheten din. Bilder lastes aldri opp.
+Bildet du klikket på kunne ikke isoleres, så hele det synlige området ble analysert. For et bedre resultat klikker du på FontSnap-ikonet og drar over teksten.

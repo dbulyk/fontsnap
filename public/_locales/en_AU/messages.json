@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Everything runs on your device. Images are never uploaded."
+  },
+  "wholeNote": {
+    "message": "The clicked image could not be isolated, so the whole visible area was analysed. For a better result click the FontSnap icon and drag over the text."
   }
 }

@@ -14,7 +14,7 @@ KEYS = (
     "appName appDesc actionTitle ctxImage ctxSelect selectHint resTitle tagline dropHint chooseImage dropTip "
     "modelSees loading analyzing ready noLines readFail captureFail modelFail errorMsg previewLabel previewPh "
     "scoreTitle notOnGF copyCss copied note wTitle wPinH wPin1 wPin2 wPin3 wPinned wUseH "
-    "wUse1 wUse2 wUse3 wUse4 wTry wShowPin wPrivacy"
+    "wUse1 wUse2 wUse3 wUse4 wTry wShowPin wPrivacy wholeNote"
 ).split()
 PLACEHOLDERS = {
     "captureFail": ["err"],

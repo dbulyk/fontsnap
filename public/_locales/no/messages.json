@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Alt kjører på enheten din. Bilder lastes aldri opp."
+  },
+  "wholeNote": {
+    "message": "Bildet du klikket på kunne ikke isoleres, så hele det synlige området ble analysert. For et bedre resultat klikker du på FontSnap-ikonet og drar over teksten."
   }
 }

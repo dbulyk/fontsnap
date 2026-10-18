@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Viskas veikia jūsų įrenginyje. Paveikslėliai niekada neįkeliami."
+  },
+  "wholeNote": {
+    "message": "Nepavyko išskirti paveikslėlio, kurį spustelėjote, todėl buvo išanalizuota visa matoma sritis. Norėdami geresnio rezultato, spustelėkite „FontSnap“ piktogramą ir vilkite per tekstą."
   }
 }

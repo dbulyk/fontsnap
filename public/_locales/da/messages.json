@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Alt kører på din enhed. Billeder uploades aldrig."
+  },
+  "wholeNote": {
+    "message": "Det billede, du klikkede på, kunne ikke isoleres, så hele det synlige område er blevet analyseret. For et bedre resultat skal du klikke på FontSnap-ikonet og trække hen over teksten."
   }
 }

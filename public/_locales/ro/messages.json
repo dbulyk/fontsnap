@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Totul rulează pe dispozitivul dvs. Imaginile nu sunt încărcate niciodată."
+  },
+  "wholeNote": {
+    "message": "Imaginea pe care ați făcut clic nu a putut fi izolată, așa că a fost analizată întreaga zonă vizibilă. Pentru un rezultat mai bun, faceți clic pe pictograma FontSnap și trageți peste text."
   }
 }

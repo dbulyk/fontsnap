@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Wszystko działa na Twoim urządzeniu. Obrazy nigdy nie są wysyłane."
+  },
+  "wholeNote": {
+    "message": "Nie udało się wyodrębnić obrazu, w który kliknięto, więc przeanalizowano cały widoczny obszar. Aby uzyskać lepszy wynik, kliknij ikonę FontSnap i przeciągnij po tekście."
   }
 }

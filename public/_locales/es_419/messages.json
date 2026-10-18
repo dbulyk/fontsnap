@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Todo funciona en tu dispositivo. Las imágenes nunca se suben."
+  },
+  "wholeNote": {
+    "message": "No se pudo aislar la imagen en la que hiciste clic, así que se analizó toda el área visible. Para un mejor resultado, haz clic en el ícono de FontSnap y arrastra sobre el texto."
   }
 }

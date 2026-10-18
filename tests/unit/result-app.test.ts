@@ -506,6 +506,27 @@ describe('handoff from the selection / context menu', () => {
     expect(stub.session.has('cap_1')).toBe(false);
   });
 
+  it('says so when the clicked image could not be isolated and the whole visible area is shown', async () => {
+    stub.session.set('cap_6', { ...entry, text: '', note: 'whole-view' });
+    await start({ hash: '#cap_6' });
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    expect($('wholeNote').hidden).toBe(false);
+    expect($('wholeNote').textContent).toBe(
+      'The clicked image could not be isolated, so the whole visible area was analysed. For a better result click the FontSnap icon and drag over the text.',
+    );
+  });
+
+  it('keeps the hint hidden for a crop of the image itself', async () => {
+    stub.session.set('cap_7', { ...entry, text: '' });
+    await start({ hash: '#cap_7' });
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    expect($('wholeNote').hidden).toBe(true);
+  });
+
   it('works without preview text', async () => {
     stub.session.set('cap_2', { dataUrl: entry.dataUrl, text: '' });
     await start({ hash: '#cap_2' });

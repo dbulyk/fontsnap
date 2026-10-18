@@ -39,3 +39,4 @@ Obtenha as 5 fontes Google mais parecidas, compare as pré-visualizações e cop
 Experimentar agora
 Como afixar o FontSnap
 Tudo funciona no seu dispositivo. As imagens nunca são enviadas.
+Não foi possível isolar a imagem em que clicou, por isso foi analisada toda a área visível. Para um melhor resultado, clique no ícone do FontSnap e arraste sobre o texto.

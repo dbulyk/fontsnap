@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Tudo funciona no seu dispositivo. As imagens nunca são enviadas."
+  },
+  "wholeNote": {
+    "message": "Não foi possível isolar a imagem em que você clicou, então toda a área visível foi analisada. Para um resultado melhor, clique no ícone do FontSnap e arraste sobre o texto."
   }
 }

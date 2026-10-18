@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Sve radi na vašem uređaju. Slike se nikad ne prenose."
+  },
+  "wholeNote": {
+    "message": "Slika na koju ste kliknuli nije se mogla izdvojiti pa je analizirano cijelo vidljivo područje. Za bolji rezultat kliknite ikonu FontSnap i povucite preko teksta."
   }
 }

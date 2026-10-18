@@ -39,3 +39,4 @@ Få de 5 mest lika Google Fonts, jämför förhandsvisningar och kopiera CSS.
 Prova nu
 Så fäster du FontSnap
 Allt körs på din enhet. Bilder laddas aldrig upp.
+Bilden du klickade på kunde inte avgränsas, så hela det synliga området analyserades. För ett bättre resultat klickar du på FontSnap-ikonen och drar över texten.

@@ -39,3 +39,4 @@ Dobijte 5 najsličnijih Google fontova, usporedite preglede i kopirajte CSS.
 Isprobaj sada
 Kako prikvačiti FontSnap
 Sve radi na vašem uređaju. Slike se nikad ne prenose.
+Slika na koju ste kliknuli nije se mogla izdvojiti pa je analizirano cijelo vidljivo područje. Za bolji rezultat kliknite ikonu FontSnap i povucite preko teksta.

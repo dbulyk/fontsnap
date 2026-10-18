@@ -39,3 +39,4 @@ Få de 5 mest lignende Google Fonts, sammenlign eksempler, og kopiér CSS.
 Prøv nu
 Sådan fastgør du FontSnap
 Alt kører på din enhed. Billeder uploades aldrig.
+Det billede, du klikkede på, kunne ikke isoleres, så hele det synlige område er blevet analyseret. For et bedre resultat skal du klikke på FontSnap-ikonet og trække hen over teksten.

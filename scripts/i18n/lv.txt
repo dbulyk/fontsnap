@@ -39,3 +39,4 @@ Saņemiet 5 līdzīgākos Google Fonts, salīdziniet priekšskatījumus un kopē
 Izmēģināt tagad
 Kā piespraust FontSnap
 Viss darbojas jūsu ierīcē. Attēli nekad netiek augšupielādēti.
+Attēlu, uz kura noklikšķinājāt, neizdevās izdalīt, tāpēc tika analizēta visa redzamā zona. Lai iegūtu labāku rezultātu, noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam.

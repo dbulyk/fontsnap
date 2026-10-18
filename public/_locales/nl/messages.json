@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Alles werkt op je apparaat. Afbeeldingen worden nooit geüpload."
+  },
+  "wholeNote": {
+    "message": "De afbeelding waarop je klikte kon niet worden vrijgemaakt, dus is het hele zichtbare gebied geanalyseerd. Klik voor een beter resultaat op het FontSnap-pictogram en sleep over de tekst."
   }
 }

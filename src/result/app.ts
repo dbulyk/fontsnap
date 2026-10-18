@@ -156,6 +156,7 @@ export function initResult(doc: Document): void {
       return;
     }
     if (stored.text) preview.value = stored.text;
+    $('wholeNote').hidden = stored.note !== 'whole-view';
     if (stored.dataUrl) await fromBlob(dataUrlToBlob(stored.dataUrl));
   })();
 }

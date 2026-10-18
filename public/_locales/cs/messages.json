@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Vše běží ve vašem zařízení. Obrázky se nikdy nenahrávají."
+  },
+  "wholeNote": {
+    "message": "Obrázek, na který jste klikli, se nepodařilo vyjmout, proto byla analyzována celá viditelná oblast. Pro lepší výsledek klikněte na ikonu FontSnap a táhněte myší přes text."
   }
 }

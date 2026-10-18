@@ -39,3 +39,4 @@ Get the 5 closest Google Fonts, compare previews and copy the CSS.
 Try it now
 How to pin FontSnap
 Everything runs on your device. Images are never uploaded.
+The clicked image could not be isolated, so the whole visible area was analysed. For a better result click the FontSnap icon and drag over the text.

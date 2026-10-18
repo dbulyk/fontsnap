@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Kila kitu kinafanya kazi kwenye kifaa chako. Picha hazipakiwi kamwe."
+  },
+  "wholeNote": {
+    "message": "Picha uliyobofya haikuweza kutengwa, kwa hiyo eneo lote linaloonekana lilichanganuliwa. Kwa matokeo bora, bofya aikoni ya FontSnap kisha buruta juu ya maandishi."
   }
 }

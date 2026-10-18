@@ -138,5 +138,8 @@
   },
   "wPrivacy": {
     "message": "Kaikki toimii laitteellasi. Kuvia ei koskaan ladata palvelimelle."
+  },
+  "wholeNote": {
+    "message": "Napsauttamaasi kuvaa ei voitu erottaa, joten koko näkyvä alue analysoitiin. Saat paremman tuloksen napsauttamalla FontSnap-kuvaketta ja vetämällä tekstin yli."
   }
 }

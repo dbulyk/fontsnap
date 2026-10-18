@@ -39,3 +39,4 @@ Získejte 5 nejpodobnějších Google Fonts, porovnejte náhledy a zkopírujte C
 Vyzkoušet
 Jak připnout FontSnap
 Vše běží ve vašem zařízení. Obrázky se nikdy nenahrávají.
+Obrázek, na který jste klikli, se nepodařilo vyjmout, proto byla analyzována celá viditelná oblast. Pro lepší výsledek klikněte na ikonu FontSnap a táhněte myší přes text.
