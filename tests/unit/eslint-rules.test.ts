@@ -2,7 +2,7 @@ import { ESLint, Linter } from 'eslint';
 import { join } from 'node:path';
 import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
-import { fontsnapPlugin } from '../../eslint.config.js';
+import { CSS_LOADING_SOURCE, cssUnescape, fontsnapPlugin } from '../../eslint.config.js';
 
 // What guards.test.ts cannot show: that the selectors in eslint.config.js really match the code
 // they are meant to stop. The config itself (rules and options) is pinned by the guard snapshots.
@@ -1488,5 +1488,221 @@ export function startSelection(win: Window): void {
       );
       expect(messages, file).toEqual([]);
     }
+  });
+});
+
+// Round 7 of the review of PR #6, blocker E: the page made a request through a CSS url() that no rule could see, because the string
+// was built at run time (`['ur', 'l(', host, ')'].join('')`) or written with a CSS escape (`u\\72 l(`), and
+// `box.style.backgroundImage = ...` or `style.setProperty(...)` put it where the browser looks for an image. Now style is written in
+// one way, Object.assign(el.style, { key: value }), with the keys of the overlay and values the rules can prove harmless.
+describe('the style of the code that runs in the web page cannot load a file', () => {
+  const OVERLAY = 'src/select/overlay.ts';
+  const MEASURE = 'src/background/measure.ts';
+  const NEW_FILE = 'src/select/a-new-file.ts';
+  const inStart = (body: string): string =>
+    `export function startSelection(win: Window): void {\n  const doc = win.document;\n  const box = doc.createElement('div');\n${body}\n}`;
+  const HOST = "['x', 'example', 'invalid'].join('.')";
+
+  it.each([
+    // the mutation of the tester, word for word (progress3.md, step 4b)
+    [
+      'the mutation of the tester',
+      `Object.assign(box.style,{backgroundImage:['ur','l(http://',${HOST},'/qa-hole.png)'].join('')})`,
+    ],
+    // the mutations of the reviewer (r4307910589)
+    [
+      'a url() assembled at run time, assigned to backgroundImage',
+      `doc.documentElement.style.backgroundImage = ['ur', 'l(', ['https:/', 'example.invalid', 'c2'].join('/'), ')'].join('');`,
+    ],
+    [
+      'a CSS escape in backgroundImage',
+      "doc.documentElement.style.backgroundImage = 'u\\72 l(https:\\2f\\2f example.invalid\\2f c1)';",
+    ],
+    // the same through every way to write a style
+    [
+      'a plain url() in backgroundImage',
+      "box.style.backgroundImage = 'url(https://example.invalid/a.png)';",
+    ],
+    ['a direct assignment of a key', "box.style.background = 'red';"],
+    ['a string key', "box.style['background-image'] = 'x';"],
+    ['a computed key', 'box.style[k] = v;'],
+    ['setProperty', "box.style.setProperty('background-image', ['ur', 'l(x)'].join(''));"],
+    ['setProperty with a priority', "box.style.setProperty('cursor', 'x', 'important');"],
+    ['cssText', "box.style.cssText = 'background:' + ['ur', 'l(x)'].join('');"],
+    ['cssText +=', "box.style.cssText += 'x';"],
+    ['setAttribute style', "box.setAttribute('style', 'background:u\\72 l(x)');"],
+    ['the style attribute through attributes', "box.attributes.style.value = 'x';"],
+    ['insertRule', "doc.styleSheets[0].insertRule('x{}');"],
+    ['an adopted sheet', 'doc.adoptedStyleSheets = [];'],
+    ['a new CSSStyleSheet', 'const sheet = new CSSStyleSheet();\n  void sheet;'],
+    ['a style element', "doc.head.append(doc.createElement('style'));"],
+    ['a link element', "doc.head.append(doc.createElement('link'));"],
+    ['animate with keyframes', "box.animate([{ backgroundImage: ['ur', 'l(x)'].join('') }], 1);"],
+    ['attributeStyleMap', "box.attributeStyleMap.set('background-image', 'x');"],
+    ['getComputedStyle', 'void getComputedStyle(box);'],
+    // .style as a value
+    ['an alias of style', 'const s = box.style;\n  void s;'],
+    ['style passed on', 'use(box.style);'],
+    ['style returned', 'const f = () => box.style;\n  void f;'],
+    ['style destructured', 'const { style } = box;\n  void style;'],
+    ['style as the second argument', 'Object.assign({}, box.style);'],
+    ['style in an array', 'void [box.style];'],
+    // Object.assign(el.style, ...) with something else than a plain object literal
+    ['a spread inside', "Object.assign(box.style, { ...extra, display: 'none' });"],
+    ['a spread of the style', 'Object.assign(box.style, { ...box.style });'],
+    ['a computed key inside', "Object.assign(box.style, { [key]: 'x' });"],
+    ['a string key inside', "Object.assign(box.style, { 'background-image': 'x' });"],
+    ['a template key inside', 'Object.assign(box.style, { [`background-image`]: "x" });'],
+    ['a shorthand inside', 'const display = "none";\n  Object.assign(box.style, { display });'],
+    ['a method inside', "Object.assign(box.style, { get display() { return 'none'; } });"],
+    ['a key that is not on the list', "Object.assign(box.style, { backgroundImage: 'none' });"],
+    ['listStyleImage', "Object.assign(box.style, { listStyleImage: 'none' });"],
+    ['maskImage', "Object.assign(box.style, { maskImage: 'none' });"],
+    ['borderImage', "Object.assign(box.style, { borderImage: 'none' });"],
+    ['content', "Object.assign(box.style, { content: 'none' });"],
+    ['filter', "Object.assign(box.style, { filter: 'none' });"],
+    ['clipPath', "Object.assign(box.style, { clipPath: 'none' });"],
+    ['a custom property', "Object.assign(box.style, { '--x': 'y' });"],
+    ['a variable as the object', 'Object.assign(box.style, styles);'],
+    ['one argument only', 'Object.assign(box.style);'],
+    ['three arguments', "Object.assign(box.style, { display: 'none' }, extra);"],
+    ['a variable as a value of display', 'Object.assign(box.style, { display: mode });'],
+    [
+      'a variable as a value of position',
+      "Object.assign(box.style, { position: ['fi', 'xed'].join('') });",
+    ],
+    ['a template as a value of display', 'Object.assign(box.style, { display: `${mode}` });'],
+    ['a number as a value', 'Object.assign(box.style, { zIndex: 5 });'],
+    // the keys that accept a url(): a keyword, a hex colour or rgb()/rgba() only
+    [
+      'background with a url()',
+      "Object.assign(box.style, { background: 'url(https://example.invalid/a.png)' });",
+    ],
+    ['background with a url() and a space', "Object.assign(box.style, { background: 'URL (x)' });"],
+    ['background with an escaped url()', "Object.assign(box.style, { background: 'u\\72 l(x)' });"],
+    ['background with image-set', "Object.assign(box.style, { background: 'image-set(x 1x)' });"],
+    ['background with image()', "Object.assign(box.style, { background: 'image(x)' });"],
+    ['background with cross-fade', "Object.assign(box.style, { background: 'cross-fade(x)' });"],
+    ['background with element()', "Object.assign(box.style, { background: '-moz-element(#x)' });"],
+    ['background with paint()', "Object.assign(box.style, { background: 'paint(x)' });"],
+    ['background with src()', "Object.assign(box.style, { background: 'src(x)' });"],
+    [
+      'background with a gradient and a url',
+      "Object.assign(box.style, { background: 'linear-gradient(red, url(x))' });",
+    ],
+    ['background with var()', "Object.assign(box.style, { background: 'var(--x)' });"],
+    ['background with a variable', 'Object.assign(box.style, { background: color });'],
+    ['background with a template', 'Object.assign(box.style, { background: `rgba(${r},0,0,1)` });'],
+    [
+      'background built by join',
+      "Object.assign(box.style, { background: ['ur', 'l(x)'].join('') });",
+    ],
+    ['background with a concatenation', "Object.assign(box.style, { background: 'ur' + 'l(x)' });"],
+    [
+      'cursor with a url()',
+      "Object.assign(box.style, { cursor: 'url(https://example.invalid/c.png), auto' });",
+    ],
+    ['cursor with an escape', "Object.assign(box.style, { cursor: 'u\\72 l(x), auto' });"],
+    ['cursor with a variable', 'Object.assign(box.style, { cursor: c });'],
+    ['cursor with image-set', "Object.assign(box.style, { cursor: 'image-set(x 1x), auto' });"],
+    // strings and import.meta
+    ['a backslash in any string', "const s = 'a\\\\b';\n  void s;"],
+    ['a backslash in a template', 'const s = `a\\\\b`;\n  void s;'],
+    ['a url() assembled and used as text', "const u = 'url(x)';\n  void u;"],
+    ['import.meta', "void import.meta.glob('../shared/page-probe.ts', { eager: true });"],
+    ['import.meta.url', 'void import.meta.url;'],
+  ])('refuses %s', async (_what, code) => {
+    for (const file of [OVERLAY, NEW_FILE]) {
+      expect(await either(file, inStart(`  ${code}`)), `${file}: ${code}`).not.toEqual([]);
+    }
+  });
+
+  it('accepts every style the overlay really writes, and left/top/width/height as templates', async () => {
+    const code = `
+  const sx = 1;
+  const sy = 2;
+  const x = 3;
+  const e = { clientX: 4 };
+  Object.assign(box.style, {
+    position: 'fixed',
+    inset: '0',
+    zIndex: '2147483647',
+    cursor: 'crosshair',
+    background: 'rgba(0,0,0,0.15)',
+  });
+  Object.assign(box.style, { position: 'fixed', border: '2px solid #4f7cff', background: 'rgba(79,124,255,0.08)', display: 'none', pointerEvents: 'none' });
+  Object.assign(box.style, { top: '12px', left: '50%', transform: 'translateX(-50%)', background: '#111', color: '#fff', font: '13px system-ui,sans-serif', padding: '6px 12px', borderRadius: '6px' });
+  Object.assign(box.style, { display: 'block', left: \`\${sx}px\`, top: \`\${sy}px\`, width: '0', height: '0' });
+  Object.assign(box.style, { left: \`\${x}px\`, width: \`\${Math.abs(e.clientX - sx)}px\`, height: 'auto' });
+  Object.assign(box.style, { background: 'transparent', cursor: 'default' });`;
+    // (only the overlay may call Object.assign at all: GLOBAL_ACCESS lists it for that file alone)
+    expect(await either(OVERLAY, inStart(code))).toEqual([]);
+    expect(await reached(NEW_FILE, inStart(code))).not.toEqual([]);
+  });
+
+  it('accepts class names, text and ordinary DOM calls next to it', async () => {
+    const code =
+      "const d = doc.createElement('div');\n  d.className = 'x';\n  d.classList.add('y');\n  doc.documentElement.appendChild(d);";
+    expect(await either(OVERLAY, inStart(`  ${code}`))).toEqual([]);
+  });
+
+  it('measure.ts writes no style at all and takes no Object', async () => {
+    for (const code of [
+      "void document.body.style.background = 'red';",
+      "Object.assign(document.body.style, { display: 'none' });",
+      'void document.body.style;',
+      "void document.body.style.setProperty('x', 'y');",
+      'void Object.keys({});',
+      'void document.body.attributeStyleMap;',
+    ]) {
+      expect(await either(MEASURE, code), code).not.toEqual([]);
+    }
+  });
+
+  it('import.meta is refused in measure.ts too', async () => {
+    expect(await either(MEASURE, 'void import.meta;')).not.toEqual([]);
+  });
+
+  describe('lint and the build judge a CSS function the same way (CSS_LOADING_SOURCE, cssUnescape)', () => {
+    const pattern = new RegExp(CSS_LOADING_SOURCE, 'i');
+    it.each([
+      ['url(x)', true],
+      ['URL(x)', true],
+      ['uRl(x)', true],
+      ['url (x)', true],
+      ['url\t(x)', true],
+      ['background:url(x)', true],
+      [' url(x)', true],
+      ['"url(x)"', true],
+      ['image-set(x)', true],
+      ['-webkit-image-set(x)', true],
+      ['image(x)', true],
+      ['cross-fade(x)', true],
+      ['element(#x)', true],
+      ['-moz-element(#x)', true],
+      ['paint(x)', true],
+      ['src(x)', true],
+      ['@import "x"', true],
+      ['u\\72 l(x)', false],
+      ['getURL(x)', false],
+      ['chrome.runtime.getURL(x)', false],
+      ['new URL(x)', true],
+      ['myurl(x)', false],
+      ['$url(x)', false],
+      ['my-url(x)', false],
+      ['url', false],
+      ['a url is here', false],
+      ['uri(x)', false],
+    ])('%j matches: %s', (text, expected) => {
+      expect(pattern.test(text)).toBe(expected);
+    });
+
+    it('a CSS escape is undone before the build looks (and lint refuses every backslash)', () => {
+      expect(pattern.test(cssUnescape('u\\72 l(x)'))).toBe(true);
+      expect(pattern.test(cssUnescape('\\75 rl(x)'))).toBe(true);
+      expect(pattern.test(cssUnescape('\\000075rl(x)'))).toBe(true);
+      expect(pattern.test(cssUnescape('u\\rl(x)'))).toBe(true);
+      expect(pattern.test(cssUnescape('getU\\52 L(x)'))).toBe(false);
+    });
   });
 });

@@ -211,7 +211,7 @@ const OVERLAY_WINDOW_MEMBERS = [
 const OVERLAY_WINDOW_WRITTEN = ['__fontsnapActive'];
 // By GLOB, not by a list of files (review round 6 of PR #6: a module outside a hand-kept list, src/shared/page-probe.ts, was handed
 // `doc` or an event by the overlay and reached the Window with a cast and a key built at run time): everything in src/select is
-// held to these rules, a new file there too, and the code of src/select imports no value from anywhere else (pageImportSelectors),
+// held to these rules, a new file there too, and the code of src/select imports no value from anywhere else (selectImportSelectors),
 // so nothing outside the folder gets into select.js. tests/unit/select-bundle.test.ts reads the real bundle to prove it.
 const PAGE_PROCESS_GLOBS = ['src/select/**/*.ts', 'src/background/measure.ts'];
 const MEASURE_FILE = 'src/background/measure.ts';
@@ -566,6 +566,19 @@ const reachPages = [
     "Identifier[name='win']:not(MemberExpression[computed=false][property.name=/^(location|addEventListener)$/] > Identifier.object):not(VariableDeclarator > Identifier.id):not(UnaryExpression[operator='!'] > Identifier)",
   ].map((selector) => ({ selector, message: REACH_MESSAGE })),
 ];
+// CSS that loads something, in a string (round 7 of the review of PR #6: a style built at run time, `['ur', 'l(', ...].join('')`, or
+// written with a CSS escape, `u\\72 l(`, made the page request an image although no rule saw the word url). It is a pattern
+// and a function in ONE place: the rule below (strings of the code of the page) and verify-dist (scripts/lib/wasm-scan.ts, which
+// imports them) judge the same way. A CSS function that fetches (url, image-set, image, cross-fade, element, paint, src) not
+// after a name character (so `getURL(` and `new URL(` are not CSS), and @import.
+export const CSS_LOADING_SOURCE =
+  '(?<![\\w$-])(?:url|image-set|-webkit-image-set|image|cross-fade|-webkit-cross-fade|element|-moz-element|paint|src)\\s*\\(|@import';
+/** The text with its CSS escapes undone (`u\\72 l(` is `url(` to a style sheet). */
+export function cssUnescape(text) {
+  return text.replace(/\\([0-9a-f]{1,6})[ \t\n\r\f]?|\\([^0-9a-f\n])/gi, (_all, hex, plain) =>
+    hex === undefined ? plain : String.fromCodePoint(Number.parseInt(hex, 16) || 0xfffd),
+  );
+}
 const PAGE_PROCESS_MESSAGE =
   "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_GLOBS in eslint.config.js.";
 // what makes an element load something or navigate
@@ -618,9 +631,85 @@ const pageProcessSelectors = [
   `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`,
   `CallExpression[callee.property.name=${LOADING_CALLS}]`,
   `Property[key.name=${LOADING_NAMES}]`,
-  'Literal[value=/url\\s*\\(|image-set|@import|expression\\s*\\(|javascript:/i]',
-  'TemplateElement[value.cooked=/url\\s*\\(|image-set|@import|expression\\s*\\(|javascript:/i]',
+  // strings: nothing that loads (CSS_LOADING_SOURCE), and no backslash at all (a CSS escape hides `url(`; JS escapes like \n are no backslash)
+  `Literal[value=/${CSS_LOADING_SOURCE}|expression\\s*\\(|javascript:/i]`,
+  `TemplateElement[value.cooked=/${CSS_LOADING_SOURCE}|expression\\s*\\(|javascript:/i]`,
+  'Literal[value=/\\x5c/]',
+  'TemplateElement[value.cooked=/\\x5c/]',
+  // import.meta (Vite turns import.meta.glob into static imports)
+  'MetaProperty',
 ].map((selector) => ({ selector, message: PAGE_PROCESS_MESSAGE }));
+
+// --- style of the code that runs in the web page (review round 7 of PR #6, blocker E) -------------------------------------------
+// A style can load a file: `box.style.backgroundImage = 'url(...)'`, with the string built at run time or written with a CSS escape.
+// So style is written in ONE way only, `Object.assign(<el>.style, { key: value, ... })`, with the keys the overlay uses and nothing
+// else (no spread, no computed or string key, no method). Of those keys only `cursor` and `background` accept a url(): their value
+// is a string literal that is a keyword, a hex colour or rgb()/rgba() of numbers - nothing else. The others cannot hold a url() by
+// their grammar; they take string literals too, and left/top/width/height a literal or a template (`${x}px`). Everything else about
+// style is refused: .style as a value or an alias, setProperty, cssText, attributeStyleMap, adoptedStyleSheets, insertRule,
+// animate (keyframes can carry a url), setAttribute('style'), createElement('style' | 'link') (div only).
+const STYLE_KEYS = [
+  'position',
+  'inset',
+  'zIndex',
+  'cursor',
+  'background',
+  'border',
+  'display',
+  'pointerEvents',
+  'top',
+  'left',
+  'width',
+  'height',
+  'transform',
+  'color',
+  'font',
+  'padding',
+  'borderRadius',
+];
+const STYLE_MESSAGE =
+  "Style of the code that runs in the web page's process is written only as Object.assign(<el>.style, { key: value }) with the keys listed as STYLE_KEYS in eslint.config.js; `cursor` and `background` take a keyword, a hex colour or rgb()/rgba() written as a string literal, left/top/width/height a literal or a template, the others a string literal (a style can load a file with url(), and this code is outside the CSP of the extension).";
+const ASSIGN = "CallExpression[callee.object.name='Object'][callee.property.name='assign']";
+const URL_KEYS = '/^(cursor|background)$/';
+const SAFE_URL_KEY_VALUE = '/^(?:[a-z-]+|\\x23[0-9a-f]{3,8}|rgba?\\([0-9., %]+\\))$/i';
+const STYLE_NAMES =
+  '/^(setProperty|removeProperty|getPropertyValue|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem|getComputedStyle)$/';
+const styleObject = `${ASSIGN} > ObjectExpression`;
+const styleSelectors = [
+  // style appears only as the first argument of Object.assign
+  `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child)`,
+  "ObjectPattern > Property[key.name='style']",
+  "Property[key.value='style']",
+  `Identifier[name=${STYLE_NAMES}]`,
+  `Literal[value=${STYLE_NAMES}]`,
+  // Object.assign(el.style, { ... }): exactly two arguments, the second an object literal of plain `key: value` properties
+  `${ASSIGN}:not([arguments.length=2])`,
+  `${ASSIGN}:not([arguments.1.type='ObjectExpression'])`,
+  `${styleObject} > SpreadElement`,
+  `${styleObject} > Property:not([kind='init'])`,
+  `${styleObject} > Property[method=true]`,
+  `${styleObject} > Property[computed=true]`,
+  `${styleObject} > Property[shorthand=true]`,
+  `${styleObject} > Property:not([key.type='Identifier'])`,
+  `${styleObject} > Property[key.type='Identifier']:not([key.name=/^(${STYLE_KEYS.join('|')})$/])`,
+  // values
+  `${styleObject} > Property[key.name=${URL_KEYS}]:not([value.type='Literal'])`,
+  `${styleObject} > Property[key.name=${URL_KEYS}][value.type='Literal']:not([value.value=${SAFE_URL_KEY_VALUE}])`,
+  `${styleObject} > Property:not([key.name=/^(left|top|width|height)$/]):not([value.type='Literal'])`,
+  `${styleObject} > Property[key.name=/^(left|top|width|height)$/]:not([value.type=/^(Literal|TemplateLiteral)$/])`,
+  `${styleObject} > Property[value.type='Literal']:not([value.raw=/^['"]/])`,
+].map((selector) => ({ selector, message: STYLE_MESSAGE }));
+// the injected function writes no style at all
+const noStyleSelectors = [
+  "MemberExpression[property.name='style']",
+  "Property[key.name='style']",
+  "Identifier[name='Object']",
+  `Identifier[name=${STYLE_NAMES}]`,
+].map((selector) => ({
+  selector,
+  message:
+    'The function that chrome.scripting injects into the page writes no style and uses no Object (src/background/measure.ts): a style can load a file with url(), outside the CSP of the extension.',
+}));
 
 // The one function that may be injected into a page with chrome.scripting.executeScript, and in no other world than the isolated one.
 const INJECTION_MESSAGE = `chrome.scripting.executeScript is called directly, with an object literal whose func is ${INJECTED_FUNCTION} (src/background/measure.ts, held to the rules of the content script) or a files list, and no world: any other function would run in the web page's process outside the CSP of the extension.`;
@@ -782,6 +871,7 @@ export default tseslint.config(
         ...numbersAndText,
         ...reachDefault,
         ...pageProcessSelectors,
+        ...styleSelectors,
         ...selectImportSelectors,
       ],
     },
@@ -799,6 +889,7 @@ export default tseslint.config(
         ...numbersAndText,
         ...reachDefault,
         ...pageProcessSelectors,
+        ...noStyleSelectors,
         ...measureImportSelectors,
       ],
     },
