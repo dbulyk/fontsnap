@@ -118,6 +118,39 @@ describe('textcrop primitives', () => {
   });
 });
 
+describe('fromRGBA alpha', () => {
+  const rgb = (r: number, g: number, b: number, a: number) => [
+    ...fromRGBA(Uint8Array.from([r, g, b, a]), 1, 1).data,
+  ];
+
+  it('composites transparent pixels over white', () => {
+    expect(rgb(0, 0, 0, 0)).toEqual([255, 255, 255]);
+    expect(rgb(12, 34, 56, 0)).toEqual([255, 255, 255]);
+  });
+
+  it('keeps opaque pixels byte for byte', () => {
+    expect(rgb(0, 0, 0, 255)).toEqual([0, 0, 0]);
+    expect(rgb(10, 20, 30, 255)).toEqual([10, 20, 30]);
+  });
+
+  it('blends semi-transparent pixels with white', () => {
+    expect(rgb(0, 0, 0, 128)).toEqual([127, 127, 127]);
+    expect(rgb(255, 0, 0, 64)).toEqual([255, 191, 191]);
+  });
+
+  it('equals round((c*a + 255*(255-a)) / 255) for every colour and alpha', () => {
+    const rgba = new Uint8Array(256 * 256 * 4);
+    for (let a = 0; a < 256; a++)
+      for (let c = 0; c < 256; c++) rgba.set([c, c, c, a], (a * 256 + c) * 4);
+    const { data } = fromRGBA(rgba, 256, 256);
+    for (let a = 0; a < 256; a++)
+      for (let c = 0; c < 256; c++)
+        expect(data[(a * 256 + c) * 3], `c=${String(c)} a=${String(a)}`).toBe(
+          Math.round((c * a + 255 * (255 - a)) / 255),
+        );
+  });
+});
+
 describe('resize', () => {
   it('identity, area average, output size', () => {
     const im = gray(4, 2, (x) => x * 10);

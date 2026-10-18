@@ -10,12 +10,20 @@ export interface Img {
 
 export type ResizeMode = 'area' | 'linear' | 'cubic';
 
+/**
+ * RGBA (non-premultiplied, as getImageData and PNG decoders give it) → RGB composited over white:
+ * c' = round((c*a + 255*(255-a)) / 255), in integers (the quotient never ends in .5: 255 is odd).
+ * A pixel with a = 255 keeps its bytes. The Python reference (`to_rgb`) uses the same rule.
+ */
 export function fromRGBA(rgba: Uint8Array | Uint8ClampedArray, w: number, h: number): Img {
   const d = new Uint8Array(w * h * 3);
   for (let i = 0, j = 0; i < w * h; i++, j += 4) {
-    d[i * 3] = atU8(rgba, j);
-    d[i * 3 + 1] = atU8(rgba, j + 1);
-    d[i * 3 + 2] = atU8(rgba, j + 2);
+    const a = atU8(rgba, j + 3);
+    const bg = 255 * (255 - a) + 127;
+    for (let k = 0; k < 3; k++) {
+      const c = atU8(rgba, j + k);
+      d[i * 3 + k] = a === 255 ? c : Math.floor((c * a + bg) / 255);
+    }
   }
   return { w, h, c: 3, data: d };
 }
