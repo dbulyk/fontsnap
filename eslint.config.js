@@ -7,6 +7,7 @@ import vitest from '@vitest/eslint-plugin';
 import prettier from 'eslint-config-prettier';
 import playwright from 'eslint-plugin-playwright';
 import tseslint from 'typescript-eslint';
+import ts from 'typescript';
 
 // The effective result of this file is pinned by tests/guard-snapshots/eslint.json (see AGENTS.md):
 // change a rule or an option and that snapshot must be regenerated deliberately.
@@ -215,6 +216,67 @@ const OVERLAY_WINDOW_WRITTEN = ['__fontsnapActive'];
 // so nothing outside the folder gets into select.js. tests/unit/select-bundle.test.ts reads the real bundle to prove it.
 const PAGE_PROCESS_GLOBS = ['src/select/**/*.ts', 'src/background/measure.ts'];
 const MEASURE_FILE = 'src/background/measure.ts';
+
+// --- every member of every DOM object the page code touches: an ALLOWLIST by type (review round 8 of PR #6) -------------------------
+// Rounds 6, 7 and 8 each found a new way for the code of the page to reach the network through a DOM object (a style written
+// through the result of Object.assign, createElementNS('style'), createAttribute('style'), an SVG <image> reached by a type
+// predicate, <meta refresh>, `[im.src] = [u]`, ...). Lists of forbidden names were completed four times. So the rule is turned
+// around like it was for `win`: the type checker tells which members belong to the DOM (those declared in lib.dom.d.ts), and in
+// these files only the members named below may be used on ANY expression of a DOM type - however it was obtained (a parameter,
+// a call result, a predicate, a destructuring) - and only the way named: r = read, c = call, w = write. A member that is not
+// here (createElementNS, createAttribute, setAttributeNode*, querySelector*, ownerDocument, getRootNode, parentNode, host,
+// click, href, src as a write, innerHTML, outerHTML, insertAdjacent*, namespaceURI, baseVal, dataset, attributes, animate,
+// ...) is an error, as is a member of an `any`/`unknown` receiver and an index into a DOM collection. What the code of the page
+// really uses, read from the code:
+const DOM_MEMBERS = [
+  {
+    // the overlay: a few elements of its own, a range and a tree walker over the text, two mouse/keyboard events
+    match: 'src/select/',
+    members: {
+      body: 'r',
+      documentElement: 'r',
+      isConnected: 'r',
+      nodeValue: 'r',
+      key: 'r',
+      clientX: 'r',
+      clientY: 'r',
+      top: 'r',
+      right: 'r',
+      bottom: 'r',
+      left: 'r',
+      style: 'r',
+      SHOW_TEXT: 'r',
+      createElement: 'c',
+      createRange: 'c',
+      createTreeWalker: 'c',
+      append: 'c',
+      appendChild: 'c',
+      remove: 'c',
+      addEventListener: 'c',
+      preventDefault: 'c',
+      selectNodeContents: 'c',
+      getBoundingClientRect: 'c',
+      nextNode: 'c',
+      toString: 'c',
+      textContent: 'w',
+    },
+  },
+  {
+    // the function injected into the page: the images of the document, one image, its box
+    match: MEASURE_FILE,
+    members: {
+      images: 'r',
+      currentSrc: 'r',
+      src: 'r',
+      left: 'r',
+      top: 'r',
+      width: 'r',
+      height: 'r',
+      scrollIntoView: 'c',
+      getBoundingClientRect: 'c',
+    },
+  },
+];
 /** The one function FontSnap hands to chrome.scripting.executeScript({ func }) (src/background/measure.ts). */
 const INJECTED_FUNCTION = 'measureImage';
 
@@ -263,7 +325,7 @@ const GLOBAL_ACCESS = {
     createImageBitmap: true,
     encodeURIComponent: true,
     navigator: ['clipboard.writeText', 'hardwareConcurrency'],
-    NodeFilter: true,
+    NodeFilter: ['SHOW_TEXT'],
     OffscreenCanvas: true,
     setInterval: true,
     setTimeout: true,
@@ -517,7 +579,142 @@ export const globalAccessRule = {
     };
   },
 };
-export const fontsnapPlugin = { rules: { 'global-access': globalAccessRule } };
+/**
+ * Local rule (type-aware): the members of DOM objects in the code of the page, see DOM_MEMBERS. A member is a DOM member when its
+ * symbol is declared in lib.dom.d.ts; Window is left to GLOBAL_ACCESS (windowParams, `window`).
+ */
+export const domMembersRule = {
+  meta: { type: 'problem', schema: [{ type: 'array' }] },
+  create(context) {
+    const relative = context.filename
+      .slice(context.cwd.length + 1)
+      .split('\\')
+      .join('/');
+    const entry = context.options[0].find(
+      (candidate) =>
+        relative === candidate.match ||
+        (candidate.match.endsWith('/') && relative.startsWith(candidate.match)),
+    );
+    if (entry === undefined) return {};
+    const services = context.sourceCode.parserServices;
+    if (services.program === undefined || services.program === null) {
+      throw new Error('fontsnap/dom-members needs type information (parserOptions.project)');
+    }
+    const checker = services.program.getTypeChecker();
+    const tsOf = (node) => services.esTreeNodeToTSNodeMap.get(node);
+    const inDom = (declaration) =>
+      /lib\.dom(\.[\w.]+)?\.d\.ts$/.test(declaration.getSourceFile().fileName);
+    const constituents = (type) =>
+      type.isUnionOrIntersection() ? type.types.flatMap(constituents) : [type];
+    const isDomType = (type) =>
+      constituents(type).some((one) => (one.symbol?.declarations ?? []).some(inDom));
+    const isWindow = (type) => {
+      const text = checker.typeToString(type);
+      return (
+        text === 'Window' || text === 'typeof globalThis' || text === 'Window & typeof globalThis'
+      );
+    };
+    const kindOf = (node) => {
+      let current = node;
+      while (
+        current.parent &&
+        (current.parent.type === 'TSNonNullExpression' || current.parent.type === 'ChainExpression')
+      ) {
+        current = current.parent;
+      }
+      const parent = current.parent;
+      switch (parent?.type) {
+        case 'CallExpression':
+          return parent.callee === current ? 'c' : 'r';
+        case 'AssignmentExpression':
+          return parent.left === current ? 'w' : 'r';
+        case 'UpdateExpression':
+        case 'ArrayPattern':
+        case 'RestElement':
+          return 'w';
+        case 'UnaryExpression':
+          return parent.operator === 'delete' ? 'd' : 'r';
+        case 'ForInStatement':
+        case 'ForOfStatement':
+          return parent.left === current ? 'w' : 'r';
+        case 'AssignmentPattern':
+          return parent.left === current ? 'w' : 'r';
+        case 'Property':
+          return parent.parent.type === 'ObjectPattern' && parent.value === current ? 'w' : 'r';
+        default:
+          return 'r';
+      }
+    };
+    const report = (node, text) => {
+      context.report({ node, message: text });
+    };
+    return {
+      MemberExpression(node) {
+        const receiver = checker.getTypeAtLocation(tsOf(node.object));
+        if (receiver.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+          report(
+            node,
+            'A member of a value of unknown type (any/unknown) in the code of the web page: its type must be known to be checked (DOM_MEMBERS in eslint.config.js).',
+          );
+          return;
+        }
+        if (isWindow(receiver)) return;
+        if (node.computed) {
+          if (isDomType(receiver)) {
+            report(
+              node,
+              'No indexing of a DOM object or collection in the code of the web page (DOM_MEMBERS in eslint.config.js).',
+            );
+          }
+          return;
+        }
+        const name = node.property.name;
+        const symbol = checker.getSymbolAtLocation(tsOf(node.property));
+        const dom =
+          symbol === undefined ? isDomType(receiver) : (symbol.declarations ?? []).some(inDom);
+        if (!dom) return;
+        const kind = kindOf(node);
+        const allowed = Object.hasOwn(entry.members, name) ? entry.members[name] : '';
+        if (!allowed.includes(kind)) {
+          report(
+            node,
+            `The DOM member ${name} (${{ r: 'read', c: 'call', w: 'write' }[kind]}) is not on the list for ${relative}: ${Object.entries(
+              entry.members,
+            )
+              .map(([member, how]) => `${member}:${how}`)
+              .join(
+                ' ',
+              )} (DOM_MEMBERS in eslint.config.js). A DOM object reaches the network through members like createElementNS, setAttributeNode, ownerDocument, href, innerHTML.`,
+          );
+        }
+      },
+      // the width of a box is a number and px, nothing else
+      'CallExpression[callee.object.name="Object"][callee.property.name="assign"] > ObjectExpression > Property[key.name=/^(left|top|width|height)$/] > TemplateLiteral'(
+        node,
+      ) {
+        const [first, second] = node.quasis;
+        const [expression] = node.expressions;
+        const numeric =
+          expression !== undefined &&
+          (checker.getTypeAtLocation(tsOf(expression)).flags & ts.TypeFlags.NumberLike) !== 0;
+        if (
+          node.expressions.length !== 1 ||
+          first?.value.cooked !== '' ||
+          second?.value.cooked !== 'px' ||
+          !numeric
+        ) {
+          report(
+            node,
+            'left/top/width/height are a number and px, written `${number}px` (a template with one expression of type number), or a literal such as 0, auto, 12px, 50% (STYLE_KEYS in eslint.config.js).',
+          );
+        }
+      },
+    };
+  },
+};
+export const fontsnapPlugin = {
+  rules: { 'global-access': globalAccessRule, 'dom-members': domMembersRule },
+};
 // Values that are a Window, or a stand-in for one, however they are reached: document.defaultView, iframe.contentWindow,
 // event.view, message.source, event.currentTarget (the window an event was added to), getBackgroundPage(). GLOBAL_ACCESS closes
 // the names `window`, `self`, `top`, `parent`, `frames`, `opener`; these are the properties that hand one over.
@@ -638,6 +835,21 @@ const pageProcessSelectors = [
   'TemplateElement[value.cooked=/\\x5c/]',
   // import.meta (Vite turns import.meta.glob into static imports)
   'MetaProperty',
+  // a type predicate or an assertion function is a cast without `as` (round 8: `(e): e is SVGImageElement`); an overload signature
+  // is another (the implementation is looser than the signature)
+  'TSTypePredicate',
+  'TSEmptyBodyFunctionExpression',
+  // no object destructuring at all: `const { ownerDocument } = el` takes a member without naming it as an access
+  'ObjectPattern',
+  // a member as the TARGET of a destructuring or a loop writes to it like an assignment does: `[im.src] = [u]`, `for (im.src of [u])`
+  'ArrayPattern > MemberExpression',
+  'RestElement > MemberExpression',
+  'AssignmentPattern > MemberExpression.left',
+  'ObjectPattern > Property > MemberExpression.value',
+  'ForOfStatement > MemberExpression.left',
+  'ForInStatement > MemberExpression.left',
+  // elements: createElement('div') and nothing else, no second argument (`{ is }`)
+  "CallExpression[callee.property.name='createElement']:not([arguments.length=1])",
 ].map((selector) => ({ selector, message: PAGE_PROCESS_MESSAGE }));
 
 // --- style of the code that runs in the web page (review round 7 of PR #6, blocker E) -------------------------------------------
@@ -676,6 +888,14 @@ const STYLE_NAMES =
   '/^(setProperty|removeProperty|getPropertyValue|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem|getComputedStyle)$/';
 const styleObject = `${ASSIGN} > ObjectExpression`;
 const styleSelectors = [
+  // Object.assign(el.style, { ... }) is a statement of its own: its result - the style declaration itself - is never kept, passed
+  // on or returned (round 8: `const s = Object.assign(el.style, {}); s.backgroundImage = ...`); Object.assign is only ever called, at
+  // once (no alias, no .call/.apply/.bind, no `{ assign } = Object`); no object literal has a `style` key (`{ style: 'background:url(x)' }`)
+  `${ASSIGN}:not(ExpressionStatement > CallExpression)`,
+  "MemberExpression[object.name='Object'][property.name='assign']:not(CallExpression > MemberExpression.callee)",
+  "Property[key.name='style']",
+  // left/top/width/height: 0, auto, a length or a percentage as a literal (or `${number}px`, checked by fontsnap/dom-members)
+  "Property[key.name=/^(left|top|width|height)$/][value.type='Literal']:not([value.value=/^(?:0|auto|-?[0-9]+(?:[.][0-9]+)?(?:px|%))$/])",
   // style appears only as the first argument of Object.assign
   `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child)`,
   "ObjectPattern > Property[key.name='style']",
@@ -915,6 +1135,11 @@ export default tseslint.config(
     ignores: ['src/**/*.d.ts'],
     plugins: { fontsnap: fontsnapPlugin },
     rules: { 'fontsnap/global-access': ['error', GLOBAL_ACCESS] },
+  },
+  {
+    // The members of every DOM object in the code of the web page: an allowlist by type, see DOM_MEMBERS.
+    files: PAGE_PROCESS_GLOBS,
+    rules: { 'fontsnap/dom-members': ['error', DOM_MEMBERS] },
   },
   {
     // The one file that configures onnxruntime-web: every other src rule applies to it.

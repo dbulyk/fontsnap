@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
 import { CSS_LOADING_SOURCE, cssUnescape, fontsnapPlugin } from '../../eslint.config.js';
+import { domMembers } from './helpers/typed-lint';
 
 // What guards.test.ts cannot show: that the selectors in eslint.config.js really match the code
 // they are meant to stop. The config itself (rules and options) is pinned by the guard snapshots.
@@ -1704,5 +1705,321 @@ describe('the style of the code that runs in the web page cannot load a file', (
       expect(pattern.test(cssUnescape('u\\rl(x)'))).toBe(true);
       expect(pattern.test(cssUnescape('getU\\52 L(x)'))).toBe(false);
     });
+  });
+});
+
+// Round 8 of the review of PR #6: three more ways to a stylesheet (the result of Object.assign kept in a variable, a <style> from
+// createElementNS, an attribute node), another to an image (an SVG <image> reached by a type predicate, a write to `src` that is
+// no assignment), a <meta refresh>, a link's click(). Lists of forbidden names had been completed four times, so the DOM objects
+// of the code of the page now have an ALLOWLIST by type (DOM_MEMBERS in eslint.config.js, the rule fontsnap/dom-members, which
+// asks the type checker where a member is declared): what the overlay and measureImage use, read / called / written the way
+// named, nothing else, on whatever expression of a DOM type. Every fixture below is a form that got past a guard once, or was
+// thought of while closing them; every address is on example.invalid.
+describe('DOM objects in the code of the web page: an allowlist of members by type', () => {
+  const OVERLAY = 'src/select/overlay.ts';
+  const MEASURE = 'src/background/measure.ts';
+  const NEW_FILE = 'src/select/a-new-file.ts';
+  const PRELUDE =
+    'export function startSelection(win: Window, u: string, k: string, n: number): void {\n  const doc = win.document;\n  const box = doc.createElement("div");\n';
+  const inStart = (body: string): string => `${PRELUDE}${body}\n}`;
+  /** Everything that judges the code of the page: the type-aware rule, the global allowlist, the selectors. */
+  const verdict = async (file: string, code: string): Promise<string[]> => [
+    ...(await domMembers(file, code)),
+    ...(await reached(file, code)),
+    ...(await flagged(file, code)),
+  ];
+  const HOST_JOIN = "['https:/', 'example.invalid', 's1'].join('/')";
+
+  const FORMS: [string, string][] = [
+    // --- blocker E, r4308255913
+    [
+      'E1 the result of Object.assign kept in a variable, then backgroundImage',
+      `const s = Object.assign(doc.documentElement.style, { display: 'block' });\n  s.backgroundImage = ['ur', 'l(', ${HOST_JOIN}, ')'].join('');`,
+    ],
+    [
+      'E1d the same through a parameter',
+      `const paint = (st: CSSStyleDeclaration, v: string): void => { st.backgroundImage = v; };\n  paint(Object.assign(box.style, {}), ['ur', 'l(', u, ')'].join(''));`,
+    ],
+    [
+      'E2 a <style> from createElementNS with a text built at run time',
+      `const st = doc.createElementNS(doc.documentElement.namespaceURI, 'style');\n  st.textContent = ['html{background-image:ur', 'l(', ${HOST_JOIN}, ')}'].join('');\n  doc.documentElement.append(st);`,
+    ],
+    [
+      'E2b an existing <style> of the page written to',
+      `const st = doc.querySelector('style');\n  if (st) st.textContent = ['html{background-image:ur', 'l(', u, ')}'].join('');`,
+    ],
+    [
+      'E3 the style attribute as a node',
+      `const a0 = doc.createAttribute('style');\n  a0.value = ['background-image:ur', 'l(', u, ')'].join('');\n  doc.documentElement.setAttributeNodeNS(a0);`,
+    ],
+    [
+      'E3b the style attribute as a node, setAttributeNode',
+      `const a0 = doc.createAttribute('style');\n  a0.value = 'x';\n  box.setAttributeNode(a0);`,
+    ],
+    // --- the tester (0fe04ad)
+    [
+      'T1 the result of Object.assign in a variable, written',
+      `const st = Object.assign(box.style, { display: 'none' });\n  st.backgroundImage = ['ur', 'l(x)'].join('');`,
+    ],
+    [
+      'T2 an alias of Object.assign and a style attribute as a string key',
+      `const as = Object.assign;\n  as(box, { style: 'background-image:url(https://example.invalid/t2.png)' });`,
+    ],
+    // --- blocker F, r4308256211
+    [
+      'F1 an SVG <image>: createElementNS and a type predicate instead of a cast',
+      `const isImage = (e: Element): e is SVGImageElement => e.localName === 'image';\n  const im = doc.createElementNS(doc.documentElement.namespaceURI, 'image');\n  if (isImage(im)) im.href.baseVal = u;`,
+    ],
+    [
+      'F2 <meta http-equiv=refresh>',
+      `const meta = doc.createElement('meta');\n  meta.httpEquiv = 'refresh';\n  meta.content = '0;url=https://example.invalid/f2';\n  doc.head.append(meta);`,
+    ],
+    [
+      'F3 [im.src] = [u]',
+      'const f = (im: HTMLImageElement): void => { [im.src] = [u]; };\n  void f;',
+    ],
+    [
+      'F3b for (im.src of [u])',
+      'const f = (im: HTMLImageElement): void => { for (im.src of [u]); };\n  void f;',
+    ],
+    [
+      'F3c ({ a: im.src } = { a: u })',
+      'const f = (im: HTMLImageElement): void => { ({ a: im.src } = { a: u }); };\n  void f;',
+    ],
+    [
+      'F3d [...x.src] = ...',
+      'const f = (im: HTMLImageElement): void => { [...im.srcset] = [u]; };\n  void f;',
+    ],
+    [
+      'F3e a default in a pattern',
+      "const f = (im: HTMLImageElement): void => { [im.src = 'x'] = []; };\n  void f;",
+    ],
+    [
+      'F3f for...in over src',
+      'const f = (im: HTMLImageElement): void => { for (im.src in { a: 1 }); };\n  void f;',
+    ],
+    [
+      'F4 querySelector(a): host and click()',
+      `const a = doc.querySelector('a') as HTMLAnchorElement | null;\n  if (a) { a.host = 'example.invalid'; a.click(); }`,
+    ],
+    [
+      'F4b querySelector(a) without a cast: click()',
+      `const a = doc.querySelector('a');\n  a?.click();`,
+    ],
+    // --- thought of while closing these
+    ['O1 createElementNS', "void doc.createElementNS('http://www.w3.org/2000/svg', 'svg');"],
+    ['O2 createElement of something else', "void doc.createElement('img');"],
+    ['O3 createElement with a computed name', 'void doc.createElement(k);'],
+    ['O4 createElement of a template', 'void doc.createElement("template");'],
+    ['O5 createElement with an options argument', 'void doc.createElement("div", { is: "x-y" });'],
+    ['O6 setAttribute src', 'box.setAttribute("src", u);'],
+    ['O7 innerHTML', 'box.innerHTML = "<img src=x>";'],
+    ['O8 outerHTML', 'box.outerHTML = "<img src=x>";'],
+    ['O9 insertAdjacentHTML', 'box.insertAdjacentHTML("beforeend", "<img src=x>");'],
+    ['O10 cloneNode', 'void box.cloneNode(true);'],
+    ['O11 importNode', 'void doc.importNode(box, true);'],
+    ['O12 adoptNode', 'void doc.adoptNode(box);'],
+    ['O13 DOMParser', 'void new DOMParser().parseFromString("<img>", "text/html");'],
+    ['O14 document.write', 'doc.write("<img src=x>");'],
+    [
+      'O15 createContextualFragment',
+      'void doc.createRange().createContextualFragment("<img src=x>");',
+    ],
+    ['O16 ownerDocument', 'void box.ownerDocument;'],
+    ['O17 getRootNode', 'void box.getRootNode();'],
+    ['O18 parentNode', 'void box.parentNode;'],
+    ['O19 closest', 'void box.closest("a");'],
+    ['O20 querySelectorAll', 'void doc.body.querySelectorAll("a");'],
+    ['O21 attachShadow', 'void box.attachShadow({ mode: "open" });'],
+    ['O22 shadowRoot', 'void box.shadowRoot;'],
+    ['O23 the head', 'void doc.head;'],
+    ['O24 styleSheets', 'void doc.styleSheets;'],
+    ['O25 adoptedStyleSheets', 'doc.adoptedStyleSheets = [];'],
+    ['O26 defaultView', 'void doc.defaultView;'],
+    ['O27 document.location', 'doc.location.href = u;'],
+    ['O28 namespaceURI', 'void doc.documentElement.namespaceURI;'],
+    ['O29 attributes[0].value', 'box.attributes[0]!.value = u;'],
+    ['O30 dataset', 'box.dataset["x"] = u;'],
+    ['O31 animate with keyframes', 'void box.animate([{ backgroundImage: u }], 1);'],
+    ['O32 className written', 'box.className = u;'],
+    ['O33 id written', 'box.id = u;'],
+    ['O34 title written', 'box.title = u;'],
+    ['O35 hidden written', 'box.hidden = true;'],
+    ['O36 requestSubmit on a form', 'void (box as unknown as HTMLFormElement).requestSubmit();'],
+    ['O37 focus', 'box.focus();'],
+    ['O38 scrollIntoView (not used by the overlay)', 'box.scrollIntoView();'],
+    ['O39 click', 'box.click();'],
+    ['O40 destructured ownerDocument', 'const { ownerDocument } = box;\n  void ownerDocument;'],
+    [
+      'O41 renamed destructured src',
+      'const f = (im: HTMLImageElement): void => { const { src: s } = im; void s; };\n  void f;',
+    ],
+    ['O42 an index into a collection', 'void doc.body.children[0];'],
+    [
+      'O43 a spread of Object.entries over an element',
+      'for (const [name, value] of Object.entries(box)) { void name; void value; }',
+    ],
+    [
+      'O44 a member of an unknown receiver (catch)',
+      'try { void 0; } catch (error) { void error.message; }',
+    ],
+    ['O45 a member of any', 'const x: any = box;\n  void x.ownerDocument;'],
+    [
+      'O46 a generic that hands the element back',
+      'const pick = <T extends Node>(t: T): T => t;\n  void pick(box).ownerDocument;',
+    ],
+    [
+      'O47 an assertion function',
+      'function assertImage(e: Element): asserts e is HTMLImageElement { void e; }\n  void assertImage;',
+    ],
+    [
+      'O48 an overload signature',
+      'function pick(e: Node): HTMLImageElement;\n  function pick(e: Node): Node { return e; }\n  void pick;',
+    ],
+    ['O49 event.view', "win.addEventListener('click', (e) => { void e.view; });"],
+    ['O50 event.target.ownerDocument', "win.addEventListener('click', (e) => { void e.target; });"],
+    [
+      'O51 a method of the event that is not preventDefault',
+      "win.addEventListener('click', (e) => { e.stopPropagation(); });",
+    ],
+    [
+      'O52 Reflect.apply on setAttribute',
+      "Reflect.apply(Element.prototype.setAttribute, box, ['style', u]);",
+    ],
+    [
+      'O53 Element.prototype.setAttribute.call',
+      "Element.prototype.setAttribute.call(box, 'style', u);",
+    ],
+    ['O54 a getter on a DOM object', "Object.defineProperty(box, 'src', { get: () => u });"],
+    ['O55 Function.prototype', 'void Function.prototype.call.call(box.remove, box);'],
+    [
+      'O56 CSS.registerProperty',
+      "CSS.registerProperty({ name: '--x', syntax: '<image>', inherits: false, initialValue: 'none' });",
+    ],
+    ['O57 document.fonts and FontFace', 'void document.fonts.add(new FontFace("x", u));'],
+    ['O58 navigator.sendBeacon', 'void navigator.sendBeacon(u);'],
+    ['O59 history.pushState', "history.pushState(null, '', u);"],
+    ['O60 location.assign', 'location.assign(u);'],
+    ['O61 open', 'void open(u);'],
+    ['O62 win.open', 'void win.open(u);'],
+    ['O63 postMessage', "postMessage(u, '*');"],
+    ['O64 a method read without a call and called later', 'const r = box.remove;\n  r.call(box);'],
+    ['O65 appendChild read without a call', 'const a = doc.body.appendChild;\n  void a;'],
+    ['O66 textContent read as a value passed on', 'use(box.textContent);'],
+    ['O67 left with a variable of type string', 'Object.assign(box.style, { left: `${u}px` });'],
+    [
+      'O68 left with a template that is not number+px',
+      'Object.assign(box.style, { left: `${n}` });',
+    ],
+    ['O69 left with a percent template', 'Object.assign(box.style, { left: `${n}%` });'],
+    ['O70 left with url() in a template', 'Object.assign(box.style, { left: `url(${n})` });'],
+    ['O71 left with two expressions', 'Object.assign(box.style, { left: `${n}px ${n}px` });'],
+    [
+      'O72 left with a literal that is not a length',
+      "Object.assign(box.style, { left: 'url(x)' });",
+    ],
+    ['O73 left with a calc literal', "Object.assign(box.style, { left: 'calc(1px + 2px)' });"],
+    ['O74 style as a key', "const o = { style: 'background-image:u\\72 l(x)' };\n  void o;"],
+    [
+      'O75 Object.assign as an expression: voided',
+      "void Object.assign(box.style, { display: 'none' });",
+    ],
+    [
+      'O76 Object.assign in a logical expression',
+      "n && Object.assign(box.style, { display: 'none' });",
+    ],
+    [
+      'O77 Object.assign returned',
+      "const f = (): CSSStyleDeclaration => Object.assign(box.style, { display: 'none' });\n  void f;",
+    ],
+    ['O78 Object.assign in a sequence', "(0, Object.assign(box.style, { display: 'none' }));"],
+    ['O79 Object.assign.call', "Object.assign.call(null, box.style, { display: 'none' });"],
+    [
+      'O80 Object destructured',
+      'const { assign } = Object;\n  assign(box.style, { display: "none" });',
+    ],
+    [
+      'O81 Object.assign bind',
+      "const a = Object.assign.bind(Object);\n  a(box.style, { display: 'none' });",
+    ],
+  ];
+
+  it.each(FORMS)('refuses %s', async (_what, code) => {
+    expect(await verdict(OVERLAY, inStart(`  ${code}`)), code).not.toEqual([]);
+    expect(await verdict(NEW_FILE, inStart(`  ${code}`)), code).not.toEqual([]);
+  });
+
+  it('accepts everything the overlay does, and a statement of Object.assign', async () => {
+    const code = `
+  let sx = 0;
+  const tw = doc.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+  const range = doc.createRange();
+  for (let node = tw.nextNode(); node; node = tw.nextNode()) {
+    const value = node.nodeValue ?? '';
+    range.selectNodeContents(node);
+    const b = range.getBoundingClientRect();
+    if (b.right < 0 || b.left > 1 || b.bottom < 0 || b.top > 1 || !value) continue;
+  }
+  Object.assign(box.style, { position: 'fixed', background: 'rgba(0,0,0,0.15)', cursor: 'crosshair', left: \`\${sx}px\`, width: '0', top: '12px' });
+  box.textContent = u;
+  doc.documentElement.appendChild(box);
+  box.append(doc.createElement('div'));
+  box.addEventListener('mousedown', (e) => { e.preventDefault(); sx = e.clientX; });
+  win.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') box.remove(); });
+  if (!box.isConnected) return;
+  const text = win.getSelection()?.toString();
+  void text;`;
+    expect(await verdict(OVERLAY, inStart(code)), code).toEqual([]);
+  });
+
+  it('accepts measureImage as it is, and refuses the DOM members it does not use', async () => {
+    const real = `export async function measureImage(src: string): Promise<{ dpr: number } | null> {
+  const img = [...document.images].find((i) => i.currentSrc === src || i.src === src);
+  if (!img) return null;
+  img.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  const b = img.getBoundingClientRect();
+  return { dpr: window.devicePixelRatio || 1 + b.left + b.width };
+}`;
+    expect(await verdict(MEASURE, real)).toEqual([]);
+    for (const body of [
+      '[img.src] = [src];',
+      'img.src = src;',
+      'for (img.src of [src]);',
+      "img.ownerDocument.createElementNS(img.ownerDocument.documentElement.namespaceURI, 'style');",
+      'void img.ownerDocument;',
+      "const st = img.ownerDocument.createElementNS('x', 'style'); st.textContent = src;",
+      "try { void img.ownerDocument.createElementNS('x', 'style'); } catch { void 0; }",
+      'img.click();',
+      'img.setAttribute("src", src);',
+      'void img.parentElement;',
+      'void img.naturalWidth;',
+      'void document.body;',
+      'void document.head;',
+      'void document.createElement("div");',
+      'void document.querySelector("a");',
+    ]) {
+      const code = `export function measureImage(src: string): void {\n  const img = [...document.images][0]!;\n  ${body}\n  void src;\n}`;
+      expect(await verdict(MEASURE, code), body).not.toEqual([]);
+    }
+  });
+
+  it('judges a member by its kind: a call that is read, a read that is written', async () => {
+    for (const code of [
+      'const f = box.remove; void f;',
+      'box.remove = () => undefined;',
+      'box.isConnected = true;',
+      'box.textContent += "x"; box.textContent++;',
+      'delete box.textContent;',
+    ]) {
+      expect(await verdict(OVERLAY, inStart(`  ${code}`)), code).not.toEqual([]);
+    }
+    expect(await domMembers(OVERLAY, inStart('  box.textContent = u;'))).toEqual([]);
+    expect(await domMembers(OVERLAY, inStart('  box.remove();'))).toEqual([]);
+    expect(await domMembers(OVERLAY, inStart('  box?.remove();'))).toEqual([]);
+  });
+
+  it('a window is left to the allowlist of globals (win.document is read, nothing else on it)', async () => {
+    expect(await domMembers(OVERLAY, inStart('  void win.document;'))).toEqual([]);
+    expect(await reached(OVERLAY, inStart('  void win.fetch;'))).not.toEqual([]);
   });
 });
