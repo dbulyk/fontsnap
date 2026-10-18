@@ -114,15 +114,32 @@ each is declared once and held by tests that fail on any deviation.
 | The one external import of the build, `onnxruntime-web/wasm` → `ort/ort.wasm.min.mjs`                                                           | `ORT_SPECIFIER`, `ORT_EXTERNAL` in `vendor.ts`           | `src-only.test.ts` (that id passes, eleven look-alikes are refused), `vite-configs.test.ts` (`vendorPlugin` answers only that specifier), `dist.test.ts` (the import must resolve to a file of the build) |
 
 **The runtime cannot be pointed elsewhere.** onnxruntime-web has two settings that would run WebAssembly other than the
-pinned files with every check above green: `env.wasm.wasmPaths` (another URL, another `.wasm`) and `env.wasm.wasmBinary`
-(other bytes). Three layers close them: (1) ESLint refuses the identifiers `env`, `wasmPaths`, `wasmBinary` (also as strings,
-templates, keys, destructured names) and any import of `onnxruntime-*` in every `src/` context except `src/result/model.ts`;
-(2) `model.test.ts` pins that file, source included: `wasmPaths` is the one string `chrome.runtime.getURL('ort/')`, nothing else
-is assigned to the environment, `wasmBinary` is never set, the model and the family table come from their packaged URLs;
-(3) `verify-dist` scans every built `.js`/`.mjs` for the header of a module in any spelling (raw, escapes, base64, hex, number
-lists, a `.wasm` name), for `wasmBinary`, and for `wasmPaths` anywhere but once, from a call, in `assets/result-*.js`; the vendor
-files are exempt by exact path and sha256 only (`scripts/lib/wasm-scan.ts`). Names assembled at run time remain the accepted
-boundary of the template, but without `env` or the import they cannot reach the runtime.
+pinned files with every check above green (`env.wasm.wasmPaths`: another URL or `.wasm`; `env.wasm.wasmBinary`: other bytes), and
+it fetches its `.wasm` through the global `fetch`, so replacing `fetch` (or a prototype, or `chrome.runtime.getURL`) loads other
+bytes without touching the runtime at all. The layers, outermost first:
+
+1. **Lint** (every `src/` context except one rule set for `src/result/model.ts`): the identifiers `env`, `wasmPaths`, `wasmBinary` (also
+   as strings, templates and keys) and any `onnxruntime-*` import are refused outside `model.ts`; in ALL of `src/` (model.ts included) there is
+   no write to a global object (`globalThis`/`self`/`window` are only read as `globalThis.crossOriginIsolated|crypto|...`, never aliased,
+   passed on or accessed by a computed name), to a host object (`chrome`, `navigator`, `performance`, `Object`, `Response`, ...: assignment,
+   update, delete, destructuring, `Object.assign` onto it), and none of `defineProperty`, `defineProperties`, `setPrototypeOf`,
+   `getPrototypeOf`, `__proto__`, `prototype`, `Proxy`, `Reflect` is named.
+2. **Unit tests** pin `src/result/model.ts` as an allowlist: the exact text of the URL functions and of `configureRuntime` (`wasmPaths =
+runtimeUrl()`, a bare call; `runtimeUrl` is `chrome.runtime.getURL(RUNTIME_DIR)`, `RUNTIME_DIR` is `'ort/'`), and the complete lists of what
+   the file calls, which strings it contains, which properties it reads, which operators it uses.
+3. **At start-up** (`assertPinnedRuntime`, right before the session is created): `wasmPaths` is an own data property holding exactly the string
+   `chrome.runtime.getURL('ort/')`, and there is no `wasmBinary` (not own, not inherited, not a getter); afterwards (`assertNoOutsideLoads`) resource
+   timing must show no load from outside the extension. The value is checked, not only the way it is set, so it does not matter which line set it.
+4. **`verify-dist`** scans every built `.js`/`.mjs`: the module header in any spelling (raw, escapes, base64 at all alignments, hex, number lists,
+   a `.wasm` name in any string form); every absolute or protocol-relative URL in a string must be on `fonts.googleapis.com` or `fonts.google.com`
+   (escapes and %-escapes decoded, so `%68ttps://` is seen); the primitives of layer 1 and writes to globals/prototypes in the built code;
+   `wasmBinary` anywhere outside the known reads of the start-up check; and in the one chunk that imports the vendored runtime `wasmPaths`
+   is assigned exactly once, with exactly `chrome.runtime.getURL("ort/")`. The vendor files are exempt by exact path and sha256 only
+   (`scripts/lib/wasm-scan.ts`).
+
+What this does not do, on purpose: names assembled at run time (`'ht' + 'tps'` is seen because the second literal is a URL; a URL decoded from
+base64 at run time is not), and a script that already runs in the page can defeat any check that runs in the same page. The strict closure for
+network access would be `connect-src` in the CSP, which FontSnap does not use (the service worker fetches the images users right-click).
 
 Everything else of the template stays: no `eval`/`new Function`/injected scripts, no remote code, no other `.wasm` or media, `public/`
 holds locales and icons only. The only network access of the extension is the Google Fonts preview: the result page links

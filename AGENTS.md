@@ -44,8 +44,10 @@ Setup: `git lfs pull` (model and test images), `npm ci`, then once `npx playwrig
   names, another CSP source or a missing COEP/COOP fails `verify-dist` and the tests. Changing the runtime or the
   model means editing the table AND its second copy in `tests/unit/vendor.test.ts` in the same commit, with a reason.
   onnxruntime-web is imported and configured ONLY in `src/result/model.ts` (lint refuses `env`, `wasmPaths`, `wasmBinary` and the
-  import elsewhere; `model.test.ts` pins what that file sets; `verify-dist` scans built scripts for WebAssembly bytes and for those
-  settings): never set `wasmBinary`, never give `wasmPaths` anything but `chrome.runtime.getURL('ort/')`.
+  import elsewhere; `model.test.ts` pins that file as an allowlist; `assertPinnedRuntime` checks the VALUE of `wasmPaths` at start-up;
+  `verify-dist` scans built scripts for WebAssembly bytes, foreign hosts and those settings): never set `wasmBinary`, never give
+  `wasmPaths` anything but exactly `chrome.runtime.getURL('ort/')`, and never write to `globalThis`/`window`/`self`, `chrome`, `navigator`,
+  a prototype (`fetch` and `WebAssembly` are what the runtime uses; lint refuses defineProperty, Reflect, Proxy and friends in `src/`).
   The Python reference (`python/`), `data/`, `store/` and `scripts/i18n/` are outside the Node toolchain and are
   never formatted or linted by it; `store/` is not touched at all (the Web Store texts and privacy policy).
 - **Allowlists are `Map`/`Set` (or arrays searched by value), or checked with `Object.hasOwn`; never `obj[key]` or
