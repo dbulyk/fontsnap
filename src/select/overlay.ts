@@ -3,7 +3,7 @@ import type { Rect } from '../shared/capture';
 
 /**
  * A document can lack <body> (an SVG or XML page) although the DOM types say otherwise: the element is taken as a parameter
- * that may be null, so that no cast is needed (this code takes none, see eslint.config.js, PAGE_PROCESS_FILES).
+ * that may be null, so that no cast is needed (this code takes none, see eslint.config.js, PAGE_PROCESS_GLOBS).
  */
 function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
   return body ?? root;

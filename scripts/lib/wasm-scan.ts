@@ -1,4 +1,5 @@
 import ts from 'typescript';
+import { CSS_LOADING_SOURCE, cssUnescape } from '../../eslint.config.js';
 
 /**
  * WebAssembly other than the pinned vendor files could reach the extension inside a built script, past every check
@@ -351,60 +352,113 @@ const PAGE_CODE_FORBIDDEN: readonly { pattern: RegExp; what: string }[] = [
   },
   { pattern: /\bopen\s*\(/, what: 'open(...) (window.open, XMLHttpRequest.open)' },
   { pattern: /\blocation\b/, what: 'location' },
-  { pattern: /url\s*\(|image-set|@import/i, what: 'url(...) / image-set / @import in a string' },
 ];
+
+/**
+ * Does a string literal of the script hold CSS that loads something (url(), image-set(), @import, ...)? Judged as lint judges it
+ * (CSS_LOADING_SOURCE and cssUnescape of eslint.config.js): only strings are looked at, so `getURL(` and `new URL(` in the code are
+ * not CSS; the CSS escapes of a string (`u\\72 l(`) are undone first, and so are the JS ones (`\\\\`).
+ */
+export function cssLoadingInStrings(text: string): boolean {
+  const loading = new RegExp(CSS_LOADING_SOURCE, 'i');
+  return stringForms(text).some((form) => {
+    const jsDecoded = form.replace(/\\\\/g, '\\');
+    return [form, jsDecoded, cssUnescape(form), cssUnescape(jsDecoded)].some((candidate) =>
+      loading.test(candidate),
+    );
+  });
+}
 
 /** What of the page-process rules a text breaks; empty if nothing. */
 export function pagePlatformProblems(text: string): string[] {
-  return PAGE_CODE_FORBIDDEN.filter(({ pattern }) => pattern.test(text)).map(({ what }) => what);
+  const found = PAGE_CODE_FORBIDDEN.filter(({ pattern }) => pattern.test(text)).map(
+    ({ what }) => what,
+  );
+  if (cssLoadingInStrings(text)) found.push('url(...) / image-set / @import in a string');
+  return found;
 }
 
 /**
- * The text of every function that a script hands to `executeScript({ func })`: a named function or a variable of this file, or a
- * function written in place. `undefined` entries stand for a `func` that is none of those (it could not be read, so it fails).
+ * The text of every function that a script hands to `executeScript({ func })`, found with the TypeScript compiler so that names
+ * are resolved by SCOPE (a minified file reuses short names): the `func` must be a function written in place or a name with ONE
+ * declaration, in this file, that is a function declaration or a variable holding a function; a shorthand `{ func }` and a method
+ * `func() {}` are read too. Anything else - an import, a member (`o.f`), a computed key, a spread, options that are not an object
+ * literal, an `executeScript` that is not called at once (an alias) - is an `undefined` entry, which fails the build.
  */
 export function injectedFunctions(file: string, text: string): (string | undefined)[] {
-  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
-  const named = new Map<string, ts.Node>();
-  const collect = (node: ts.Node): void => {
-    if (ts.isFunctionDeclaration(node) && node.name !== undefined) named.set(node.name.text, node);
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.initializer !== undefined &&
-      (ts.isFunctionExpression(node.initializer) || ts.isArrowFunction(node.initializer))
-    ) {
-      named.set(node.name.text, node.initializer);
-    }
-    ts.forEachChild(node, collect);
+  const options: ts.CompilerOptions = {
+    allowJs: true,
+    noLib: true,
+    noResolve: true,
+    target: ts.ScriptTarget.Latest,
   };
-  collect(source);
+  const host = ts.createCompilerHost(options);
+  const getSourceFile = host.getSourceFile.bind(host);
+  host.getSourceFile = (name, languageVersion, ...rest) =>
+    name === file
+      ? ts.createSourceFile(name, text, languageVersion, true, ts.ScriptKind.JS)
+      : getSourceFile(name, languageVersion, ...rest);
+  host.fileExists = (name) => name === file;
+  host.readFile = (name) => (name === file ? text : undefined);
+  const program = ts.createProgram([file], options, host);
+  const checker = program.getTypeChecker();
+  const source = program.getSourceFile(file);
+  if (source === undefined) return [undefined];
+  const isFunction = (node: ts.Node | undefined): node is ts.Node =>
+    node !== undefined &&
+    (ts.isFunctionExpression(node) || ts.isArrowFunction(node) || ts.isFunctionDeclaration(node));
+  /** The function a symbol is, when it has exactly one declaration and that is a function. */
+  const functionOf = (symbol: ts.Symbol | undefined): ts.Node | undefined => {
+    const declarations = symbol?.declarations ?? [];
+    const only = declarations.length === 1 ? declarations[0] : undefined;
+    if (only === undefined) return undefined;
+    if (ts.isFunctionDeclaration(only)) return only;
+    if (ts.isVariableDeclaration(only) && isFunction(only.initializer)) return only.initializer;
+    return undefined;
+  };
   const found: (string | undefined)[] = [];
+  const read = (node: ts.Node | undefined): void => {
+    found.push(node?.getText(source));
+  };
   const visit = (node: ts.Node): void => {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isPropertyAccessExpression(node.expression) &&
-      node.expression.name.text === 'executeScript'
-    ) {
-      const options = node.arguments[0];
-      const func =
-        options !== undefined && ts.isObjectLiteralExpression(options)
-          ? options.properties.find(
-              (property): property is ts.PropertyAssignment =>
-                ts.isPropertyAssignment(property) &&
-                (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) &&
-                property.name.text === 'func',
-            )
-          : undefined;
-      if (func !== undefined) {
-        const value = func.initializer;
-        const target = ts.isIdentifier(value)
-          ? named.get(value.text)
-          : ts.isFunctionExpression(value) || ts.isArrowFunction(value)
-            ? value
-            : undefined;
-        found.push(target?.getText(source));
+    if (ts.isPropertyAccessExpression(node) && node.name.text === 'executeScript') {
+      const call = node.parent;
+      if (!ts.isCallExpression(call) || call.expression !== node) {
+        found.push(undefined); // an alias or a value: the call can not be followed
+      } else {
+        const options0 = call.arguments[0];
+        if (options0 === undefined || !ts.isObjectLiteralExpression(options0)) {
+          found.push(undefined);
+        } else {
+          for (const property of options0.properties) {
+            if (ts.isSpreadAssignment(property) || ts.isComputedPropertyName(property.name)) {
+              found.push(undefined);
+              continue;
+            }
+            const key = property.name;
+            const name = ts.isIdentifier(key) || ts.isStringLiteral(key) ? key.text : undefined;
+            if (name !== 'func') continue;
+            if (ts.isShorthandPropertyAssignment(property)) {
+              read(functionOf(checker.getShorthandAssignmentValueSymbol(property)));
+            } else if (ts.isMethodDeclaration(property)) {
+              read(property);
+            } else if (ts.isPropertyAssignment(property)) {
+              const value = property.initializer;
+              if (ts.isIdentifier(value)) read(functionOf(checker.getSymbolAtLocation(value)));
+              else if (ts.isFunctionExpression(value) || ts.isArrowFunction(value)) read(value);
+              else found.push(undefined);
+            } else {
+              found.push(undefined);
+            }
+          }
+        }
       }
+    } else if (
+      ts.isElementAccessExpression(node) &&
+      ts.isStringLiteralLike(node.argumentExpression) &&
+      node.argumentExpression.text === 'executeScript'
+    ) {
+      found.push(undefined); // chrome.scripting['executeScript']: not followed
     }
     ts.forEachChild(node, visit);
   };
@@ -442,14 +496,19 @@ export function scriptProblems(file: string, text: string): string[] {
     (name) =>
       `${file}: uses ${name}, which no script of the build uses (the sources are held to an allowlist of globals, see eslint.config.js)`,
   );
+  const injected = file === 'background.js' ? injectedFunctions(file, text) : [];
   const page = [
     ...(file === 'select.js' ? pagePlatformProblems(text) : []),
-    ...(file === 'background.js'
-      ? injectedFunctions(file, text).flatMap((body) =>
-          body === undefined
-            ? ['func of executeScript is not a function of this file (it could not be read)']
-            : pagePlatformProblems(body),
-        )
+    ...injected.flatMap((body) =>
+      body === undefined
+        ? [
+            'a func of executeScript that could not be read (not a function declared once in this file)',
+          ]
+        : pagePlatformProblems(body),
+    ),
+    ...(injected.length > 1 ? ['more than one function handed to executeScript'] : []),
+    ...(file !== 'background.js' && /\bexecuteScript\b/.test(text)
+      ? ['executeScript outside background.js']
       : []),
   ].map(
     (what) =>

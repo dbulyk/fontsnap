@@ -6,6 +6,7 @@ import {
   ALLOWED_ORIGINS,
   forbiddenNames,
   hiddenTexts,
+  cssLoadingInStrings,
   iceServerSchemes,
   injectedFunctions,
   pagePlatformProblems,
@@ -795,5 +796,158 @@ describe('the code of the web page: no network API, no way to load or navigate',
         ).join('\n'),
       ).not.toContain('runs in the web page');
     });
+  });
+});
+
+// Round 7 of the review of PR #6 (nits and blocker E): CSS that loads is judged in STRINGS, as lint judges it, with the CSS escapes
+// undone; code that merely says getURL( or new URL( is not CSS. And an executeScript func that cannot be followed fails.
+describe('CSS that loads something, in the strings of the code of the page', () => {
+  it.each([
+    ['url(x)', true],
+    ['URL(x)', true],
+    ['uRl(x)', true],
+    ['url (x)', true],
+    ['u\\72 l(x)', true],
+    ['\\75 rl(x)', true],
+    ['\\000075rl(x)', true],
+    ['background:url(x)', true],
+    ['image-set(x 1x)', true],
+    ['-webkit-image-set(x 1x)', true],
+    ['image(x)', true],
+    ['cross-fade(x)', true],
+    ['element(#x)', true],
+    ['paint(x)', true],
+    ['src(x)', true],
+    ['@import "x"', true],
+    ['getURL(x)', false],
+    ['chrome.runtime.getURL(x)', false],
+    ['myurl(x)', false],
+    ['$url(x)', false],
+    ['my-url(x)', false],
+    ['a url is here', false],
+    ['getU\\52 L(x)', false],
+  ])('the string %j: %s', (value, expected) => {
+    for (const quote of ['"', "'", '`']) {
+      const source = value.replaceAll('\\', '\\\\');
+      expect(cssLoadingInStrings(`x(${quote}${source}${quote})`), `${quote}${source}${quote}`).toBe(
+        expected,
+      );
+    }
+    expect(pagePlatformProblems(`x("${value.replaceAll('\\', '\\\\')}")`).length > 0).toBe(
+      expected,
+    );
+  });
+
+  it.each([
+    'chrome.runtime.getURL("x")',
+    'new URL("x", base)',
+    'URL(x)',
+    'const u = chrome.runtime.getURL(e); void new URL(u)',
+    'x.getURL(y)',
+  ])('does not take the code %j for CSS (the false positive of the review)', (code) => {
+    expect(cssLoadingInStrings(code), code).toBe(false);
+    expect(pagePlatformProblems(code), code).toEqual([]);
+    expect(scriptProblems('select.js', code).join('\n'), code).not.toContain('url(');
+  });
+
+  it('a string built at run time is not seen here (lint refuses it: no key, no join, no call in a style)', () => {
+    expect(cssLoadingInStrings("x(['ur', 'l(x)'].join(''))")).toBe(false);
+  });
+});
+
+describe('injectedFunctions: the func of executeScript is followed by scope, and what cannot be followed fails', () => {
+  const CALL = 'chrome.scripting.executeScript({target:{tabId:1},args:[u],func:b})';
+  const read = (text: string) => injectedFunctions('background.js', text);
+
+  it.each([
+    [
+      'a function declaration',
+      `${CALL};async function b(t){return 1}`,
+      ['async function b(t){return 1}'],
+    ],
+    ['a const arrow', `${CALL};const b=async t=>1`, ['async t=>1']],
+    [
+      'a const function expression',
+      `${CALL};const b=function(t){return 1}`,
+      ['function(t){return 1}'],
+    ],
+    [
+      'a shorthand',
+      'chrome.scripting.executeScript({target:{},func});function func(t){return 1}',
+      ['function func(t){return 1}'],
+    ],
+    [
+      'a method',
+      'chrome.scripting.executeScript({target:{},func(t){return 1}})',
+      ['func(t){return 1}'],
+    ],
+    [
+      'a string key',
+      'chrome.scripting.executeScript({target:{},"func":function(t){return 1}})',
+      ['function(t){return 1}'],
+    ],
+    [
+      'a function written in place',
+      'chrome.scripting.executeScript({target:{},func:t=>1})',
+      ['t=>1'],
+    ],
+    ['files only', 'chrome.scripting.executeScript({target:{},files:["select.js"]})', []],
+    ['no call at all', 'chrome.tabs.create({url:u})', []],
+  ])('reads %s', (_what, text, expected) => {
+    expect(read(text)).toEqual(expected);
+  });
+
+  it.each([
+    ['an undeclared name', 'chrome.scripting.executeScript({target:{},func:gone})'],
+    ['a member', 'chrome.scripting.executeScript({target:{},func:o.f})'],
+    ['a call result', 'chrome.scripting.executeScript({target:{},func:make()})'],
+    ['a computed key', 'chrome.scripting.executeScript({target:{},["fu"+"nc"]:b});function b(){}'],
+    ['a spread', 'chrome.scripting.executeScript({target:{},...o});function b(){}'],
+    ['options in a variable', 'chrome.scripting.executeScript(o);function b(){}'],
+    ['no options', 'chrome.scripting.executeScript();function b(){}'],
+    [
+      'an alias of executeScript',
+      'const run=chrome.scripting.executeScript;run({target:{},func:b});function b(){}',
+    ],
+    ['executeScript passed on', 'use(chrome.scripting.executeScript)'],
+    [
+      'executeScript by a string key',
+      'chrome.scripting["executeScript"]({target:{},func:b});function b(){}',
+    ],
+    ['a name declared twice', `${CALL};function b(){return 1}function b(){return 2}`],
+    ['a name that is a parameter', `${CALL};function k(b){return b}`],
+    ['a name that is an import', `import {b} from "./x.js";${CALL}`],
+    ['a name that is a class', `${CALL};class b{}`],
+    ['a name that is a plain value', `${CALL};const b=5`],
+    ['a name declared twice by var', `${CALL};var b=function(){};var b=function(){}`],
+  ])('fails on %s', (_what, text) => {
+    expect(read(text), text).toContain(undefined);
+    expect(scriptProblems('background.js', text).join('\n'), text).toContain('could not be read');
+  });
+
+  it('resolves a reused short name by scope, not by the last declaration in the file', () => {
+    // the b of the call is the outer function; a later b lives inside another function
+    const text = `${CALL};function b(t){return fetch(t)}function other(){function b(){return 2}return b}`;
+    const found = read(text);
+    expect(found).toEqual(['function b(t){return fetch(t)}']);
+    expect(scriptProblems('background.js', text).join('\n')).toContain('runs in the web page');
+  });
+
+  it('a name shadowed where the call is made is the inner one', () => {
+    const text =
+      'function b(){return fetch(1)}function k(){function b(){return 3}chrome.scripting.executeScript({target:{},func:b})}';
+    expect(read(text)).toEqual(['function b(){return 3}']);
+  });
+
+  it('exactly one function may be handed over, and executeScript belongs to background.js', () => {
+    const two =
+      'chrome.scripting.executeScript({target:{},func:a});chrome.scripting.executeScript({target:{},func:c});function a(){}function c(){}';
+    expect(scriptProblems('background.js', two).join('\n')).toContain('more than one function');
+    expect(scriptProblems('assets/result-abc.js', CALL).join('\n')).toContain(
+      'executeScript outside background.js',
+    );
+    expect(scriptProblems('select.js', CALL).join('\n')).toContain(
+      'executeScript outside background.js',
+    );
   });
 });

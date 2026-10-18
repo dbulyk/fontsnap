@@ -916,6 +916,17 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       expect(problems).toMatch(/runs in the web page|could not be read/);
     });
 
+    it('does not take getURL( or new URL( in select.js for CSS, and takes a string with a CSS escape for what it is', () => {
+      const run = (code: string) =>
+        verifyDist(
+          makeDist({ files: { 'select.js': code } }),
+          withMain({ 'select.js': 'chunk' }),
+        ).join('\n');
+      expect(run('const u=chrome.runtime.getURL("a");void new URL(u);')).not.toContain('web page');
+      expect(run('e.style.background="u\\\\72 l(x)";')).toContain('url(...)');
+      expect(run('e.style.background="url(x)";')).toContain('url(...)');
+    });
+
     it('lets the service worker encode the screenshot, and nobody else', () => {
       const encode = 'const e=btoa(String.fromCharCode(...b));';
       expect(
