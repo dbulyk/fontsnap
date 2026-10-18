@@ -47,9 +47,16 @@ export function initResult(doc: Document): void {
   const seen = required(doc.querySelector<HTMLCanvasElement>('#seen'), '#seen');
   const preview = required(doc.querySelector<HTMLInputElement>('#pvText'), '#pvText');
   const fileInput = required(doc.querySelector<HTMLInputElement>('#file'), '#file');
-  const status = (text: string, err?: boolean) => {
+  const show = (text: string, err?: boolean) => {
     $('status').textContent = text;
     $('status').className = 'status' + (err ? ' err' : '');
+  };
+  // Whether an image has been dealt with (analysing, an error, a result): then the model getting ready must not put
+  // "Ready." over it - an unreadable file chosen while the model loaded used to lose its error half a second later.
+  const flow = { touched: false };
+  const status = (text: string, err?: boolean) => {
+    flow.touched = true;
+    show(text, err);
   };
   const render = createRenderer(doc);
   let lastImg: RankedFont[] | undefined;
@@ -129,9 +136,9 @@ export function initResult(doc: Document): void {
   void (async () => {
     try {
       await ready;
-      status(t('ready'));
+      if (!flow.touched) show(t('ready'));
     } catch (e) {
-      status(t('modelFail', [errorMessage(e)]), true);
+      show(t('modelFail', [errorMessage(e)]), true);
       return;
     }
     const handoff = parseResultHash(win.location.hash);
