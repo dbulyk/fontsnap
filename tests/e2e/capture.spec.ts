@@ -58,12 +58,8 @@ test('1) crop math + PNG encode + session round-trip (happy path)', async ({
     const shotBuf = new Uint8Array(
       await (await src.convertToBlob({ type: 'image/png' })).arrayBuffer(),
     );
-    let b64 = '';
-    for (let i = 0; i < shotBuf.length; i += 0x8000)
-      b64 += String.fromCharCode(...shotBuf.subarray(i, i + 0x8000));
-    const shotUrl = 'data:image/png;base64,' + btoa(b64);
-
-    const bmp = await createImageBitmap(await (await fetch(shotUrl)).blob());
+    // (the worker decodes the screenshot's data: URL without a request, src/shared/data-url.ts: the CSP refuses a fetch of it)
+    const bmp = await createImageBitmap(new Blob([shotBuf], { type: 'image/png' }));
     const crop = lib.clipCropRect({ x: 20, y: 40, w: 200, h: 150 }, 1, bmp.width, bmp.height);
     const sized = lib.scaleToMaxSide(crop.w, crop.h, lib.MAX_CROP_SIDE);
     const cv = new OffscreenCanvas(sized.width, sized.height);

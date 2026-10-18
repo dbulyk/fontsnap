@@ -398,7 +398,11 @@ describe('handoff from the selection / context menu', () => {
     });
     expect(field('pvText').value).toBe('Selected words');
     expect(document.querySelector('.sample')?.textContent).toBe('Selected words');
-    expect(fetch).toHaveBeenCalledWith(entry.dataUrl);
+    // decoded in the page, not fetched: the CSP has connect-src 'self', which refuses a data: URL
+    expect(fetch).not.toHaveBeenCalledWith(entry.dataUrl);
+    const decoded = vi.mocked(createImageBitmap).mock.calls[0]?.[0] as Blob;
+    expect(await decoded.text()).toBe('png');
+    expect(decoded.type).toBe('image/png');
     expect(stub.chrome.storage.session.remove).toHaveBeenCalledWith('cap_1');
     expect(stub.session.has('cap_1')).toBe(false);
   });

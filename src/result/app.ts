@@ -3,6 +3,7 @@ import { fromRGBA, type Img } from '../shared/core/image';
 import { cropNormalize } from '../shared/core/pipeline';
 import type { RankedFont } from '../shared/core/ranker';
 import { textLines } from '../shared/core/textcrop';
+import { dataUrlToBlob } from '../shared/data-url';
 import { required } from '../shared/dom';
 import { errorMessage } from '../shared/errors';
 import { applyI18n, t } from '../shared/i18n';
@@ -148,6 +149,6 @@ export function initResult(doc: Document): void {
       return;
     }
     if (stored.text) preview.value = stored.text;
-    if (stored.dataUrl) await fromBlob(await (await fetch(stored.dataUrl)).blob());
+    if (stored.dataUrl) await fromBlob(dataUrlToBlob(stored.dataUrl));
   })();
 }

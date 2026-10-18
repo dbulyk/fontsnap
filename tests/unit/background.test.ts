@@ -379,6 +379,39 @@ describe('right-click on an image', () => {
     expect(entry?.['dataUrl']).toMatch(/^data:image\/png;base64,/);
   });
 
+  it('decodes a data: URL image itself: no request is made (the CSP has connect-src self)', async () => {
+    setup();
+    const src = 'data:image/png;base64,' + Buffer.alloc(1000, 7).toString('base64');
+    await click(src);
+    const { entry } = await openedResult();
+    expect(images.fetch).not.toHaveBeenCalled();
+    expect(entry?.['dataUrl']).toBe(src);
+    expect(stub.chrome.scripting.executeScript).not.toHaveBeenCalled();
+    expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
+  });
+
+  it('screenshots a data: URL it cannot decode, without a request', async () => {
+    setup();
+    stub.chrome.scripting.executeScript.mockResolvedValueOnce([
+      { result: { rect: { x: 0, y: 0, w: 50, h: 50 }, dpr: 1 } },
+    ]);
+    await click('data:image/png;base64,@@@@');
+    await openedResult();
+    expect(images.fetch).not.toHaveBeenCalled();
+    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(1);
+  });
+
+  it('crops the screenshot from its data: URL without a request', async () => {
+    setup();
+    stub.chrome.scripting.executeScript.mockResolvedValueOnce([
+      { result: { rect: { x: 30, y: 40, w: 100, h: 50 }, dpr: 2 } },
+    ]);
+    await click('https://cdn.example/photo.png');
+    await openedResult();
+    // the one request is the refused download of the image; the screenshot (a data: URL) is not fetched
+    expect(images.fetch.mock.calls.map(([url]) => url)).toEqual(['https://cdn.example/photo.png']);
+  });
+
   it('screenshots the image when the download fails (CORS, network)', async () => {
     setup();
     stub.chrome.scripting.executeScript.mockResolvedValueOnce([

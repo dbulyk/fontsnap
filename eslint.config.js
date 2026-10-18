@@ -250,7 +250,8 @@ const GLOBAL_ACCESS = {
       window: ['devicePixelRatio'],
     },
     'src/shared/capture.ts': { decodeURIComponent: true, globalThis: ['crypto'] },
-    'src/result/app.ts': { fetch: true },
+    // data: URLs are decoded here instead of fetched (the CSP has connect-src 'self')
+    'src/shared/data-url.ts': { Blob: true, Number: ['parseInt'], TypeError: true },
     // `'onUserSettingsChanged' in chrome.action`: older Chrome versions do not have the event
     'src/welcome/app.ts': { chrome: ['action'] },
     'src/result/model.ts': {
