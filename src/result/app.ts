@@ -95,7 +95,12 @@ export function initResult(doc: Document): void {
     const cv = shot;
     cv.width = Math.round(bmp.width * sc);
     cv.height = Math.round(bmp.height * sc);
-    cv.getContext('2d', { willReadFrequently: true })?.drawImage(bmp, 0, 0, cv.width, cv.height);
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    if (ctx) {
+      ctx.fillStyle = '#ffffff'; // a transparent pixel would be (0,0,0,0), i.e. black
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
+    }
     bmp.close();
     identify(cv).catch((e: unknown) => {
       status(t('errorMsg', [errorMessage(e)]), true);

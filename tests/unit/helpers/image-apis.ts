@@ -23,6 +23,8 @@ export interface ImageApiOptions {
 export function installImageApis(options: ImageApiOptions = {}) {
   const size = options.bitmap ?? { width: 400, height: 300 };
   const draws: number[][] = [];
+  /** 'fill <style> x,y,w,h' and 'draw' entries of every canvas, in call order. */
+  const ops: string[] = [];
   const canvases: { width: number; height: number }[] = [];
   const encodes: { type: string; quality: number | undefined }[] = [];
   const bitmaps: { close: ReturnType<typeof vi.fn> }[] = [];
@@ -35,8 +37,16 @@ export function installImageApis(options: ImageApiOptions = {}) {
       canvases.push(this);
     }
     getContext() {
+      let fillStyle = '';
       return {
+        set fillStyle(style: string) {
+          fillStyle = style;
+        },
+        fillRect: (...args: number[]) => {
+          ops.push(`fill ${fillStyle} ${args.join(',')}`);
+        },
         drawImage: (...args: unknown[]) => {
+          ops.push('draw');
           draws.push(args.slice(1) as number[]);
         },
       };
@@ -75,5 +85,5 @@ export function installImageApis(options: ImageApiOptions = {}) {
   vi.stubGlobal('createImageBitmap', createImageBitmap);
   vi.stubGlobal('fetch', fetchStub);
 
-  return { draws, canvases, encodes, bitmaps, createImageBitmap, fetch: fetchStub };
+  return { draws, ops, canvases, encodes, bitmaps, createImageBitmap, fetch: fetchStub };
 }

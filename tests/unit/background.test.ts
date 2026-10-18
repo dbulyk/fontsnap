@@ -195,6 +195,8 @@ describe('selection message: screenshot → crop → session → result tab', ()
     expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledWith(9, { format: 'png' });
     // rect {10,20,100,40} at dpr 2 → source x20 y40 w200 h80, drawn 1:1 into a 200x80 canvas
     expect(images.draws).toEqual([[20, 40, 200, 80, 0, 0, 200, 80]]);
+    // the crop canvas is white before the bitmap is drawn: transparency must never reach the encoder as black
+    expect(images.ops).toEqual(['fill #ffffff 0,0,200,80', 'draw']);
     expect(images.canvases.map(({ width, height }) => [width, height])).toEqual([[200, 80]]);
     expect(images.bitmaps.every((b) => b.close.mock.calls.length === 1)).toBe(true);
     const { call, hash, entry } = await openedResult();

@@ -48,6 +48,7 @@ let probs: ReturnType<typeof vi.fn<(crop: unknown) => Promise<Float64Array>>>;
 let scene: { width: number; height: number; rgba: Uint8ClampedArray };
 let bitmapClose: ReturnType<typeof vi.fn>;
 let canvasDraws: { id: string; args: number[] }[];
+let canvasOps: string[]; // 'fill <id> <style> x,y,w,h' and 'draw <id>' in call order
 
 /** A white page with a line of dark glyph-like blocks: enough for the text finder to see a line. */
 function textScene(width = 160, height = 48) {
@@ -81,12 +82,21 @@ async function start(options: { hash?: string; locale?: string } = {}): Promise<
   document = win.document as unknown as Document;
   document.documentElement.innerHTML = readFileSync('src/result/result.html', 'utf8');
   canvasDraws = [];
+  canvasOps = [];
   (win.HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
     this: HTMLCanvasElement,
   ) {
     const id = this.id;
+    let fillStyle = '';
     return {
-      drawImage: (...args: number[]) => canvasDraws.push({ id, args: args.slice(1) }),
+      set fillStyle(style: string) {
+        fillStyle = style;
+      },
+      fillRect: (...args: number[]) => canvasOps.push(`fill ${id} ${fillStyle} ${args.join(',')}`),
+      drawImage: (...args: number[]) => {
+        canvasOps.push(`draw ${id}`);
+        canvasDraws.push({ id, args: args.slice(1) });
+      },
       getImageData: () => ({ data: scene.rgba }),
       createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
       putImageData: vi.fn(),
@@ -253,6 +263,19 @@ describe('identifying an image', () => {
     });
     expect($('shot').getAttribute('height')).toBe('1200');
     expect(canvasDraws.find((d) => d.id === 'shot')?.args).toEqual([0, 0, 2400, 1200]);
+  });
+
+  it('fills the canvas with white before the image is drawn, so transparency is not black', async () => {
+    await start();
+    pick(new Blob(['png']));
+    await vi.waitFor(() => {
+      expect(canvasOps).toContain('draw shot');
+    });
+    const { width, height } = scene;
+    expect(canvasOps.filter((op) => op.includes(' shot'))).toEqual([
+      `fill shot #ffffff 0,0,${String(width)},${String(height)}`,
+      'draw shot',
+    ]);
   });
 
   it('keeps small images at their size', async () => {
