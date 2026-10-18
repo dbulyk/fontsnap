@@ -25,7 +25,7 @@ Severity: **High** = wrong results / security / privacy; **Medium** = robustness
 
 ## Verified (no change needed)
 
-- **CSP**: `script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'` — no remote code and no request to another origin; ORT loaded from the package, in a worker of its own.
+- **CSP**: `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'` — no remote code and no request to another origin; ORT loaded from the package, in a worker of its own.
 - **XSS**: all model/user strings rendered via `textContent`; `innerHTML` only with a static template.
 - **Images stay local**: screenshot → service worker → `storage.session` (trusted contexts only, cleared on read) → result page. No network calls besides Google Fonts CSS/fonts (names only).
 - **COOP/COEP** (`same-origin` / `credentialless`) enable `crossOriginIsolated` → multithreaded WASM; Google Fonts still load.

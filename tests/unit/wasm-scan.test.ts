@@ -6,6 +6,7 @@ import {
   ALLOWED_ORIGINS,
   forbiddenNames,
   hiddenTexts,
+  iceServerSchemes,
   windowReaches,
   importsRuntime,
   scriptProblems,
@@ -575,5 +576,75 @@ describe('windowReaches: the Window of a document is held in the page scripts, o
     'srcElement',
   ])('refuses %s anywhere in the build', (name) => {
     expect(forbiddenNames(PAGE, `a.${name}`)).toContain(name);
+  });
+});
+
+// Round 5, the tester: a STUN or TURN server is named `stun:host:port`, no `//`, so it was no URL for the host scan, and
+// RTCPeerConnection left the page for the internet through a lint-clean build.
+describe('WebRTC: servers and names that no script of the build uses', () => {
+  const RESULT = 'assets/result-abc.js';
+
+  it.each([
+    ['stun', "new RTCPeerConnection({iceServers:[{urls:'stun:example.invalid:3478'}]})"],
+    ['turn', 'x("turn:example.invalid:3478")'],
+    ['turns', "x('turns:example.invalid:5349?transport=tcp')"],
+    ['stun', 'x("STUN:example.invalid")'],
+    ['turn', 'x("Turn:example.invalid")'],
+    ['turns', 'x("TURNS:example.invalid")'],
+    ['stun', 'x(`stun:example.invalid:${port}`)'],
+    ['stun', 'x("\\x73tun:example.invalid")'],
+    ['stun', 'x("stun%3Aexample.invalid".replace("%3A",":")+"stun:a")'],
+    // what terser leaves after folding 'st' + 'un:' + host into one literal
+    ['stun', 'x("stun:example.invalid:3478")'],
+    ['stun', 'x(["stun:example.invalid"])'],
+  ])('finds %s: %s', (scheme, code) => {
+    expect(iceServerSchemes(code), code).toContain(scheme);
+    expect(scriptProblems(RESULT, code).join('\n'), code).toContain('names a WebRTC server');
+  });
+
+  it.each([
+    'const a="return:value"',
+    'const b="subturn:x"',
+    'const a="stunning:x"',
+    'const a="rstun:x"',
+    'x("turnover")',
+    'x("the state: stun")',
+    'x("https://fonts.googleapis.com/css2?family=A")',
+  ])('does not mistake %j for a server', (code) => {
+    expect(iceServerSchemes(code), code).toEqual([]);
+  });
+
+  it.each([
+    'RTCPeerConnection',
+    'webkitRTCPeerConnection',
+    'mozRTCPeerConnection',
+    'RTCDataChannel',
+    'RTCIceCandidate',
+    'RTCSessionDescription',
+    'RTCRtpSender',
+    'RTCCertificate',
+    'WebTransport',
+    'WebTransportDatagramDuplexStream',
+  ])('refuses the name %s anywhere in the build', (name) => {
+    for (const code of [`new ${name}({})`, `a.${name}`, `a["${name}"]`, `typeof ${name}`]) {
+      expect(forbiddenNames(RESULT, code), code).toContain(name);
+      expect(forbiddenNames('background.js', code), code).toContain(name);
+      expect(forbiddenNames('select.js', code), code).toContain(name);
+    }
+  });
+
+  it('does not take other names for them', () => {
+    expect(
+      forbiddenNames(RESULT, 'const RTCount=1; const myRTCPeer=2; RTC; rtcPeerConnection()'),
+    ).toEqual([]);
+  });
+
+  it('is part of the problems of a script, with the file named', () => {
+    const problems = scriptProblems(
+      RESULT,
+      "new RTCPeerConnection({iceServers:[{urls:'stun:example.invalid:3478'}]})",
+    ).join('\n');
+    expect(problems).toContain('assets/result-abc.js: uses RTCPeerConnection');
+    expect(problems).toContain('assets/result-abc.js: names a WebRTC server (stun:)');
   });
 });

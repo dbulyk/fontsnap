@@ -694,7 +694,7 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
   });
 
   const CSP =
-    "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'";
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'";
   it.each([
     [
       "'unsafe-eval' instead of 'wasm-unsafe-eval'",
@@ -706,9 +706,54 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       'an extra script source',
       CSP.replace("'wasm-unsafe-eval'", "'wasm-unsafe-eval' https://cdn.example.com"),
     ],
-    ["'unsafe-inline'", CSP.replace("'wasm-unsafe-eval'", "'wasm-unsafe-eval' 'unsafe-inline'")],
-    ['a default-src', `default-src 'self'; ${CSP}`],
-    // the review of PR #6 asked for these three, and the wildcard: each one reopens a door
+    [
+      "'unsafe-inline' in script-src",
+      CSP.replace("'wasm-unsafe-eval'", "'wasm-unsafe-eval' 'unsafe-inline'"),
+    ],
+    // the tightening of the CSP: each of these reopens a door
+    ['default-src removed', CSP.replace("default-src 'self'; ", '')],
+    ['default-src *', CSP.replace("default-src 'self'", 'default-src *')],
+    ['default-src with https:', CSP.replace("default-src 'self'", "default-src 'self' https:")],
+    ['img-src https:', CSP.replace('; object-src', '; img-src https:; object-src')],
+    ["img-src 'self' https:", CSP.replace('; object-src', "; img-src 'self' https:; object-src")],
+    ["img-src 'self' data:", CSP.replace('; object-src', "; img-src 'self' data:; object-src")],
+    ["img-src 'self' blob:", CSP.replace('; object-src', "; img-src 'self' blob:; object-src")],
+    ['img-src *', CSP.replace('; object-src', '; img-src *; object-src')],
+    [
+      "'unsafe-inline' in style-src",
+      CSP.replace("style-src 'self'", "style-src 'self' 'unsafe-inline'"),
+    ],
+    [
+      'a third host in style-src',
+      CSP.replace(
+        'https://fonts.googleapis.com',
+        'https://fonts.googleapis.com https://example.invalid',
+      ),
+    ],
+    [
+      'style-src https:',
+      CSP.replace("style-src 'self' https://fonts.googleapis.com", 'style-src https:'),
+    ],
+    ['style-src without the Google host', CSP.replace(' https://fonts.googleapis.com', '')],
+    [
+      'a third host in font-src',
+      CSP.replace('https://fonts.gstatic.com', 'https://fonts.gstatic.com https://example.invalid'),
+    ],
+    [
+      "font-src 'self' added",
+      CSP.replace(
+        'font-src https://fonts.gstatic.com',
+        "font-src 'self' https://fonts.gstatic.com",
+      ),
+    ],
+    ['font-src removed', CSP.replace(' font-src https://fonts.gstatic.com;', '')],
+    ['font-src *', CSP.replace('font-src https://fonts.gstatic.com', 'font-src *')],
+    ['worker-src blob:', CSP.replace('; object-src', "; worker-src 'self' blob:; object-src")],
+    [
+      "worker-src 'self' (explicit)",
+      CSP.replace('; object-src', "; worker-src 'self'; object-src"),
+    ],
+    ['frame-src https:', CSP.replace('; object-src', '; frame-src https:; object-src')],
     ['connect-src removed', CSP.replace(" connect-src 'self';", '')],
     ["connect-src '*'", CSP.replace("connect-src 'self'", 'connect-src *')],
     ['connect-src with https:', CSP.replace("connect-src 'self'", "connect-src 'self' https:")],
@@ -723,15 +768,19 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     ['object-src removed', CSP.replace(" object-src 'none';", '')],
     ['base-uri removed', CSP.replace("; base-uri 'none'", '')],
     ["base-uri 'self'", CSP.replace("base-uri 'none'", "base-uri 'self'")],
-    ['the old CSP', "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"],
+    [
+      'the previous CSP',
+      "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'",
+    ],
+    ['the first CSP', "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"],
     [
       'the directives in another order',
-      "connect-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'",
+      "script-src 'self' 'wasm-unsafe-eval'; default-src 'self'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'",
     ],
     ['a trailing semicolon', `${CSP};`],
     ['different spacing', CSP.replace('script-src ', 'script-src  ')],
     ['an extra directive', `${CSP}; form-action 'none'`],
-    ['an extra img-src', `${CSP}; img-src *`],
+    ['an extra frame-ancestors', `${CSP}; frame-ancestors 'none'`],
   ])('reports a CSP with %s (the string must be equal, not "contain")', (_what, csp) => {
     const patch = (m: Manifest) => ({ ...m, content_security_policy: { extension_pages: csp } });
     expect(verifyDist(makeDist({ patch }), release).join('\n')).toContain(
@@ -820,8 +869,16 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       ['resource timing emptied', `${LEGIT};performance.setResourceTimingBufferSize(0)`],
       ['a test-or-user switch', `${LEGIT};if(navigator.webdriver)run()`],
       ['btoa outside the service worker', `${LEGIT};btoa(x)`],
+      [
+        'a STUN server (the repro of the tester)',
+        `${LEGIT};new RTCPeerConnection({iceServers:[{urls:"stun:example.invalid:3478"}]})`,
+      ],
+      ['a TURN server alone', `${LEGIT};x("turn:example.invalid:3478")`],
+      ['a TURNS server in capitals', `${LEGIT};x("TURNS:example.invalid:5349")`],
+      ['webkitRTCPeerConnection', `${LEGIT};new webkitRTCPeerConnection({})`],
+      ['RTCDataChannel', `${LEGIT};x.createDataChannel; new RTCDataChannel()`],
     ])('rejects %s in a chunk of the build', (_what, code) => {
-      expect(problemsOf({ [RESULT]: code })).toMatch(/decodes to|uses /);
+      expect(problemsOf({ [RESULT]: code })).toMatch(/decodes to|uses |names a WebRTC server/);
     });
 
     it.each([

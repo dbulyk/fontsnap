@@ -77,7 +77,7 @@ describe('buildManifest', () => {
 
   it("has exactly the CSP FontSnap needs: 'wasm-unsafe-eval' for onnxruntime-web, nothing else", () => {
     expect(EXTENSION_PAGES_CSP).toBe(
-      "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'",
+      "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'",
     );
     expect(manifest.content_security_policy).toEqual({
       extension_pages: EXTENSION_PAGES_CSP,
@@ -85,14 +85,32 @@ describe('buildManifest', () => {
     const csp = manifest.content_security_policy?.extension_pages ?? '';
     // 'unsafe-eval' would allow eval() and new Function(); 'wasm-unsafe-eval' allows WebAssembly only.
     expect(csp.replace("'wasm-unsafe-eval'", '')).not.toContain('unsafe-eval');
-    expect(csp).not.toMatch(/https?:|\*|unsafe-inline|data:|blob:/);
-    // connect-src 'self': no request leaves the extension (a page, the worker of the runtime, the service worker); object-src and
+    expect(csp).not.toMatch(/\*|unsafe-inline|data:|blob:/);
+    // the only origins outside the extension are the two Google Fonts hosts of the font previews: the stylesheet and the files
+    expect(csp.match(/https?:\/\/[^\s;]+/g)).toEqual([
+      'https://fonts.googleapis.com',
+      'https://fonts.gstatic.com',
+    ]);
+    // everything else falls back to default-src 'self'; connect-src 'self' keeps every request inside the extension; object-src and
     // base-uri 'none' close the plugin and the <base> doors. A directive that is absent allows everything for its kind.
     const directives = csp.split('; ').map((directive) => directive.split(' ')[0]);
-    expect(directives).toEqual(['script-src', 'connect-src', 'object-src', 'base-uri']);
+    expect(directives).toEqual([
+      'default-src',
+      'script-src',
+      'connect-src',
+      'style-src',
+      'font-src',
+      'object-src',
+      'base-uri',
+    ]);
+    expect(csp).toMatch(/^default-src 'self'; /);
     expect(csp).toContain("connect-src 'self';");
+    expect(csp).toContain("style-src 'self' https://fonts.googleapis.com;");
+    expect(csp).toContain('font-src https://fonts.gstatic.com;');
     expect(csp).toContain("object-src 'none';");
     expect(csp).toContain("base-uri 'none'");
+    // no img-src, worker-src, frame-src, ...: nothing loads an image from data:/blob: and the workers are files of the extension
+    expect(csp).not.toMatch(/img-src|worker-src|frame-src|media-src|child-src|form-action/);
   });
 
   it('is cross-origin isolated with credentialless COEP (Google Fonts previews keep loading)', () => {

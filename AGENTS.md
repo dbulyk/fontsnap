@@ -40,7 +40,7 @@ Setup: `git lfs pull` (model and test images), `npm ci`, then once `npx playwrig
 - **WebAssembly is unsupported, with ONE narrow exception: `VENDOR_FILES` in `scripts/lib/vendor.ts`.** FontSnap
   runs its model with onnxruntime-web, so five files are allowed, byte for byte (sha256 and size): the three
   onnxruntime-web 1.30.0 runtime files, `model/model_fp16.onnx` and `model/meta.json`; and the CSP is the exact
-  string `script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'` (never `'unsafe-eval'`; do not add a
+  string `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'` (never `'unsafe-eval'`; do not add a
   source to `connect-src`: it is what keeps every request inside the extension, `fetch` of a `data:` URL included - use `src/shared/data-url.ts`). Any other `.wasm`/`.onnx`, other bytes under these
   names, another CSP source or a missing COEP/COOP fails `verify-dist` and the tests. Changing the runtime or the
   model means editing the table AND its second copy in `tests/unit/vendor.test.ts` in the same commit, with a reason.
@@ -51,8 +51,10 @@ Setup: `git lfs pull` (model and test images), `npm ci`, then once `npx playwrig
   a prototype. `src/` reaches the environment through an allowlist (`GLOBAL_ACCESS` in `eslint.config.js`): a new global, or a new member of
   `chrome`/`navigator`/`performance`/`Object`/`String`, is a deliberate edit of that list, like a permission. The runtime runs in its own
   worker (`env.wasm.proxy = true`, checked at start-up and in `verify-dist`); do not turn that off.
-  `src/select/overlay.ts` runs in the web page's process, outside the CSP: its `win` is used through the closed list of members in
-  `eslint.config.js` (`OVERLAY_WINDOW_MEMBERS`), `fetch` is on no file's allowlist, and `this` is only for class constructors.
+  `src/select/*` and `src/background/measure.ts` run in the web page's process, outside the CSP: they are held to `PAGE_PROCESS_FILES` in
+  `eslint.config.js` (the Window is the first parameter of `startSelection` and only its listed members are used; no computed key, no cast,
+  no `Object.*` but `Object.assign(el.style, ...)`); `measureImage` is the only function lint accepts as `func` of `executeScript`;
+  `fetch` is on no file's allowlist, and `this` is only for class constructors.
   The Python reference (`python/`), `data/`, `store/` and `scripts/i18n/` are outside the Node toolchain and are
   never formatted or linted by it; `store/` is not touched at all (the Web Store texts and privacy policy).
 - **Allowlists are `Map`/`Set` (or arrays searched by value), or checked with `Object.hasOwn`; never `obj[key]` or

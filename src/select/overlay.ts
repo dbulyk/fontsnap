@@ -2,12 +2,19 @@ import { sendMessage } from '../shared/messaging';
 import { t } from '../shared/i18n';
 import type { Rect } from '../shared/capture';
 
+/**
+ * A document can lack <body> (an SVG or XML page) although the DOM types say otherwise: the element is taken as a parameter
+ * that may be null, so that no cast is needed (this code takes none, see eslint.config.js, PAGE_PROCESS_FILES).
+ */
+function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
+  return body ?? root;
+}
+
 // text of the page under the dragged rectangle (used as the preview sample when nothing is selected)
 export function textInRect(doc: Document, r: Rect): string {
   const out: string[] = [];
   const range = doc.createRange();
-  // A document can lack <body> (an SVG or XML page) although the DOM types say otherwise.
-  const root = (doc.body as HTMLElement | null) ?? doc.documentElement;
+  const root = bodyOrRoot(doc.body, doc.documentElement);
   const tw = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let len = 0;
   let n = 0;

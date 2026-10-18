@@ -468,7 +468,7 @@ describe('extension code does not tamper with globals, host objects or prototype
     'class Box { value = 1; }',
     'const f = (x: string) => x.prototypeless;',
   ])('lets ordinary code through: %s', async (code) => {
-    for (const file of ['src/result/app.ts', 'src/result/model.ts', 'src/select/overlay.ts']) {
+    for (const file of ['src/result/app.ts', 'src/result/model.ts']) {
       expect(await flagged(file, code), `${file}: ${code}`).toEqual([]);
     }
   });
@@ -526,6 +526,9 @@ const FREE_NAMES = `declare let ${[
   'b',
   'evil',
   'startSelection',
+  'initResult',
+  'onKey',
+  't',
 ].join(', ')}: any;`;
 /** Messages of the allowlist rule alone, for `code` as if it were the file `file` (the DOM types are known). */
 async function reached(file: string, code: string): Promise<string[]> {
@@ -683,9 +686,9 @@ describe('src/ reaches the environment only through the allowlist of globals', (
     'const e = new Error(String(v)); const r = new RangeError("x");',
     'const f = new Float32Array(2); const u = new Uint8ClampedArray(2); const i = new Int32Array(1);',
     "if (Object.hasOwn(o, 'k')) run(Object.entries(o));",
-    'const el = document.createElement("div"); document.body.append(el); el.textContent = text;',
+    'const el = doc.createElement("div"); doc.body.append(el); el.textContent = text;',
     'await navigator.clipboard.writeText(css); const n = navigator.hardwareConcurrency || 1;',
-    'const p = new Promise<void>((resolve) => setTimeout(resolve, 0)); requestAnimationFrame(run);',
+    'const p = new Promise<void>((resolve) => setTimeout(resolve, 0));',
     'const timer = setInterval(run, 1500); clearInterval(timer);',
     'const bmp = await createImageBitmap(blob); const c = new OffscreenCanvas(1, 1);',
     'const q = new URLSearchParams(s); const e = encodeURIComponent(x);',
@@ -701,20 +704,40 @@ describe('src/ reaches the environment only through the allowlist of globals', (
     // content script of the selection overlay: its own Window
     expect(await either('src/select/index.ts', 'startSelection(window);')).toEqual([]);
     expect(await reached('src/result/render.ts', 'startSelection(window);')).not.toEqual([]);
+    // (the type Window belongs to the first parameter of startSelection only, in this file only)
+    expect(
+      await reached(
+        'src/select/overlay.ts',
+        'export function startSelection(page: Window): void { void page.document; }',
+      ),
+    ).toEqual([]);
     expect(
       await reached('src/select/overlay.ts', 'function f(win: Window) { return win; }'),
-    ).toEqual([]);
+    ).not.toEqual([]);
     expect(
       await reached('src/result/app.ts', 'function f(win: Window) { return win; }'),
     ).not.toEqual([]);
     expect(
-      await reached('src/select/overlay.ts', "Object.assign(el.style, { left: '1px' });"),
+      await reached(
+        'src/select/overlay.ts',
+        "export function startSelection(page: Window): void { Object.assign(el.style, { left: '1px' }); void page.document; }",
+      ),
     ).toEqual([]);
     // the screenshot of the service worker
     expect(
-      await reached('src/background/shot.ts', 'const ratio = window.devicePixelRatio || 1;'),
+      await reached('src/background/measure.ts', 'const ratio = window.devicePixelRatio || 1;'),
     ).toEqual([]);
-    expect(await reached('src/background/shot.ts', 'const w = window.document;')).not.toEqual([]);
+    expect(
+      await reached('src/background/shot.ts', 'const ratio = window.devicePixelRatio || 1;'),
+    ).not.toEqual([]);
+    expect(await reached('src/background/shot.ts', 'void document.images;')).not.toEqual([]);
+    expect(await reached('src/background/measure.ts', 'void document.body;')).not.toEqual([]);
+    expect(await reached('src/result/index.ts', 'initResult(document);')).toEqual([]);
+    expect(await reached('src/welcome/index.ts', 'void document.body;')).not.toEqual([]);
+    expect(await reached('src/result/render.ts', 'void document.title;')).not.toEqual([]);
+    expect(await reached('src/background/measure.ts', 'const w = window.document;')).not.toEqual(
+      [],
+    );
     expect(
       await reached('src/background/shot.ts', "const b = btoa('x') + String.fromCharCode(1);"),
     ).toEqual([]);
@@ -900,7 +923,7 @@ describe('the Window of the content script is used through a closed list of memb
   });
 
   it('holds measureImage, which runs in the page through chrome.scripting, to the same list: window.devicePixelRatio, document, requestAnimationFrame', async () => {
-    const measure = 'src/background/shot.ts';
+    const measure = 'src/background/measure.ts';
     const ok =
       'const img = [...document.images][0]; requestAnimationFrame(() => undefined); const dpr = window.devicePixelRatio || 1;';
     expect(await either(measure, ok)).toEqual([]);
@@ -979,5 +1002,360 @@ describe('`this` is the global object when a function is called as a callback', 
       await flagged('src/env.d.ts', 'const f = function () { return this; }; void f;'),
     ).not.toEqual([]);
     expect(await flagged('src/shared/format.ts', 'const g = this; void g;')).not.toEqual([]);
+  });
+});
+
+// Round 5 of the review of PR #6 (blocker D, continued): the allowlist of members was tied to the NAME `win`, so renaming the
+// parameter, or reaching the Window through `doc`, an event or `document` with a key built at run time, gave a fetch in the
+// content script (no CSP there) with lint, tsc, unit tests and build green. The class is closed, not the four examples:
+// the Window is the first parameter of startSelection under any name; the code that runs in the web page has no computed key,
+// no cast, no Object.*, only div elements. Every address below is on example.invalid.
+describe('the code that runs in the web page cannot reach the Window or a global by any key', () => {
+  const OVERLAY = 'src/select/overlay.ts';
+  const MEASURE = 'src/background/measure.ts';
+  const INDEX = 'src/select/index.ts';
+  const URL_PARTS = "['https:/', 'example.invalid', 'm'].join('/')";
+  const FETCH = "['h', 'c', 't', 'e', 'f'].reverse().join('')";
+  const inStart = (body: string, name = 'win'): string =>
+    `export function startSelection(${name}: Window): void {\n  const doc = ${name}.document;\n${body}\n}`;
+
+  const fixtures: [string, string][] = [
+    // the four of the reviewer, word for word (r4307135840)
+    [
+      '(1) the parameter renamed to w, the window cast and indexed by a key built at run time',
+      `export function startSelection(w: Window): void {
+  const doc = w.document;
+  const g = (w as unknown as Record<string, (u: string) => Promise<Response>>)[${FETCH}];
+  void g?.(${URL_PARTS}).then(async (r) => sendMessage({ type: 'fontsnap-rect', rect: { x: 0, y: 0, w: 0, h: 0 }, dpr: 1, text: await r.text() }));
+  void doc;
+}`,
+    ],
+    [
+      '(1b) the renamed parameter, w.fetch with a literal',
+      inStart(`  void w.fetch(${URL_PARTS});`, 'w'),
+    ],
+    [
+      '(2) doc cast to a Record and indexed by [default, View]',
+      inStart(`  const k = ['default', 'View'].join('');
+  const dw = (doc as unknown as Record<string, Record<string, (u: string) => Promise<Response>> | undefined>)[k];
+  void dw?.[${FETCH}]?.(${URL_PARTS});`),
+    ],
+    [
+      '(3) the same through currentTarget of a KeyboardEvent',
+      inStart(`  win.addEventListener('keydown', (e: KeyboardEvent) => {
+    const k = ['current', 'Target'].join('');
+    const dw = (e as unknown as Record<string, Record<string, (u: string) => Promise<Response>> | undefined>)[k];
+    void dw?.[${FETCH}]?.(${URL_PARTS});
+  });`),
+    ],
+    [
+      '(4) measureImage: document cast, [default, View], then fetch',
+      `export async function measureImage(src: string): Promise<null> {
+  void src;
+  void (document as unknown as Record<string, { fetch?: (u: string) => Promise<Response> }>)[['default', 'View'].join('')]?.fetch?.(${URL_PARTS});
+  return null;
+}`,
+    ],
+    // the class: the Window of startSelection under any name
+    ['the Window aliased after a rename', inStart('  const x = w;\n  void x;', 'w')],
+    [
+      'a second alias of the first parameter, any name',
+      inStart('  const y = anything;\n  void y;', 'anything'),
+    ],
+    ['the Window passed on', inStart('  leak(win);')],
+    ['the Window returned', inStart('  const f = () => win;\n  void f;')],
+    ['the Window destructured', inStart('  const { fetch: f } = win;\n  void f;')],
+    ['the Window reassigned', inStart('  win = other;')],
+    [
+      'the Window as a default of another parameter',
+      inStart('  const f = (p = win) => p;\n  void f;'),
+    ],
+    ['the Window in an array', inStart('  const ws = [win];\n  void ws;')],
+    ['the Window in an object literal', inStart('  const o = { win };\n  void o;')],
+    ['the Window in a template', inStart('  const t = `${win}`;\n  void t;')],
+    ['the Window in a conditional', inStart('  const w2 = cond ? win : other;\n  void w2;')],
+    ['the Window in a logical', inStart('  const w2 = win || other;\n  void w2;')],
+    ['a member that is not on the list', inStart('  void win.fetch;')],
+    ['a member of a member written', inStart("  win.document.title = 'x';")],
+    // the Window type anywhere but on that parameter
+    [
+      'a second parameter typed Window',
+      'export function startSelection(win: Window, other: Window): void {\n  void win.document;\n  void other;\n}',
+    ],
+    ['a variable typed Window', inStart('  let v: Window | undefined;\n  void v;')],
+    ['a Window generic argument', inStart('  const a: Array<Window> = [];\n  void a;')],
+    ['a Window in a function type', inStart('  const f = (p: Window) => p;\n  void f;')],
+    ['typeof globalThis', inStart('  let g: typeof globalThis | undefined;\n  void g;')],
+    ['Document[defaultView]', inStart("  let g: Document['defaultView'] | undefined;\n  void g;")],
+    ['WindowProxy', inStart('  let g: WindowProxy | undefined;\n  void g;')],
+    [
+      'the first parameter missing a Window annotation is not a way round',
+      'export function startSelection(): void { void 1; }',
+    ],
+    ['startSelection missing', 'export function begin(win: Window): void { void win.document; }'],
+    // computed keys, casts, enumeration, in every shape
+    ['a computed key on the document', inStart('  void doc[k];')],
+    [
+      'a computed key on an element',
+      inStart("  const el = doc.createElement('div');\n  void el[k];"),
+    ],
+    [
+      'a computed key on an event',
+      inStart("  win.addEventListener('keydown', (e: KeyboardEvent) => { void e[k]; });"),
+    ],
+    ['an optional computed key', inStart('  void doc?.[k];')],
+    ['a template key', inStart('  void doc[`defaultView`];')],
+    ['a string literal key', inStart("  void doc['defaultView'];")],
+    ['a computed key in a pattern', inStart('  const { [k]: v } = doc;\n  void v;')],
+    ['a computed key in an object literal', inStart('  const o = { [k]: 1 };\n  void o;')],
+    ['a computed class member', inStart('  class A { [k] = 1; }\n  void A;')],
+    ['a cast to unknown', inStart('  void (doc as unknown);')],
+    ['a cast to any', inStart('  void (doc as any);')],
+    ['a cast to a Record', inStart('  void (doc as Record<string, unknown>);')],
+    ['a cast to an object', inStart('  void (doc as object);')],
+    ['a cast to an interface', inStart('  void (doc as { fetch: typeof fetch });')],
+    ['an angle-bracket cast', inStart('  void (<unknown>doc);')],
+    ['a double cast', inStart('  void (doc as unknown as Window);')],
+    ['a non-const assertion of a literal', inStart("  void ('x' as string);")],
+    [
+      'an index signature type',
+      inStart('  let t: { [key: string]: unknown } | undefined;\n  void t;'),
+    ],
+    ['a Record annotation', inStart('  let r: Record<string, unknown> | undefined;\n  void r;')],
+    ['for...in over the window', inStart('  for (const key in win) { void key; }')],
+    ['for...in over the document', inStart('  for (const key in doc) { void key; }')],
+    ['typeof as a type', inStart('  let t: typeof doc | undefined;\n  void t;')],
+    [
+      'a mapped type',
+      inStart('  let t: { [P in keyof Document]?: Document[P] } | undefined;\n  void t;'),
+    ],
+    // reaching a Window from a node, an event or a selection (the names, which no key can hide any more)
+    [
+      'Event.view',
+      inStart("  win.addEventListener('click', (e: MouseEvent) => { void e.view; });"),
+    ],
+    [
+      'target.ownerDocument.defaultView',
+      inStart("  win.addEventListener('click', (e: MouseEvent) => { void e.target; });"),
+    ],
+    ['ownerDocument.defaultView', inStart('  void doc.body.ownerDocument.defaultView;')],
+    [
+      'currentTarget',
+      inStart("  win.addEventListener('click', (e: MouseEvent) => { void e.currentTarget; });"),
+    ],
+    [
+      'srcElement',
+      inStart("  win.addEventListener('click', (e: MouseEvent) => { void e.srcElement; });"),
+    ],
+    [
+      'composedPath',
+      inStart("  win.addEventListener('click', (e: MouseEvent) => { void e.composedPath(); });"),
+    ],
+    [
+      'relatedTarget',
+      inStart("  win.addEventListener('click', (e: MouseEvent) => { void e.relatedTarget; });"),
+    ],
+    [
+      'a selection node document',
+      inStart('  void win.getSelection()?.anchorNode?.ownerDocument?.defaultView;'),
+    ],
+    // Object.*, Reflect, Function.prototype, spread
+    [
+      'Object.getOwnPropertyDescriptor on the document',
+      inStart("  void Object.getOwnPropertyDescriptor(doc, 'defaultView');"),
+    ],
+    ['Object.getOwnPropertyDescriptors', inStart('  void Object.getOwnPropertyDescriptors(doc);')],
+    ['Object.entries on the document', inStart('  void Object.entries(doc);')],
+    [
+      'Object.values on an event',
+      inStart("  win.addEventListener('click', (e: MouseEvent) => { void Object.values(e); });"),
+    ],
+    ['Object.keys', inStart('  void Object.keys(doc);')],
+    ['Object.hasOwn', inStart("  void Object.hasOwn(doc, 'x');")],
+    ['Object.assign({}, win)', inStart('  void Object.assign({}, win);')],
+    ['Object.assign({}, doc)', inStart('  void Object.assign({}, doc);')],
+    ['Object.assign on a non-style', inStart('  void Object.assign(doc, { a: 1 });')],
+    ['Object as a value', inStart('  const O = Object;\n  void O;')],
+    ['Reflect.get', inStart("  void Reflect.get(doc, 'defaultView');")],
+    ['Reflect.ownKeys', inStart('  void Reflect.ownKeys(doc);')],
+    ['Reflect.apply', inStart('  void Reflect.apply(f, win, []);')],
+    ['Function.prototype.call with the window', inStart('  void f.call(win);')],
+    ['Function.prototype.apply with the window', inStart('  void f.apply(win, []);')],
+    ['bind with the window', inStart('  void f.bind(win);')],
+    ['a spread of the window', inStart('  void { ...win };')],
+    [
+      'a spread of an event',
+      inStart("  win.addEventListener('keydown', (e: KeyboardEvent) => { void { ...e }; });"),
+    ],
+    ['a spread of the document', inStart('  const copy = { ...doc };\\n  void copy;')],
+    ['a spread of the window into a call', inStart('  void f(...[win]);')],
+    ['with', inStart('  with (win) { void fetch; }')],
+    ['this in a callback', inStart('  setTimeout(function () { void this; }, 0);')],
+    // loading something or navigating
+    ['an img element', inStart("  void doc.createElement('img');")],
+    ['a link element', inStart("  void doc.createElement('link');")],
+    ['createElement with a variable', inStart('  void doc.createElement(tag);')],
+    ['createElement with a template', inStart('  void doc.createElement(`img`);')],
+    [
+      'src',
+      inStart("  const d = doc.createElement('div');\n  d.src = 'https://example.invalid/m';"),
+    ],
+    [
+      'href',
+      inStart("  const d = doc.createElement('div');\n  d.href = 'https://example.invalid/m';"),
+    ],
+    ['location', inStart("  doc.location = 'https://example.invalid/m';")],
+    ['innerHTML', inStart("  doc.body.innerHTML = '<img src=https://example.invalid/m>';")],
+    ['setAttribute', inStart("  doc.body.setAttribute('src', 'https://example.invalid/m');")],
+    ['insertAdjacentHTML', inStart("  doc.body.insertAdjacentHTML('beforeend', '<p></p>');")],
+    [
+      'a url() in a style',
+      inStart("  Object.assign(doc.body.style, { background: 'url(https://example.invalid/m)' });"),
+    ],
+    [
+      'a url() with a space',
+      inStart(
+        "  Object.assign(doc.body.style, { background: 'URL (https://example.invalid/m)' });",
+      ),
+    ],
+    [
+      'a url() in a template',
+      inStart('  Object.assign(doc.body.style, { background: `url(${k})` });'),
+    ],
+    ['image-set()', inStart("  Object.assign(doc.body.style, { background: 'image-set(x 1x)' });")],
+    ['document.write', inStart("  doc.write('x');")],
+    ['window.open', inStart('  doc.open();')],
+  ];
+
+  it.each(fixtures)('refuses %s', async (_what, code) => {
+    const file = _what.startsWith('(4)') ? MEASURE : OVERLAY;
+    expect(await either(file, code), code).not.toEqual([]);
+  });
+
+  it('accepts the overlay with the parameter under another name, and every use the real overlay makes', async () => {
+    const code = [
+      'export function startSelection(page: Window): void {',
+      '  if (page.__fontsnapActive === true) return;',
+      '  page.__fontsnapActive = true;',
+      '  const doc = page.document;',
+      "  const el = doc.createElement('div');",
+      "  Object.assign(el.style, { position: 'fixed', top: '12px' });",
+      '  el.textContent = t(key);',
+      '  doc.documentElement.appendChild(el);',
+      "  page.addEventListener('keydown', onKey, true);",
+      '  const text = page.getSelection()?.toString();',
+      '  page.requestAnimationFrame(() => undefined);',
+      '  const ratio = page.devicePixelRatio || 1;',
+      '  page.__fontsnapActive = false;',
+      '}',
+    ].join('\n');
+    expect(await either(OVERLAY, code)).toEqual([]);
+  });
+
+  it('accepts the measuring function as it is', async () => {
+    const code = [
+      'export async function measureImage(src: string): Promise<{ dpr: number } | null> {',
+      '  const img = [...document.images].find((i) => i.currentSrc === src || i.src === src);',
+      '  if (!img) return null;',
+      "  img.scrollIntoView({ block: 'nearest', inline: 'nearest' });",
+      '  await new Promise((ok) => { requestAnimationFrame(() => { requestAnimationFrame(ok); }); });',
+      '  const b = img.getBoundingClientRect();',
+      '  return { dpr: window.devicePixelRatio || 1 + b.left };',
+      '}',
+    ].join('\n');
+    expect(await either(MEASURE, code)).toEqual([]);
+  });
+
+  it('holds select/index.ts and measure.ts to the same rules', async () => {
+    for (const file of [INDEX, MEASURE]) {
+      for (const code of [
+        'void ([1][k]);',
+        'void (x as unknown);',
+        'for (const k in x) { void k; }',
+        'void Object.keys(x);',
+        "void document.createElement('img');",
+      ]) {
+        expect(await either(file, code), `${file}: ${code}`).not.toEqual([]);
+      }
+    }
+    expect(await either(INDEX, 'startSelection(window);')).toEqual([]);
+    expect(await either(MEASURE, 'void [1, 2][0];')).toEqual([]);
+  });
+
+  it('a numeric index is fine, any other computed key is not', async () => {
+    expect(await either(MEASURE, 'void [1, 2][0] + [3][12];')).toEqual([]);
+    expect(await either(MEASURE, 'void [1][-1];')).not.toEqual([]);
+    expect(await either(MEASURE, 'void [1][1 + 1];')).not.toEqual([]);
+    expect(await either(MEASURE, "void [1]['0'];")).not.toEqual([]);
+  });
+
+  describe('chrome.scripting.executeScript runs one function in the page, and it is measureImage', () => {
+    const FILES = ['src/background/shot.ts', 'src/background/handlers.ts', 'src/result/app.ts'];
+    it.each([
+      [
+        'another function',
+        'await chrome.scripting.executeScript({ target: { tabId: 1 }, func: other });',
+      ],
+      [
+        'an inline arrow',
+        'await chrome.scripting.executeScript({ target: { tabId: 1 }, func: () => 1 });',
+      ],
+      [
+        'an inline function',
+        'await chrome.scripting.executeScript({ target: { tabId: 1 }, func: function () { return 1; } });',
+      ],
+      [
+        'func under a string key',
+        "await chrome.scripting.executeScript({ target: { tabId: 1 }, 'func': other });",
+      ],
+      [
+        'func under a computed key',
+        "await chrome.scripting.executeScript({ target: { tabId: 1 }, ['fu' + 'nc']: other });",
+      ],
+      [
+        'a spread of options',
+        'await chrome.scripting.executeScript({ target: { tabId: 1 }, ...options });',
+      ],
+      ['options in a variable', 'await chrome.scripting.executeScript(options);'],
+      [
+        'the main world',
+        "await chrome.scripting.executeScript({ target: { tabId: 1 }, files: ['a.js'], world: 'MAIN' });",
+      ],
+      [
+        'the main world under a string key',
+        "await chrome.scripting.executeScript({ target: { tabId: 1 }, files: ['a.js'], 'world': 'MAIN' });",
+      ],
+      [
+        'an alias of executeScript',
+        'const run = chrome.scripting.executeScript;\nawait run({ target: { tabId: 1 }, func: other });',
+      ],
+      ['executeScript passed on', 'use(chrome.scripting.executeScript);'],
+      [
+        'a call through call()',
+        'await chrome.scripting.executeScript.call(null, { func: other });',
+      ],
+    ])('refuses %s', async (_what, code) => {
+      for (const file of FILES)
+        expect(await either(file, code), `${file}: ${code}`).not.toEqual([]);
+    });
+
+    it('accepts measureImage and the content script file', async () => {
+      for (const file of FILES) {
+        expect(
+          await flagged(
+            file,
+            'await chrome.scripting.executeScript({ target: { tabId: 1 }, args: [u], func: measureImage });',
+          ),
+          file,
+        ).toEqual([]);
+        expect(
+          await flagged(
+            file,
+            "await chrome.scripting.executeScript({ target: { tabId: 1 }, files: ['select.js'] });",
+          ),
+          file,
+        ).toEqual([]);
+      }
+    });
   });
 });

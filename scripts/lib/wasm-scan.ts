@@ -104,6 +104,23 @@ export function urlOrigins(text: string): string[] {
 }
 
 /**
+ * Servers of WebRTC are named with the schemes `stun:`, `turn:` and `turns:`, which carry no `//` and so are no URL for urlOrigins
+ * (round 5 of the review of PR #6, found by the tester: `new RTCPeerConnection({ iceServers: [{ urls: 'stun:example.invalid:3478' }] })`
+ * left the page for the internet through the lint-clean build). No script of the build names one, in any case, in a string as
+ * written or with its escapes decoded (a name split across a concatenation is folded by terser into one literal, and RTCPeerConnection
+ * itself is a forbidden name besides).
+ */
+export function iceServerSchemes(text: string): string[] {
+  const found = new Set<string>();
+  for (const form of stringForms(text)) {
+    for (const match of form.matchAll(/(?:^|[^a-z0-9+.-])(stuns?|turns?):/gi)) {
+      found.add((match[1] ?? '').toLowerCase());
+    }
+  }
+  return [...found].sort();
+}
+
+/**
  * Text that is not written as a URL or a file name but decodes to one (review round 3 of PR #6: `atob('aHR0cHM6Ly9ldmls...')`
  * and `.wasm` in base64 were invisible): the base64 / base64url (at every alignment of the four-character groups), hex and
  * byte-number-list forms of what a string literal or an array holds. Returns what each decodes to when that is a module
@@ -178,7 +195,7 @@ export function tamperingPrimitives(text: string): string[] {
 const FORBIDDEN_NAMES: readonly { pattern: RegExp; allowedIn?: RegExp }[] = [
   {
     pattern:
-      /\b(?:XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|SharedWorker|Worker|WorkerGlobalScope|BroadcastChannel|MessageChannel|postMessage|TextDecoder|atob|unescape|decodeURI|fromCodePoint|webdriver|setResourceTimingBufferSize|clearResourceTimings|WebAssembly|instantiateStreaming|compileStreaming|contentWindow|getBackgroundPage|getViews|relatedTarget|srcElement|composedPath|parentWindow|currentTarget)\b/,
+      /\b(?:XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|SharedWorker|Worker|WorkerGlobalScope|BroadcastChannel|MessageChannel|postMessage|TextDecoder|atob|unescape|decodeURI|fromCodePoint|webdriver|setResourceTimingBufferSize|clearResourceTimings|WebAssembly|instantiateStreaming|compileStreaming|contentWindow|getBackgroundPage|getViews|relatedTarget|srcElement|composedPath|parentWindow|currentTarget)\b|\b(?:(?:webkit|moz)?RTC[A-Z]\w*|WebTransport\w*)\b/,
   },
   { pattern: /\b(?:btoa|fromCharCode)\b/, allowedIn: /^background\.js$/ },
   // fetch and Request only where the CSP of the extension applies (connect-src 'self') and the code needs them: the result page
@@ -326,6 +343,10 @@ export function scriptProblems(file: string, text: string): string[] {
     (what) =>
       `${file}: uses a primitive that replaces or changes a global, a property or a prototype (${what})`,
   );
+  const ice = iceServerSchemes(text).map(
+    (scheme) =>
+      `${file}: names a WebRTC server (${scheme}:), which no script of the build does (a STUN or TURN server is a connection to the internet that is no URL)`,
+  );
   const hidden = hiddenTexts(text).map(
     (what) => `${file}: has text that decodes to ${what} (base64, hex or a list of bytes)`,
   );
@@ -337,6 +358,7 @@ export function scriptProblems(file: string, text: string): string[] {
     ...problems,
     ...origins,
     ...tampering,
+    ...ice,
     ...hidden,
     ...names,
     ...windowReaches(file, text),

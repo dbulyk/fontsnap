@@ -18,7 +18,7 @@ test('the loaded extension has the permissions, CSP and policies FontSnap promis
   expect(manifest.content_scripts).toBeUndefined();
   expect(manifest.content_security_policy).toEqual({
     extension_pages:
-      "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'",
+      "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'",
   });
   expect(manifest.cross_origin_embedder_policy).toEqual({ value: 'credentialless' });
   expect(manifest.cross_origin_opener_policy).toEqual({ value: 'same-origin' });
