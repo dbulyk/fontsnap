@@ -381,6 +381,36 @@ for (const ratio of [1, 2]) {
       expect(await scrollY(site)).toBe(50);
     });
 
+    test('a page with smooth scrolling: the image is where the crop is taken, and the page comes back at once', async ({
+      context,
+      extensionId,
+      serviceWorker,
+      serve,
+    }) => {
+      test.setTimeout(120_000);
+      const file = await renderPng(context, extensionId);
+      const other = await serve(new Map([['/img.png', png(file)]]));
+      const origin = await serve(
+        new Map([
+          [
+            '/page.html',
+            html(
+              `<style>html{scroll-behavior:smooth}</style>${AROUND('Above')}${SPACER(3000)}<img src="${other}/img.png" width="${String(WIDTH)}" height="${String(HEIGHT)}" style="display:block;margin:0 40px">${SPACER(1500)}`,
+            ),
+          ],
+        ]),
+      );
+      const site = await openSite(context, extensionId, `${origin}/page.html`);
+      const tabId = await siteTabId(serviceWorker);
+      const got = await shown(
+        await clickImage(context, serviceWorker, { tabId, srcUrl: `${other}/img.png` }),
+      );
+      expect([got.width, got.height]).toEqual([WIDTH * ratio, HEIGHT * ratio]);
+      expect(got.wholeNote).toBe(false);
+      expect(got.names[0]).toBe((await uploaded(context, extensionId, file)).names[0]);
+      expect(await scrollY(site), 'back where it was, not on its way').toBe(0);
+    });
+
     test('the scroll position of a scrolling box around the image is put back as well', async ({
       context,
       extensionId,

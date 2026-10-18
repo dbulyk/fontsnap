@@ -19,17 +19,38 @@ export interface ClickedImageInfo {
 }
 
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
+// A page that does not answer (an image on a slow server, a frame whose animation frames are throttled) must not keep the worker from
+// opening the result tab: the loader may take a while to download, a measurement is a few frames.
+const LOAD_TIMEOUT_MS = 20_000;
+const MEASURE_TIMEOUT_MS = 5_000;
+
+function within<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('The page did not answer'));
+    }, ms);
+    promise
+      .then(resolve, reject)
+      .finally(() => {
+        clearTimeout(timer);
+      })
+      .catch(() => undefined);
+  });
+}
 
 async function loadedPixels(
   tabId: number,
   frameId: number,
   srcUrl: string,
 ): Promise<string | undefined> {
-  const [first] = await chrome.scripting.executeScript({
-    target: { tabId, frameIds: [frameId] },
-    args: [srcUrl],
-    func: loadImagePixels,
-  });
+  const [first] = await within(
+    chrome.scripting.executeScript({
+      target: { tabId, frameIds: [frameId] },
+      args: [srcUrl],
+      func: loadImagePixels,
+    }),
+    LOAD_TIMEOUT_MS,
+  );
   const pixels = first?.result;
   return typeof pixels === 'string' && BASE64.test(pixels)
     ? base64ToDataUrl(pixels, 'image/png')
@@ -43,11 +64,14 @@ async function measure(
   kind: 'image' | 'frame',
   saved: readonly number[] | null,
 ): Promise<MeasuredImage | null> {
-  const [first] = await chrome.scripting.executeScript({
-    target: { tabId, frameIds: [frameId] },
-    args: [target, kind, saved],
-    func: measureImage,
-  });
+  const [first] = await within(
+    chrome.scripting.executeScript({
+      target: { tabId, frameIds: [frameId] },
+      args: [target, kind, saved],
+      func: measureImage,
+    }),
+    MEASURE_TIMEOUT_MS,
+  );
   return first?.result ?? null;
 }
 
@@ -83,6 +107,10 @@ async function croppedFromScreenshot(
       // the frame may have moved with the scroll that brought the image into view
       const moved = await measure(tabId, 0, info.frameUrl, 'frame', null);
       if (!moved) throw new Error('The frame of the image was not found');
+      // the frame found by its URL must be the frame of the click: the same address can be a nested frame of another frame
+      if (Math.abs(image.box.w - moved.box.w) > 1 || Math.abs(image.box.h - moved.box.h) > 1) {
+        throw new Error('The frame of the image is not the frame that was found');
+      }
       rect = frameRect(image.rect, image.box, moved.rect, moved.box);
     }
     if (!validRect(rect)) throw new Error('Could not access this image');

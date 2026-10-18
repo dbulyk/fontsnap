@@ -518,6 +518,21 @@ describe('handoff from the selection / context menu', () => {
     );
   });
 
+  it('takes the hint down when another image is chosen afterwards', async () => {
+    stub.session.set('cap_8', { ...entry, text: '', note: 'whole-view' });
+    await start({ hash: '#cap_8' });
+    await vi.waitFor(() => {
+      expect($('wholeNote').hidden).toBe(false);
+    });
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    pick(new Blob(['png'], { type: 'image/png' }));
+    await vi.waitFor(() => {
+      expect($('wholeNote').hidden).toBe(true);
+    });
+  });
+
   it('keeps the hint hidden for a crop of the image itself', async () => {
     stub.session.set('cap_7', { ...entry, text: '' });
     await start({ hash: '#cap_7' });

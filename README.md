@@ -20,8 +20,8 @@ enforced by code and automated checks, not by review alone; see "What the checks
   is drawn on a canvas, or, when the canvas is tainted, the clicked `srcUrl` is loaded once more with CORS; the PNG goes back to the
   service worker and nowhere else (an image larger than 2400 px is scaled). (2) Otherwise the tab is scrolled to the image, screenshot
   and cropped by `getBoundingClientRect() × devicePixelRatio` (a larger image: its visible part; an image in an iframe: moved by the
-  position of the `<iframe>` in the top frame, direct children only) and the scroll positions of every scroller are put back in a
-  `finally`. (3) Otherwise the whole visible area is analysed and the result page says so (`wholeNote`). A `data:` image is decoded
+  position of the `<iframe>` in the top frame, direct children only, found by the frame URL and checked by its size) and the scroll positions of every scroller are put back in a
+  `finally` (scrolls are `behavior: 'instant'`, so a page with `scroll-behavior: smooth` is neither measured nor left mid-animation; a page that does not answer within 20 s / 5 s is given up on). (3) Otherwise the whole visible area is analysed and the result page says so (`wholeNote`). A `data:` image is decoded
   in the worker. With `activeTab` alone a cross-origin iframe is probably not scriptable (steps 1 and 2 then fall through to 3); the
   e2e build's loopback host permission stands in for the grant, so the e2e tests prove the logic, not the grant.
 - **Result page** (`src/result`): paste, drop or choose an image (also the way in on `chrome://` pages), top-5 Google Fonts with

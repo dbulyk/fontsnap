@@ -2037,77 +2037,94 @@ describe('page code has no types of its own', () => {
     `export function measureImage(u: string): void {\n  const box = [...document.images][0]!;\n  ${body}\n  void [box, u];\n}`;
   const DOC =
     'interface D { createElementNS(ns: string | null, n: string): { textContent: string | null }; getElementById(id: string): { click(): void } | null }\n  interface B { ownerDocument: D }\n';
-  const FORMS: [string, string][] = [
+  const FORMS: [string, string, string][] = [
     [
       'P1 own interfaces: ownerDocument, createElementNS(style), click()',
       `${DOC}  const b: B = box;\n  const st = b.ownerDocument.createElementNS(null, 'style');\n  st.textContent = ['html{background:ur', 'l(', u, ')}'].join('');\n  b.ownerDocument.getElementById('x')?.click();`,
+      'interface',
     ],
     [
       'P2 a type literal as the annotation of a parameter',
       "const f = (b: { ownerDocument: { createElementNS(ns: string | null, n: string): { textContent: string | null } } }): void => { b.ownerDocument.createElementNS(null, 'style'); };\n  f(box);",
+      'type literal',
     ],
     [
       'P3 an own type as a return type',
       `${DOC}  const g = (): B => box;\n  g().ownerDocument.getElementById('x')?.click();`,
+      'interface',
     ],
     [
       'P4 satisfies a type literal',
       'const same = box satisfies { ownerDocument: unknown };\n  void same;',
+      'type literal',
     ],
     [
       'P5 an own type for an element, written through it',
       'interface Im { src: string }\n  const f = (im: Im): void => { im.src = u; };\n  f(box as never);',
+      'interface',
     ],
     [
       'P7 a type inferred from a default parameter',
       'const f = (a = { src: "", click() { return; } }): void => { a.src = u; a.click(); };\n  f(box);',
+      'object literal',
     ],
     [
       'P8 an array inferred from an object literal, then push',
       'const list = [{ src: "", click() { return; } }];\n  list.push(box);\n  list[0]!.click();',
+      'object literal',
     ],
     [
       'P9 a class with the members of an element',
       'class A { src = ""; click(): void { return; } }\n  const a: A = box;\n  a.click();',
+      'class',
     ],
     [
       'P10 a mapped type',
       'type M = { [K in "src" | "click"]: unknown };\n  const m: M = box;\n  void m;',
+      'mapped type',
     ],
     [
       'P11 a listed interface declared with a method',
       'interface MeasuredImage { rect: unknown; click(): void }\n  void (0 as unknown as MeasuredImage);',
+      'MeasuredImage',
     ],
     [
       'P12 a listed interface declared with a property that is not listed',
       'interface MeasuredImage { rect: number; src: string }\n  void (0 as unknown as MeasuredImage);',
+      'MeasuredImage',
     ],
-    ['P14 an enum', 'enum E { A, B }\n  void E.A;'],
+    ['P14 an enum', 'enum E { A, B }\n  void E.A;', 'enum'],
     [
       'P15 a generic with an own constraint',
       'const f = <T extends { src: string }>(t: T): string => t.src;\n  void f;',
+      'type literal',
     ],
     [
       'P16 a type alias of a type literal',
       'type T = { src: string };\n  void (0 as unknown as T);',
+      'type literal',
     ],
     [
       'P17 an object literal with no library or listed contextual type',
       'const o = { src: u };\n  void o;',
+      'object literal',
     ],
     [
       'P18 an object literal as the second argument of something that is not Object.assign',
       'const o = [1].map(() => ({ src: u }));\n  void o;',
+      'object literal',
     ],
   ];
 
-  it.each(FORMS)('refuses %s', async (_what, body) => {
+  it.each(FORMS)('refuses %s', async (_what, body, reason) => {
     for (const [file, code] of [
       [OVERLAY, inSelect(body)],
       [NEW_FILE, inSelect(body)],
       [MEASURE, inMeasure(body)],
     ] as const) {
-      expect(await pageTypes(file, code), `${file}: ${body}`).not.toEqual([]);
+      const messages = await pageTypes(file, code);
+      expect(messages, `${file}: ${body}`).not.toEqual([]);
+      expect(messages.join('\n'), `${file}: reported for ${reason}`).toContain(reason);
     }
   });
 

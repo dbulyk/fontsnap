@@ -11,7 +11,10 @@ export interface MeasuredImage {
   /** The box of the element in the viewport of its frame, CSS pixels. */
   rect: Rect;
   dpr: number;
-  /** `scrollLeft, scrollTop` of every ancestor of the element, nearest first, as they were before the element was scrolled into view. */
+  /**
+   * Which of the matching elements was measured (its index among them), then `scrollLeft, scrollTop` of every ancestor of the element,
+   * nearest first, as they were before the element was scrolled into view.
+   */
   saved: number[];
   /** `kind 'image'`: the viewport of the frame (0, 0, innerWidth, innerHeight); `kind 'frame'`: the client box of the iframe. */
   box: Rect;
@@ -49,24 +52,32 @@ export async function measureImage(
       ? [...document.images].filter((i) => i.currentSrc === target || i.src === target)
       : [...document.getElementsByTagName('iframe')].filter((f) => f.src === target);
   const el =
-    kind === 'frame'
-      ? matches.length === 1
-        ? matches[0]
-        : undefined
-      : (matches.find(shown) ?? matches.find(sized) ?? matches[0]);
+    saved !== null
+      ? saved[0] === undefined
+        ? undefined
+        : matches.at(saved[0])
+      : kind === 'frame'
+        ? matches.length === 1
+          ? matches[0]
+          : undefined
+        : (matches.find(shown) ?? matches.find(sized) ?? matches[0]);
   if (!el) return null;
   const chain: HTMLElement[] = [];
   for (let p = el.parentElement; p; p = p.parentElement) chain.push(p);
   if (saved !== null) {
+    // `instant`: a page with `scroll-behavior: smooth` would otherwise still be moving afterwards
     chain.forEach((p, i) => {
-      p.scrollLeft = saved.at(2 * i) ?? p.scrollLeft;
-      p.scrollTop = saved.at(2 * i + 1) ?? p.scrollTop;
+      p.scrollTo({
+        left: saved.at(2 * i + 1) ?? p.scrollLeft,
+        top: saved.at(2 * i + 2) ?? p.scrollTop,
+        behavior: 'instant',
+      });
     });
     return null;
   }
-  const before = chain.flatMap((p) => [p.scrollLeft, p.scrollTop]);
+  const before = [matches.indexOf(el), ...chain.flatMap((p) => [p.scrollLeft, p.scrollTop])];
   if (kind === 'image') {
-    el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
     await new Promise((ok) => {
       requestAnimationFrame(() => {
         requestAnimationFrame(ok);

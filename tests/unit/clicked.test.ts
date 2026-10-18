@@ -255,6 +255,23 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
       expect(calls.filter((c) => c.fn === 'measure' && c.args[1] === 'image')).toEqual([]);
     });
 
+    it('goes to step 3 when the frame found by its URL is not the frame of the click (a nested frame with the same URL)', async () => {
+      script({
+        measure: (target, kind, saved, frame) =>
+          kind === 'frame'
+            ? measured({
+                rect: { x: 10, y: 20, w: 520, h: 420 },
+                dpr: 1,
+                saved: [0],
+                box: { x: 1, y: 1, w: 500, h: 400 },
+              })
+            : measure(target, kind, saved, frame),
+      });
+      const entry = await clickedImage(click, tab);
+      expect(entry.note).toBe('whole-view');
+      expect(images.draws).toEqual([[0, 0, 400, 300, 0, 0, 400, 300]]);
+    });
+
     it('goes to step 3 without measuring when the click does not say which frame URL it came from', async () => {
       script({ measure });
       const entry = await clickedImage({ srcUrl: SRC, frameId: 3 }, tab);
@@ -287,6 +304,35 @@ describe('step 3: the whole visible area with a hint', () => {
       error: 'Could not access this image',
     });
     expect(stub.chrome.scripting.executeScript).not.toHaveBeenCalled();
+  });
+});
+
+describe('a page that does not answer', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not keep the worker waiting for the loader: step 2 follows after the time is up', async () => {
+    vi.useFakeTimers();
+    stub.chrome.scripting.executeScript.mockImplementation((injection) => {
+      const { func } = injection as { func: unknown };
+      return func === loadImagePixels
+        ? new Promise(() => undefined)
+        : Promise.resolve([{ result: measured() }]);
+    });
+    const done = clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    await vi.advanceTimersByTimeAsync(30_000);
+    const entry = await done;
+    expect(entry.note).toBeUndefined();
+    expect(images.draws).toEqual([[60, 80, 200, 100, 0, 0, 200, 100]]);
+  });
+
+  it('gives up on a page that never answers a measurement and shows the whole view', async () => {
+    vi.useFakeTimers();
+    stub.chrome.scripting.executeScript.mockImplementation(() => new Promise(() => undefined));
+    const done = clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect((await done).note).toBe('whole-view');
   });
 });
 

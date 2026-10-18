@@ -11,13 +11,24 @@ interface Scroller {
   scrollLeft: number;
   scrollTop: number;
   parentElement: Scroller | null;
+  scrollTo: (options: { left: number; top: number; behavior: string }) => void;
+  scrolls: string[];
 }
 
-const scroller = (left: number, top: number, parent: Scroller | null = null): Scroller => ({
-  scrollLeft: left,
-  scrollTop: top,
-  parentElement: parent,
-});
+const scroller = (left: number, top: number, parent: Scroller | null = null): Scroller => {
+  const one: Scroller = {
+    scrollLeft: left,
+    scrollTop: top,
+    parentElement: parent,
+    scrollTo: (options) => {
+      one.scrollLeft = options.left;
+      one.scrollTop = options.top;
+      one.scrolls.push(options.behavior);
+    },
+    scrolls: [],
+  };
+  return one;
+};
 
 function page(options: {
   images?: unknown[];
@@ -59,10 +70,14 @@ describe('measureImage', () => {
     await expect(measureImage(SRC, 'image', null)).resolves.toEqual({
       rect: { x: 3, y: 4, w: 50, h: 60 },
       dpr: 2,
-      saved: [],
+      saved: [0],
       box: { x: 0, y: 0, w: 800, h: 600 },
     });
-    expect(img.scrollIntoView).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' });
+    expect(img.scrollIntoView).toHaveBeenCalledWith({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: 'instant',
+    });
     expect(frames).toHaveLength(2);
   });
 
@@ -104,7 +119,7 @@ describe('measureImage', () => {
       root.scrollTop = 1200;
     });
     await expect(measureImage(SRC, 'image', null)).resolves.toMatchObject({
-      saved: [5, 40, 0, 700],
+      saved: [0, 5, 40, 0, 700],
     });
   });
 
@@ -113,11 +128,39 @@ describe('measureImage', () => {
     const box = scroller(0, 0, root);
     const img = element({ parentElement: box });
     page({ images: [img] });
-    await expect(measureImage(SRC, 'image', [5, 40, 0, 700])).resolves.toBeNull();
+    await expect(measureImage(SRC, 'image', [0, 5, 40, 0, 700])).resolves.toBeNull();
     expect([box.scrollLeft, box.scrollTop, root.scrollLeft, root.scrollTop]).toEqual([
       5, 40, 0, 700,
     ]);
     expect(img.scrollIntoView).not.toHaveBeenCalled();
+    // at once: a page with `scroll-behavior: smooth` would otherwise still be moving when the screenshot is taken
+    expect(box.scrolls).toEqual(['instant']);
+  });
+
+  it('restores the chain of the image that was measured, not of another with the same URL', async () => {
+    const firstParent = scroller(0, 0);
+    const secondParent = scroller(0, 0);
+    const first = element({ parentElement: firstParent });
+    const second = element({
+      parentElement: secondParent,
+      getBoundingClientRect: () => ({ left: 9, top: 9, width: 10, height: 10 }),
+    });
+    page({ images: [first, second] });
+    // 1 = the second of the matches
+    await measureImage(SRC, 'image', [1, 7, 8]);
+    expect([firstParent.scrollLeft, firstParent.scrollTop]).toEqual([0, 0]);
+    expect([secondParent.scrollLeft, secondParent.scrollTop]).toEqual([7, 8]);
+  });
+
+  it('records which of the matching images it measured', async () => {
+    const hidden = element({
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 0, height: 0 }),
+    });
+    const shownOne = element({
+      getBoundingClientRect: () => ({ left: 9, top: 9, width: 10, height: 10 }),
+    });
+    page({ images: [hidden, shownOne] });
+    await expect(measureImage(SRC, 'image', null)).resolves.toMatchObject({ saved: [1] });
   });
 
   it('measures the one iframe with that src, without scrolling, with its client box', async () => {
@@ -133,7 +176,7 @@ describe('measureImage', () => {
     await expect(measureImage('https://frame.example/', 'frame', null)).resolves.toEqual({
       rect: { x: 3, y: 4, w: 50, h: 60 },
       dpr: 1,
-      saved: [],
+      saved: [0],
       box: { x: 2, y: 3, w: 300, h: 200 },
     });
     expect(frame.scrollIntoView).not.toHaveBeenCalled();
