@@ -8,7 +8,7 @@ import { VENDOR_FILES, type VendorFile } from '../../scripts/lib/vendor';
 import { findEsmSyntax, manifestPages, readBundleFiles, verifyDist } from '../../scripts/lib/dist';
 import { EXTENSION_PAGES } from '../../src/shared/constants';
 import { ALLOWED_MEDIA, MEDIA_SIGNATURES } from '../../scripts/lib/static-assets';
-import { expectedManifest } from './helpers/expected-manifest';
+import { expectedManifest } from '../../scripts/lib/expected-manifest';
 import { MEDIA_SAMPLES, PROTOTYPE_NAMES, withMedia } from './helpers/media';
 import type { BundleKind } from '../../vite.shared';
 

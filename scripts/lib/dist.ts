@@ -1,11 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
-import { buildManifest } from '../../src/manifest';
 import { CONTENT_SCRIPT_FILE, EXTENSION_PAGES } from '../../src/shared/constants';
 import type { BundleKind } from '../../vite.shared';
 import { WASM_MESSAGE } from './src-only';
 import { hasAllowedMediaExtension, isAllowedDistMedia, isStaticAsset } from './static-assets';
+import { expectedManifest } from './expected-manifest';
 import { VENDOR_FILES, vendorDistProblems, type VendorFile } from './vendor';
 
 /** True when the source uses ES module syntax (import/export statements, import.meta). */
@@ -210,9 +210,9 @@ function manifestProblems(actual: Manifest, expected: Manifest): string[] {
 
 /**
  * Sanity-checks a built extension directory and returns human-readable problems.
- * The whole manifest is compared with `buildManifest()`, so any capability that reaches the
- * shipped file by another route (Vite plugin, config, hand edit) is caught: nothing is allowed
- * beyond what manifest.ts declares, and the e2e build adds only its loopback host permission.
+ * The whole manifest is compared with the hand-written expected manifest (expected-manifest.ts), so any capability
+ * that reaches the shipped file by whatever route (src/manifest.ts, Vite plugin, config, hand edit) is caught:
+ * nothing is allowed beyond it, and the e2e build adds only its loopback host permission.
  */
 export function verifyDist(
   dir: string,
@@ -234,7 +234,12 @@ export function verifyDist(
   } catch (error) {
     return [`${manifestPath} is not valid JSON: ${String(error)}`];
   }
-  const expected: Manifest = { ...buildManifest({ version: options.version, e2e: options.e2e }) };
+  // The hand-written release manifest (not buildManifest(): a wrong src/manifest.ts must not pass its own check);
+  // the e2e build adds its loopback host permission and nothing else.
+  const expected: Manifest = {
+    ...expectedManifest(options.version),
+    ...(options.e2e ? { host_permissions: ['http://127.0.0.1/*'] } : {}),
+  };
   const problems = manifestProblems(actual, expected);
   const chunks = new Set(
     Object.entries(options.bundles.main)

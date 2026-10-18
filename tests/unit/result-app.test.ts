@@ -172,6 +172,22 @@ describe('identifying an image', () => {
     expect(bitmapClose).toHaveBeenCalled();
   });
 
+  it('ranks exactly as the evaluation does: both crops, popularity prior alpha 0.5, family merge, top 5', async () => {
+    const ranker = makeRanker(META);
+    const rank = vi.fn(ranker.rank);
+    modelMock.loadModel.mockResolvedValue({ ranker: { ...ranker, rank }, probs });
+    await start();
+    pick(new Blob(['png']));
+    await vi.waitFor(() => {
+      expect(rank).toHaveBeenCalledTimes(1);
+    });
+    expect(rank).toHaveBeenCalledWith([CONFIDENT, CONFIDENT], { alpha: 0.5, merge: true, k: 5 });
+    // the two test-time-augmentation variants are the packed crop and the stacked crop, in this order
+    const crops = probs.mock.calls.map(([crop]) => crop as { w: number; h: number });
+    expect(crops).toHaveLength(2);
+    expect(crops[0]?.h).toBeLessThanOrEqual(crops[1]?.h ?? 0);
+  });
+
   it('never shows how long the recognition took', async () => {
     await start();
     pick(new Blob(['png']));

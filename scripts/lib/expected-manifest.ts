@@ -1,7 +1,9 @@
 /**
- * The release manifest of FontSnap, written out by hand. manifest.test.ts compares buildManifest() with it
- * and dist.test.ts checks that verifyDist accepts exactly this file; so a change of a permission, the CSP,
- * the cross-origin isolation policy, the shortcut or an icon has to be made here on purpose.
+ * The release manifest of FontSnap, written out by hand and separately from src/manifest.ts. One object, two
+ * consumers: manifest.test.ts compares buildManifest() with it, and verify-dist compares the manifest.json of the
+ * built directory with it (a permission, the CSP, the cross-origin isolation policy, the shortcut or an icon that
+ * reaches dist/ any other way, for example a wrong src/manifest.ts, fails the build). A change of any of these has to
+ * be made here, on purpose, and in src/manifest.ts.
  */
 export function expectedManifest(version: string) {
   return {

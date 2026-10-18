@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { buildManifest, EXTENSION_PAGES_CSP } from '../../src/manifest';
 import { BACKGROUND_FILE, CONTENT_SCRIPT_FILE, EXTENSION_PAGES } from '../../src/shared/constants';
-import { expectedManifest } from './helpers/expected-manifest';
+import { expectedManifest } from '../../scripts/lib/expected-manifest';
 
 describe('buildManifest', () => {
   const manifest = buildManifest({ version: '0.1.0' });
