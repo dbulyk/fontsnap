@@ -10,32 +10,57 @@ export interface Img {
 
 export type ResizeMode = 'area' | 'linear' | 'cubic';
 
+/** cv2 RGB2GRAY, fixed point. */
+const gray = (r: number, g: number, b: number): number =>
+  (r * 4899 + g * 9617 + b * 1868 + 8192) >> 14;
+
+/** What a transparent pixel is composited over: black (0) or white (255). */
+export type Backdrop = 0 | 255;
+
 /**
- * RGBA from a canvas (not premultiplied) → RGB over white: c' = round((c·a + 255·(255 − a)) / 255).
- * An opaque pixel keeps its bytes; python/fontsnap_ref/image.py does the same sum.
+ * Light content goes on black, anything else on white, so that text stays against its ground: black text on a
+ * transparent background is black on white, white text is white on black. "Light" is an alpha-weighted mean of the
+ * toGray luminance above 127.5 (2·Σ gray·a > 255·Σ a, integers, so Python agrees); the tie and an image without
+ * content go to white. python/fontsnap_ref/image.py `choose_backdrop` is the same rule.
  */
-export function fromRGBA(rgba: Uint8Array | Uint8ClampedArray, w: number, h: number): Img {
+export function chooseBackdrop(rgba: Uint8Array | Uint8ClampedArray, pixels: number): Backdrop {
+  let weighted = 0;
+  let alphaSum = 0;
+  for (let i = 0, j = 0; i < pixels; i++, j += 4) {
+    const a = atU8(rgba, j + 3);
+    weighted += gray(atU8(rgba, j), atU8(rgba, j + 1), atU8(rgba, j + 2)) * a;
+    alphaSum += a;
+  }
+  return 2 * weighted > 255 * alphaSum ? 0 : 255;
+}
+
+/**
+ * RGBA (not premultiplied, as getImageData gives it) → RGB over a backdrop: c' = round((c·a + bg·(255 − a)) / 255).
+ * A fully opaque image keeps its bytes whichever backdrop is chosen; python/fontsnap_ref/image.py does the same sum.
+ */
+export function fromRGBA(
+  rgba: Uint8Array | Uint8ClampedArray,
+  w: number,
+  h: number,
+  backdrop: Backdrop = chooseBackdrop(rgba, w * h),
+): Img {
   const d = new Uint8Array(w * h * 3);
   for (let i = 0, j = 0; i < w * h; i++, j += 4) {
     const a = atU8(rgba, j + 3);
     for (let ch = 0; ch < 3; ch++) {
       const c = atU8(rgba, j + ch);
-      d[i * 3 + ch] = a === 255 ? c : Math.floor((c * a + 255 * (255 - a) + 127) / 255);
+      d[i * 3 + ch] = a === 255 ? c : Math.floor((c * a + backdrop * (255 - a) + 127) / 255);
     }
   }
   return { w, h, c: 3, data: d };
 }
 
 export function toGray(im: Img): Uint8Array {
-  // cv2 RGB2GRAY fixed point
   if (im.c === 1) return im.data;
   const n = im.w * im.h;
   const g = new Uint8Array(n);
   const d = im.data;
-  for (let i = 0; i < n; i++) {
-    g[i] =
-      (atU8(d, i * 3) * 4899 + atU8(d, i * 3 + 1) * 9617 + atU8(d, i * 3 + 2) * 1868 + 8192) >> 14;
-  }
+  for (let i = 0; i < n; i++) g[i] = gray(atU8(d, i * 3), atU8(d, i * 3 + 1), atU8(d, i * 3 + 2));
   return g;
 }
 
