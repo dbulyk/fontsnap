@@ -2292,6 +2292,47 @@ describe('loadImagePixels: the narrow exception to "nothing that loads"', () => 
     ],
     ['the loader taken as a value', 'const again = loadImagePixels;\n  void again;'],
     [
+      'src written on an element of the page, not on the Image the loader made',
+      "const known = [...document.images][0];\n  const image = new Image();\n  image.crossOrigin = 'anonymous';\n  if (known) known.src = src;\n  void image;",
+    ],
+    [
+      'src written on an element of the page (the one the loader reads)',
+      'const known = [...document.images].find((i) => i.currentSrc === src);\n  if (known) {\n    known.src = src;\n  }',
+    ],
+    [
+      'src written on an Image that was handed in, not made here',
+      "const make = (): HTMLImageElement => new Image();\n  const image = make();\n  image.crossOrigin = 'anonymous';\n  image.src = src;",
+    ],
+    [
+      'src written on a let that holds the Image',
+      "let image = new Image();\n  image.crossOrigin = 'anonymous';\n  image.src = src;\n  void image;",
+    ],
+    [
+      'src written on an Image that was reassigned to an element of the page',
+      "const known = [...document.images][0];\n  let image = new Image();\n  image.crossOrigin = 'anonymous';\n  if (known) image = known;\n  image.src = src;",
+    ],
+    ['no crossOrigin at all', 'const image = new Image();\n  image.src = src;'],
+    [
+      'crossOrigin written after src',
+      "const image = new Image();\n  image.src = src;\n  image.crossOrigin = 'anonymous';",
+    ],
+    [
+      'crossOrigin written on another object',
+      "const known = [...document.images][0];\n  const image = new Image();\n  if (known) known.crossOrigin = 'anonymous';\n  image.src = src;",
+    ],
+    [
+      'crossOrigin written in a branch, src after it',
+      "const image = new Image();\n  if (src) image.crossOrigin = 'anonymous';\n  image.src = src;",
+    ],
+    [
+      'crossOrigin written twice',
+      "const image = new Image();\n  image.crossOrigin = 'anonymous';\n  image.crossOrigin = 'anonymous';\n  image.src = src;",
+    ],
+    [
+      'src as the only statement of a branch with no crossOrigin before it',
+      "const image = new Image();\n  image.crossOrigin = 'anonymous';\n  if (src) image.src = src;",
+    ],
+    [
       'src set from the parameter of another function',
       'const inner = (s: string): void => {\n    const image = new Image();\n    image.src = s;\n  };\n  inner(src);',
     ],

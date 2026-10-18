@@ -1154,4 +1154,92 @@ describe('background.js hands two functions to executeScript: the measuring one 
       expect(within(loader)).toMatch(/web page's process/);
     });
   });
+
+  // The write of src is the loader's only because the object is the one `new Image` made, and `crossOrigin = "anonymous"` is written
+  // on it before src (a request made first is made with the credentials of the page). Read from the syntax tree, not from the text.
+  describe("the Image is the loader's own, and its crossOrigin comes before its src", () => {
+    const within = (loader: string) => problems(`${CALLS}${MEASURE}${loader}`);
+
+    it.each([
+      [
+        'the sequence of statements the minifier writes',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous",e.src=t;return e}',
+      ],
+      [
+        'separate statements',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'other declarations next to the Image',
+        'async function l(t){const n=1,e=new Image,m=2;e.crossOrigin="anonymous";e.src=t;return[n,m,e]}',
+      ],
+    ])('accepts %s', (_what, loader) => {
+      expect(within(loader)).toBe('');
+    });
+
+    it.each([
+      [
+        'src written on an element of the page (the Image only gets crossOrigin)',
+        'async function l(t){const k=document.images[0];const e=new Image;e.crossOrigin="anonymous";k.src=t;return e}',
+      ],
+      [
+        'src written on an element of the page found in the document, no src on the Image',
+        'async function l(t){const k=[...document.images].find(i=>i.complete);const e=new Image;e.crossOrigin="anonymous";if(k)k.src=t;return e}',
+      ],
+      [
+        'src written on the element of the page and on the Image',
+        'async function l(t){const k=document.images[0];const e=new Image;e.crossOrigin="anonymous";k.src=t;e.src=t;return e}',
+      ],
+      [
+        'crossOrigin written after src',
+        'async function l(t){const e=new Image;e.src=t;e.crossOrigin="anonymous";return e}',
+      ],
+      [
+        'crossOrigin written after src in one sequence',
+        'async function l(t){const e=new Image;e.src=t,e.crossOrigin="anonymous";return e}',
+      ],
+      ['no crossOrigin at all', 'async function l(t){const e=new Image;e.src=t;return e}'],
+      [
+        'crossOrigin written on another object',
+        'async function l(t){const k=document.images[0];const e=new Image;k.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'crossOrigin in a branch',
+        'async function l(t){const e=new Image;if(t)e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'src in a branch',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";if(t)e.src=t;return e}',
+      ],
+      [
+        'the Image made in an inner function',
+        'async function l(t){const e=(()=>new Image)();e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'the Image in a let',
+        'async function l(t){let e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'the Image not held by a variable',
+        'async function l(t){return Object.assign(new Image,{src:t})}',
+      ],
+      [
+        'the Image kept in an object',
+        'async function l(t){const o={i:new Image};o.i.crossOrigin="anonymous";o.i.src=t;return o}',
+      ],
+      [
+        'crossOrigin with the other spelling written again',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";e["crossOrigin"]="use-credentials";e.src=t;return e}',
+      ],
+    ])('refuses %s', (_what, loader) => {
+      expect(within(loader)).toMatch(/web page's process/);
+    });
+
+    it('takes the loader from the tree: a string that says "new Image" does not make a function the loader', () => {
+      const measure = 'async function m(t,k,s){return"new Image"+t+k+s}';
+      const text = `${CALLS}${measure}${LOADER}`;
+      expect(problems(text)).toMatch(/network API/);
+      expect(problems(text)).not.toContain('exactly one of the functions');
+    });
+  });
 });

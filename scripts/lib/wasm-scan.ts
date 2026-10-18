@@ -392,11 +392,19 @@ export interface InjectedFunction {
   firstParam: string | undefined;
   /** References, inside the function, to the function itself (by scope): a loader that calls itself can hand itself another address. */
   selfReferences: number;
-  /** Writes of a `.src` property whose value is the first parameter itself (by scope), and of any other value. */
-  srcFromParameter: number;
-  srcFromElsewhere: number;
   /** Is the first parameter assigned to, incremented, destructured into or a loop target anywhere? */
   parameterWritten: boolean;
+  /** Set when the function constructs an `Image` (a `new Image` in the syntax tree, not in a string): what the loader may do, judged there. */
+  loader: LoaderFacts | undefined;
+}
+
+/**
+ * What the syntax tree says of a function that constructs an `Image` (see `loaderProblems`): the problems found, and the spans
+ * (offsets into the text of the function) of the three expressions that only the loader may contain.
+ */
+export interface LoaderFacts {
+  problems: string[];
+  allowed: [number, number][];
 }
 
 export function injectedFunctions(file: string, text: string): (string | undefined)[] {
@@ -478,6 +486,123 @@ export function injectedFunctionDetails(
     }
     return undefined;
   };
+  /**
+   * The loader, read in the syntax tree: ONE `new Image` without arguments, bound to a `const` of the top level of the body; `crossOrigin
+   * = "anonymous"` and `src = <the first parameter>` as statements of that level (a comma sequence of them, as the minifier writes
+   * them, counts as statements), in that order, each once and nowhere else in the function. Nothing is read from the text of the code.
+   */
+  const loaderFacts = (what: {
+    node: ts.Node;
+    images: ts.NewExpression[];
+    parameter: ts.Symbol | undefined;
+    srcFromParameter: number;
+    srcFromElsewhere: number;
+    crossOriginWrites: number;
+  }): LoaderFacts => {
+    const problems: string[] = [];
+    const allowed: [number, number][] = [];
+    const base = what.node.getStart(source);
+    const allow = (inner: ts.Node): void => {
+      allowed.push([inner.getStart(source) - base, inner.getEnd() - base]);
+    };
+    for (const image of what.images) allow(image);
+    const image = what.images[0];
+    if (what.images.length !== 1 || image === undefined) {
+      problems.push('more or fewer than one new Image');
+    } else if ((image.arguments?.length ?? 0) > 0) {
+      problems.push('new Image with an argument');
+    }
+    const body =
+      ts.isFunctionDeclaration(what.node) ||
+      ts.isFunctionExpression(what.node) ||
+      ts.isArrowFunction(what.node) ||
+      ts.isMethodDeclaration(what.node)
+        ? what.node.body
+        : undefined;
+    const declaration =
+      image !== undefined &&
+      ts.isVariableDeclaration(image.parent) &&
+      image.parent.initializer === image &&
+      ts.isIdentifier(image.parent.name) &&
+      (image.parent.parent.flags & ts.NodeFlags.Const) !== 0
+        ? image.parent
+        : undefined;
+    const statement = declaration?.parent.parent;
+    const symbol = declaration && checker.getSymbolAtLocation(declaration.name);
+    if (
+      body === undefined ||
+      !ts.isBlock(body) ||
+      statement === undefined ||
+      !ts.isVariableStatement(statement) ||
+      statement.parent !== body ||
+      symbol === undefined
+    ) {
+      problems.push(
+        'the Image is not held by a const of the top level of the loader (the object that src and crossOrigin are written on must be the one that new Image made)',
+      );
+      return { problems, allowed };
+    }
+    // the statements after the declaration, a comma sequence taken apart in the order it is evaluated
+    const steps: ts.Expression[] = [];
+    const flatten = (expression: ts.Expression): void => {
+      if (
+        ts.isBinaryExpression(expression) &&
+        expression.operatorToken.kind === ts.SyntaxKind.CommaToken
+      ) {
+        flatten(expression.left);
+        flatten(expression.right);
+      } else {
+        steps.push(expression);
+      }
+    };
+    for (const one of body.statements) {
+      if (ts.isExpressionStatement(one) && one.pos >= statement.end) flatten(one.expression);
+    }
+    const writeOf = (
+      expression: ts.Expression,
+      property: string,
+    ): ts.BinaryExpression | undefined =>
+      ts.isBinaryExpression(expression) &&
+      expression.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isPropertyAccessExpression(expression.left) &&
+      expression.left.name.text === property &&
+      ts.isIdentifier(expression.left.expression) &&
+      checker.getSymbolAtLocation(expression.left.expression) === symbol
+        ? expression
+        : undefined;
+    const crossAt = steps.findIndex((one) => {
+      const write = writeOf(one, 'crossOrigin');
+      return (
+        write !== undefined &&
+        ts.isStringLiteralLike(write.right) &&
+        write.right.text === 'anonymous'
+      );
+    });
+    const srcAt = steps.findIndex((one) => {
+      const write = writeOf(one, 'src');
+      return (
+        write !== undefined &&
+        ts.isIdentifier(write.right) &&
+        what.parameter !== undefined &&
+        checker.getSymbolAtLocation(write.right) === what.parameter
+      );
+    });
+    const cross = steps[crossAt];
+    const src = steps[srcAt];
+    if (cross === undefined || what.crossOriginWrites !== 1) {
+      problems.push('crossOrigin other than a single assignment of "anonymous" to the new Image');
+    } else if (src !== undefined && crossAt > srcAt) {
+      problems.push('crossOrigin = "anonymous" is written after src (the request is already made)');
+    }
+    if (src === undefined || what.srcFromParameter !== 1 || what.srcFromElsewhere !== 0) {
+      problems.push(
+        'not exactly one .src = <the first parameter itself, by scope> on the new Image, and no other write of src',
+      );
+    }
+    if (cross !== undefined) allow(cross);
+    if (src !== undefined) allow(src);
+    return { problems, allowed };
+  };
   const found: (InjectedFunction | undefined)[] = [];
   const read = (node: ts.Node | undefined): void => {
     if (node === undefined) {
@@ -500,7 +625,26 @@ export function injectedFunctionDetails(
     let selfReferences = 0;
     let srcFromParameter = 0;
     let srcFromElsewhere = 0;
+    let crossOriginWrites = 0;
+    const images: ts.NewExpression[] = [];
     const walk = (inner: ts.Node): void => {
+      if (
+        ts.isNewExpression(inner) &&
+        ts.isIdentifier(inner.expression) &&
+        inner.expression.text === 'Image' &&
+        (checker.getSymbolAtLocation(inner.expression)?.declarations ?? []).length === 0
+      ) {
+        images.push(inner);
+      }
+      if (
+        ts.isBinaryExpression(inner) &&
+        inner.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+        inner.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+        ts.isPropertyAccessExpression(inner.left) &&
+        inner.left.name.text === 'crossOrigin'
+      ) {
+        crossOriginWrites += 1;
+      }
       if (
         self !== undefined &&
         ts.isIdentifier(inner) &&
@@ -534,9 +678,18 @@ export function injectedFunctionDetails(
       text: node.getText(source),
       firstParam: first !== undefined && ts.isIdentifier(first.name) ? first.name.text : undefined,
       selfReferences,
-      srcFromParameter,
-      srcFromElsewhere,
       parameterWritten: parameter !== undefined && isWrittenTo(parameter),
+      loader:
+        images.length === 0
+          ? undefined
+          : loaderFacts({
+              node,
+              images,
+              parameter,
+              srcFromParameter,
+              srcFromElsewhere,
+              crossOriginWrites,
+            }),
     });
   };
   const isTheName = (node: ts.Node): boolean =>
@@ -597,49 +750,28 @@ const EXPECTED_INJECTED_WORD = 'two';
 
 /**
  * What the loader (src/background/load-image.ts) may do that no other page function may: construct ONE `Image` without arguments, set its
- * `crossOrigin` to "anonymous" once, and set its `src` once from its FIRST PARAMETER - the address it is given. Those three are taken out
- * of the text, once each, and the rest is judged like any page function (`.src =` anywhere else, a second `Image`, fetch, setAttribute,
- * location, ... still fail). Lint says the same of the source (DOM_MEMBERS.fromParameter in eslint.config.js).
+ * `crossOrigin` to "anonymous" once, BEFORE it sets its `src` once from its FIRST PARAMETER - the address it is given. The syntax tree says
+ * whether the three expressions are there in that form (see `loaderFacts`); they are cut out of the text, and the rest is judged like any
+ * page function (`.src =` anywhere else, a second `Image`, fetch, setAttribute, location, ... still fail). Lint says the same of the
+ * source (DOM_MEMBERS.fromParameter in eslint.config.js).
  */
 export function loaderProblems(loader: InjectedFunction): string[] {
-  const param = loader.firstParam;
-  if (param === undefined) return ['a loader without a first parameter that holds the address'];
-  const constructions = [...loader.text.matchAll(/\bnew\s+Image\b(\s*\(\s*\))?/g)];
-  const crossOrigins = loader.text.match(/crossOrigin/g)?.length ?? 0;
-  const anonymous = [...loader.text.matchAll(/\.crossOrigin\s*=\s*(["'])anonymous\1(?![\w$])/g)];
-  const escaped = param.replace(/\$/g, '\\$');
-  const sources = [
-    ...loader.text.matchAll(
-      new RegExp(`\\.\\s*src\\s*=(?!=)\\s*${escaped}(?=\\s*(?:[;,)}\\]]|$))`, 'g'),
-    ),
-  ];
-  const problems: string[] = [];
-  const construction = constructions[0];
-  if (constructions.length !== 1 || construction === undefined) {
-    problems.push('more or fewer than one new Image');
-  } else if (
-    construction[1] === undefined &&
-    /^\s*\(/.test(loader.text.slice(construction.index + construction[0].length))
-  ) {
-    problems.push('new Image with an argument');
+  if (loader.firstParam === undefined || loader.loader === undefined) {
+    return ['a loader without a first parameter that holds the address'];
   }
-  if (crossOrigins !== 1 || anonymous.length !== 1) {
-    problems.push('crossOrigin other than a single assignment of "anonymous"');
-  }
-  if (loader.srcFromParameter !== 1 || loader.srcFromElsewhere !== 0 || sources.length !== 1) {
-    problems.push(
-      `not exactly one .src = ${param}, the first parameter itself (by scope), and no other write of src`,
-    );
-  }
-  if (loader.parameterWritten) problems.push(`the first parameter ${param} is assigned to`);
+  const problems = [...loader.loader.problems];
+  if (loader.parameterWritten)
+    problems.push(`the first parameter ${loader.firstParam} is assigned to`);
   if (loader.selfReferences > 0) {
     problems.push('the loader refers to itself (it could hand itself another address)');
   }
   let rest = loader.text;
-  for (const found of [...constructions, ...anonymous, ...sources].sort(
-    (a, b) => b.index - a.index,
-  )) {
-    rest = rest.slice(0, found.index) + rest.slice(found.index + found[0].length);
+  for (const [from, to] of [...loader.loader.allowed].sort((a, b) => b[0] - a[0])) {
+    rest = rest.slice(0, from) + rest.slice(to);
+  }
+  // a second spelling of the property (`e['crossOrigin']`) is not an assignment the tree above counts
+  if (/crossOrigin/.test(rest)) {
+    problems.push('crossOrigin other than a single assignment of "anonymous" to the new Image');
   }
   return [...problems, ...pagePlatformProblems(rest)];
 }
@@ -682,7 +814,7 @@ export function scriptProblems(file: string, text: string): string[] {
       injected.flatMap((one) => (one === undefined ? [] : [[one.text, one] as const])),
     ).values(),
   ];
-  const loaders = bodies.filter((one) => /\bnew\s+Image\b/.test(one.text));
+  const loaders = bodies.filter((one) => one.loader !== undefined);
   const page = [
     ...(file === 'select.js' ? pagePlatformProblems(text) : []),
     ...injected

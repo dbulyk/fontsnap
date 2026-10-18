@@ -697,9 +697,20 @@ export const domMembersRule = {
       context.report({ node, message: text });
     };
     // `x.<member> = <first parameter of fn>` as a statement of its own, in that function itself, once, and the parameter never
-    // reassigned: the one way a page function may be given an address to load (entry.fromParameter)
+    // reassigned: the one way a page function may be given an address to load (entry.fromParameter). `x` is the object that
+    // `const x = new Image()` made in that same function (not an element of the page: `known.src = src` is refused), and
+    // `x.crossOrigin = 'anonymous'` is the statement before, in the same block, the only write of crossOrigin on `x`
     const fromParameter = entry.fromParameter ?? [];
     let parameterWrites = 0;
+    const variableOf = (name, from) => {
+      let scope = context.sourceCode.getScope(from);
+      let variable;
+      while (scope && variable === undefined) {
+        variable = scope.set.get(name);
+        scope = scope.upper;
+      }
+      return variable;
+    };
     const isParameterWrite = (node, fn) => {
       const assignment = node.parent;
       if (
@@ -711,12 +722,7 @@ export const domMembersRule = {
       ) {
         return false;
       }
-      let scope = context.sourceCode.getScope(assignment);
-      let variable;
-      while (scope && variable === undefined) {
-        variable = scope.set.get(assignment.right.name);
-        scope = scope.upper;
-      }
+      const variable = variableOf(assignment.right.name, assignment);
       const definition = variable?.defs[0];
       const declaration = definition?.node;
       if (
@@ -729,9 +735,53 @@ export const domMembersRule = {
       ) {
         return false;
       }
-      let outer = assignment.parent;
-      while (outer && !/Function/.test(outer.type)) outer = outer.parent;
-      return outer === declaration;
+      const enclosing = (inner) => {
+        let outer = inner.parent;
+        while (outer && !/Function/.test(outer.type)) outer = outer.parent;
+        return outer;
+      };
+      if (enclosing(assignment) !== declaration) return false;
+      // the object: a `const` of this function whose value is `new Image()` (the global Image, no arguments)
+      if (node.computed || node.object.type !== 'Identifier') return false;
+      const image = variableOf(node.object.name, node);
+      const made = image?.defs[0];
+      const maker = made?.node;
+      if (
+        made?.type !== 'Variable' ||
+        maker?.type !== 'VariableDeclarator' ||
+        maker.id !== made.name ||
+        maker.parent.kind !== 'const' ||
+        maker.init?.type !== 'NewExpression' ||
+        maker.init.callee.type !== 'Identifier' ||
+        maker.init.callee.name !== 'Image' ||
+        maker.init.arguments.length !== 0 ||
+        (variableOf('Image', maker)?.defs.length ?? 0) > 0 ||
+        enclosing(maker) !== declaration
+      ) {
+        return false;
+      }
+      // crossOrigin comes first: written once on this object, as a statement of the same block before the write of the address
+      const crossWrites = image.references.filter((reference) => {
+        const access = reference.identifier.parent;
+        return (
+          access.type === 'MemberExpression' &&
+          access.object === reference.identifier &&
+          !access.computed &&
+          access.property.name === 'crossOrigin'
+        );
+      });
+      const block = assignment.parent.parent;
+      if (crossWrites.length !== 1 || block.type !== 'BlockStatement') return false;
+      const before = block.body.slice(0, block.body.indexOf(assignment.parent));
+      return before.some(
+        (statement) =>
+          statement.type === 'ExpressionStatement' &&
+          statement.expression.type === 'AssignmentExpression' &&
+          statement.expression.operator === '=' &&
+          statement.expression.left === crossWrites[0].identifier.parent &&
+          statement.expression.right.type === 'Literal' &&
+          statement.expression.right.value === 'anonymous',
+      );
     };
     const constructed = new Map();
     return {
