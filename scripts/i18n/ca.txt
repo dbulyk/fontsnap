@@ -3,12 +3,12 @@ Identificador de fonts per imatge amb IA: selecciona un text i FontSnap troba la
 FontSnap: identifica una font
 FontSnap: identifica la font d'aquesta imatge
 FontSnap: selecciona una àrea per identificar la font
-FontSnap: arrossega sobre el text (Esc per cancel·lar)
+FontSnap: arrossega només sobre el text visible (Esc per cancel·lar)
 FontSnap — resultats
 Identificador de fonts amb IA · funciona al teu dispositiu
 Enganxa (Ctrl+V) o deixa anar una imatge amb text, o tria un fitxer.
 Tria una imatge
-Consell: a qualsevol pàgina, fes clic a la icona de FontSnap i arrossega sobre el text.
+Consell: feu clic a la icona de FontSnap i arrossegueu sobre el text a l’àrea visible (el contingut fora de pantalla no es captura).
 Què veu el model
 S'està carregant el model…
 S'està analitzant…
@@ -32,7 +32,7 @@ Cerca FontSnap a la llista.
 Fes clic a la icona de xinxeta que hi ha al costat.
 Ja l'has fixat? Mostra com fer-lo servir
 Com identificar una font
-Fes clic a la icona de FontSnap o prem Alt+Shift+F i arrossega sobre qualsevol text.
+Feu clic a la icona de FontSnap o premeu Alt+Shift+F i arrossegueu sobre el text a l’àrea visible (no fora de pantalla).
 Fes clic dret en una imatge i tria «Identifica la font d'aquesta imatge».
 O obre FontSnap i enganxa, deixa anar o puja una captura de pantalla.
 Obtén les 5 fonts Google més semblants, compara-les i copia el CSS.

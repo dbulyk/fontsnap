@@ -3,12 +3,12 @@ Nhận diện font chữ từ ảnh bằng AI: chọn đoạn chữ, FontSnap t�
 FontSnap: nhận diện font chữ
 FontSnap: nhận diện font trong ảnh này
 FontSnap: chọn vùng để nhận diện font
-FontSnap: kéo chuột qua đoạn chữ (Esc để hủy)
+FontSnap: chỉ kéo trên chữ đang hiện (Esc để hủy)
 FontSnap — kết quả
 Nhận diện font bằng AI · chạy trên thiết bị của bạn
 Dán (Ctrl+V) hoặc thả ảnh có chữ vào đây, hoặc chọn tệp.
 Chọn ảnh
-Mẹo: trên bất kỳ trang nào, nhấp biểu tượng FontSnap rồi kéo chuột qua đoạn chữ.
+Mẹo: nhấp biểu tượng FontSnap rồi kéo trên chữ trong vùng nhìn thấy (nội dung cuộn ra ngoài màn hình không được chụp).
 Mô hình nhìn thấy gì
 Đang tải mô hình…
 Đang phân tích…
@@ -32,7 +32,7 @@ Tìm FontSnap trong danh sách.
 Nhấp vào biểu tượng ghim bên cạnh.
 Đã ghim rồi? Xem cách sử dụng
 Cách nhận diện font chữ
-Nhấp biểu tượng FontSnap hoặc nhấn Alt+Shift+F, rồi kéo chuột qua đoạn chữ bất kỳ.
+Nhấp biểu tượng FontSnap hoặc nhấn Alt+Shift+F, rồi kéo trên chữ trong vùng nhìn thấy (không phải ngoài màn hình).
 Nhấp chuột phải vào ảnh và chọn "Nhận diện font trong ảnh này".
 Hoặc mở FontSnap rồi dán, thả hoặc tải lên ảnh chụp màn hình.
 Nhận 5 font Google giống nhất, so sánh bản xem trước và sao chép CSS.

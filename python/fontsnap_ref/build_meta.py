@@ -1,4 +1,4 @@
-"""Build extension/model/meta.json (families, display names, popularity ranks, merge rules) from python/data."""
+"""Build model/meta.json (families, display names, popularity ranks, merge rules) from python/data."""
 
 import json
 
@@ -31,4 +31,4 @@ def build():
 
 
 if __name__ == "__main__":
-    json.dump(build(), open(ROOT / "extension" / "model" / "meta.json", "w"), separators=(",", ":"))
+    json.dump(build(), open(ROOT / "model" / "meta.json", "w"), separators=(",", ":"))

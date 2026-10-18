@@ -3,12 +3,12 @@ Identifiera typsnitt från bild med AI: markera text så visar FontSnap de 5 mes
 FontSnap: identifiera ett typsnitt
 FontSnap: identifiera typsnittet i den här bilden
 FontSnap: markera ett område för att identifiera typsnitt
-FontSnap: dra över texten (Esc för att avbryta)
+FontSnap: dra bara över synlig text (Esc för att avbryta)
 FontSnap – resultat
 AI-typsnittsidentifierare · körs på din enhet
 Klistra in (Ctrl+V) eller släpp en bild med text, eller välj en fil.
 Välj bild
-Tips: klicka på FontSnap-ikonen på valfri sida och dra över texten.
+Tips: klicka på FontSnap-ikonen och dra över text i den synliga vyn (innehåll utanför skärmen fångas inte).
 Vad modellen ser
 Läser in modellen…
 Analyserar…
@@ -32,7 +32,7 @@ Hitta FontSnap i listan.
 Klicka på nålikonen bredvid.
 Redan fäst? Visa hur det används
 Så identifierar du ett typsnitt
-Klicka på FontSnap-ikonen eller tryck Alt+Shift+F och dra över valfri text på sidan.
+Klicka på FontSnap-ikonen eller tryck Alt+Shift+F och dra över text i den synliga vyn (inte utanför skärmen).
 Högerklicka på en bild och välj ”Identifiera typsnittet i den här bilden”.
 Eller öppna FontSnap och klistra in, släpp eller ladda upp en skärmbild.
 Få de 5 mest lika Google Fonts, jämför förhandsvisningar och kopiera CSS.

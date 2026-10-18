@@ -1,1 +1,1 @@
-"""FontSnap Python reference pipeline (mirrors extension/lib/fontsnap-core.js)."""
+"""FontSnap Python reference pipeline (mirrors the TypeScript pipeline in src/shared/core)."""

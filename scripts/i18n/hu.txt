@@ -3,12 +3,12 @@ Betűtípus felismerése képről AI-jal: jelölje ki a szöveget, és a FontSna
 FontSnap: betűtípus felismerése
 FontSnap: a kép betűtípusának felismerése
 FontSnap: terület kijelölése a betűtípus felismeréséhez
-FontSnap: húzza át a szövegen (Esc: mégse)
+FontSnap: csak a látható szövegen húzzon (Esc a megszakításhoz)
 FontSnap – eredmények
 AI betűtípus-felismerő · az Ön eszközén fut
 Illesszen be (Ctrl+V) vagy húzzon ide egy szöveges képet, vagy válasszon fájlt.
 Kép kiválasztása
-Tipp: bármely oldalon kattintson a FontSnap ikonra, és húzza át a szövegen.
+Tipp: kattintson a FontSnap ikonra, és húzza át a szöveget a látható nézetablakban (a képernyőn kívüli tartalom nem kerül rögzítésre).
 Amit a modell lát
 Modell betöltése…
 Elemzés…
@@ -32,7 +32,7 @@ Keresse meg a FontSnapet a listában.
 Kattintson a mellette lévő gombostű ikonra.
 Már rögzítette? Mutassa meg a használatát
 Így ismerhet fel egy betűtípust
-Kattintson a FontSnap ikonra vagy nyomja meg az Alt+Shift+F billentyűket, és húzza át a szövegen.
+Kattintson a FontSnap ikonra vagy nyomja meg az Alt+Shift+F billentyűket, majd húzza át a szöveget a látható nézetablakban (ne a képernyőn kívül).
 Kattintson jobb gombbal egy képre, és válassza „A kép betűtípusának felismerése” lehetőséget.
 Vagy nyissa meg a FontSnapet, és illesszen be, húzzon ide vagy töltsön fel képernyőképet.
 Kapja meg az 5 leghasonlóbb Google Fontsot, hasonlítsa össze, és másolja a CSS-t.

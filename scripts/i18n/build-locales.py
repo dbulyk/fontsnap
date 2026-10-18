@@ -1,4 +1,4 @@
-"""Build extension/_locales/<lang>/messages.json from scripts/i18n/<lang>.txt (one message per line, KEYS order).
+"""Build public/_locales/<lang>/messages.json from scripts/i18n/<lang>.txt (one message per line, KEYS order).
 
 The .txt files are the translation source (hand-written; see scripts/i18n/README.md). Placeholders are written
 as $NAME$ in the text; their positional mapping comes from PLACEHOLDERS so every locale stays consistent.
@@ -9,7 +9,7 @@ import pathlib
 import shutil
 
 HERE = pathlib.Path(__file__).parent
-OUT = HERE.parent.parent / "extension" / "_locales"
+OUT = HERE.parent.parent / "public" / "_locales"
 KEYS = (
     "appName appDesc actionTitle ctxImage ctxSelect selectHint resTitle tagline dropHint chooseImage dropTip "
     "modelSees loading analyzing ready noLines readFail captureFail modelFail errorMsg previewLabel previewPh "

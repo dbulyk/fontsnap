@@ -15,7 +15,7 @@ from .textcrop import crop_normalize
 
 ROOT = Path(__file__).resolve().parents[2]
 DATA = ROOT / "python" / "data"
-MODEL = ROOT / "extension" / "model" / "model_fp16.onnx"
+MODEL = ROOT / "model" / "model_fp16.onnx"
 MEAN = np.array([0.485, 0.456, 0.406], np.float32)
 STD = np.array([0.229, 0.224, 0.225], np.float32)
 

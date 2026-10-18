@@ -3,12 +3,12 @@ Pengecam fon daripada imej dengan AI: pilih teks dan FontSnap menunjukkan 5 fon 
 FontSnap: kenal pasti fon
 FontSnap: kenal pasti fon dalam imej ini
 FontSnap: pilih kawasan untuk mengenal pasti fon
-FontSnap: seret di atas teks (Esc untuk batal)
+FontSnap: seret hanya pada teks yang kelihatan (Esc untuk batal)
 FontSnap — keputusan
 Pengecam fon AI · berjalan pada peranti anda
 Tampal (Ctrl+V) atau lepaskan imej berteks, atau pilih fail.
 Pilih imej
-Petua: pada mana-mana halaman, klik ikon FontSnap dan seret di atas teks.
+Petua: klik ikon FontSnap dan seret pada teks dalam kawasan yang kelihatan (kandungan di luar skrin tidak ditangkap).
 Apa yang dilihat model
 Memuatkan model…
 Menganalisis…
@@ -32,7 +32,7 @@ Cari FontSnap dalam senarai.
 Klik ikon pin di sebelahnya.
 Sudah disematkan? Tunjukkan cara menggunakannya
 Cara mengenal pasti fon
-Klik ikon FontSnap atau tekan Alt+Shift+F, kemudian seret di atas mana-mana teks.
+Klik ikon FontSnap atau tekan Alt+Shift+F, kemudian seret pada teks dalam kawasan yang kelihatan (bukan di luar skrin).
 Klik kanan imej dan pilih "Kenal pasti fon dalam imej ini".
 Atau buka FontSnap dan tampal, lepaskan atau muat naik tangkapan skrin.
 Dapatkan 5 Google Fonts paling hampir, bandingkan pratonton dan salin CSS.

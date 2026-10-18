@@ -3,12 +3,12 @@ Find skrifttype fra billede med AI: markér tekst, og FontSnap viser de 5 mest l
 FontSnap: genkend en skrifttype
 FontSnap: genkend skrifttypen i dette billede
 FontSnap: vælg et område for at genkende skrifttype
-FontSnap: træk hen over teksten (Esc for at annullere)
+FontSnap: træk kun over synlig tekst (Esc for at annullere)
 FontSnap – resultater
 AI-skrifttypegenkendelse · kører på din enhed
 Indsæt (Ctrl+V) eller slip et billede med tekst, eller vælg en fil.
 Vælg billede
-Tip: klik på FontSnap-ikonet på en hvilken som helst side, og træk hen over teksten.
+Tip: klik på FontSnap-ikonet, og træk over tekst i det synlige viewport (indhold uden for skærmen optages ikke).
 Hvad modellen ser
 Indlæser model…
 Analyserer…
@@ -32,7 +32,7 @@ Find FontSnap på listen.
 Klik på nåleikonet ved siden af.
 Allerede fastgjort? Se, hvordan det bruges
 Sådan genkender du en skrifttype
-Klik på FontSnap-ikonet eller tryk Alt+Shift+F, og træk hen over tekst på siden.
+Klik på FontSnap-ikonet eller tryk Alt+Shift+F, og træk over tekst i det synlige viewport (ikke uden for skærmen).
 Højreklik på et billede, og vælg "Genkend skrifttypen i dette billede".
 Eller åbn FontSnap, og indsæt, slip eller upload et skærmbillede.
 Få de 5 mest lignende Google Fonts, sammenlign eksempler, og kopiér CSS.

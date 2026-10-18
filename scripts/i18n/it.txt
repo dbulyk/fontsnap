@@ -3,12 +3,12 @@ Riconoscere font da immagine con l'IA: seleziona un testo e questo font finder m
 FontSnap: riconosci un font
 FontSnap: riconosci il font in questa immagine
 FontSnap: seleziona un'area per riconoscere il font
-FontSnap: trascina sul testo (Esc per annullare)
+FontSnap: trascina solo sul testo visibile (Esc per annullare)
 FontSnap — risultati
 Riconoscimento font con IA · funziona sul tuo dispositivo
 Incolla (Ctrl+V) o trascina un'immagine con testo, oppure scegli un file.
 Scegli immagine
-Suggerimento: su qualsiasi pagina fai clic sull'icona di FontSnap e trascina sul testo.
+Suggerimento: fai clic sull’icona di FontSnap e trascina sul testo nell’area visibile (il contenuto fuori schermo non viene catturato).
 Cosa vede il modello
 Caricamento del modello…
 Analisi in corso…
@@ -32,7 +32,7 @@ Trova FontSnap nell'elenco.
 Fai clic sull'icona della puntina accanto.
 Già fissato? Scopri come usarlo
 Come riconoscere un font
-Fai clic sull'icona di FontSnap o premi Alt+Shift+F, poi trascina su un testo della pagina.
+Fai clic sull’icona di FontSnap o premi Alt+Shift+F, poi trascina sul testo nell’area visibile (non fuori schermo).
 Fai clic destro su un'immagine e scegli «Riconosci il font in questa immagine».
 Oppure apri FontSnap e incolla, trascina o carica uno screenshot.
 Ottieni i 5 font Google più simili, confronta le anteprime e copia il CSS.

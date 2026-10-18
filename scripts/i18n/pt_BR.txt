@@ -3,12 +3,12 @@ Identificador de fontes por imagem com IA: selecione um texto e este localizador
 FontSnap: identificar uma fonte
 FontSnap: identificar a fonte desta imagem
 FontSnap: selecionar uma área para identificar a fonte
-FontSnap: arraste sobre o texto (Esc para cancelar)
+FontSnap: arraste apenas sobre o texto visível (Esc para cancelar)
 FontSnap — resultados
 Identificador de fontes com IA · funciona no seu dispositivo
 Cole (Ctrl+V) ou solte uma imagem com texto, ou escolha um arquivo.
 Escolher imagem
-Dica: em qualquer página, clique no ícone do FontSnap e arraste sobre o texto.
+Dica: clique no ícone do FontSnap e arraste sobre o texto na área visível (conteúdo fora da tela não é capturado).
 O que o modelo vê
 Carregando modelo…
 Analisando…
@@ -32,7 +32,7 @@ Encontre o FontSnap na lista.
 Clique no ícone de alfinete ao lado dele.
 Já fixou? Ver como usar
 Como identificar uma fonte
-Clique no ícone do FontSnap ou pressione Alt+Shift+F e arraste sobre qualquer texto da página.
+Clique no ícone do FontSnap ou pressione Alt+Shift+F e arraste sobre o texto na área visível (não fora da tela).
 Clique com o botão direito em uma imagem e escolha “Identificar a fonte desta imagem”.
 Ou abra o FontSnap e cole, solte ou envie uma captura de tela.
 Receba as 5 fontes Google mais parecidas, compare as visualizações e copie o CSS.

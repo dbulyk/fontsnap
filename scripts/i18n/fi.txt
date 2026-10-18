@@ -3,12 +3,12 @@ Tunnista fontti kuvasta tekoälyllä: valitse teksti, niin FontSnap näyttää 5
 FontSnap: tunnista fontti
 FontSnap: tunnista tämän kuvan fontti
 FontSnap: valitse alue fontin tunnistamiseksi
-FontSnap: vedä tekstin yli (Esc peruuttaa)
+FontSnap: vedä vain näkyvän tekstin yli (Esc peruuttaa)
 FontSnap – tulokset
 Tekoälyfonttien tunnistus · toimii laitteellasi
 Liitä (Ctrl+V) tai pudota kuva, jossa on tekstiä, tai valitse tiedosto.
 Valitse kuva
-Vinkki: napsauta millä tahansa sivulla FontSnap-kuvaketta ja vedä tekstin yli.
+Vinkki: napsauta FontSnap-kuvaketta ja vedä tekstin yli näkyvässä näkymässä (ruudun ulkopuolelle vieritettyä sisältöä ei kaapata).
 Mitä malli näkee
 Ladataan mallia…
 Analysoidaan…
@@ -32,7 +32,7 @@ Etsi FontSnap luettelosta.
 Napsauta sen vieressä olevaa nastakuvaketta.
 Jo kiinnitetty? Näytä, miten sitä käytetään
 Näin tunnistat fontin
-Napsauta FontSnap-kuvaketta tai paina Alt+Shift+F ja vedä minkä tahansa tekstin yli.
+Napsauta FontSnap-kuvaketta tai paina Alt+Shift+F ja vedä tekstin yli näkyvässä näkymässä (ei ruudun ulkopuolella).
 Napsauta kuvaa hiiren oikealla ja valitse ”Tunnista tämän kuvan fontti”.
 Tai avaa FontSnap ja liitä, pudota tai lataa kuvakaappaus.
 Saat 5 lähintä Google-fonttia, vertaa esikatseluja ja kopioi CSS.

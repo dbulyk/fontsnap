@@ -3,12 +3,12 @@ Tuvasta font pildilt tehisintellektiga: vali tekst ja FontSnap näitab 5 kõige 
 FontSnap: tuvasta font
 FontSnap: tuvasta selle pildi font
 FontSnap: vali ala fondi tuvastamiseks
-FontSnap: lohista üle teksti (Esc tühistab)
+FontSnap: lohista ainult nähtava teksti kohal (Esc tühistab)
 FontSnap – tulemused
 AI fondituvastaja · töötab sinu seadmes
 Kleebi (Ctrl+V) või lohista siia tekstiga pilt või vali fail.
 Vali pilt
-Nõuanne: klõpsa mis tahes lehel FontSnapi ikoonil ja lohista üle teksti.
+Nõuanne: klõpsake FontSnapi ikoonil ja lohistage üle teksti nähtavas vaates (ekraanilt välja keritud sisu ei jäädvustata).
 Mida mudel näeb
 Mudeli laadimine…
 Analüüsimine…
@@ -32,7 +32,7 @@ Leia loendist FontSnap.
 Klõpsa selle kõrval oleval nööpnõela ikoonil.
 Juba kinnitatud? Näita, kuidas kasutada
 Kuidas fonti tuvastada
-Klõpsa FontSnapi ikoonil või vajuta Alt+Shift+F ja lohista üle mis tahes teksti.
+Klõpsake FontSnapi ikoonil või vajutage Alt+Shift+F ning lohistage üle teksti nähtavas vaates (mitte ekraanilt väljas).
 Paremklõpsa pildil ja vali „Tuvasta selle pildi font”.
 Või ava FontSnap ja kleebi, lohista või laadi üles ekraanipilt.
 Saad 5 kõige sarnasemat Google Fonti, võrdle eelvaateid ja kopeeri CSS.

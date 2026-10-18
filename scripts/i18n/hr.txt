@@ -3,12 +3,12 @@ Prepoznajte font sa slike pomoću umjetne inteligencije: označite tekst i FontS
 FontSnap: prepoznaj font
 FontSnap: prepoznaj font na ovoj slici
 FontSnap: odaberi područje za prepoznavanje fonta
-FontSnap: povucite preko teksta (Esc za odustajanje)
+FontSnap: povucite samo preko vidljivog teksta (Esc za odustajanje)
 FontSnap – rezultati
 Prepoznavanje fontova pomoću AI · radi na vašem uređaju
 Zalijepite (Ctrl+V) ili ispustite sliku s tekstom ili odaberite datoteku.
 Odaberi sliku
-Savjet: na bilo kojoj stranici kliknite ikonu FontSnap i povucite preko teksta.
+Savjet: kliknite ikonu FontSnap i povucite preko teksta u vidljivom području (sadržaj izvan ekrana se ne snima).
 Što model vidi
 Učitavanje modela…
 Analiza…
@@ -32,7 +32,7 @@ Pronađite FontSnap na popisu.
 Kliknite ikonu pribadače pokraj njega.
 Već prikvačeno? Prikaži kako se koristi
 Kako prepoznati font
-Kliknite ikonu FontSnap ili pritisnite Alt+Shift+F i povucite preko bilo kojeg teksta.
+Kliknite ikonu FontSnap ili pritisnite Alt+Shift+F, zatim povucite preko teksta u vidljivom području (ne izvan ekrana).
 Desnom tipkom kliknite sliku i odaberite „Prepoznaj font na ovoj slici”.
 Ili otvorite FontSnap i zalijepite, ispustite ili učitajte snimku zaslona.
 Dobijte 5 najsličnijih Google fontova, usporedite preglede i kopirajte CSS.

@@ -3,12 +3,12 @@ Tambua fonti kutoka picha kwa AI: chagua maandishi na FontSnap itaonyesha fonti 
 FontSnap: tambua fonti
 FontSnap: tambua fonti kwenye picha hii
 FontSnap: chagua eneo ili kutambua fonti
-FontSnap: buruta juu ya maandishi (Esc kughairi)
+FontSnap: buruta tu juu ya maandishi yanayoonekana (Esc kughairi)
 FontSnap — matokeo
 Kitambua fonti cha AI · kinafanya kazi kwenye kifaa chako
 Bandika (Ctrl+V) au dondosha picha yenye maandishi, au chagua faili.
 Chagua picha
-Kidokezo: kwenye ukurasa wowote, bofya aikoni ya FontSnap na uburute juu ya maandishi.
+Kidokezo: bofya aikoni ya FontSnap kisha uburute juu ya maandishi katika eneo linaloonekana (maudhui nje ya skrini hayanaswi).
 Kile ambacho modeli inaona
 Inapakia modeli…
 Inachanganua…
@@ -32,7 +32,7 @@ Tafuta FontSnap kwenye orodha.
 Bofya aikoni ya pini kando yake.
 Tayari imebandikwa? Onyesha jinsi ya kutumia
 Jinsi ya kutambua fonti
-Bofya aikoni ya FontSnap au bonyeza Alt+Shift+F, kisha uburute juu ya maandishi yoyote.
+Bofya aikoni ya FontSnap au bonyeza Alt+Shift+F, kisha uburute juu ya maandishi katika eneo linaloonekana (si nje ya skrini).
 Bofya kulia kwenye picha na uchague "Tambua fonti kwenye picha hii".
 Au fungua FontSnap na ubandike, udondoshe au upakie picha ya skrini.
 Pata fonti 5 za Google zinazofanana zaidi, linganisha na unakili CSS.
