@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   ALLOWED_ORIGINS,
   forbiddenNames,
@@ -11,6 +13,7 @@ import {
   urlOrigins,
   wasmSignatures,
 } from '../../scripts/lib/wasm-scan';
+import { stripComments } from '../../scripts/lib/strip-comments';
 import { REAL_CHUNK } from './helpers/runtime-chunk';
 
 // WebAssembly can reach a built script as bytes: written out as a literal, base64, hex, an escape or a number list.
@@ -290,10 +293,49 @@ describe('absolute URLs in built scripts', () => {
     ['http://127.0.0.1:8000/x', '127.0.0.1'],
     ['https://fonts.googleapis.com.evil.example/x', 'fonts.googleapis.com.evil.example'],
     ['https://evilfonts.google.com/x', 'evilfonts.google.com'],
+    ['https://fonts-gstatic.com/x', 'fonts-gstatic.com'],
+    ['https://fonts.gstatic.com.evil.example/x', 'fonts.gstatic.com.evil.example'],
+    ['https://fonts.googleapis.com@evil.example/x', 'evil.example'],
+    ['https://fonts.googleapis.com:pw@evil.example/x', 'evil.example'],
+    ['https://fonts.googleapis.com\\@evil.example/x', 'evil.example'],
+    ['https://xfonts.googleapis.com/x', 'xfonts.googleapis.com'],
+    ['https://fonts.googleapis.com.cn/x', 'fonts.googleapis.com.cn'],
+    ['https://fonts.google.com.evil.example/x', 'fonts.google.com.evil.example'],
+    ['https://fonts.googleapis.co/x', 'fonts.googleapis.co'],
   ])('finds %s', (url, host) => {
     for (const quote of ['"', "'", '`']) {
       expect(urlOrigins(`const u=${quote}${url}${quote};`), url).toContain(host);
     }
+  });
+
+  it('refuses fonts.gstatic.com when a script names it: the font files arrive in the CSS of Google, no script has the host', () => {
+    expect(ALLOWED_ORIGINS.has('fonts.gstatic.com')).toBe(false);
+    expect(
+      scriptProblems('assets/x.js', 'fetch("https://fonts.gstatic.com/s/x.woff2")').join('\n'),
+    ).toContain('names a URL on fonts.gstatic.com');
+  });
+
+  it('names exactly the two Google Fonts hosts in the sources of the extension (render.ts), and no other', () => {
+    const hosts = new Set<string>();
+    const visit = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) visit(path);
+        // src/manifest.ts is the build's, not a script of the extension (its e2e-only loopback permission names 127.0.0.1)
+        else if (
+          path.endsWith('.ts') &&
+          !path.endsWith('.d.ts') &&
+          path !== join('src', 'manifest.ts')
+        ) {
+          for (const host of urlOrigins(stripComments(readFileSync(path, 'utf8'), path))) {
+            hosts.add(host);
+          }
+        }
+      }
+    };
+    visit('src');
+    // the CSS of fonts.googleapis.com names fonts.gstatic.com; the extension never does
+    expect([...hosts].sort()).toEqual([...ALLOWED_ORIGINS].sort());
   });
 
   it('is reported by scriptProblems with the host', () => {
