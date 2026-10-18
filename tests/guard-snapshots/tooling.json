@@ -1,7 +1,7 @@
 {
   "declarationFilesUnderSrc": ["src/env.d.ts"],
   "files": {
-    ".gitignore": "node_modules/\ndist/\ndist-e2e/\nrelease/\ncoverage/\nplaywright-report/\ntest-results/\n.superpowers/\n*.log\n.DS_Store\nxvfb.log\nreports/\n\n# Python reference pipeline and evaluation outputs\n.venv/\n__pycache__/\n*.pyc\n*.pkl\nout/\n.pytest_cache/\n.ruff_cache/\n*.zip\n.env\n",
+    ".gitignore": "node_modules/\ndist/\ndist-e2e/\nrelease/\ncoverage/\nplaywright-report/\ntest-results/\n.superpowers/\n*.log\n.DS_Store\nxvfb.log\nreports/\n.lfs-assets-id\n\n# Python reference pipeline and evaluation outputs\n.venv/\n__pycache__/\n*.pyc\n*.pkl\nout/\n.pytest_cache/\n.ruff_cache/\n*.zip\n.env\n",
     ".npmrc": "<absent>",
     ".nvmrc": "22\n",
     ".prettierignore": "node_modules\ndist\ndist-e2e\nrelease\ncoverage\nplaywright-report\ntest-results\n.superpowers\npackage-lock.json\nxvfb.log\nreports\ntests/guard-snapshots\n# Outside the Node toolchain (see AGENTS.md): never reformatted.\nstore\ndata\npython\nmodel\nscripts/i18n\ntests/fixtures\nout\n",

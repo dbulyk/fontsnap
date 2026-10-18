@@ -10,6 +10,7 @@ test-results/
 .DS_Store
 xvfb.log
 reports/
+.lfs-assets-id
 
 # Python reference pipeline and evaluation outputs
 .venv/

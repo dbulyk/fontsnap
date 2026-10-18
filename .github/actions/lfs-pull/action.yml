@@ -24,12 +24,14 @@ runs:
       with:
         path: .git/lfs
         key: lfs-${{ hashFiles('.lfs-assets-id') }}
+        # LFS objects are content-addressed: any earlier cache is a good start, and git lfs pull fetches what is missing.
+        restore-keys: lfs-
     - name: Pull LFS objects
       shell: bash
       env:
         INCLUDE: ${{ inputs.include }}
         GIT_TOKEN: ${{ inputs.token }}
       run: |
+        trap 'git config --local --unset-all http.https://github.com/.extraheader || true' EXIT
         git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GIT_TOKEN" | base64 -w0)"
         git lfs pull --include="$INCLUDE"
-        git config --local --unset-all http.https://github.com/.extraheader

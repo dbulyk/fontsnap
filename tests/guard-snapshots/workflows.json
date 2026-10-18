@@ -27,7 +27,8 @@
           "uses": "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
           "with": {
             "key": "lfs-${{ hashFiles('.lfs-assets-id') }}",
-            "path": ".git/lfs"
+            "path": ".git/lfs",
+            "restore-keys": "lfs-"
           }
         },
         {
@@ -36,7 +37,7 @@
             "INCLUDE": "${{ inputs.include }}"
           },
           "name": "Pull LFS objects",
-          "run": "git config --local http.https://github.com/.extraheader \"AUTHORIZATION: basic $(printf 'x-access-token:%s' \"$GIT_TOKEN\" | base64 -w0)\"\ngit lfs pull --include=\"$INCLUDE\"\ngit config --local --unset-all http.https://github.com/.extraheader\n",
+          "run": "trap 'git config --local --unset-all http.https://github.com/.extraheader || true' EXIT\ngit config --local http.https://github.com/.extraheader \"AUTHORIZATION: basic $(printf 'x-access-token:%s' \"$GIT_TOKEN\" | base64 -w0)\"\ngit lfs pull --include=\"$INCLUDE\"\n",
           "shell": "bash"
         }
       ],
