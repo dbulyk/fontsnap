@@ -208,6 +208,13 @@ export async function collectTooling(root = '.'): Promise<Json> {
 /** The files with the narrow rule set for holding a Window; the same list as PAGE_WINDOW_FILES in eslint.config.js (a guard test fails if they differ). */
 export const PAGE_WINDOW_FILES: readonly string[] = ['src/result/app.ts', 'src/welcome/app.ts'];
 
+/** The files that run in the web page's process; the same list as PAGE_PROCESS_FILES in eslint.config.js (a guard test fails if they differ). */
+export const PAGE_PROCESS_FILES: readonly string[] = [
+  'src/select/overlay.ts',
+  'src/select/index.ts',
+  'src/background/measure.ts',
+];
+
 /** The guard context of a file: files in one context must have the same effective ESLint config. */
 export function contextOf(file: string): string {
   const parts = file.split('/');
@@ -218,8 +225,9 @@ export function contextOf(file: string): string {
     // the one file that configures onnxruntime-web has its own rule set (see eslint.config.js)
     if (file === ORT_CONFIG_FILE) return 'src-ort-model';
     // the two page scripts that hold the Window of their page have their own rule set (PAGE_WINDOW_FILES in eslint.config.js)
-    // the overlay of the content script holds the Window of the web page through a closed list of members (OVERLAY_FILE)
-    if (file === 'src/select/overlay.ts') return 'src-select-overlay';
+    // the code that runs in the web page's process has its own rule set (PAGE_PROCESS_FILES)
+    if (PAGE_PROCESS_FILES.includes(file))
+      return `src-page-process/${file.slice(4).replace('/', '-')}`;
     if (PAGE_WINDOW_FILES.includes(file)) return `src-page-window/${String(second)}`;
     if (file.endsWith('.d.ts')) return 'src-dts';
     return parts.length === 2 ? 'src-root' : `src/${String(second)}`;

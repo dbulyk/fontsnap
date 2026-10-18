@@ -191,6 +191,28 @@ const globalTampering = [
 // them, an alias, a destructuring, a computed access or passing one on is an error. What src/ really uses was read from
 // the code; adding a line here is a decision about what the extension may touch, like a permission.
 // Per file: only what that file needs (the Window of a content script, btoa for the screenshot, the one performance read).
+// --- code that runs in the web page's process (the content script, and the function chrome.scripting injects) ----------------
+// The CSP of the extension does not apply there, so Window, and any object that leads to it, must not be reachable from this code
+// at all - not by a name (`win`), not by a computed key (`doc[['default', 'View'].join('')]`), not through a cast, an event, a
+// parameter that was renamed. Review round 5 of PR #6 found four such ways past a rule that looked for the name `win`; the class is
+// closed instead (PAGE_PROCESS_FILES): the first parameter of `startSelection` - whatever it is called - is the one Window, and it
+// is used through the members below (read or called; only the marker is written); in these files there is no computed access, no
+// cast, no `for...in`, no `typeof x` or `T[K]` type, no `Object.*` but `Object.assign(el.style, ...)`, and only `div` elements.
+const OVERLAY_FILE = 'src/select/overlay.ts';
+const OVERLAY_WINDOW_MEMBERS = [
+  'document',
+  'addEventListener',
+  'removeEventListener',
+  'getSelection',
+  'requestAnimationFrame',
+  'devicePixelRatio',
+];
+/** Written by the overlay: the marker of a window that already shows it (declared in src/env.d.ts). */
+const OVERLAY_WINDOW_WRITTEN = ['__fontsnapActive'];
+const PAGE_PROCESS_FILES = [OVERLAY_FILE, 'src/select/index.ts', 'src/background/measure.ts'];
+/** The one function FontSnap hands to chrome.scripting.executeScript({ func }) (src/background/measure.ts). */
+const INJECTED_FUNCTION = 'measureImage';
+
 const GLOBAL_ACCESS = {
   globals: {
     Array: ['', 'isArray'],
@@ -246,7 +268,7 @@ const GLOBAL_ACCESS = {
     // the page of the selection overlay is a content script: its Window is the web page's, not the extension's
     // the window is only handed to startSelection(window) (a bare use: no member of it is read here)
     'src/select/index.ts': { window: [''] },
-    'src/select/overlay.ts': { Window: true, Object: ['assign'] },
+    'src/select/overlay.ts': { Object: ['assign'] },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
     // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_FILES): the images of the page, its pixel ratio
     'src/background/measure.ts': {
@@ -269,6 +291,14 @@ const GLOBAL_ACCESS = {
       performance: ['getEntriesByType'],
     },
   },
+  // the Window handed to a function: the first parameter of this function (any name), used through these members only
+  windowParams: {
+    [OVERLAY_FILE]: {
+      fn: 'startSelection',
+      members: OVERLAY_WINDOW_MEMBERS,
+      written: OVERLAY_WINDOW_WRITTEN,
+    },
+  },
   // types through which a global scope is passed around
   types: [
     'Window',
@@ -284,7 +314,7 @@ const GLOBAL_ACCESS = {
 export const globalAccessRule = {
   meta: { type: 'problem', schema: [{ type: 'object' }] },
   create(context) {
-    const { globals, files, types } = context.options[0];
+    const { globals, files, types, windowParams } = context.options[0];
     const relative = context.filename
       .slice(context.cwd.length + 1)
       .split('\\')
@@ -363,10 +393,70 @@ export const globalAccessRule = {
         const wanted = allowed.split('.');
         return wanted.length <= path.length && wanted.every((name, index) => name === path[index]);
       });
+    const windowParam = Object.hasOwn(windowParams, relative) ? windowParams[relative] : undefined;
+    /** The first parameter of the function that gets the Window, found by position, not by name. */
+    const designated = () => {
+      if (windowParam === undefined) return undefined;
+      for (const statement of context.sourceCode.ast.body) {
+        const declaration =
+          statement.type === 'ExportNamedDeclaration' ? statement.declaration : statement;
+        if (
+          declaration?.type === 'FunctionDeclaration' &&
+          declaration.id?.name === windowParam.fn
+        ) {
+          const param = declaration.params[0];
+          return param?.type === 'Identifier' ? { declaration, param } : undefined;
+        }
+      }
+      return undefined;
+    };
+    const inside = (outer, node) =>
+      node.range[0] >= outer.range[0] && node.range[1] <= outer.range[1];
+    /** Every use of the designated parameter: win.<member>, read or called; only the marker is written. */
+    const checkWindowParam = (found) => {
+      const variable = context.sourceCode
+        .getDeclaredVariables(found.declaration)
+        .find((candidate) =>
+          candidate.defs.some((def) => def.type === 'Parameter' && def.name === found.param),
+        );
+      for (const reference of variable?.references ?? []) {
+        const identifier = reference.identifier;
+        const parent = identifier.parent;
+        const name =
+          parent?.type === 'MemberExpression' && parent.object === identifier
+            ? memberName(parent)
+            : undefined;
+        const allowed = [...windowParam.members, ...windowParam.written];
+        const outer = through(identifier);
+        const writtenHere = writes(outer) || reference.isWrite();
+        if (name === undefined || !allowed.includes(name)) {
+          context.report({
+            node: identifier,
+            message: `The Window ${identifier.name} of ${windowParam.fn} is used only as ${identifier.name}.<${windowParam.members.join('|')}>, read or called (GLOBAL_ACCESS.windowParams in eslint.config.js): not aliased, cast, destructured, indexed by a computed key, reassigned or passed on - this code runs in the web page's process, outside the CSP of the extension.`,
+          });
+        } else if (writtenHere && !(outer === parent && windowParam.written.includes(name))) {
+          context.report({
+            node: identifier,
+            message: `Only ${windowParam.written.join(', ')} of the Window may be written (${identifier.name}.${name} is not).`,
+          });
+        }
+      }
+    };
     return {
       'Program:exit'() {
         const scope = context.sourceCode.scopeManager?.globalScope;
         if (!scope) return;
+        const found = designated();
+        if (windowParam !== undefined) {
+          if (found === undefined) {
+            context.report({
+              loc: { line: 1, column: 0 },
+              message: `${windowParam.fn}(window) is missing: its first parameter is the one Window of ${relative} and the rule needs to find it.`,
+            });
+          } else {
+            checkWindowParam(found);
+          }
+        }
         const references = [
           ...scope.variables
             .filter((variable) => variable.defs.length === 0)
@@ -378,7 +468,15 @@ export const globalAccessRule = {
           const entry = entryOf(name);
           const typeOnly = reference.isTypeReference && !reference.isValueReference;
           if (typeOnly) {
-            if (types.includes(name) && entry === undefined) {
+            // the type Window only as the annotation of the designated parameter (not of any other parameter, variable, cast, generic)
+            if (
+              found !== undefined &&
+              types.includes(name) &&
+              inside(found.param, reference.identifier)
+            ) {
+              continue;
+            }
+            if (types.includes(name)) {
               context.report({
                 node: reference.identifier,
                 message: `The type ${name} carries a global scope around; it is not on the allowlist of src/ (GLOBAL_ACCESS in eslint.config.js).`,
@@ -450,30 +548,6 @@ const reachSelectors = (names, except = '') => {
   ].map((selector) => ({ selector, message: REACH_MESSAGE }));
 };
 const reachDefault = reachSelectors(REACH_NAMES);
-// src/select/overlay.ts runs in the web page's process, where the CSP of the extension does not apply: its `win` (the Window of
-// the page, handed in by src/select/index.ts) is used through a closed list of members, as a parameter only. `__fontsnapActive` is
-// the marker of a window that already shows the overlay (declared in src/env.d.ts); it is the one member that is written.
-const OVERLAY_FILE = 'src/select/overlay.ts';
-const OVERLAY_WINDOW_MEMBERS = [
-  'document',
-  'addEventListener',
-  'removeEventListener',
-  'getSelection',
-  'requestAnimationFrame',
-  'devicePixelRatio',
-  '__fontsnapActive',
-];
-const OVERLAY_MESSAGE = `win is used only as win.<${OVERLAY_WINDOW_MEMBERS.join('|')}>, read or called (only __fontsnapActive is written): no fetch, no alias, cast, destructuring, computed access or passing it on (this code runs in the web page's process, outside the CSP of the extension).`;
-const reachOverlay = [
-  ...reachDefault,
-  ...[
-    `Identifier[name='win']:not(MemberExpression[computed=false][property.name=/^(${OVERLAY_WINDOW_MEMBERS.join('|')})$/] > Identifier.object):not(FunctionDeclaration > Identifier.params)`,
-    "AssignmentExpression > MemberExpression.left Identifier[name='win']:not(MemberExpression[property.name='__fontsnapActive'] > Identifier)",
-    "UpdateExpression MemberExpression Identifier[name='win']",
-    "UnaryExpression[operator='delete'] MemberExpression Identifier[name='win']",
-  ].map((selector) => ({ selector, message: OVERLAY_MESSAGE })),
-];
-
 // The two page scripts that listen to the window (hashchange, pagehide): `const win = doc.defaultView;` is the one place
 // a Window is held, and `win` is only ever used for `win.location` and `win.addEventListener`.
 const PAGE_WINDOW_FILES = ['src/result/app.ts', 'src/welcome/app.ts'];
@@ -487,6 +561,53 @@ const reachPages = [
     "Identifier[name='win']:not(MemberExpression[computed=false][property.name=/^(location|addEventListener)$/] > Identifier.object):not(VariableDeclarator > Identifier.id):not(UnaryExpression[operator='!'] > Identifier)",
   ].map((selector) => ({ selector, message: REACH_MESSAGE })),
 ];
+const PAGE_PROCESS_MESSAGE =
+  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_FILES in eslint.config.js.";
+// what makes an element load something or navigate
+const LOADING_NAMES =
+  '/^(src|srcset|srcdoc|href|action|formAction|ping|poster|data|location|innerHTML|outerHTML|cssText|adoptedStyleSheets)$/';
+const LOADING_CALLS =
+  '/^(setAttribute|setAttributeNS|setAttributeNode|insertAdjacentHTML|insertAdjacentElement|insertRule|addRule|replaceSync|open|write|writeln|createContextualFragment|parseFromString|setHTMLUnsafe)$/';
+const pageProcessSelectors = [
+  // no key that is computed at run time (a numeric index is fine), in access, destructuring, literals, classes
+  "MemberExpression[computed=true]:not([property.type='Literal'][property.raw=/^[0-9]+$/])",
+  'Property[computed=true]',
+  'MethodDefinition[computed=true]',
+  'PropertyDefinition[computed=true]',
+  // no casts: `x as unknown as Record<...>` made a Window out of a Document
+  "TSAsExpression:not([typeAnnotation.type='TSTypeReference'][typeAnnotation.typeName.name='const'])",
+  'TSTypeAssertion',
+  // nothing that enumerates, nothing that names a type from a value or from a key
+  'ForInStatement',
+  'WithStatement',
+  'TSIndexedAccessType',
+  'TSTypeQuery',
+  'TSIndexSignature',
+  'TSTypeReference[typeName.name=/^(Record|Object|Function|Proxy|ProxyHandler|PropertyKey)$/]',
+  // Object only as Object.assign(el.style, ...) (the rule above); never as a value or with another member
+  "MemberExpression[object.name='Object']:not([property.name='assign'])",
+  "Identifier[name='Object']:not(MemberExpression[computed=false] > Identifier.object)",
+  // elements: div only; nothing that loads or navigates
+  "CallExpression[callee.property.name='createElement']:not([arguments.0.type='Literal'][arguments.0.value='div'])",
+  `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`,
+  `CallExpression[callee.property.name=${LOADING_CALLS}]`,
+  `Property[key.name=${LOADING_NAMES}]`,
+  'Literal[value=/url\\s*\\(|image-set|@import|expression\\s*\\(|javascript:/i]',
+  'TemplateElement[value.cooked=/url\\s*\\(|image-set|@import|expression\\s*\\(|javascript:/i]',
+].map((selector) => ({ selector, message: PAGE_PROCESS_MESSAGE }));
+
+// The one function that may be injected into a page with chrome.scripting.executeScript, and in no other world than the isolated one.
+const INJECTION_MESSAGE = `chrome.scripting.executeScript is called directly, with an object literal whose func is ${INJECTED_FUNCTION} (src/background/measure.ts, held to the rules of the content script) or a files list, and no world: any other function would run in the web page's process outside the CSP of the extension.`;
+const EXECUTE = "CallExpression[callee.property.name='executeScript']";
+const injectionSelectors = [
+  "MemberExpression[property.name='executeScript']:not(CallExpression > MemberExpression.callee)",
+  `${EXECUTE}:not([arguments.0.type='ObjectExpression'])`,
+  `${EXECUTE} > ObjectExpression > SpreadElement`,
+  `${EXECUTE} > ObjectExpression > Property[computed=true]`,
+  `${EXECUTE} > ObjectExpression > Property:matches([key.name='func'], [key.value='func']):not([value.type='Identifier'][value.name='${INJECTED_FUNCTION}'])`,
+  `${EXECUTE} > ObjectExpression > Property:matches([key.name='world'], [key.value='world'])`,
+].map((selector) => ({ selector, message: INJECTION_MESSAGE }));
+
 const noInjectedCodeBase = [
   ...injectedCodeSelectors.map((selector) => ({
     selector,
@@ -510,6 +631,7 @@ const noInjectedCodeBase = [
   // run time stay the accepted boundary of the template, but the global objects can not even be named in a way that
   // lets them be written: they are read as `globalThis.<allowed name>` only.
   ...globalTampering,
+  ...injectionSelectors,
 ];
 // FontSnap runs WebAssembly only through the files pinned in scripts/lib/vendor.ts. onnxruntime-web can be pointed at
 // other code through its environment (env.wasm.wasmPaths: another URL or a different .wasm; env.wasm.wasmBinary:
@@ -607,7 +729,7 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.ts'],
-    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES, OVERLAY_FILE],
+    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES, ...PAGE_PROCESS_FILES],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -621,8 +743,9 @@ export default tseslint.config(
     },
   },
   {
-    // The overlay of the content script holds the Window of the web page, through a closed list of members.
-    files: [OVERLAY_FILE],
+    // The code that runs in the web page's process: the Window of the page only through the first parameter of startSelection
+    // (GLOBAL_ACCESS.windowParams), and the rules of pageProcessSelectors.
+    files: PAGE_PROCESS_FILES,
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -631,7 +754,8 @@ export default tseslint.config(
         ...noInjectedCode,
         ...noDynamicIn,
         ...numbersAndText,
-        ...reachOverlay,
+        ...reachDefault,
+        ...pageProcessSelectors,
       ],
     },
   },
