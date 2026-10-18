@@ -10,6 +10,7 @@ import {
   ORT_VERSION,
   VENDOR_FILES,
   readVendorFile,
+  type VendorFile,
 } from './scripts/lib/vendor';
 
 const root = import.meta.dirname;
@@ -64,9 +65,14 @@ export function pageEntries(
  * The vendored runtime and model (scripts/lib/vendor.ts, the template's one WebAssembly exception): copies
  * the pinned files into the build byte for byte (the build fails if their sha256 or size differ), and
  * answers the one import of the onnxruntime-web entry point with an external module next to the page
- * chunks, so the bundler never reads, rewrites or minifies the runtime.
+ * chunks, so the bundler never reads, rewrites or minifies the runtime. `options` exist for tests, which use
+ * stand-in files instead of the 47 MB of the real ones.
  */
-export function vendorPlugin(): Plugin {
+export function vendorPlugin(
+  options: { root?: string; vendor?: ReadonlyMap<string, VendorFile> } = {},
+): Plugin {
+  const base = options.root ?? root;
+  const vendor = options.vendor ?? VENDOR_FILES;
   return {
     name: 'vendor-files',
     // before Vite's own resolver, which would find the package and bundle it
@@ -89,8 +95,8 @@ export function vendorPlugin(): Plugin {
       return source === ORT_SPECIFIER ? { id: ORT_EXTERNAL, external: true } : null;
     },
     generateBundle() {
-      for (const [path, entry] of VENDOR_FILES) {
-        this.emitFile({ type: 'asset', fileName: path, source: readVendorFile(root, path, entry) });
+      for (const [path, entry] of vendor) {
+        this.emitFile({ type: 'asset', fileName: path, source: readVendorFile(base, path, entry) });
       }
     },
   };

@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve, sep } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import {
   loadConfigFromFile,
   resolveConfig,
@@ -9,10 +10,15 @@ import {
   type ResolvedConfig,
   type UserConfig,
 } from 'vite';
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { EXTENSION_PAGES } from '../../src/shared/constants';
 import { unexpectedConfigKeys } from '../../scripts/lib/vite-config-keys';
-import { ORT_EXTERNAL, ORT_SPECIFIER } from '../../scripts/lib/vendor';
+import {
+  ORT_EXTERNAL,
+  ORT_SPECIFIER,
+  VENDOR_FILES,
+  type VendorFile,
+} from '../../scripts/lib/vendor';
 import { pageEntries, sharedConfig, vendorPlugin } from '../../vite.shared';
 
 // The src-only guard (scripts/lib/src-only.ts) works only where it is plugged in: the main build,
@@ -290,22 +296,82 @@ describe('vendorPlugin', () => {
     expect(vendorPlugin().enforce).toBe('pre');
   });
 
-  it('emits exactly the five pinned files as assets', () => {
-    const emitted: { fileName: string; type: string; size: number }[] = [];
-    const generate = vendorPlugin().generateBundle as (this: unknown) => void;
-    generate.call({
-      emitFile: (file: { fileName: string; type: string; source: Buffer }) => {
-        emitted.push({ fileName: file.fileName, type: file.type, size: file.source.length });
-      },
+  // Stand-ins under the real paths: the real model is a Git LFS pointer in a checkout that did not pull it (the
+  // checks job), and 47 MB are not needed to see what the plugin does with them.
+  describe('emitting the pinned files', () => {
+    const roots: string[] = [];
+    afterEach(() => {
+      for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true });
     });
-    expect(emitted.map((file) => file.fileName).sort()).toEqual([
-      'model/meta.json',
-      'model/model_fp16.onnx',
-      'ort/ort-wasm-simd-threaded.mjs',
-      'ort/ort-wasm-simd-threaded.wasm',
-      'ort/ort.wasm.min.mjs',
-    ]);
-    expect(emitted.every((file) => file.type === 'asset')).toBe(true);
-    expect(emitted.find((file) => file.fileName === 'model/model_fp16.onnx')?.size).toBe(32697050);
+
+    function standIns(change: Record<string, string> = {}) {
+      const dir = mkdtempSync(join(tmpdir(), 'vendor-plugin-'));
+      roots.push(dir);
+      const vendor = new Map<string, VendorFile>();
+      for (const path of VENDOR_FILES.keys()) {
+        const bytes = Buffer.from(`stand-in for ${path}`);
+        vendor.set(path, {
+          source: `src-${path}`,
+          sha256: createHash('sha256').update(bytes).digest('hex'),
+          size: bytes.length,
+        });
+        mkdirSync(dirname(join(dir, `src-${path}`)), { recursive: true });
+        writeFileSync(join(dir, `src-${path}`), change[path] ?? bytes);
+      }
+      return { dir, vendor };
+    }
+
+    function emit(options: { root: string; vendor: ReadonlyMap<string, VendorFile> }) {
+      const emitted: { fileName: string; type: string; source: Buffer }[] = [];
+      const generate = vendorPlugin(options).generateBundle as (this: unknown) => void;
+      generate.call({
+        emitFile: (file: { fileName: string; type: string; source: Buffer }) => {
+          emitted.push(file);
+        },
+      });
+      return emitted;
+    }
+
+    it('emits exactly the paths of the pinned list, as assets with the bytes of the source', () => {
+      const { dir, vendor } = standIns();
+      const emitted = emit({ root: dir, vendor });
+      expect(emitted.map((file) => file.fileName).sort()).toEqual([...VENDOR_FILES.keys()].sort());
+      expect(emitted.map((file) => file.fileName).sort()).toEqual([
+        'model/meta.json',
+        'model/model_fp16.onnx',
+        'ort/ort-wasm-simd-threaded.mjs',
+        'ort/ort-wasm-simd-threaded.wasm',
+        'ort/ort.wasm.min.mjs',
+      ]);
+      expect(emitted.every((file) => file.type === 'asset')).toBe(true);
+      expect(
+        emitted.find((file) => file.fileName === 'ort/ort.wasm.min.mjs')?.source.toString(),
+      ).toBe('stand-in for ort/ort.wasm.min.mjs');
+    });
+
+    it('fails the build on a changed byte, naming the file', () => {
+      const { dir, vendor } = standIns({
+        'ort/ort-wasm-simd-threaded.wasm': 'stand-in for ort/ort-wasm-simd-threaded.wasn',
+      });
+      expect(() => emit({ root: dir, vendor })).toThrow(
+        /ort\/ort-wasm-simd-threaded\.wasm has sha256/,
+      );
+    });
+
+    it('fails the build on a Git LFS pointer in place of the model, saying how to fix it', () => {
+      const pointer =
+        'version https://git-lfs.github.com/spec/v1\noid sha256:' + '0'.repeat(64) + '\nsize 1\n';
+      const { dir, vendor } = standIns({ 'model/model_fp16.onnx': pointer });
+      expect(() => emit({ root: dir, vendor })).toThrow(
+        /model\/model_fp16\.onnx is a Git LFS pointer.*git lfs pull/,
+      );
+    });
+
+    it('fails the build on a missing source', () => {
+      const { vendor } = standIns();
+      expect(() => emit({ root: join(tmpdir(), 'vendor-plugin-nowhere'), vendor })).toThrow(
+        /not found/,
+      );
+    });
   });
 });
