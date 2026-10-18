@@ -439,6 +439,15 @@ describe('forbiddenNames: what no script of the build uses', () => {
     ).toEqual([]);
   });
 
+  it.each([
+    "new Function('return this')()",
+    "Function('return this')()",
+    'eval(code)',
+    '(0,eval)(code)',
+  ])('refuses code built at run time: %s', (code) => {
+    expect(forbiddenNames('assets/result-abc.js', code), code).not.toEqual([]);
+  });
+
   it('lets only the service worker encode the screenshot with btoa and fromCharCode', () => {
     expect(forbiddenNames('background.js', 'btoa(String.fromCharCode(...b))')).toEqual([]);
     expect(forbiddenNames('assets/result-abc.js', 'btoa(String.fromCharCode(...b))')).toEqual([

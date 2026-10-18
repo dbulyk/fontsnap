@@ -183,6 +183,7 @@ const FORBIDDEN_NAMES = [
   },
   { pattern: /\b(?:btoa|fromCharCode)\b/, except: 'background.js' },
   { pattern: /\bimport\s*\(/, except: undefined },
+  { pattern: /\b(?:eval|Function)\s*\(|\bnew\s+Function\b/, except: undefined },
 ];
 
 /** The forbidden names a built script uses, without duplicates. */
