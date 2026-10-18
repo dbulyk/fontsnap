@@ -1,5 +1,6 @@
 {
  "comment": "RGBA pixels over a backdrop: c' = round((c*a + bg*(255-a))/255). `cases`: bg 255 (white); `blackCases`: bg 0; `images`: the backdrop is chosen per image (light content, alpha-weighted mean of the toGray formula > 127.5, goes on black, else on white; 2*sum(gray*a) > 255*sum(a)). Read by tests/unit/core.test.ts and tests/python/test_reference.py.",
+ "bg": 255,
  "cases": [
   {
    "rgba": [
@@ -129,6 +130,84 @@
     128,
     128,
     128
+   ]
+  },
+  {
+   "rgba": [
+    127,
+    128,
+    1,
+    1
+   ],
+   "rgb": [
+    254,
+    255,
+    254
+   ]
+  },
+  {
+   "rgba": [
+    1,
+    128,
+    255,
+    128
+   ],
+   "rgb": [
+    128,
+    191,
+    255
+   ]
+  },
+  {
+   "rgba": [
+    191,
+    64,
+    0,
+    2
+   ],
+   "rgb": [
+    254,
+    254,
+    253
+   ]
+  },
+  {
+   "rgba": [
+    128,
+    127,
+    255,
+    254
+   ],
+   "rgb": [
+    128,
+    128,
+    255
+   ]
+  },
+  {
+   "rgba": [
+    254,
+    254,
+    1,
+    128
+   ],
+   "rgb": [
+    254,
+    254,
+    128
+   ]
+  },
+  {
+   "rgba": [
+    1,
+    254,
+    128,
+    127
+   ],
+   "rgb": [
+    128,
+    255,
+    192
    ]
   }
  ],

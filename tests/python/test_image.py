@@ -2,6 +2,7 @@
 
 import io
 import json
+from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
@@ -19,9 +20,33 @@ def rgba_image(pixels):
     return Image.fromarray(np.array(pixels, np.uint8)[None], "RGBA")
 
 
-def over(c, a, backdrop):
-    """The integer reference, a second way of rounding half up: floor((2x + 255) / 510)."""
-    return (2 * (c * a + backdrop * (255 - a)) + 255) // 510
+def over(c, a, bg):
+    """Independent reference (scalars or arrays): round((c*a + bg*(255-a)) / 255) by quotient and remainder, no ties as 255 is odd."""
+    a = np.asarray(a, np.int64)
+    q, r = np.divmod(np.asarray(c, np.int64) * a + bg * (255 - a), 255)
+    return q + (2 * r > 255)
+
+
+def test_over_rounds_to_the_nearest_integer():
+    # |255 * over - n| <= 127 is |over - n / 255| < 1/2 in integers; a = 0 gives bg, a = 255 gives c.
+    axis = np.arange(256, dtype=np.int64)
+    bg, a, c = np.meshgrid(np.array([0, 255], np.int64), axis, axis, indexing="ij")
+    n = c * a + bg * (255 - a)
+    v = over(c, a, bg)
+    wrong = np.argwhere((np.abs(255 * v - n) > 127) | ((a == 0) & (v != bg)) | ((a == 255) & (v != c)))
+    first = [(int(bg[k]), int(c[k]), int(a[k])) for k in map(tuple, wrong[:10])]
+    assert len(wrong) == 0, f"{len(wrong)} mismatches, first 10 (bg, c, a): {first}"
+    # A sample (c and a in 0, 17, ..., 255) against exact rational rounding; round() of a Fraction is safe: no ties.
+    for b in (0, 255):
+        for ai in range(0, 256, 17):
+            for ci in range(0, 256, 17):
+                assert over(ci, ai, b) == round(Fraction(ci * ai + b * (255 - ai), 255)), (b, ci, ai)
+
+
+def test_alpha_fixture_agrees_with_the_reference():
+    for case in TABLE["cases"]:
+        *rgb, a = case["rgba"]
+        assert case["rgb"] == [int(over(v, a, TABLE["bg"])) for v in rgb], case
 
 
 def png_roundtrip(im, **save):
@@ -44,13 +69,16 @@ def test_backdrop_by_contrast_matches_the_table_the_js_tests_use(image):
     assert np.array(to_rgb(im)).ravel().tolist() == image["rgb"]
 
 
-@pytest.mark.parametrize("backdrop", [0, 255])
-def test_every_c_a_pair_matches_the_integer_reference(backdrop):
-    c, a = np.meshgrid(np.arange(256), np.arange(256))
-    rgba = np.stack([c, 255 - c, c ^ 0x55, a], -1).astype(np.uint8)
-    out = np.array(to_rgb(Image.fromarray(rgba, "RGBA"), backdrop))
-    want = (2 * (rgba[..., :3].astype(np.int64) * a[..., None] + backdrop * (255 - a[..., None])) + 255) // 510
-    assert (out == want).all()
+def test_to_rgb_composites_every_c_a_pair_like_an_independent_rounding():
+    # Row a, column c holds (c, 255 - c, (c + 128) % 256, a): every channel differs from the others, so a channel swap shows.
+    a, c = np.meshgrid(np.arange(256, dtype=np.int64), np.arange(256, dtype=np.int64), indexing="ij")
+    rgba = np.stack([c, 255 - c, (c + 128) % 256, a], axis=-1)
+    expected = over(rgba[..., :3], a[..., None], TABLE["bg"])
+    got = np.array(to_rgb(Image.fromarray(rgba.astype(np.uint8), "RGBA")), np.int64)
+    assert got.shape == (256, 256, 3)
+    wrong = np.argwhere((got != expected).any(axis=-1))
+    first = [(int(c[i, j]), int(a[i, j])) for i, j in wrong[:10]]
+    assert len(wrong) == 0, f"{len(wrong)} mismatches, first 10 (c, a): {first}"
 
 
 @pytest.mark.parametrize("backdrop", [None, 0, 255])

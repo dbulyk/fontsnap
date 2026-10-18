@@ -53,6 +53,18 @@ const mean = (a: ArrayLike<number>) => {
   return s / a.length;
 };
 
+const ALPHA = JSON.parse(
+  readFileSync(join(ROOT, 'tests/fixtures/alpha-composite.json'), 'utf8'),
+) as { bg: number; cases: { rgba: number[]; rgb: number[] }[] };
+// The backdrop the fixture and the grid composite over (white in production).
+const BG = ALPHA.bg;
+// Independent reference: round((c*a + bg*(255 - a)) / 255) from quotient and remainder
+// (no ties: 255 is odd).
+const over = (c: number, a: number, bg: number) => {
+  const n = c * a + bg * (255 - a);
+  return Math.floor(n / 255) + (2 * (n % 255) > 255 ? 1 : 0);
+};
+
 describe('at', () => {
   it('reads in-range elements and throws a RangeError outside the array', () => {
     expect(at(Uint8Array.from([7, 8]), 1)).toBe(8);
@@ -128,6 +140,28 @@ describe('textcrop primitives', () => {
     expect(toGray(g)).toBe(g.data);
   });
 
+  it('the reference rounds (c*a + bg*(255 - a)) / 255 to the nearest integer', () => {
+    // |255 * over - n| <= 127 is |over - n / 255| < 1/2 in integers; a = 0 gives bg, a = 255 gives c.
+    const wrong: string[] = [];
+    for (const bg of [0, 255])
+      for (let a = 0; a < 256; a++)
+        for (let c = 0; c < 256; c++) {
+          const n = c * a + bg * (255 - a);
+          const v = over(c, a, bg);
+          if (Math.abs(255 * v - n) > 127 || (a === 0 && v !== bg) || (a === 255 && v !== c))
+            wrong.push(`bg=${bg} c=${c} a=${a}: ${v}`);
+        }
+    expect({ total: wrong.length, first: wrong.slice(0, 10) }).toEqual({ total: 0, first: [] });
+  });
+
+  it('the alpha fixture agrees with the reference', () => {
+    for (const { rgba, rgb } of ALPHA.cases) {
+      expect(rgba).toHaveLength(4);
+      const [r = 0, g = 0, b = 0, a = 0] = rgba;
+      expect(rgb).toEqual([over(r, a, BG), over(g, a, BG), over(b, a, BG)]);
+    }
+  });
+
   it('composites RGBA over a white or a black backdrop (the tables the Python reference is tested with)', () => {
     for (const [backdrop, rows] of [
       [255, TABLE.cases],
@@ -166,6 +200,26 @@ describe('textcrop primitives', () => {
         }
       expect(mismatches, `backdrop ${String(backdrop)}`).toEqual([]);
     }
+  });
+
+  it('composites every (c, a) pair like an independent integer rounding', () => {
+    // A 256 x 256 image, row a, column c: pixel a * 256 + c holds (c, 255 - c, (c + 128) % 256, a),
+    // so every channel differs from the others (a channel swap shows) and w * h indexing is pinned.
+    const rgba = new Uint8Array(256 * 256 * 4);
+    for (let a = 0; a < 256; a++)
+      for (let c = 0; c < 256; c++) rgba.set([c, 255 - c, (c + 128) % 256, a], (a * 256 + c) * 4);
+    const im = fromRGBA(rgba, 256, 256);
+    expect([im.w, im.h, im.data.length]).toEqual([256, 256, 256 * 256 * 3]);
+    const wrong: string[] = [];
+    for (let a = 0; a < 256; a++)
+      for (let c = 0; c < 256; c++) {
+        const i = (a * 256 + c) * 3;
+        const want = [over(c, a, BG), over(255 - c, a, BG), over((c + 128) % 256, a, BG)];
+        const got = [...im.data.subarray(i, i + 3)];
+        if (got.join() !== want.join())
+          wrong.push(`c=${c} a=${a}: ${got.join()} != ${want.join()}`);
+      }
+    expect({ total: wrong.length, first: wrong.slice(0, 10) }).toEqual({ total: 0, first: [] });
   });
 
   it('leaves every opaque pixel byte for byte as it was', () => {
