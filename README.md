@@ -15,8 +15,15 @@ enforced by code and automated checks, not by review alone; see "What the checks
 - **Region selection.** Toolbar icon (or Alt+Shift+F, or the context menu "identify font in a region") injects a selection
   overlay (`src/select`), the service worker (`src/background`) takes a screenshot of the visible tab, crops it (OffscreenCanvas,
   PNG, or a JPEG quality ladder when the crop would not fit `chrome.storage.session`) and opens the result page.
-- **Right-click on an image.** The image is downloaded by the service worker when the server allows it, otherwise the tab is
-  screenshot and cropped to the image's box.
+- **Right-click on an image** analyses that image, in three steps (`src/background/clicked.ts`). (1) The pixels are loaded in the
+  frame where the click happened (`chrome.scripting.executeScript` with `frameIds: [info.frameId]`, `loadImagePixels`): the element
+  is drawn on a canvas, or, when the canvas is tainted, the clicked `srcUrl` is loaded once more with CORS; the PNG goes back to the
+  service worker and nowhere else (an image larger than 2400 px is scaled). (2) Otherwise the tab is scrolled to the image, screenshot
+  and cropped by `getBoundingClientRect() × devicePixelRatio` (a larger image: its visible part; an image in an iframe: moved by the
+  position of the `<iframe>` in the top frame, direct children only) and the scroll positions of every scroller are put back in a
+  `finally`. (3) Otherwise the whole visible area is analysed and the result page says so (`wholeNote`). A `data:` image is decoded
+  in the worker. With `activeTab` alone a cross-origin iframe is probably not scriptable (steps 1 and 2 then fall through to 3); the
+  e2e build's loopback host permission stands in for the grant, so the e2e tests prove the logic, not the grant.
 - **Result page** (`src/result`): paste, drop or choose an image (also the way in on `chrome://` pages), top-5 Google Fonts with
   a live preview, relative score (results below 1% are hidden), "copy CSS" with the category's generic fallback.
 - **Welcome page** (`src/welcome`) opens once on install (not on updates) with the pin or usage instructions, depending on
@@ -139,8 +146,8 @@ reach and replace those one after another, so the layers do not try to list the 
    styles through CSSOM, which the CSP does not block). There is no `img-src` and no `worker-src`: the pages show packaged icons and draw the
    crop on a canvas from bytes decoded by `src/shared/data-url.ts` (no `data:` or `blob:` image), and the workers of the runtime are files of the
    extension; the fallbacks (`'self'`) are right. `data:` URLs cannot be fetched either, which is why the screenshot and the handed-over crop are
-   decoded by `src/shared/data-url.ts`. The right-clicked image of another origin cannot be downloaded any more, so it
-   is always read from a screenshot of the visible area. `object-src 'none'` and `base-uri 'none'` close the plugin and `<base>` doors;
+   decoded by `src/shared/data-url.ts`. The worker downloads nothing: the right-clicked image is loaded in its own page
+   (`loadImagePixels`) or read from a screenshot of the visible area. `object-src 'none'` and `base-uri 'none'` close the plugin and `<base>` doors;
    `form-action` and `frame-ancestors` are not set (no page has a form, and no page of the extension is web accessible, so none can be framed).
 2. **The runtime lives in a worker of its own** (`env.wasm.proxy = true`): it fetches and compiles its `.wasm` in a global scope that nothing in the
    page can reach, so replacing `fetch`, a prototype or a method in the page changes nothing there (`tests/e2e/runtime.spec.ts` shows that
@@ -153,11 +160,13 @@ reach and replace those one after another, so the layers do not try to list the 
    that hand over a Window (`defaultView`, `contentWindow`, `view`, `source`, `currentTarget`, ...) are refused, the two page scripts that
    listen to their window hold it in one exact form. Adding a line is a decision about what the extension may touch, like a permission.
    The code that runs in the web page's process, where the CSP does not apply (**all of `src/select/`**, by glob, a new file included, and
-   `src/background/measure.ts`, the one function handed to `chrome.scripting.executeScript`, which lint accepts as `func` and nothing
-   else), is held to a closed class (`PAGE_PROCESS_GLOBS`): the Window is the first parameter of `startSelection`, under any name, used only
+   `src/background/measure.ts` and `src/background/load-image.ts`, the two functions handed to `chrome.scripting.executeScript`, which lint
+   accepts as `func` and nothing else; `measureImage` measures and scrolls, `loadImagePixels` is the one function with an exception to
+   "nothing that loads": `new Image()` with `crossOrigin = 'anonymous'` and one `src =` from its first parameter, the `srcUrl` of the click,
+   `DOM_MEMBERS.fromParameter`), is held to a closed class (`PAGE_PROCESS_GLOBS`): the Window is the first parameter of `startSelection`, under any name, used only
    as `.document`, `.addEventListener`, `.removeEventListener`, `.getSelection`, `.requestAnimationFrame`, `.devicePixelRatio` (the marker
    `__fontsnapActive` is the one thing written); no computed key, no cast, no `for...in`, no `typeof`/indexed types, no `Object.*` but
-   `Object.assign(el.style, { key: value })` (a statement of its own; its result is never kept) with the overlay's own style keys (`cursor` and `background`, the two that could take a `url()`, only as a keyword, hex colour or `rgb()`; no `.style` anywhere else, no `setProperty`/`cssText`), only `div` elements, nothing that loads or navigates, no `import.meta`, and **every member of every DOM object is on an allowlist by type** (`DOM_MEMBERS`, the type-aware rule `fontsnap/dom-members`: a member declared in `lib.dom.d.ts` may be read, called or written only as the list says, on any expression of a DOM type - `createElementNS`, `createAttribute`, `setAttributeNode*`, `querySelector*`, `ownerDocument`, `click`, `href`, `innerHTML` and the rest are not on it; `left`/`top`/`width`/`height` take a literal length or exactly `${number}px`); `fetch` is on no file's list. `src/select` imports
+   `Object.assign(el.style, { key: value })` (a statement of its own; its result is never kept) with the overlay's own style keys (`cursor` and `background`, the two that could take a `url()`, only as a keyword, hex colour or `rgb()`; no `.style` anywhere else, no `setProperty`/`cssText`), only `div` elements, nothing that loads or navigates, no `import.meta`, and **no types of their own** (`PAGE_TYPES`, the rule `fontsnap/page-types`: a DOM value stored in a variable, parameter or return of an own `interface` or object type would escape the check below, so the only object types are library types, type parameters and the listed names; no type literal, mapped type, class, enum, and no object literal whose type is inferred), and **every member of every DOM object is on an allowlist by type** (`DOM_MEMBERS`, the type-aware rule `fontsnap/dom-members`: a member declared in `lib.dom.d.ts` may be read, called or written only as the list says, on any expression of a DOM type - `createElementNS`, `createAttribute`, `setAttributeNode*`, `querySelector*`, `ownerDocument`, `click`, `href`, `innerHTML` and the rest are not on it; `left`/`top`/`width`/`height` take a literal length or exactly `${number}px`); `fetch` is on no file's list. `src/select` imports
    **values only from itself** (`./name`; other modules only as `import type`, `measure.ts` takes no value import), so nothing outside the
    folder can be bundled into `select.js`, and `tests/unit/select-bundle.test.ts` reads the real bundle to show it. `this` is allowed only
    in a class constructor (in a callback it is the window).
@@ -167,7 +176,7 @@ reach and replace those one after another, so the layers do not try to list the 
    module header or a `.wasm` name in any spelling, including base64 (at every alignment), hex and byte lists that DECODE to one or to a URL;
    every URL in a string must be on `fonts.googleapis.com` or `fonts.google.com`; no `Worker`, `XMLHttpRequest`, `WebSocket`, `atob`, `eval`, `fetch`/`Request` outside `background.js` and the result chunk,
    `Function`, dynamic `import()`, `postMessage`, `webdriver`, resource-timing resizing, `WebAssembly`; `defaultView` only in the one form
-   of the page scripts; in `select.js` and in the function that `background.js` hands to `executeScript` (found in the AST) no literal network API or way to load/navigate (`fetch`, `Image`, `.src =`, `setAttribute`, `open(`, `location`, `url(`...); and in the chunk that imports the runtime `wasmPaths` is assigned exactly once to `chrome.runtime.getURL("ort/")`,
+   of the page scripts; in `select.js` and in the two functions that `background.js` hands to `executeScript` (found in the AST, de-duplicated by text: exactly two) no literal network API or way to load/navigate (`fetch`, `Image`, `.src =`, `setAttribute`, `open(`, `location`, `url(`...), but for the loader's `new Image`, `.crossOrigin = "anonymous"` and `.src = <its first parameter>`, once each; and in the chunk that imports the runtime `wasmPaths` is assigned exactly once to `chrome.runtime.getURL("ort/")`,
    `proxy` exactly once to `true`, and the start-up check is there.
 
 What this does not do: a script that already runs in the page can defeat any check that runs in the same page; layers 3 and 4 and the

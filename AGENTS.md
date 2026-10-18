@@ -51,12 +51,12 @@ Setup: `git lfs pull` (model and test images), `npm ci`, then once `npx playwrig
   a prototype. `src/` reaches the environment through an allowlist (`GLOBAL_ACCESS` in `eslint.config.js`): a new global, or a new member of
   `chrome`/`navigator`/`performance`/`Object`/`String`, is a deliberate edit of that list, like a permission. The runtime runs in its own
   worker (`env.wasm.proxy = true`, checked at start-up and in `verify-dist`); do not turn that off.
-  All of `src/select/` (by glob: a new file there is under the rules at once) and `src/background/measure.ts` run in the web page's process,
+  All of `src/select/` (by glob: a new file there is under the rules at once) `src/background/measure.ts` and `src/background/load-image.ts` run in the web page's process,
   outside the CSP: they are held to `PAGE_PROCESS_GLOBS` in `eslint.config.js` (the Window is the first parameter of `startSelection` and
-  only its listed members are used; no computed key, no cast, no `Object.*` but `Object.assign(el.style, { key: value })` with the keys of `STYLE_KEYS`: a style can load a file with `url()`, so no other way to write one). Every member of every DOM object used there is on `DOM_MEMBERS` (allowlist by type, rule `fontsnap/dom-members`): a new DOM member is a deliberate edit of that list. `src/select` imports values
+  only its listed members are used; no computed key, no cast, no `Object.*` but `Object.assign(el.style, { key: value })` with the keys of `STYLE_KEYS`: a style can load a file with `url()`, so no other way to write one). Every member of every DOM object used there is on `DOM_MEMBERS` (allowlist by type, rule `fontsnap/dom-members`): a new DOM member is a deliberate edit of that list. Page code has no types of its own (`PAGE_TYPES`, rule `fontsnap/page-types`): library types, type parameters and the listed names only, so a DOM value can never be hidden behind an interface of ours. `src/select` imports values
   from itself only (everything else as `import type`) and `tests/unit/select-bundle.test.ts` checks the real `select.js`; do not import a
-  shared module there, write the few lines in `src/select/` (see `chrome.ts`). `measureImage` is the only function lint accepts as `func`
-  of `executeScript`; `fetch` is on no file's allowlist, and `this` is only for class constructors.
+  shared module there, write the few lines in `src/select/` (see `chrome.ts`). `measureImage` and `loadImagePixels` are the only functions lint accepts as `func`
+  of `executeScript` (verify-dist: exactly these two), and `loadImagePixels` is the only code that may load an address (`new Image()`, `crossOrigin = 'anonymous'`, one `src =` from its first parameter, the `srcUrl` of the click); `fetch` is on no file's allowlist, and `this` is only for class constructors.
   The Python reference (`python/`), `data/`, `store/` and `scripts/i18n/` are outside the Node toolchain and are
   never formatted or linted by it; `store/` is not touched at all (the Web Store texts and privacy policy).
 - **Allowlists are `Map`/`Set` (or arrays searched by value), or checked with `Object.hasOwn`; never `obj[key]` or
