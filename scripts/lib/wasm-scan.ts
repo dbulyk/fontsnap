@@ -181,6 +181,14 @@ function runtimeSettingProblems(file: string, text: string): string[] {
   const exact =
     assignments.length === 1 &&
     (caller === undefined || definitions.filter((name) => name === caller).length === 1);
+  // the start-up check of src/result/model.ts (assertPinnedRuntime) is there and is called with the runtime URL
+  const call = new RegExp(
+    `\\(\\s*${NAME}\\.env\\s*,\\s*(?:${RUNTIME_URL}|(${NAME})\\s*\\(\\s*\\))\\s*\\)`,
+  ).exec(text);
+  const checkIsCalled = call !== null && (call[1] === undefined || definitions.includes(call[1]));
+  const checkExists =
+    READS.slice(2).every((message) => new RegExp(message.source).test(text)) &&
+    (text.match(READS[0] ?? /$^/g)?.length ?? 0) >= 2;
   let rest = text.replace(ASSIGNMENT, '');
   for (const read of READS) rest = rest.replace(read, '');
   const stray = /wasmPaths|wasmBinary/.exec(rest);
@@ -188,6 +196,11 @@ function runtimeSettingProblems(file: string, text: string): string[] {
   if (!exact) {
     problems.push(
       `${file}: wasmPaths must be assigned exactly once, and its value exactly chrome.runtime.getURL("ort/") (found ${String(assignments.length)} assignment(s))`,
+    );
+  }
+  if (!checkIsCalled || !checkExists) {
+    problems.push(
+      `${file}: the start-up check of the runtime (assertPinnedRuntime, called with the packaged directory) is missing`,
     );
   }
   if (stray !== null) {

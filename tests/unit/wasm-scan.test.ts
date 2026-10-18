@@ -132,6 +132,22 @@ describe('scriptProblems: the settings that would make onnxruntime-web load othe
     ).toContain('wasmPaths');
   });
 
+  it('rejects a chunk without the start-up check, or without the call of it', () => {
+    const noCall = REAL_CHUNK.replace('(o.env,I())', '()');
+    expect(scriptProblems(RESULT, noCall).join('\n')).toContain('start-up check');
+    const wrongArgument = REAL_CHUNK.replace('(o.env,I())', '(o.env,"x")');
+    expect(scriptProblems(RESULT, wrongArgument).join('\n')).toContain('start-up check');
+    const noMessages = REAL_CHUNK.replaceAll('Refusing to start: ', 'Stop: ');
+    expect(scriptProblems(RESULT, noMessages).join('\n')).toMatch(
+      /start-up check|wasmPaths|wasmBinary/,
+    );
+    const inlined = withWasmPaths('chrome.runtime.getURL("ort/")').replace(
+      '(o.env,I())',
+      '(o.env,chrome.runtime.getURL("ort/"))',
+    );
+    expect(scriptProblems(RESULT, inlined)).toEqual([]);
+  });
+
   it('rejects any other mention of the two names in that chunk', () => {
     for (const extra of [
       'x.wasmBinary=b',
