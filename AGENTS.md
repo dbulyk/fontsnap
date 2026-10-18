@@ -51,6 +51,8 @@ Setup: `git lfs pull` (model and test images), `npm ci`, then once `npx playwrig
   a prototype. `src/` reaches the environment through an allowlist (`GLOBAL_ACCESS` in `eslint.config.js`): a new global, or a new member of
   `chrome`/`navigator`/`performance`/`Object`/`String`, is a deliberate edit of that list, like a permission. The runtime runs in its own
   worker (`env.wasm.proxy = true`, checked at start-up and in `verify-dist`); do not turn that off.
+  `src/select/overlay.ts` runs in the web page's process, outside the CSP: its `win` is used through the closed list of members in
+  `eslint.config.js` (`OVERLAY_WINDOW_MEMBERS`), `fetch` is on no file's allowlist, and `this` is only for class constructors.
   The Python reference (`python/`), `data/`, `store/` and `scripts/i18n/` are outside the Node toolchain and are
   never formatted or linted by it; `store/` is not touched at all (the Web Store texts and privacy policy).
 - **Allowlists are `Map`/`Set` (or arrays searched by value), or checked with `Object.hasOwn`; never `obj[key]` or

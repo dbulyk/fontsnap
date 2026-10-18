@@ -133,11 +133,15 @@ reach and replace those one after another, so the layers do not try to list the 
    `String`, ...) only through the members named there, and never written, aliased, destructured, computed or passed on; the properties
    that hand over a Window (`defaultView`, `contentWindow`, `view`, `source`, `currentTarget`, ...) are refused, the two page scripts that
    listen to their window hold it in one exact form. Adding a line is a decision about what the extension may touch, like a permission.
+   The content script (`src/select/overlay.ts`) runs in the web page's process, where the CSP does not apply: its `win` is used only as
+   `win.document`, `addEventListener`, `removeEventListener`, `getSelection`, `requestAnimationFrame`, `devicePixelRatio` (and the marker
+   `__fontsnapActive` is the one thing written), never aliased, cast, destructured, indexed or passed on, and `fetch` is on no file's list.
+   `this` is allowed only in a class constructor (in a callback it is the window).
    The runtime's settings (`env`, `wasmPaths`, `wasmBinary`, the `onnxruntime-*` import) exist only in `src/result/model.ts`, which
    `model.test.ts` pins as an allowlist of its calls, strings, properties and operators.
 4. **`verify-dist`** scans every built `.js`/`.mjs` (the vendor files are exempt by exact path and sha256 only; `scripts/lib/wasm-scan.ts`): a
    module header or a `.wasm` name in any spelling, including base64 (at every alignment), hex and byte lists that DECODE to one or to a URL;
-   every URL in a string must be on `fonts.googleapis.com` or `fonts.google.com`; no `Worker`, `XMLHttpRequest`, `WebSocket`, `atob`, `eval`,
+   every URL in a string must be on `fonts.googleapis.com` or `fonts.google.com`; no `Worker`, `XMLHttpRequest`, `WebSocket`, `atob`, `eval`, `fetch`/`Request` outside `background.js` and the result chunk,
    `Function`, dynamic `import()`, `postMessage`, `webdriver`, resource-timing resizing, `WebAssembly`; `defaultView` only in the one form
    of the page scripts; and in the chunk that imports the runtime `wasmPaths` is assigned exactly once to `chrome.runtime.getURL("ort/")`,
    `proxy` exactly once to `true`, and the start-up check is there.
