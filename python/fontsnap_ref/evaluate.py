@@ -10,7 +10,6 @@ from pathlib import Path
 
 from PIL import Image
 
-from .image import to_rgb
 from .pipeline import ROOT, Families, Model, merge_family, nz, predict_variants
 
 CONFIGS = {"bare": (("pack",), 0.0, False), "best": (("pack", "crop"), 0.5, True)}
@@ -45,7 +44,7 @@ def main(argv=None):
     fam, model = Families(), Model(Path(a.model)) if a.model else Model()
     preds = {}
     for im, _ in labels:
-        p = predict_variants(model, to_rgb(Image.open(d / "images" / im)))
+        p = predict_variants(model, Image.open(d / "images" / im))
         preds[im] = {c: fam.rank_families([p[v] for v in vs], al, mg) for c, (vs, al, mg) in CONFIGS.items()}
     res = {"metrics": score(preds, labels), "preds": preds}
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
