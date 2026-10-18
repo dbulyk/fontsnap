@@ -91,14 +91,49 @@ export const ALLOWED_ORIGINS: ReadonlySet<string> = new Set([
   'fonts.google.com',
 ]);
 
+const URL_IN_TEXT =
+  /(?:^|[^A-Za-z0-9+.-])(?:[a-z][a-z0-9+.-]*:)?\/\/(?:[^/\s@]*@)?([^/\s:"'`?#\\@]+)/gi;
+const originsIn = (form: string): string[] =>
+  [...form.matchAll(URL_IN_TEXT)].map((match) => (match[1] ?? '').toLowerCase());
+
 /** Hosts of the absolute and protocol-relative URLs that the string literals of a script spell (any scheme, escapes and %-escapes decoded). */
 export function urlOrigins(text: string): string[] {
   const hosts = new Set<string>();
-  const url = /(?:^|[^A-Za-z0-9+.-])(?:[a-z][a-z0-9+.-]*:)?\/\/(?:[^/\s@]*@)?([^/\s:"'`?#\\@]+)/gi;
-  for (const form of stringForms(text)) {
-    for (const match of form.matchAll(url)) hosts.add((match[1] ?? '').toLowerCase());
-  }
+  for (const form of stringForms(text)) for (const host of originsIn(form)) hosts.add(host);
   return [...hosts].sort();
+}
+
+/**
+ * Text that is not written as a URL or a file name but decodes to one (review round 3 of PR #6: `atob('aHR0cHM6Ly9ldmls...')`
+ * and `.wasm` in base64 were invisible): the base64 / base64url (at every alignment of the four-character groups), hex and
+ * byte-number-list forms of what a string literal or an array holds. Returns what each decodes to when that is a module
+ * header, a `.wasm` name or a URL on a host that is not allowed.
+ */
+export function hiddenTexts(text: string): string[] {
+  const decoded: string[] = [];
+  for (const form of stringForms(text)) {
+    for (const token of form.match(/[A-Za-z0-9+/_-]{8,}={0,2}/g) ?? []) {
+      const standard = token.replace(/-/g, '+').replace(/_/g, '/').replace(/=+$/, '');
+      for (let skip = 0; skip < 4; skip++) {
+        const part = standard.slice(skip);
+        if (part.length >= 8) decoded.push(Buffer.from(part, 'base64').toString('latin1'));
+      }
+    }
+    for (const token of form.match(/(?:[0-9a-f]{2}){6,}/gi) ?? []) {
+      decoded.push(Buffer.from(token, 'hex').toString('latin1'));
+    }
+  }
+  for (const list of text.match(/(?<![\w.])(?:\d{1,3}\s*,\s*){5,}\d{1,3}(?![\w.])/g) ?? []) {
+    decoded.push(String.fromCharCode(...list.split(',').map((n) => Number(n.trim()) & 0xff)));
+  }
+  const found = new Set<string>();
+  for (const form of decoded) {
+    if (/\.wasm(?:[?#\s\0]|$)|\0asm/i.test(form)) found.add('a .wasm name or a module header');
+    for (const host of originsIn(form)) {
+      if (host.includes('.') && !ALLOWED_ORIGINS.has(host)) found.add(`a URL on ${host}`);
+    }
+  }
+  return [...found].sort();
 }
 
 /**
@@ -131,6 +166,34 @@ const TAMPERING = [
 /** What a script spells that replaces or changes a global, a property or a prototype; empty if nothing. */
 export function tamperingPrimitives(text: string): string[] {
   return TAMPERING.filter(({ pattern }) => pattern.test(text)).map(({ what }) => what);
+}
+
+/**
+ * Names a script of the build does not use at all (the vendored runtime files are exempt, as everywhere): other ways to talk to
+ * the network, to run code in another global scope, to decode text into a URL, to tell a test from a user, to empty the
+ * resource timing buffer or to touch WebAssembly. The sources are held to an allowlist of globals (eslint.config.js); this
+ * is what was built, dependencies included. Allowed by file where the source needs it: btoa and fromCharCode encode the
+ * screenshot in the service worker.
+ */
+const FORBIDDEN_NAMES = [
+  {
+    pattern:
+      /\b(?:XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|SharedWorker|Worker|WorkerGlobalScope|BroadcastChannel|MessageChannel|postMessage|TextDecoder|atob|unescape|decodeURI|fromCodePoint|webdriver|setResourceTimingBufferSize|clearResourceTimings|WebAssembly|instantiateStreaming|compileStreaming)\b/,
+    except: undefined,
+  },
+  { pattern: /\b(?:btoa|fromCharCode)\b/, except: 'background.js' },
+  { pattern: /\bimport\s*\(/, except: undefined },
+];
+
+/** The forbidden names a built script uses, without duplicates. */
+export function forbiddenNames(file: string, text: string): string[] {
+  const names = new Set<string>();
+  for (const { pattern, except } of FORBIDDEN_NAMES) {
+    if (file === except) continue;
+    const match = new RegExp(pattern.source, 'g');
+    for (const found of text.matchAll(match)) names.add(found[0].replace(/\s+/g, ''));
+  }
+  return [...names].sort();
 }
 
 /** The chunk that imports the vendored runtime is the one that configures it (src/result/model.ts is bundled into it). */
@@ -244,5 +307,19 @@ export function scriptProblems(file: string, text: string): string[] {
     (what) =>
       `${file}: uses a primitive that replaces or changes a global, a property or a prototype (${what})`,
   );
-  return [...problems, ...origins, ...tampering, ...runtimeSettingProblems(file, text)];
+  const hidden = hiddenTexts(text).map(
+    (what) => `${file}: has text that decodes to ${what} (base64, hex or a list of bytes)`,
+  );
+  const names = forbiddenNames(file, text).map(
+    (name) =>
+      `${file}: uses ${name}, which no script of the build uses (the sources are held to an allowlist of globals, see eslint.config.js)`,
+  );
+  return [
+    ...problems,
+    ...origins,
+    ...tampering,
+    ...hidden,
+    ...names,
+    ...runtimeSettingProblems(file, text),
+  ];
 }
