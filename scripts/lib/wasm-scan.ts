@@ -141,6 +141,8 @@ const NAME = '[A-Za-z_$][\\w$]*';
 /** What must follow a value for it to be that value alone: the end of the expression. */
 const END = '(?=\\s*(?:[;,)}\\]]|$))';
 const RUNTIME_URL = 'chrome\\.runtime\\.getURL\\("ort\\/"\\)';
+/** `proxy = true` as terser writes it (`!0`) or as written: the runtime runs, and fetches its files, in a worker of its own. */
+const PROXY_TRUE = new RegExp(`\\.proxy\\s*=\\s*(?:!0|true)${END}`, 'g');
 const DEFINITION = new RegExp(
   `(?:\\b(?:var|let|const)\\s+(${NAME})\\s*=\\s*\\(\\)\\s*=>\\s*${RUNTIME_URL}${END}|\\bfunction\\s+(${NAME})\\s*\\(\\)\\s*\\{\\s*return\\s*${RUNTIME_URL}\\s*;?\\s*\\})`,
   'g',
@@ -155,8 +157,12 @@ const ASSIGNMENT = new RegExp(
  * today (the lockfile pins it); a different shape fails closed and is edited here on purpose.
  */
 const READS = [
-  new RegExp(`getOwnPropertyDescriptor\\(\\s*${NAME}\\s*,\\s*"wasm(?:Paths|Binary)"\\s*\\)`, 'g'),
+  new RegExp(
+    `getOwnPropertyDescriptor\\(\\s*${NAME}\\s*,\\s*"(?:wasmPaths|wasmBinary|proxy)"\\s*\\)`,
+    'g',
+  ),
   new RegExp(`\\{\\s*wasmBinary\\s*:\\s*${NAME}\\s*\\}\\s*=\\s*${NAME}`, 'g'),
+  /Refusing to start: proxy must be true/g,
   /Refusing to start: wasmPaths must be exactly/g,
   /Refusing to start: wasmBinary must not be set/g,
 ];
@@ -168,12 +174,12 @@ const READS = [
  * (nothing computed, decoded, conditional, wrapped or from a literal); every other mention is one of READS.
  */
 function runtimeSettingProblems(file: string, text: string): string[] {
-  const mentions = (text.match(/wasmPaths|wasmBinary/g) ?? []).length;
-  if (mentions === 0) return [];
   if (!importsRuntime(text)) {
-    return [
-      `${file}: mentions wasmPaths/wasmBinary but does not configure the vendored runtime (a setting that could point onnxruntime-web at other code or bytes)`,
-    ];
+    return /wasmPaths|wasmBinary/.test(text)
+      ? [
+          `${file}: mentions wasmPaths/wasmBinary but does not configure the vendored runtime (a setting that could point onnxruntime-web at other code or bytes)`,
+        ]
+      : [];
   }
   const assignments = [...text.matchAll(ASSIGNMENT)];
   const definitions = [...text.matchAll(DEFINITION)].map((match) => match[1] ?? match[2]);
@@ -188,14 +194,22 @@ function runtimeSettingProblems(file: string, text: string): string[] {
   const checkIsCalled = call !== null && (call[1] === undefined || definitions.includes(call[1]));
   const checkExists =
     READS.slice(2).every((message) => new RegExp(message.source).test(text)) &&
-    (text.match(READS[0] ?? /$^/g)?.length ?? 0) >= 2;
-  let rest = text.replace(ASSIGNMENT, '');
+    (text.match(READS[0] ?? /$^/g)?.length ?? 0) >= 3;
+  // `proxy` is assigned exactly once, to true: any other assignment (or none) leaves the runtime in this page's realm
+  const proxyAssignments = (text.match(/\.proxy\s*=(?!=)/g) ?? []).length;
+  const proxyExact = proxyAssignments === 1 && [...text.matchAll(PROXY_TRUE)].length === 1;
+  let rest = text.replace(ASSIGNMENT, '').replace(PROXY_TRUE, '');
   for (const read of READS) rest = rest.replace(read, '');
   const stray = /wasmPaths|wasmBinary/.exec(rest);
   const problems: string[] = [];
   if (!exact) {
     problems.push(
       `${file}: wasmPaths must be assigned exactly once, and its value exactly chrome.runtime.getURL("ort/") (found ${String(assignments.length)} assignment(s))`,
+    );
+  }
+  if (!proxyExact) {
+    problems.push(
+      `${file}: proxy must be assigned exactly once, to true (the runtime must fetch its files in its own worker; found ${String(proxyAssignments)} assignment(s))`,
     );
   }
   if (!checkIsCalled || !checkExists) {

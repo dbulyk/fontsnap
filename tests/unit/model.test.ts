@@ -153,16 +153,21 @@ describe('the runtime is configured to load only the packaged, pinned files', ()
     expect(wasmPaths).toBe(chrome.runtime.getURL('ort/'));
   });
 
-  it('does not set wasmBinary, or anything but wasmPaths and numThreads', async () => {
+  it('runs the runtime in its own worker (proxy), where nothing of this page can replace fetch', async () => {
+    await loadModel();
+    expect(ortMock.env.wasm['proxy']).toBe(true);
+  });
+
+  it('does not set wasmBinary, or anything but wasmPaths, proxy and numThreads', async () => {
     await loadModel();
     expect(ortMock.env.wasm['wasmBinary']).toBeUndefined();
-    expect(Object.keys(ortMock.env.wasm).sort()).toEqual(['numThreads', 'wasmPaths']);
+    expect(Object.keys(ortMock.env.wasm).sort()).toEqual(['numThreads', 'proxy', 'wasmPaths']);
   });
 
   it('configureRuntime() alone does exactly that, on any environment', () => {
     const env = { wasm: {} };
     configureRuntime(env);
-    expect(Object.keys(env.wasm).sort()).toEqual(['numThreads', 'wasmPaths']);
+    expect(Object.keys(env.wasm).sort()).toEqual(['numThreads', 'proxy', 'wasmPaths']);
     expect(Object.keys(env)).toEqual(['wasm']);
   });
 
@@ -224,7 +229,7 @@ describe('the runtime is configured to load only the packaged, pinned files', ()
       expect(text).toContain('assertPinnedRuntime(ort.env, runtimeUrl());');
     });
 
-    it('assigns to the environment in exactly two places: wasmPaths and numThreads', () => {
+    it('assigns to the environment in exactly three places: wasmPaths, proxy and numThreads', () => {
       const assigned: string[] = [];
       const visit = (node: ts.Node): void => {
         if (
@@ -238,7 +243,11 @@ describe('the runtime is configured to load only the packaged, pinned files', ()
         ts.forEachChild(node, visit);
       };
       visit(source);
-      expect(assigned.sort()).toEqual(['env.wasm.numThreads', 'env.wasm.wasmPaths']);
+      expect(assigned.sort()).toEqual([
+        'env.wasm.numThreads',
+        'env.wasm.proxy',
+        'env.wasm.wasmPaths',
+      ]);
     });
 
     it('has no way around that: no wasmBinary, no object for wasmPaths, no Object.assign/Reflect/defineProperty, no other import', () => {
@@ -269,7 +278,8 @@ describe('the runtime is configured to load only the packaged, pinned files', ()
 // runtime must still point at the packaged directory, with no override of its bytes, when the session is created.
 describe('assertPinnedRuntime: the runtime points only at the packaged files when it starts', () => {
   const PINNED = 'chrome-extension://test-extension-id/ort/';
-  const envWith = (wasm: object) => ({ wasm });
+  /** A runtime environment as configureRuntime leaves it, unless the test says otherwise. */
+  const envWith = (wasm: object) => ({ wasm: { proxy: true, ...wasm } });
 
   it('accepts the packaged directory and no binary', () => {
     expect(() => {
@@ -309,10 +319,10 @@ describe('assertPinnedRuntime: the runtime points only at the packaged files whe
   });
 
   it('refuses a wasmPaths that is a getter (it could answer differently later)', () => {
-    const wasm = {};
+    const wasm = { proxy: true };
     Object.defineProperty(wasm, 'wasmPaths', { get: () => PINNED, enumerable: true });
     expect(() => {
-      assertPinnedRuntime(envWith(wasm), PINNED);
+      assertPinnedRuntime({ wasm }, PINNED);
     }).toThrow(/wasmPaths/);
   });
 
@@ -334,16 +344,43 @@ describe('assertPinnedRuntime: the runtime points only at the packaged files whe
     expect(() => {
       assertPinnedRuntime(envWith({ wasmPaths: PINNED, wasmBinary: undefined }), PINNED);
     }).toThrow(/wasmBinary/);
-    const getter = { wasmPaths: PINNED };
+    const getter = { wasmPaths: PINNED, proxy: true };
     Object.defineProperty(getter, 'wasmBinary', { get: () => undefined });
     expect(() => {
-      assertPinnedRuntime(envWith(getter), PINNED);
+      assertPinnedRuntime({ wasm: getter }, PINNED);
     }).toThrow(/wasmBinary/);
     const inherited = Object.create({ wasmBinary: new Uint8Array(1) }) as Record<string, unknown>;
     inherited['wasmPaths'] = PINNED;
+    inherited['proxy'] = true;
     expect(() => {
-      assertPinnedRuntime(envWith(inherited), PINNED);
+      assertPinnedRuntime({ wasm: inherited }, PINNED);
     }).toThrow(/wasmBinary/);
+  });
+
+  it.each([
+    ['missing', {}],
+    ['false', { proxy: false }],
+    ['truthy but not true', { proxy: 1 }],
+    ['the string "true"', { proxy: 'true' }],
+    ['undefined', { proxy: undefined }],
+  ])('refuses a runtime that does not run in its own worker: proxy %s', (_what, extra) => {
+    // not envWith: that one adds proxy: true
+    expect(() => {
+      assertPinnedRuntime({ wasm: { wasmPaths: PINNED, ...extra } }, PINNED);
+    }).toThrow(/proxy/);
+  });
+
+  it('refuses a proxy that is a getter or only inherited (it could answer differently, or be reset)', () => {
+    const getter = { wasmPaths: PINNED };
+    Object.defineProperty(getter, 'proxy', { get: () => true, enumerable: true });
+    expect(() => {
+      assertPinnedRuntime({ wasm: getter }, PINNED);
+    }).toThrow(/proxy/);
+    const inherited = Object.create({ proxy: true }) as Record<string, unknown>;
+    inherited['wasmPaths'] = PINNED;
+    expect(() => {
+      assertPinnedRuntime({ wasm: inherited }, PINNED);
+    }).toThrow(/proxy/);
   });
 
   it('refuses a wasmBinary that arrives through Object.prototype (prototype pollution)', () => {
@@ -458,10 +495,11 @@ describe('the surface of src/result/model.ts is an allowlist', () => {
     );
   });
 
-  it('sets the runtime in exactly one way: wasmPaths = runtimeUrl() (a bare call, no wrapper), then numThreads', () => {
+  it('sets the runtime in exactly one way: wasmPaths = runtimeUrl() (a bare call, no wrapper), proxy = true, then numThreads', () => {
     expect(functionText(text, 'configureRuntime')).toBe(
-      'export function configureRuntime(env: { wasm: { wasmPaths?: string | object; numThreads?: number; }; }): void { ' +
+      'export function configureRuntime(env: { wasm: { wasmPaths?: string | object; numThreads?: number; proxy?: boolean; }; }): void { ' +
         'env.wasm.wasmPaths = runtimeUrl(); ' +
+        'env.wasm.proxy = true; ' +
         'env.wasm.numThreads = globalThis.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1; }',
     );
   });
@@ -520,6 +558,7 @@ describe('the surface of src/result/model.ts is an allowlist', () => {
       '../shared/core/pipeline',
       '../shared/core/ranker',
       'Refusing to continue: ',
+      'Refusing to start: proxy must be true (the runtime must load its files in its own worker).',
       'Refusing to start: wasmBinary must not be set (the runtime would run other bytes).',
       'Refusing to start: wasmPaths must be exactly ',
       'all',
@@ -529,6 +568,7 @@ describe('the surface of src/result/model.ts is an allowlist', () => {
       'model/model_fp16.onnx',
       'onnxruntime-web/wasm',
       'ort/',
+      'proxy',
       'resource',
       'string',
       'wasm',
@@ -549,6 +589,7 @@ describe('the surface of src/result/model.ts is an allowlist', () => {
       'entry.name.startsWith',
       'env.wasm',
       'env.wasm.numThreads',
+      'env.wasm.proxy',
       'env.wasm.wasmPaths',
       'globalThis.crossOriginIsolated',
       'navigator.hardwareConcurrency',
@@ -561,6 +602,7 @@ describe('the surface of src/result/model.ts is an allowlist', () => {
       'outside.name',
       'paths.value',
       'performance.getEntriesByType',
+      'proxy?.value',
       'session.run',
     ]);
   });

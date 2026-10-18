@@ -896,13 +896,23 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     const ORT_IMPORT = 'import*as o from"../ort/ort.wasm.min.mjs";export{o};';
 
     it('accepts the vendored runtime imported from a chunk in assets/', () => {
-      const files = { 'assets/result-abc.js': ORT_IMPORT };
+      const files = { 'assets/result-abc.js': REAL_CHUNK };
       expect(
         verifyDist(
           makeDist({ files, skip: [BASE_CHUNK] }),
           withMain({ 'assets/result-abc.js': 'chunk' }),
         ),
       ).toEqual([]);
+    });
+
+    it('rejects a chunk that imports the runtime and does not configure it (its defaults would apply)', () => {
+      const files = { 'assets/result-abc.js': ORT_IMPORT };
+      const problems = verifyDist(
+        makeDist({ files, skip: [BASE_CHUNK] }),
+        withMain({ 'assets/result-abc.js': 'chunk' }),
+      ).join('\n');
+      expect(problems).toContain('proxy must be assigned exactly once');
+      expect(problems).toContain('start-up check');
     });
 
     it('rejects the same import from the service worker at the root (it would leave the extension)', () => {

@@ -62,6 +62,25 @@ describe('scriptProblems: the settings that would make onnxruntime-web load othe
   const withWasmPaths = (rhs: string) =>
     REAL_CHUNK.replace('.wasm.wasmPaths=I()', `.wasm.wasmPaths=${rhs}`);
 
+  it.each([
+    ['not assigned at all', REAL_CHUNK.replace('t.wasm.proxy=!0,', '')],
+    ['false', REAL_CHUNK.replace('t.wasm.proxy=!0', 't.wasm.proxy=!1')],
+    ['computed', REAL_CHUNK.replace('t.wasm.proxy=!0', 't.wasm.proxy=navigator.webdriver')],
+    ['assigned twice', REAL_CHUNK.replace('t.wasm.proxy=!0,', 't.wasm.proxy=!0,t.wasm.proxy=!1,')],
+    ['reassigned after the check', `${REAL_CHUNK};o.env.wasm.proxy=!1`],
+  ])(
+    "rejects proxy %s (the runtime would fetch its files with this page's fetch)",
+    (_what, code) => {
+      expect(scriptProblems(RESULT, code).join('\n'), code).toContain('proxy must be assigned');
+    },
+  );
+
+  it('rejects a chunk that imports the runtime and mentions none of its settings', () => {
+    const problems = scriptProblems(RESULT, 'import*as o from"../ort/ort.wasm.min.mjs";export{o};');
+    expect(problems.join('\n')).toMatch(/proxy must be assigned/);
+    expect(problems.join('\n')).toMatch(/start-up check/);
+  });
+
   it('recognises the chunk that imports the vendored runtime', () => {
     expect(importsRuntime(REAL_CHUNK)).toBe(true);
     expect(importsRuntime("import*as o from'../ort/ort.wasm.min.mjs';")).toBe(true);
