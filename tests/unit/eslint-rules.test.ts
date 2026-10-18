@@ -1359,3 +1359,134 @@ describe('the code that runs in the web page cannot reach the Window or a global
     });
   });
 });
+
+// Round 6 of the review of PR #6: the rules of the web page's process were tied to a hand-kept list of files, so a module outside
+// that list, src/shared/page-probe.ts, handed `doc`, an event or an element by the overlay, reached the Window with a cast and a key
+// built at run time. Now the rules are those of the folder src/select/** (a new file there is under them at once), and that folder
+// imports values from itself only: nothing else can get into select.js. (tests/unit/select-bundle.test.ts reads the real bundle.)
+describe('the code that runs in the web page imports values only from its own folder', () => {
+  const SELECT_FILES = [
+    'src/select/overlay.ts',
+    'src/select/index.ts',
+    'src/select/chrome.ts',
+    'src/select/a-new-file.ts',
+    'src/select/deeper/also-new.ts',
+  ];
+  const MEASURE = 'src/background/measure.ts';
+
+  it.each([
+    [
+      'a value import from shared (the probe of the reviewer)',
+      "import { probe } from '../shared/page-probe';",
+    ],
+    ['an import of a name from shared', "import { sendMessage } from '../shared/messaging';"],
+    ['a side-effect import', "import '../shared/page-probe';"],
+    ['a namespace import', "import * as probe from '../shared/page-probe';"],
+    ['a default import', "import probe from '../shared/page-probe';"],
+    [
+      'an inline type specifier (the import itself stays)',
+      "import { type Rect } from '../shared/capture';",
+    ],
+    ['a re-export of a name', "export { probe } from '../shared/page-probe';"],
+    ['a re-export of everything', "export * from '../shared/page-probe';"],
+    ['a namespace re-export', "export * as probe from '../shared/page-probe';"],
+    ['a dynamic import', "void import('../shared/page-probe');"],
+    ['a dynamic import with a computed path', 'void import(path);'],
+    ['require', "const probe = require('../shared/page-probe');"],
+    ['an import equals', "import probe = require('../shared/page-probe');"],
+    ['a way back through select', "import { probe } from '../select/../shared/page-probe';"],
+    ['a way back after ./', "import { probe } from './../shared/page-probe';"],
+    ['a way back inside a path', "import { probe } from './x/../../shared/page-probe';"],
+    ['an absolute path', "import { probe } from '/src/shared/page-probe';"],
+    ['an aliased path', "import { probe } from '@/shared/page-probe';"],
+    ['a tilde path', "import { probe } from '~/shared/page-probe';"],
+    ['a package', "import { probe } from 'some-package';"],
+    ['a Node module', "import { readFileSync } from 'node:fs';"],
+    ['another folder of src', "import { x } from '../background/shot';"],
+    ['a file with an extension', "import { x } from './overlay.ts';"],
+    ['a sibling written ./.', "import { x } from './.';"],
+    ['the folder itself', "import { x } from '.';"],
+    ['a query', "import { x } from './overlay?raw';"],
+    ['a url', "import { x } from 'https://example.invalid/x.js';"],
+  ])('refuses %s', async (_what, code) => {
+    for (const file of SELECT_FILES)
+      expect(await either(file, code), `${file}: ${code}`).not.toEqual([]);
+  });
+
+  it.each([
+    ["import type { Rect } from '../shared/capture';"],
+    ["import type { RequestOf } from '../shared/messages';"],
+    ["import type { MessageKey } from '../shared/i18n';"],
+    ["import type * as Capture from '../shared/capture';"],
+    ["export type { Rect } from '../shared/capture';"],
+    ["import { nonEmpty, sendRect } from './chrome';"],
+    ["import { startSelection } from './overlay';"],
+    ["import { x } from './deeper/also-new';"],
+    ["import { x } from './a-b_c/d';"],
+  ])('accepts %s', async (code) => {
+    for (const file of SELECT_FILES) {
+      const flaggedOnImports = (await flagged(file, code)).filter((message) =>
+        message.includes('imports values only'),
+      );
+      expect(flaggedOnImports, `${file}: ${code}`).toEqual([]);
+    }
+  });
+
+  it('gives a new file in src/select the whole set of rules at once (no list to forget)', async () => {
+    for (const code of [
+      'void (doc as unknown as Record<string, unknown>)[k];',
+      'void doc[k];',
+      'void Object.keys(doc);',
+      "void doc.createElement('img');",
+      'for (const k in doc) { void k; }',
+    ]) {
+      expect(await either('src/select/a-new-file.ts', code), code).not.toEqual([]);
+    }
+  });
+
+  it('the three bypasses of the reviewer, with the probe in a new file of shared and the overlay handing it doc / an event / an element', async () => {
+    const probeFile = `export function probe(d: Document): void {
+  const k = ['default', 'View'].join('');
+  const w = (d as unknown as Record<string, Record<string, (u: string) => Promise<Response>> | undefined>)[k];
+  void w?.[['h', 'c', 't', 'e', 'f'].reverse().join('')]?.(['https:/', 'example.invalid', 'm'].join('/')).catch(() => undefined);
+}`;
+    // the probe itself is shared code, under the general rules of src/: the cast is allowed there - and that is why it must not be reachable
+    expect(await flagged('src/shared/page-probe.ts', probeFile)).toEqual([]);
+    for (const call of [
+      'probe(doc);',
+      'probe(win.document.documentElement);',
+      "win.addEventListener('keydown', (e: KeyboardEvent) => { probe(e); });",
+    ]) {
+      const overlay = `import { probe } from '../shared/page-probe';
+export function startSelection(win: Window): void {
+  const doc = win.document;
+  ${call}
+}`;
+      expect(await either('src/select/overlay.ts', overlay), call).not.toEqual([]);
+    }
+  });
+
+  it('measure.ts takes no value import at all, only types', async () => {
+    for (const code of [
+      "import { x } from './overlay';",
+      "import { x } from '../shared/capture';",
+      "import '../shared/capture';",
+      "export { x } from '../shared/capture';",
+      "export * from '../shared/capture';",
+      "import { type Rect } from '../shared/capture';",
+    ]) {
+      expect(await either(MEASURE, code), code).not.toEqual([]);
+    }
+    expect(await either(MEASURE, "import type { Rect } from '../shared/capture';")).toEqual([]);
+  });
+
+  it('does not reach the rest of src: a value import from shared is fine there', async () => {
+    for (const file of ['src/background/shot.ts', 'src/result/app.ts', 'src/shared/ui.ts']) {
+      const code = "import { x } from '../shared/capture';";
+      const messages = (await flagged(file, code)).filter((message) =>
+        message.includes('imports values only'),
+      );
+      expect(messages, file).toEqual([]);
+    }
+  });
+});

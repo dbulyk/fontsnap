@@ -195,7 +195,7 @@ const globalTampering = [
 // The CSP of the extension does not apply there, so Window, and any object that leads to it, must not be reachable from this code
 // at all - not by a name (`win`), not by a computed key (`doc[['default', 'View'].join('')]`), not through a cast, an event, a
 // parameter that was renamed. Review round 5 of PR #6 found four such ways past a rule that looked for the name `win`; the class is
-// closed instead (PAGE_PROCESS_FILES): the first parameter of `startSelection` - whatever it is called - is the one Window, and it
+// closed instead (PAGE_PROCESS_GLOBS): the first parameter of `startSelection` - whatever it is called - is the one Window, and it
 // is used through the members below (read or called; only the marker is written); in these files there is no computed access, no
 // cast, no `for...in`, no `typeof x` or `T[K]` type, no `Object.*` but `Object.assign(el.style, ...)`, and only `div` elements.
 const OVERLAY_FILE = 'src/select/overlay.ts';
@@ -209,7 +209,12 @@ const OVERLAY_WINDOW_MEMBERS = [
 ];
 /** Written by the overlay: the marker of a window that already shows it (declared in src/env.d.ts). */
 const OVERLAY_WINDOW_WRITTEN = ['__fontsnapActive'];
-const PAGE_PROCESS_FILES = [OVERLAY_FILE, 'src/select/index.ts', 'src/background/measure.ts'];
+// By GLOB, not by a list of files (review round 6 of PR #6: a module outside a hand-kept list, src/shared/page-probe.ts, was handed
+// `doc` or an event by the overlay and reached the Window with a cast and a key built at run time): everything in src/select is
+// held to these rules, a new file there too, and the code of src/select imports no value from anywhere else (pageImportSelectors),
+// so nothing outside the folder gets into select.js. tests/unit/select-bundle.test.ts reads the real bundle to prove it.
+const PAGE_PROCESS_GLOBS = ['src/select/**/*.ts', 'src/background/measure.ts'];
+const MEASURE_FILE = 'src/background/measure.ts';
 /** The one function FontSnap hands to chrome.scripting.executeScript({ func }) (src/background/measure.ts). */
 const INJECTED_FUNCTION = 'measureImage';
 
@@ -270,7 +275,7 @@ const GLOBAL_ACCESS = {
     'src/select/index.ts': { window: [''] },
     'src/select/overlay.ts': { Object: ['assign'] },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
-    // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_FILES): the images of the page, its pixel ratio
+    // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_GLOBS): the images of the page, its pixel ratio
     'src/background/measure.ts': {
       document: ['images'],
       requestAnimationFrame: true,
@@ -562,12 +567,29 @@ const reachPages = [
   ].map((selector) => ({ selector, message: REACH_MESSAGE })),
 ];
 const PAGE_PROCESS_MESSAGE =
-  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_FILES in eslint.config.js.";
+  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_GLOBS in eslint.config.js.";
 // what makes an element load something or navigate
 const LOADING_NAMES =
   '/^(src|srcset|srcdoc|href|action|formAction|ping|poster|data|location|innerHTML|outerHTML|cssText|adoptedStyleSheets)$/';
 const LOADING_CALLS =
   '/^(setAttribute|setAttributeNS|setAttributeNode|insertAdjacentHTML|insertAdjacentElement|insertRule|addRule|replaceSync|open|write|writeln|createContextualFragment|parseFromString|setHTMLUnsafe)$/';
+// Imports of the code that runs in the web page's process: value imports only from src/select itself (a relative path of plain
+// names below this folder, no extension, no `..`); anything else - another folder of src, a package, an absolute or aliased
+// path, a `..` that finds its way back - only as `import type`, which leaves nothing in the bundle. The function of
+// src/background/measure.ts is serialized by chrome.scripting, so it takes no value import at all.
+const SELECT_SIBLING = '/^\\.\\x2f([\\w-]+\\x2f)*[\\w-]+$/';
+const IMPORT_MESSAGE =
+  "Code that runs in the web page's process imports values only from src/select (./name); other modules only as `import type` (they would be bundled into select.js, outside the rules of this code). See PAGE_PROCESS_GLOBS in eslint.config.js.";
+const importSelectors = (valueFrom) =>
+  [
+    `ImportDeclaration:not([importKind='type'])${valueFrom}`,
+    `ExportNamedDeclaration[source]:not([exportKind='type'])${valueFrom}`,
+    `ExportAllDeclaration:not([exportKind='type'])${valueFrom}`,
+    'TSImportEqualsDeclaration',
+    'TSExportAssignment',
+  ].map((selector) => ({ selector, message: IMPORT_MESSAGE }));
+const selectImportSelectors = importSelectors(`:not([source.value=${SELECT_SIBLING}])`);
+const measureImportSelectors = importSelectors('');
 const pageProcessSelectors = [
   // no key that is computed at run time (a numeric index is fine), in access, destructuring, literals, classes
   "MemberExpression[computed=true]:not([property.type='Literal'][property.raw=/^[0-9]+$/])",
@@ -733,7 +755,7 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.ts'],
-    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES, ...PAGE_PROCESS_FILES],
+    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES, ...PAGE_PROCESS_GLOBS],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -749,7 +771,7 @@ export default tseslint.config(
   {
     // The code that runs in the web page's process: the Window of the page only through the first parameter of startSelection
     // (GLOBAL_ACCESS.windowParams), and the rules of pageProcessSelectors.
-    files: PAGE_PROCESS_FILES,
+    files: ['src/select/**/*.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -760,6 +782,24 @@ export default tseslint.config(
         ...numbersAndText,
         ...reachDefault,
         ...pageProcessSelectors,
+        ...selectImportSelectors,
+      ],
+    },
+  },
+  {
+    // The function chrome.scripting serializes into the page: no import of a value at all.
+    files: [MEASURE_FILE],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        noDynamicImport,
+        ...noRequireOrDeclare,
+        ...noInjectedCode,
+        ...noDynamicIn,
+        ...numbersAndText,
+        ...reachDefault,
+        ...pageProcessSelectors,
+        ...measureImportSelectors,
       ],
     },
   },
