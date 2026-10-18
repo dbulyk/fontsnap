@@ -177,6 +177,283 @@ const globalTampering = [
   `Literal[value=${TAMPER_NAMES}]`,
   `TemplateLiteral[quasis.length=1][quasis.0.value.cooked=${TAMPER_NAMES}]`,
 ].map((selector) => ({ selector, message: TAMPER_MESSAGE }));
+
+// --- what src/ may reach of the environment: an ALLOWLIST (review round 3 of PR #6) ---------------------------------
+// Denying the ways to get at the global object (globalThis, window, top, document.defaultView, ...) and to write to it
+// (assignment, defineProperty, Object.assign, Reflect, ...) was a list the reviewer completed three times. So the
+// question is turned around: a global that is not named here cannot be used in src/ at all, and the ones that can be
+// used only through the members named here (`[]`-style entries: '' = the bare name, 'a.b' = a path); a write to any of
+// them, an alias, a destructuring, a computed access or passing one on is an error. What src/ really uses was read from
+// the code; adding a line here is a decision about what the extension may touch, like a permission.
+// Per file: only what that file needs (the Window of a content script, btoa for the screenshot, the one performance read).
+const GLOBAL_ACCESS = {
+  globals: {
+    Array: ['', 'isArray'],
+    Date: ['now'],
+    Error: true,
+    Float32Array: true,
+    Float64Array: true,
+    Infinity: true,
+    Int32Array: true,
+    Map: true,
+    Math: true,
+    NaN: true,
+    Number: ['', 'isFinite'],
+    Object: ['hasOwn', 'entries'],
+    Promise: true,
+    RangeError: true,
+    Set: true,
+    String: [''],
+    URLSearchParams: true,
+    Uint8Array: true,
+    Uint8ClampedArray: true,
+    chrome: [
+      'action.getUserSettings',
+      'action.onClicked',
+      'action.onUserSettingsChanged',
+      'contextMenus.create',
+      'contextMenus.onClicked',
+      'contextMenus.removeAll',
+      'i18n.getMessage',
+      'i18n.getUILanguage',
+      'runtime.getURL',
+      'runtime.id',
+      'runtime.onInstalled',
+      'runtime.onMessage',
+      'runtime.sendMessage',
+      'scripting.executeScript',
+      'storage.session',
+      'tabs.captureVisibleTab',
+      'tabs.create',
+      'tabs.sendMessage',
+    ],
+    clearInterval: true,
+    createImageBitmap: true,
+    document: true,
+    encodeURIComponent: true,
+    navigator: ['clipboard.writeText', 'hardwareConcurrency'],
+    NodeFilter: true,
+    OffscreenCanvas: true,
+    requestAnimationFrame: true,
+    setInterval: true,
+    setTimeout: true,
+    undefined: true,
+  },
+  files: {
+    // the page of the selection overlay is a content script: its Window is the web page's, not the extension's
+    'src/select/index.ts': { window: true },
+    'src/select/overlay.ts': { Window: true, Object: ['assign'] },
+    'src/background/shot.ts': {
+      btoa: true,
+      fetch: true,
+      String: ['fromCharCode'],
+      window: ['devicePixelRatio'],
+    },
+    'src/shared/capture.ts': { decodeURIComponent: true, globalThis: ['crypto'] },
+    'src/result/app.ts': { fetch: true },
+    // `'onUserSettingsChanged' in chrome.action`: older Chrome versions do not have the event
+    'src/welcome/app.ts': { chrome: ['action'] },
+    'src/result/model.ts': {
+      fetch: true,
+      globalThis: ['crossOriginIsolated'],
+      Object: ['getOwnPropertyDescriptor'],
+      performance: ['getEntriesByType'],
+    },
+  },
+  // types through which a global scope is passed around
+  types: [
+    'Window',
+    'WindowProxy',
+    'MessageEventSource',
+    'WorkerGlobalScope',
+    'ServiceWorkerGlobalScope',
+    'DedicatedWorkerGlobalScope',
+  ],
+};
+
+/** Local rule: see GLOBAL_ACCESS. Plain JavaScript; exported so that tests can run it. */
+export const globalAccessRule = {
+  meta: { type: 'problem', schema: [{ type: 'object' }] },
+  create(context) {
+    const { globals, files, types } = context.options[0];
+    const relative = context.filename
+      .slice(context.cwd.length + 1)
+      .split('\\')
+      .join('/');
+    const extra = Object.hasOwn(files, relative) ? files[relative] : {};
+    const entryOf = (name) => {
+      const own = Object.hasOwn(globals, name) ? globals[name] : undefined;
+      const more = Object.hasOwn(extra, name) ? extra[name] : undefined;
+      if (own === true || more === true) return true;
+      if (own === undefined && more === undefined) return undefined;
+      return [...(own ?? []), ...(more ?? [])];
+    };
+    const memberName = (node) => {
+      if (!node.computed)
+        return node.property.type === 'Identifier' ? node.property.name : undefined;
+      if (node.property.type === 'Literal' && typeof node.property.value === 'string') {
+        return node.property.value;
+      }
+      return undefined;
+    };
+    const through = (node) => {
+      let outer = node;
+      while (
+        outer.parent &&
+        ((outer.parent.type === 'MemberExpression' && outer.parent.object === outer) ||
+          outer.parent.type === 'TSNonNullExpression' ||
+          outer.parent.type === 'ChainExpression')
+      ) {
+        outer = outer.parent;
+      }
+      return outer;
+    };
+    const writes = (outer) => {
+      const parent = outer.parent;
+      switch (parent?.type) {
+        case 'AssignmentExpression':
+          return parent.left === outer;
+        case 'UpdateExpression':
+        case 'ArrayPattern':
+        case 'RestElement':
+          return true;
+        case 'UnaryExpression':
+          return parent.operator === 'delete';
+        case 'ForInStatement':
+        case 'ForOfStatement':
+          return parent.left === outer;
+        case 'AssignmentPattern':
+          return parent.left === outer;
+        case 'Property':
+          return parent.parent.type === 'ObjectPattern' && parent.value === outer;
+        default:
+          return false;
+      }
+    };
+    /** The members read from `identifier`, as a path: chrome.runtime.getURL -> ['runtime', 'getURL']; undefined if computed. */
+    const pathOf = (identifier) => {
+      const path = [];
+      let node = identifier;
+      for (;;) {
+        const parent = node.parent;
+        if (parent?.type === 'TSNonNullExpression' || parent?.type === 'ChainExpression') {
+          node = parent;
+        } else if (parent?.type === 'MemberExpression' && parent.object === node) {
+          const name = memberName(parent);
+          if (name === undefined) return { path, computed: true };
+          path.push(name);
+          node = parent;
+        } else {
+          return { path, computed: false };
+        }
+      }
+    };
+    const covered = (entry, path) =>
+      entry.some((allowed) => {
+        if (allowed === '') return path.length === 0;
+        const wanted = allowed.split('.');
+        return wanted.length <= path.length && wanted.every((name, index) => name === path[index]);
+      });
+    return {
+      'Program:exit'() {
+        const scope = context.sourceCode.scopeManager?.globalScope;
+        if (!scope) return;
+        const references = [
+          ...scope.variables
+            .filter((variable) => variable.defs.length === 0)
+            .flatMap((v) => v.references),
+          ...scope.through,
+        ];
+        for (const reference of references) {
+          const { name } = reference.identifier;
+          const entry = entryOf(name);
+          const typeOnly = reference.isTypeReference && !reference.isValueReference;
+          if (typeOnly) {
+            if (types.includes(name) && entry === undefined) {
+              context.report({
+                node: reference.identifier,
+                message: `The type ${name} carries a global scope around; it is not on the allowlist of src/ (GLOBAL_ACCESS in eslint.config.js).`,
+              });
+            }
+            continue;
+          }
+          if (entry === undefined) {
+            context.report({
+              node: reference.identifier,
+              message: `The global ${name} is not on the allowlist of src/ (GLOBAL_ACCESS in eslint.config.js): the extension reaches the environment only through the names and members listed there.`,
+            });
+            continue;
+          }
+          const outer = through(reference.identifier);
+          if (writes(outer) || reference.isWrite()) {
+            context.report({
+              node: reference.identifier,
+              message: `${name} is a global: src/ never writes to it or to anything below it.`,
+            });
+            continue;
+          }
+          if (entry === true) continue;
+          const { path, computed } = pathOf(reference.identifier);
+          if (computed || !covered(entry, path)) {
+            context.report({
+              node: reference.identifier,
+              message: `${name}${path.map((member) => `.${member}`).join('')}${computed ? '[computed]' : ''} is not on the allowlist of src/ (GLOBAL_ACCESS in eslint.config.js): only ${entry.map((member) => (member === '' ? name : `${name}.${member}`)).join(', ')}.`,
+            });
+          }
+        }
+      },
+    };
+  },
+};
+export const fontsnapPlugin = { rules: { 'global-access': globalAccessRule } };
+// Values that are a Window, or a stand-in for one, however they are reached: document.defaultView, iframe.contentWindow,
+// event.view, message.source, event.currentTarget (the window an event was added to), getBackgroundPage(). GLOBAL_ACCESS closes
+// the names `window`, `self`, `top`, `parent`, `frames`, `opener`; these are the properties that hand one over.
+const REACH_NAMES = [
+  'defaultView',
+  'contentWindow',
+  'view',
+  'source',
+  'opener',
+  'currentTarget',
+  'relatedTarget',
+  'srcElement',
+  'composedPath',
+  'getBackgroundPage',
+  'getViews',
+  'parentWindow',
+];
+const REACH_MESSAGE =
+  'No property that hands over a Window (defaultView, contentWindow, view, source, currentTarget, ...): a Window held in a variable can be passed to Object.assign, Reflect or defineProperty, and its fetch replaced.';
+const reachSelectors = (names, except = '') => {
+  const pattern = `/^(${names.join('|')})$/`;
+  const not = except === '' ? '' : `:not(${except})`;
+  return [
+    `MemberExpression[computed=false][property.name=${pattern}]${not}`,
+    `MemberExpression[computed=true]:matches([property.value=${pattern}], [property.quasis.0.value.cooked=${pattern}])${not}`,
+    `Property[key.name=${pattern}]`,
+    `Property[key.value=${pattern}]`,
+    // event.target may be the Window an event was added to: it is only ever written (anchor.target = '_blank')
+    "MemberExpression[computed=false][property.name='target']:not(AssignmentExpression > MemberExpression.left)",
+    "ObjectPattern > Property[key.name='target']",
+    // Object.assign is for styles only
+    "CallExpression[callee.object.name='Object'][callee.property.name='assign']:not([arguments.0.property.name='style'])",
+  ].map((selector) => ({ selector, message: REACH_MESSAGE }));
+};
+const reachDefault = reachSelectors(REACH_NAMES);
+// The two page scripts that listen to the window (hashchange, pagehide): `const win = doc.defaultView;` is the one place
+// a Window is held, and `win` is only ever used for `win.location` and `win.addEventListener`.
+const PAGE_WINDOW_FILES = ['src/result/app.ts', 'src/welcome/app.ts'];
+const reachPages = [
+  ...reachSelectors(REACH_NAMES.filter((name) => name !== 'defaultView')),
+  ...[
+    "MemberExpression[computed=false][property.name='defaultView']:not(VariableDeclarator[id.name='win'] > MemberExpression.init)",
+    "MemberExpression[computed=true]:matches([property.value='defaultView'], [property.quasis.0.value.cooked='defaultView'])",
+    "Property[key.name='defaultView']",
+    "Property[key.value='defaultView']",
+    "Identifier[name='win']:not(MemberExpression[computed=false][property.name=/^(location|addEventListener)$/] > Identifier.object):not(VariableDeclarator > Identifier.id):not(UnaryExpression[operator='!'] > Identifier)",
+  ].map((selector) => ({ selector, message: REACH_MESSAGE })),
+];
 const noInjectedCodeBase = [
   ...injectedCodeSelectors.map((selector) => ({
     selector,
@@ -297,7 +574,7 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.ts'],
-    ignores: ['src/shared/format.ts', 'src/**/*.d.ts'],
+    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -306,8 +583,31 @@ export default tseslint.config(
         ...noInjectedCode,
         ...noDynamicIn,
         ...numbersAndText,
+        ...reachDefault,
       ],
     },
+  },
+  {
+    // Two page scripts hold the Window of their page (hashchange, pagehide), under the narrow form of reachPages.
+    files: PAGE_WINDOW_FILES,
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        noDynamicImport,
+        ...noRequireOrDeclare,
+        ...noInjectedCode,
+        ...noDynamicIn,
+        ...numbersAndText,
+        ...reachPages,
+      ],
+    },
+  },
+  {
+    // Which globals and which of their members src/ may touch: an allowlist, see GLOBAL_ACCESS.
+    files: ['src/**/*.ts'],
+    ignores: ['src/**/*.d.ts'],
+    plugins: { fontsnap: fontsnapPlugin },
+    rules: { 'fontsnap/global-access': ['error', GLOBAL_ACCESS] },
   },
   {
     // The one file that configures onnxruntime-web: every other src rule applies to it.
@@ -320,6 +620,7 @@ export default tseslint.config(
         ...noInjectedCodeBase,
         ...noDynamicIn,
         ...numbersAndText,
+        ...reachDefault,
       ],
     },
   },
@@ -332,6 +633,7 @@ export default tseslint.config(
         ...noRequireOrDeclare,
         ...noInjectedCode,
         ...noDynamicIn,
+        ...reachDefault,
       ],
     },
   },

