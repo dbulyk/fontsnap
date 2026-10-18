@@ -6,11 +6,65 @@
  * The vendor files themselves are exempt by exact path AND sha256 (vendor.ts), never by prefix.
  */
 
-/** The header of every module: 00 61 73 6d ("\0asm"). */
+/** The header of every module: 00 61 73 6d ("\0asm") followed by the version 01 00 00 00. */
+const HEADER_BYTES = [0, 0x61, 0x73, 0x6d, 1, 0, 0, 0];
+
+/**
+ * What base64 looks like when a module header sits at any alignment of the encoded bytes (the encoding of the same
+ * bytes depends on the position modulo 3, and the characters next to the header depend on its neighbours). The parts that
+ * do not depend on the neighbours are found by encoding the header with 0x00 and with 0xff around it and keeping the longest
+ * run of characters that agree: AGFzbQEAAA, Bhc20BAAAA, AYXNtAQAAA... (base64url differs only in two characters that these
+ * do not contain).
+ */
+function base64Signatures(): string[] {
+  return [0, 1, 2].map((before) => {
+    const encode = (filler: number) =>
+      Buffer.from([
+        ...Array<number>(before).fill(filler),
+        ...HEADER_BYTES,
+        ...Array<number>(3).fill(filler),
+      ]).toString('base64');
+    const [low, high] = [encode(0x00), encode(0xff)];
+    let best = '';
+    let run = '';
+    for (let i = 0; i < low.length; i++) {
+      run = low[i] === high[i] ? run + (low[i] ?? '') : '';
+      if (run.length > best.length) best = run;
+    }
+    return best;
+  });
+}
+const BASE64_HEADERS = base64Signatures();
+
+/** The text of every string literal in a script, in the forms a program can read it: as written, with escapes and %-escapes decoded. */
+function stringForms(text: string): string[] {
+  const forms: string[] = [];
+  const literals = /"(?:[^"\\\r\n]|\\[\s\S])*"|'(?:[^'\\\r\n]|\\[\s\S])*'|`(?:[^`\\]|\\[\s\S])*`/g;
+  for (const literal of text.match(literals) ?? []) {
+    let form = literal.slice(1, -1);
+    forms.push(form);
+    form = form.replace(
+      /\\(?:x([0-9a-f]{2})|u([0-9a-f]{4})|u\{([0-9a-f]+)\})/gi,
+      (_all, x: string | undefined, u: string | undefined, braces: string | undefined) =>
+        String.fromCodePoint(Number.parseInt(x ?? u ?? braces ?? '0', 16)),
+    );
+    forms.push(form);
+    // %-escapes, also doubly encoded
+    for (let round = 0; round < 3; round++) {
+      const decoded = form.replace(/%([0-9a-f]{2})/gi, (_all, hex: string) =>
+        String.fromCharCode(Number.parseInt(hex, 16)),
+      );
+      if (decoded === form) break;
+      form = decoded;
+      forms.push(form);
+    }
+  }
+  return forms;
+}
+
 const HEADER = [
   { pattern: /\0asm/, spelling: 'the raw bytes \\0asm' },
   { pattern: /\\(?:x0{2}|u0{4}|u\{0+\}|0{1,3})asm/i, spelling: 'an escape of \\0asm' },
-  { pattern: /AGFzbQ/, spelling: 'base64 (AGFzbQ)' },
   { pattern: /0061736d/i, spelling: 'hex (0061736d)' },
   {
     // 0, 97, 115, 109 in any radix: decimal, 0x61, 0b1100001, 0o141
@@ -18,13 +72,65 @@ const HEADER = [
       /(?<![\w.])(?:0|0x0+|0b0+|0o0+)\s*,\s*(?:97|0x61|0b1100001|0o141)\s*,\s*(?:115|0x73|0b1110011|0o163)\s*,\s*(?:109|0x6d|0b1101101|0o155)(?![\w.])/i,
     spelling: 'the byte list 0,97,115,109',
   },
-  // a reference to a module file by name (but not `env.wasm.wasmPaths`)
-  { pattern: /[\w/-]\.wasm(?=["'`?#]|$)/, spelling: 'a reference to a .wasm file' },
 ];
 
-/** The ways a text spells the header of a WebAssembly module (or names a .wasm file); empty if none. */
+/** The ways a text spells the header of a WebAssembly module, or names a .wasm file in a string; empty if none. */
 export function wasmSignatures(text: string): string[] {
-  return HEADER.filter(({ pattern }) => pattern.test(text)).map(({ spelling }) => spelling);
+  const found = HEADER.filter(({ pattern }) => pattern.test(text)).map(({ spelling }) => spelling);
+  if (BASE64_HEADERS.some((signature) => text.includes(signature)))
+    found.push('base64 of a module header');
+  // a file name, in a string literal as written or decoded: ".wasm" at the end (or before a query or fragment)
+  if (stringForms(text).some((form) => /\.wasm(?:[?#]|$)/i.test(form)))
+    found.push('a reference to a .wasm file');
+  return found;
+}
+
+/** The only hosts a script of the build may name: the Google Fonts previews and links of the result page. */
+export const ALLOWED_ORIGINS: ReadonlySet<string> = new Set([
+  'fonts.googleapis.com',
+  'fonts.google.com',
+]);
+
+/** Hosts of the absolute and protocol-relative URLs that the string literals of a script spell (any scheme, escapes and %-escapes decoded). */
+export function urlOrigins(text: string): string[] {
+  const hosts = new Set<string>();
+  const url = /(?:^|[^A-Za-z0-9+.-])(?:[a-z][a-z0-9+.-]*:)?\/\/(?:[^/\s@]*@)?([^/\s:"'`?#\\@]+)/gi;
+  for (const form of stringForms(text)) {
+    for (const match of form.matchAll(url)) hosts.add((match[1] ?? '').toLowerCase());
+  }
+  return [...hosts].sort();
+}
+
+/**
+ * Primitives that replace what the runtime relies on (fetch, WebAssembly, a prototype, chrome.runtime.getURL): the sources
+ * can not contain them (eslint.config.js); this is the same check on what was built.
+ */
+const TAMPERING = [
+  {
+    pattern:
+      /\b(?:defineProperty|defineProperties|setPrototypeOf|__defineGetter__|__defineSetter__|__lookupGetter__|__lookupSetter__)\b/,
+    what: 'defineProperty/setPrototypeOf',
+  },
+  { pattern: /__proto__/, what: '__proto__' },
+  {
+    pattern: /\bReflect\s*\.\s*(?:set|defineProperty|deleteProperty|setPrototypeOf)\b/,
+    what: 'Reflect.set/defineProperty',
+  },
+  {
+    pattern:
+      /(?<![\w$.])(?:globalThis|self|window)\s*(?:\.\s*[\w$]+|\[[^\]]*\])+\s*(?:\*\*|<<|>>>?|&&|\|\||\?\?|[-+*/%&|^])?=(?![=>])/,
+    what: 'a write to a global object',
+  },
+  {
+    pattern:
+      /\.prototype\s*(?:\.\s*[\w$]+|\[[^\]]*\])+\s*(?:\*\*|<<|>>>?|&&|\|\||\?\?|[-+*/%&|^])?=(?![=>])/,
+    what: 'a write to a prototype',
+  },
+];
+
+/** What a script spells that replaces or changes a global, a property or a prototype; empty if nothing. */
+export function tamperingPrimitives(text: string): string[] {
+  return TAMPERING.filter(({ pattern }) => pattern.test(text)).map(({ what }) => what);
 }
 
 /** The chunk that imports the vendored runtime is the one that configures it (src/result/model.ts is bundled into it). */
@@ -101,5 +207,15 @@ export function scriptProblems(file: string, text: string): string[] {
     (spelling) =>
       `${file}: carries a WebAssembly module or names one (${spelling}); only the pinned vendor files may`,
   );
-  return [...problems, ...runtimeSettingProblems(file, text)];
+  const origins = urlOrigins(text)
+    .filter((host) => !ALLOWED_ORIGINS.has(host))
+    .map(
+      (host) =>
+        `${file}: names a URL on ${host}; the only hosts a script of the build may name are ${[...ALLOWED_ORIGINS].join(', ')}`,
+    );
+  const tampering = tamperingPrimitives(text).map(
+    (what) =>
+      `${file}: uses a primitive that replaces or changes a global, a property or a prototype (${what})`,
+  );
+  return [...problems, ...origins, ...tampering, ...runtimeSettingProblems(file, text)];
 }

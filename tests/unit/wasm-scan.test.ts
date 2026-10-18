@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { importsRuntime, scriptProblems, wasmSignatures } from '../../scripts/lib/wasm-scan';
+import { randomBytes } from 'node:crypto';
+import {
+  ALLOWED_ORIGINS,
+  importsRuntime,
+  scriptProblems,
+  tamperingPrimitives,
+  urlOrigins,
+  wasmSignatures,
+} from '../../scripts/lib/wasm-scan';
 import { REAL_CHUNK } from './helpers/runtime-chunk';
 
 // WebAssembly can reach a built script as bytes: written out as a literal, base64, hex, an escape or a number list.
@@ -18,7 +26,7 @@ describe('wasmSignatures', () => {
       'base64',
       'fetch("data:application/wasm;base64,AGFzbQEAAAABBgFgAX8BfwMCAQAHBwEDYWRkAAAKCQEHACAAQQFqCw==")',
     ],
-    ['base64 alone', 'const b="AGFzbQ";'],
+    ['base64 alone', 'const b="AGFzbQEAAA";'],
     ['a hex string', 'const h="0061736d01000000";'],
     ['a hex string in upper case', 'const h="0061736D01000000";'],
     ['a decimal list', 'new Uint8Array([0,97,115,109,1,0,0,0])'],
@@ -160,5 +168,141 @@ describe('scriptProblems: the settings that would make onnxruntime-web load othe
     expect(scriptProblems('assets/x.js', 'export const a=1;function f(){return[0,1,2,3]}')).toEqual(
       [],
     );
+  });
+});
+
+describe('a .wasm file named in any string form', () => {
+  it.each([
+    ['a string', 'fetch("https://cdn.example.com/x.wasm")'],
+    ['single quotes', "fetch('x.wasm')"],
+    ['a template', 'fetch(`x.wasm`)'],
+    ['the bare extension, for a concatenation', 'const u=base+".wasm";'],
+    ['a query', 'fetch("x.wasm?v=1")'],
+    ['a fragment', 'fetch("x.wasm#a")'],
+    ['upper case', 'fetch("X.WASM")'],
+    ['a \\x2e escape', 'fetch("x\\x2ewasm")'],
+    ['a \\u002e escape', 'fetch("x\\u002ewasm")'],
+    ['a \\u{2e} escape', 'fetch("x\\u{2e}wasm")'],
+    ['a percent escape', 'fetch("x%2ewasm")'],
+    ['a percent escape in upper case', 'fetch("x%2Ewasm")'],
+    ['an escaped "w"', 'fetch("x.\\u0077asm")'],
+    ['a double percent escape', 'fetch("x%252ewasm")'],
+  ])('finds %s', (_what, code) => {
+    expect(wasmSignatures(code), code).toContain('a reference to a .wasm file');
+  });
+
+  it.each([
+    'import*as o from"../ort/ort.wasm.min.mjs";',
+    'o.env.wasm.wasmPaths=I()',
+    'const w="wasm";',
+    'const w=".wasmx";',
+    'const w="the wasm file";',
+    'x.wasm',
+  ])('does not mistake %s for a module file', (code) => {
+    expect(wasmSignatures(code), code).not.toContain('a reference to a .wasm file');
+  });
+});
+
+describe('base64 of a module header at any alignment', () => {
+  const HEADER = Buffer.from([0, 0x61, 0x73, 0x6d, 1, 0, 0, 0]);
+  it.each([0, 1, 2, 3, 4, 5])('is found after %i bytes of anything', (before) => {
+    for (let i = 0; i < 20; i++) {
+      const base64 = Buffer.concat([randomBytes(before), HEADER, randomBytes(7)]).toString(
+        'base64',
+      );
+      expect(wasmSignatures(`const w="${base64}";`), base64).toContain('base64 of a module header');
+    }
+  });
+
+  it('is found in a data: URL and in base64url', () => {
+    const base64 = Buffer.concat([randomBytes(2), HEADER, randomBytes(6)]).toString('base64url');
+    expect(wasmSignatures(`x("data:application/wasm;base64,${base64}")`)).not.toEqual([]);
+  });
+
+  it('does not fire on ordinary base64 text', () => {
+    for (let i = 0; i < 200; i++) {
+      expect(wasmSignatures(`const w="${randomBytes(24).toString('base64')}";`)).toEqual([]);
+    }
+  });
+});
+
+describe('absolute URLs in built scripts', () => {
+  it('allows only the Google Fonts hosts the page links to', () => {
+    expect([...ALLOWED_ORIGINS].sort()).toEqual(['fonts.google.com', 'fonts.googleapis.com']);
+    expect(urlOrigins('x="https://fonts.googleapis.com/css2?family=A&display=swap"')).toEqual([
+      'fonts.googleapis.com',
+    ]);
+    expect(urlOrigins('x=`https://fonts.google.com/specimen/${n}`')).toEqual(['fonts.google.com']);
+  });
+
+  it.each([
+    ['https://evil.example/ort/', 'evil.example'],
+    ['http://evil.example/ort/', 'evil.example'],
+    ['//evil.example/ort/', 'evil.example'],
+    ['HTTPS://EVIL.EXAMPLE/x', 'evil.example'],
+    ['wss://evil.example/s', 'evil.example'],
+    ['ftp://evil.example/x', 'evil.example'],
+    ['blob:https://evil.example/uuid', 'evil.example'],
+    ['https://user:pw@evil.example:8443/x', 'evil.example'],
+    ['%68ttps://evil.example/ort/', 'evil.example'],
+    ['\\x68ttps://evil.example/ort/', 'evil.example'],
+    ['\\u0068ttps://evil.example/ort/', 'evil.example'],
+    ['https:%2f%2fevil.example/x', 'evil.example'],
+    ['https%3A%2F%2Fevil.example%2Fx', 'evil.example'],
+    ['http://127.0.0.1:8000/x', '127.0.0.1'],
+    ['https://fonts.googleapis.com.evil.example/x', 'fonts.googleapis.com.evil.example'],
+    ['https://evilfonts.google.com/x', 'evilfonts.google.com'],
+  ])('finds %s', (url, host) => {
+    for (const quote of ['"', "'", '`']) {
+      expect(urlOrigins(`const u=${quote}${url}${quote};`), url).toContain(host);
+    }
+  });
+
+  it('is reported by scriptProblems with the host', () => {
+    const problems = scriptProblems('assets/x.js', 'fetch("https://evil.example/ort/")').join('\n');
+    expect(problems).toContain('evil.example');
+    expect(problems).toContain('fonts.googleapis.com');
+    expect(
+      scriptProblems('assets/x.js', 'const u="https://fonts.googleapis.com/css2?family=A";'),
+    ).toEqual([]);
+  });
+
+  it('has nothing to say about text without a host', () => {
+    expect(urlOrigins('const a="a//b",c="http://",d="x:y";')).toEqual([]);
+  });
+});
+
+describe('primitives that replace what the runtime relies on, in a built script', () => {
+  it.each([
+    'Object.defineProperty(globalThis,"fetch",{value:f})',
+    'Object.defineProperties(window,d)',
+    'Object.setPrototypeOf(x,y)',
+    'x.__proto__=y',
+    'x.__defineGetter__("a",f)',
+    'Reflect.set(globalThis,"fetch",f)',
+    'Reflect.defineProperty(self,"fetch",d)',
+    'globalThis.fetch=f',
+    'self.fetch=f',
+    'window["fetch"]=f',
+    'globalThis.counter+=1',
+    'Response.prototype.arrayBuffer=f',
+    'Promise.prototype["then"]=f',
+    'x.prototype.y=1',
+  ])('finds %s', (code) => {
+    expect(tamperingPrimitives(code), code).not.toEqual([]);
+    expect(scriptProblems('assets/x.js', code).join('\n'), code).toMatch(/replaces|changes/);
+  });
+
+  it.each([
+    'const a=globalThis.crossOriginIsolated?1:0',
+    'globalThis.crypto.randomUUID()',
+    'window.devicePixelRatio||1',
+    'if(globalThis.a==1)b()',
+    'x.prototypeless=1',
+    'const o={defineProp:1}',
+    'self.setTimeout(f,1)',
+    'Object.getOwnPropertyDescriptor(n,"wasmPaths")',
+  ])('lets %s through', (code) => {
+    expect(tamperingPrimitives(code), code).toEqual([]);
   });
 });
