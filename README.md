@@ -133,10 +133,12 @@ reach and replace those one after another, so the layers do not try to list the 
    `String`, ...) only through the members named there, and never written, aliased, destructured, computed or passed on; the properties
    that hand over a Window (`defaultView`, `contentWindow`, `view`, `source`, `currentTarget`, ...) are refused, the two page scripts that
    listen to their window hold it in one exact form. Adding a line is a decision about what the extension may touch, like a permission.
-   The content script (`src/select/overlay.ts`) runs in the web page's process, where the CSP does not apply: its `win` is used only as
-   `win.document`, `addEventListener`, `removeEventListener`, `getSelection`, `requestAnimationFrame`, `devicePixelRatio` (and the marker
-   `__fontsnapActive` is the one thing written), never aliased, cast, destructured, indexed or passed on, and `fetch` is on no file's list.
-   `this` is allowed only in a class constructor (in a callback it is the window).
+   The code that runs in the web page's process, where the CSP does not apply (`src/select/*` and `src/background/measure.ts`, the one function
+   handed to `chrome.scripting.executeScript`, which lint accepts as `func` and nothing else), is held to a closed class (`PAGE_PROCESS_FILES`): the
+   Window is the first parameter of `startSelection`, under any name, used only as `.document`, `.addEventListener`, `.removeEventListener`,
+   `.getSelection`, `.requestAnimationFrame`, `.devicePixelRatio` (the marker `__fontsnapActive` is the one thing written); no computed key,
+   no cast, no `for...in`, no `typeof`/indexed types, no `Object.*` but `Object.assign(el.style, ...)`, only `div` elements, nothing that loads or
+   navigates; `fetch` is on no file's list. `this` is allowed only in a class constructor (in a callback it is the window).
    The runtime's settings (`env`, `wasmPaths`, `wasmBinary`, the `onnxruntime-*` import) exist only in `src/result/model.ts`, which
    `model.test.ts` pins as an allowlist of its calls, strings, properties and operators.
 4. **`verify-dist`** scans every built `.js`/`.mjs` (the vendor files are exempt by exact path and sha256 only; `scripts/lib/wasm-scan.ts`): a
