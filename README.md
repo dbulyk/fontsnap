@@ -100,6 +100,11 @@ card (name and percent) with `tests/fixtures/chrome-top5.json`, a slice of the f
 to TypeScript and terser. The whole set can be compared the same way in a browser; any difference between the minified build and
 the Python/Node pipelines shows up there.
 
+Transparency: an image is composited over white (`c' = round((c*a + 255*(255-a))/255)`), so black text on a transparent PNG reads like
+the same text on white. `fromRGBA` (`src/shared/core/image.ts`) and `to_rgb` (`python/fontsnap_ref/textcrop.py`) apply the same integer
+rule, and the canvases of the result page and of the screenshot crop are filled white before `drawImage`.
+`tests/e2e/transparent.spec.ts` checks it in the browser (file input and the handoff of the image context menu).
+
 ## Exceptions to the template (WebAssembly, the model, the CSP)
 
 The template forbids WebAssembly. FontSnap runs its model with onnxruntime-web, so it has a short, explicit list of exceptions;
