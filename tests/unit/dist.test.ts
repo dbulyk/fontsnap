@@ -820,8 +820,16 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       ['resource timing emptied', `${LEGIT};performance.setResourceTimingBufferSize(0)`],
       ['a test-or-user switch', `${LEGIT};if(navigator.webdriver)run()`],
       ['btoa outside the service worker', `${LEGIT};btoa(x)`],
+      [
+        'a STUN server (the repro of the tester)',
+        `${LEGIT};new RTCPeerConnection({iceServers:[{urls:"stun:example.invalid:3478"}]})`,
+      ],
+      ['a TURN server alone', `${LEGIT};x("turn:example.invalid:3478")`],
+      ['a TURNS server in capitals', `${LEGIT};x("TURNS:example.invalid:5349")`],
+      ['webkitRTCPeerConnection', `${LEGIT};new webkitRTCPeerConnection({})`],
+      ['RTCDataChannel', `${LEGIT};x.createDataChannel; new RTCDataChannel()`],
     ])('rejects %s in a chunk of the build', (_what, code) => {
-      expect(problemsOf({ [RESULT]: code })).toMatch(/decodes to|uses /);
+      expect(problemsOf({ [RESULT]: code })).toMatch(/decodes to|uses |names a WebRTC server/);
     });
 
     it.each([
