@@ -2159,3 +2159,108 @@ export async function measureImage(src: string): Promise<MeasuredImage | null> {
     }
   });
 });
+
+// The one exception of Part I (the brief of 18.10.2026): loadImagePixels may load ONE address - the one it is given, the clicked
+// image's srcUrl - with `new Image()`, `crossOrigin = 'anonymous'` and one `<image>.src = <its first parameter>`. Everything else a page
+// function may not do stays refused, in this file and everywhere else; the exception does not leak to measure.ts or src/select.
+describe('loadImagePixels: the narrow exception to "nothing that loads"', () => {
+  const LOADER = 'src/background/load-image.ts';
+  const verdict = async (file: string, code: string): Promise<string[]> => [
+    ...(await domMembers(file, code)),
+    ...(await pageTypes(file, code)),
+    ...(await reached(file, code)),
+    ...(await flagged(file, code)),
+  ];
+  const wrap = (body: string): string =>
+    `export async function loadImagePixels(src: string): Promise<string | null> {\n  ${body}\n  return null;\n}`;
+  const BASE =
+    "const image = new Image();\n  image.crossOrigin = 'anonymous';\n  image.src = src;\n  await image.decode();";
+
+  it('accepts the file as it is, and the minimal loader', async () => {
+    expect(await verdict(LOADER, readFileSync(LOADER, 'utf8'))).toEqual([]);
+    expect(await verdict(LOADER, wrap(BASE))).toEqual([]);
+  });
+
+  const FORMS: [string, string][] = [
+    ['a second write of src', `${BASE}\n  image.src = src;`],
+    [
+      'src set to a literal address',
+      "const image = new Image();\n  image.src = 'https://example.invalid/x.png';",
+    ],
+    [
+      'src set to the parameter plus something',
+      'const image = new Image();\n  image.src = src + "#";',
+    ],
+    [
+      'src set to another variable',
+      'const other = String(Date.now());\n  const image = new Image();\n  image.src = other;',
+    ],
+    [
+      'src set from a nested function',
+      'const image = new Image();\n  const go = (): void => { image.src = src; };\n  go();',
+    ],
+    ['src appended to', 'const image = new Image();\n  image.src += src;'],
+    ['src set by a destructuring', 'const image = new Image();\n  [image.src] = [src];'],
+    [
+      'src set after the parameter was reassigned',
+      'let again = src;\n  const image = new Image();\n  image.src = again;',
+    ],
+    [
+      'the parameter itself reassigned',
+      'src = "https://example.invalid/";\n  const image = new Image();\n  image.src = src;',
+    ],
+    ['an Image with an argument', 'void new Image(10);'],
+    [
+      'two Image objects',
+      'const a = new Image();\n  const b = new Image();\n  a.src = src;\n  void b;',
+    ],
+    ['an Image that is not constructed', 'const make = Image;\n  void make;'],
+    ['Image.prototype', 'void Image.prototype;'],
+    [
+      "crossOrigin 'use-credentials'",
+      "const image = new Image();\n  image.crossOrigin = 'use-credentials';",
+    ],
+    ['crossOrigin from a variable', 'const image = new Image();\n  image.crossOrigin = src;'],
+    ['fetch', 'void fetch(src);'],
+    ['an img element', "void document.createElement('img');"],
+    ['a canvas element', "void document.createElement('canvas');"],
+    ['setAttribute src', 'const image = new Image();\n  image.setAttribute("src", src);'],
+    ['href', 'const image = new Image();\n  image.srcset = src;'],
+    ['a style', 'const image = new Image();\n  void image.style;'],
+    [
+      'src set from the parameter of another function',
+      'const inner = (s: string): void => {\n    const image = new Image();\n    image.src = s;\n  };\n  inner(src);',
+    ],
+  ];
+  it.each(FORMS)('refuses %s', async (_what, body) => {
+    expect(await verdict(LOADER, wrap(body)), body).not.toEqual([]);
+  });
+
+  it('refuses a value import', async () => {
+    const code = `import { MAX_CROP_SIDE } from '../shared/capture';\n${wrap(`${BASE}\n  void MAX_CROP_SIDE;`)}`;
+    expect(await verdict(LOADER, code)).not.toEqual([]);
+  });
+
+  it('does not leak: no Image and no src write in measure.ts or in src/select', async () => {
+    for (const [file, code] of [
+      [
+        'src/background/measure.ts',
+        'export function measureImage(src: string): void {\n  const image = new Image();\n  image.crossOrigin = "anonymous";\n  image.src = src;\n}',
+      ],
+      [
+        'src/select/overlay.ts',
+        'export function startSelection(win: Window, src: string): void {\n  void win;\n  const image = new Image();\n  image.src = src;\n}',
+      ],
+      [
+        'src/select/a-new-file.ts',
+        'export function f(src: string): void {\n  const image = new Image();\n  image.src = src;\n}',
+      ],
+    ] as const) {
+      expect(await verdict(file, code), file).not.toEqual([]);
+    }
+  });
+
+  it('the exception covers only that file: the same minimal loader is refused anywhere else in src', async () => {
+    expect(await reached('src/background/shot.ts', wrap(BASE))).not.toEqual([]);
+  });
+});

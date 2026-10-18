@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { loadImagePixels } from '../../src/background/load-image';
 import { measureImage } from '../../src/background/measure';
 
 // The two functions that chrome.scripting serializes into a web page, run here against stand-ins for the document they see.
@@ -144,5 +145,115 @@ describe('measureImage', () => {
     await expect(measureImage('https://frame.example/', 'frame', null)).resolves.toBeNull();
     page({ frames: [] });
     await expect(measureImage('https://frame.example/', 'frame', null)).resolves.toBeNull();
+  });
+});
+
+describe('loadImagePixels', () => {
+  const PNG_BYTES = [137, 80, 78, 71];
+  const PNG = `data:image/png;base64,${btoa(String.fromCharCode(...PNG_BYTES))}`;
+  const constructed: FakeImage[] = [];
+  const canvases: FakeCanvas[] = [];
+  /** What the next convertToBlob calls do, in order; the last entry repeats. */
+  let outcomes: ('ok' | 'tainted')[] = [];
+  let calls = 0;
+  let decodeFails = false;
+  let naturalWidth = 40;
+
+  class FakeImage {
+    crossOrigin = '';
+    src = '';
+    complete = true;
+    naturalHeight = 20;
+    get naturalWidth() {
+      return naturalWidth;
+    }
+    constructor() {
+      constructed.push(this);
+    }
+    decode(): Promise<void> {
+      return decodeFails ? Promise.reject(new Error('decode')) : Promise.resolve();
+    }
+  }
+  class FakeCanvas {
+    constructor(
+      readonly width: number,
+      readonly height: number,
+    ) {
+      canvases.push(this);
+    }
+    getContext() {
+      return { drawImage: vi.fn() };
+    }
+    convertToBlob() {
+      const outcome = outcomes[Math.min(calls++, outcomes.length - 1)];
+      return outcome === 'tainted'
+        ? Promise.reject(new DOMException('tainted', 'SecurityError'))
+        : Promise.resolve({
+            arrayBuffer: () => Promise.resolve(new Uint8Array(PNG_BYTES).buffer),
+          });
+    }
+  }
+
+  const setup = (images: unknown[], ...results: ('ok' | 'tainted')[]) => {
+    constructed.length = 0;
+    canvases.length = 0;
+    outcomes = results.length > 0 ? results : ['ok'];
+    calls = 0;
+    decodeFails = false;
+    naturalWidth = 40;
+    vi.stubGlobal('document', { images });
+    vi.stubGlobal('Image', FakeImage);
+    vi.stubGlobal('OffscreenCanvas', FakeCanvas);
+  };
+  const shown = (extra: Record<string, unknown> = {}) => ({
+    currentSrc: SRC,
+    src: SRC,
+    complete: true,
+    naturalWidth: 40,
+    naturalHeight: 20,
+    ...extra,
+  });
+
+  it('draws the image that is on the page as it is: no second request', async () => {
+    setup([shown()]);
+    await expect(loadImagePixels(SRC)).resolves.toBe(PNG);
+    expect(constructed).toHaveLength(0);
+    expect(canvases).toEqual([expect.objectContaining({ width: 40, height: 20 })]);
+  });
+
+  it('loads the clicked URL again with CORS when the first draw is tainted', async () => {
+    setup([shown()], 'tainted', 'ok');
+    await expect(loadImagePixels(SRC)).resolves.toBe(PNG);
+    expect(constructed).toHaveLength(1);
+    expect(constructed[0]).toMatchObject({ crossOrigin: 'anonymous', src: SRC });
+  });
+
+  it('loads the URL when the page has no such element (a lazy or CSS image)', async () => {
+    setup([]);
+    await expect(loadImagePixels(SRC)).resolves.toBe(PNG);
+    expect(constructed[0]).toMatchObject({ crossOrigin: 'anonymous', src: SRC });
+  });
+
+  it('answers null when even the CORS load is tainted', async () => {
+    setup([], 'tainted');
+    await expect(loadImagePixels(SRC)).resolves.toBeNull();
+  });
+
+  it('answers null when the image cannot be decoded', async () => {
+    setup([]);
+    decodeFails = true;
+    await expect(loadImagePixels(SRC)).resolves.toBeNull();
+  });
+
+  it('answers null for an image without a size', async () => {
+    setup([]);
+    naturalWidth = 0;
+    await expect(loadImagePixels(SRC)).resolves.toBeNull();
+  });
+
+  it('scales the longest side to 2400', async () => {
+    setup([shown({ naturalWidth: 5000, naturalHeight: 1000 })]);
+    await loadImagePixels(SRC);
+    expect(canvases).toEqual([expect.objectContaining({ width: 2400, height: 480 })]);
   });
 });
