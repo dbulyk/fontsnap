@@ -9,7 +9,9 @@ const ACTIVE_KEY = '__fontsnapActive';
 export function textInRect(doc: Document, r: Rect): string {
   const out: string[] = [];
   const range = doc.createRange();
-  const tw = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+  // A document can lack <body> (an SVG or XML page) although the DOM types say otherwise.
+  const root = (doc.body as HTMLElement | null) ?? doc.documentElement;
+  const tw = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   let len = 0;
   let n = 0;
   try {

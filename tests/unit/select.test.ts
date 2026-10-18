@@ -244,6 +244,19 @@ describe('textInRect', () => {
     expect(textInRect(document, { x: 5000, y: 5000, w: 1, h: 1 })).toBe('');
   });
 
+  it('walks the root element when the document has no <body> (an SVG or XML page)', () => {
+    document.body.remove();
+    document.documentElement.append(document.createTextNode('plain root text'));
+    const realRange = document.createRange.bind(document);
+    vi.spyOn(document, 'createRange').mockImplementation(() => {
+      const range = realRange();
+      range.getBoundingClientRect = () => ({ left: 0, right: 10, top: 0, bottom: 10 }) as DOMRect;
+      return range;
+    });
+    expect(document.body).toBeNull();
+    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 100 })).toBe('plain root text');
+  });
+
   it('answers an empty string when the document cannot be walked', () => {
     document.body.innerHTML = '<p>text</p>';
     const realRange = document.createRange.bind(document);
