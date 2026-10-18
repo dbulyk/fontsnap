@@ -385,7 +385,22 @@ export function pagePlatformProblems(text: string): string[] {
  * `func() {}` are read too. Anything else - an import, a member (`o.f`), a computed key, a spread, options that are not an object
  * literal, an `executeScript` that is not called at once (an alias) - is an `undefined` entry, which fails the build.
  */
+export interface InjectedFunction {
+  /** The source text of the function. */
+  text: string;
+  /** The name of its first parameter, if it has one that is a plain name. */
+  firstParam: string | undefined;
+}
+
 export function injectedFunctions(file: string, text: string): (string | undefined)[] {
+  return injectedFunctionDetails(file, text).map((found) => found?.text);
+}
+
+/** Like `injectedFunctions`, but with the name of the first parameter of each function (the loader's `.src =` is judged by it). */
+export function injectedFunctionDetails(
+  file: string,
+  text: string,
+): (InjectedFunction | undefined)[] {
   const options: ts.CompilerOptions = {
     allowJs: true,
     noLib: true,
@@ -456,9 +471,17 @@ export function injectedFunctions(file: string, text: string): (string | undefin
     }
     return undefined;
   };
-  const found: (string | undefined)[] = [];
+  const found: (InjectedFunction | undefined)[] = [];
   const read = (node: ts.Node | undefined): void => {
-    found.push(node?.getText(source));
+    if (node === undefined) {
+      found.push(undefined);
+      return;
+    }
+    const first = ts.isFunctionLike(node) ? node.parameters[0] : undefined;
+    found.push({
+      text: node.getText(source),
+      firstParam: first !== undefined && ts.isIdentifier(first.name) ? first.name.text : undefined,
+    });
   };
   const isTheName = (node: ts.Node): boolean =>
     (ts.isIdentifier(node) && node.text === 'executeScript') ||
@@ -512,6 +535,51 @@ export function injectedFunctions(file: string, text: string): (string | undefin
   return found;
 }
 
+/** The distinct functions background.js hands to executeScript: the measuring one (measure.ts) and the loader (load-image.ts). */
+const EXPECTED_INJECTED = 2;
+const EXPECTED_INJECTED_WORD = 'two';
+
+/**
+ * What the loader (src/background/load-image.ts) may do that no other page function may: construct ONE `Image` without arguments, set its
+ * `crossOrigin` to "anonymous" once, and set its `src` once from its FIRST PARAMETER - the address it is given. Those three are taken out
+ * of the text, once each, and the rest is judged like any page function (`.src =` anywhere else, a second `Image`, fetch, setAttribute,
+ * location, ... still fail). Lint says the same of the source (DOM_MEMBERS.fromParameter in eslint.config.js).
+ */
+export function loaderProblems(loader: InjectedFunction): string[] {
+  const param = loader.firstParam;
+  if (param === undefined) return ['a loader without a first parameter that holds the address'];
+  const constructions = [...loader.text.matchAll(/\bnew\s+Image\b(\s*\(\s*\))?/g)];
+  const crossOrigins = loader.text.match(/crossOrigin/g)?.length ?? 0;
+  const anonymous = [...loader.text.matchAll(/\.crossOrigin\s*=\s*(["'])anonymous\1(?![\w$])/g)];
+  const escaped = param.replace(/\$/g, '\\$');
+  const sources = [
+    ...loader.text.matchAll(
+      new RegExp(`\\.\\s*src\\s*=(?!=)\\s*${escaped}(?=\\s*(?:[;,)}\\]]|$))`, 'g'),
+    ),
+  ];
+  const problems: string[] = [];
+  const construction = constructions[0];
+  if (constructions.length !== 1 || construction === undefined) {
+    problems.push('more or fewer than one new Image');
+  } else if (
+    construction[1] === undefined &&
+    /^\s*\(/.test(loader.text.slice(construction.index + construction[0].length))
+  ) {
+    problems.push('new Image with an argument');
+  }
+  if (crossOrigins !== 1 || anonymous.length !== 1) {
+    problems.push('crossOrigin other than a single assignment of "anonymous"');
+  }
+  if (sources.length !== 1) problems.push(`not exactly one .src = ${param} (the first parameter)`);
+  let rest = loader.text;
+  for (const found of [...constructions, ...anonymous, ...sources].sort(
+    (a, b) => b.index - a.index,
+  )) {
+    rest = rest.slice(0, found.index) + rest.slice(found.index + found[0].length);
+  }
+  return [...problems, ...pagePlatformProblems(rest)];
+}
+
 /**
  * Problems of one built script (`file` relative to the build, `text` its contents): a WebAssembly module in it, or settings
  * that would make onnxruntime-web load other code or bytes.
@@ -542,18 +610,36 @@ export function scriptProblems(file: string, text: string): string[] {
     (name) =>
       `${file}: uses ${name}, which no script of the build uses (the sources are held to an allowlist of globals, see eslint.config.js)`,
   );
-  const injected = file === 'background.js' ? injectedFunctions(file, text) : [];
+  const injected = file === 'background.js' ? injectedFunctionDetails(file, text) : [];
+  // the same function is handed over from several places (measureImage is called to measure, to measure a frame and to restore):
+  // it counts once
+  const bodies = [
+    ...new Map(
+      injected.flatMap((one) => (one === undefined ? [] : [[one.text, one] as const])),
+    ).values(),
+  ];
+  const loaders = bodies.filter((one) => /\bnew\s+Image\b/.test(one.text));
   const page = [
     ...(file === 'select.js' ? pagePlatformProblems(text) : []),
-    ...injected.flatMap((body) =>
-      body === undefined
-        ? [
-            'a func of executeScript that could not be read (not a function declared once in this file)',
-          ]
-        : pagePlatformProblems(body),
+    ...injected
+      .filter((one) => one === undefined)
+      .map(
+        () =>
+          'a func of executeScript that could not be read (not a function declared once in this file)',
+      ),
+    ...bodies.flatMap((one) =>
+      loaders.includes(one) ? loaderProblems(one) : pagePlatformProblems(one.text),
     ),
-    ...(file === 'background.js' && injected.length !== 1
-      ? [`exactly one function must be handed to executeScript (found ${String(injected.length)})`]
+    ...(file === 'background.js' &&
+    bodies.length + injected.filter((one) => one === undefined).length !== EXPECTED_INJECTED
+      ? [
+          `exactly ${EXPECTED_INJECTED_WORD} functions must be handed to executeScript (found ${String(bodies.length)})`,
+        ]
+      : []),
+    ...(file === 'background.js' && loaders.length !== 1
+      ? [
+          `exactly one of the functions handed to executeScript may load an image, the loader (found ${String(loaders.length)})`,
+        ]
       : []),
     ...(file !== 'background.js' && /\bexecuteScript\b/.test(text)
       ? ['executeScript outside background.js']

@@ -61,9 +61,9 @@ function makeDist(
   };
   const files: Record<string, string | Buffer> = {
     'manifest.json': JSON.stringify(options.patch ? options.patch(manifest) : manifest),
-    // as the build has it: one function is handed to the page (measureImage), nothing else is
+    // as the build has it: two functions are handed to the page (measureImage and the loader loadImagePixels), nothing else is
     'background.js':
-      'export {};chrome.scripting.executeScript({target:{tabId:1},args:[1],func:measure});async function measure(t){return t}',
+      'export {};chrome.scripting.executeScript({target:{tabId:1},args:[1],func:measure});chrome.scripting.executeScript({target:{tabId:1},args:[1],func:load});async function measure(t){return t}async function load(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
     [BASE_CHUNK]: REAL_CHUNK,
     'select.js': options.content ?? '(function(){})();',
     ...Object.fromEntries(Object.values(EXTENSION_PAGES).map((page) => [page, '<html></html>'])),
@@ -903,11 +903,11 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       ['select.js', 'window.open("https://example.invalid/");'],
       [
         'background.js',
-        'async function m(t){return new Image()}chrome.scripting.executeScript({target:{tabId:1},args:[u],func:m});',
+        'async function m(t){return new Image()}chrome.scripting.executeScript({target:{tabId:1},args:[u],func:m});chrome.scripting.executeScript({target:{tabId:1},func:l});async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
       ],
       [
         'background.js',
-        'async function m(t){document.body.setAttribute("src",t)}chrome.scripting.executeScript({target:{tabId:1},func:m});',
+        'async function m(t){document.body.setAttribute("src",t)}chrome.scripting.executeScript({target:{tabId:1},func:m});chrome.scripting.executeScript({target:{tabId:1},func:l});async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
       ],
       ['background.js', 'chrome.scripting.executeScript({target:{tabId:1},func:gone});'],
     ])('rejects a way to load or navigate in the code of the web page: %s: %s', (file, code) => {
@@ -1083,7 +1083,7 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     it('accepts imports of chunks that exist', () => {
       const files = {
         'background.js':
-          'import{a}from"./assets/x-abc.js";chrome.scripting.executeScript({target:{tabId:a},func:m});async function m(t){return t}',
+          'import{a}from"./assets/x-abc.js";chrome.scripting.executeScript({target:{tabId:a},func:m});chrome.scripting.executeScript({target:{tabId:a},func:l});async function m(t){return t}async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
         'assets/x-abc.js': 'export const a=1;',
       };
       expect(verifyDist(makeDist({ files }), withMain({ 'assets/x-abc.js': 'chunk' }))).toEqual([]);

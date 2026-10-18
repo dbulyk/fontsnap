@@ -724,11 +724,12 @@ describe('the code of the web page: no network API, no way to load or navigate',
       body: string,
       call = 'chrome.scripting.executeScript({target:{tabId:r.id},args:[e],func:b})',
     ) =>
-      `async function k(){const x=1;await ${call}}async function b(t){${body}}function other(){return fetch(u)}`;
+      `async function k(){const x=1;await ${call};await chrome.scripting.executeScript({target:{tabId:r.id},args:[e],func:q})}async function b(t){${body}}async function q(t){const i=new Image;i.crossOrigin="anonymous";i.src=t;return i}function other(){return fetch(u)}`;
 
     it('finds a named function, a variable and a function written in place', () => {
       expect(injectedFunctions('background.js', MINIFIED('return 1'))).toEqual([
         'async function b(t){return 1}',
+        'async function q(t){const i=new Image;i.crossOrigin="anonymous";i.src=t;return i}',
       ]);
       expect(
         injectedFunctions(
@@ -988,26 +989,26 @@ describe('injectedFunctions: the func of executeScript is followed by scope, and
   ])('fails on %s', (_what, text) => {
     expect(read(text), text).toContain(undefined);
     expect(scriptProblems('background.js', text).join('\n'), text).toMatch(
-      /could not be read|exactly one function/,
+      /could not be read|exactly two functions/,
     );
   });
 
-  it('background.js must hand over exactly one function: zero fails too', () => {
+  it('background.js must hand over exactly two distinct functions: none or one fails', () => {
     expect(scriptProblems('background.js', 'chrome.tabs.create({url:u})').join('\n')).toContain(
-      'exactly one function must be handed',
+      'exactly two functions must be handed',
     );
     expect(
       scriptProblems(
         'background.js',
         'chrome.scripting.executeScript({target:{},files:["select.js"]})',
       ).join('\n'),
-    ).toContain('exactly one function must be handed');
+    ).toContain('exactly two functions must be handed');
     expect(
       scriptProblems(
         'background.js',
         'chrome.scripting.executeScript({target:{},func:m});const m=t=>t',
       ).join('\n'),
-    ).not.toContain('exactly one');
+    ).toContain('exactly two functions must be handed to executeScript (found 1)');
   });
 
   it('resolves a reused short name by scope, not by the last declaration in the file', () => {
@@ -1024,11 +1025,11 @@ describe('injectedFunctions: the func of executeScript is followed by scope, and
     expect(read(text)).toEqual(['function b(){return 3}']);
   });
 
-  it('exactly one function may be handed over, and executeScript belongs to background.js', () => {
-    const two =
-      'chrome.scripting.executeScript({target:{},func:a});chrome.scripting.executeScript({target:{},func:c});function a(){}function c(){}';
-    expect(scriptProblems('background.js', two).join('\n')).toContain(
-      'exactly one function must be handed',
+  it('three distinct functions may not be handed over, and executeScript belongs to background.js', () => {
+    const three =
+      'chrome.scripting.executeScript({target:{},func:a});chrome.scripting.executeScript({target:{},func:c});chrome.scripting.executeScript({target:{},func:d});function a(){}function c(){}function d(){}';
+    expect(scriptProblems('background.js', three).join('\n')).toContain(
+      'exactly two functions must be handed to executeScript (found 3)',
     );
     expect(scriptProblems('assets/result-abc.js', CALL).join('\n')).toContain(
       'executeScript outside background.js',
@@ -1036,5 +1037,82 @@ describe('injectedFunctions: the func of executeScript is followed by scope, and
     expect(scriptProblems('select.js', CALL).join('\n')).toContain(
       'executeScript outside background.js',
     );
+  });
+});
+
+// Step 1 of reading a clicked image loads an address in the page, so background.js hands over TWO functions: the measuring one and
+// the loader. The loader alone may contain `new Image`, `.crossOrigin = "anonymous"` and `.src = <its first parameter>`, once each; every
+// other pattern of PAGE_CODE_FORBIDDEN still applies to both.
+describe('background.js hands two functions to executeScript: the measuring one and the loader', () => {
+  const MEASURE = 'async function m(t,k,s){return[document.images,t,k,s]}';
+  const LOADER =
+    'async function l(t){const e=new Image;e.crossOrigin="anonymous",e.src=t;try{await e.decode()}catch{return null}return btoa(String(e.naturalWidth))}';
+  const CALLS =
+    'chrome.scripting.executeScript({target:{tabId:1},args:[u,"image",null],func:m});chrome.scripting.executeScript({target:{tabId:1},args:[u,"frame",null],func:m});chrome.scripting.executeScript({target:{tabId:1,frameIds:[2]},args:[u],func:l});';
+  const problems = (text: string) => scriptProblems('background.js', text).join('\n');
+
+  it('accepts the real shape: three call sites, two distinct functions', () => {
+    expect(problems(`${CALLS}${MEASURE}${LOADER}`)).toBe('');
+  });
+
+  it('a loader reads src of other images and compares, only writing is the exception', () => {
+    const loader = LOADER.replace(
+      'return btoa',
+      'if(document.images.length&&e.src===t){}return btoa',
+    );
+    expect(problems(`${CALLS}${MEASURE}${loader}`)).toBe('');
+  });
+
+  it.each([
+    ['a second write of src', LOADER.replace('try{', 'e.src=t;try{')],
+    ['src set to another value', LOADER.replace('e.src=t', 'e.src=u')],
+    ['src set to the parameter plus a suffix', LOADER.replace('e.src=t', 'e.src=t+"#"')],
+    [
+      'src set to a literal address',
+      LOADER.replace('e.src=t', 'e.src="https://example.invalid/x"'),
+    ],
+    ['a second Image', LOADER.replace('try{', 'const f=new Image;try{')],
+    ['an Image with an argument', LOADER.replace('new Image', 'new Image(5)')],
+    ['crossOrigin use-credentials', LOADER.replace('"anonymous"', '"use-credentials"')],
+    ['a second crossOrigin', LOADER.replace('try{', 'e.crossOrigin="anonymous";try{')],
+    ['fetch', LOADER.replace('try{', 'fetch(t);try{')],
+    ['setAttribute', LOADER.replace('try{', 'e.setAttribute("src",t);try{')],
+    ['location', LOADER.replace('try{', 'location.href=t;try{')],
+    ['a href write', LOADER.replace('try{', 'e.href=t;try{')],
+    ['open', LOADER.replace('try{', 'open(t);try{')],
+    ['a network API next to it', LOADER.replace('try{', 'new Worker(t);try{')],
+  ])('refuses a loader with %s', (_what, loader) => {
+    expect(problems(`${CALLS}${MEASURE}${loader}`)).toMatch(
+      /runs in the web page|web page's process/,
+    );
+  });
+
+  it('refuses the exception in the measuring function', () => {
+    const measure = 'async function m(t,k,s){const e=new Image;e.src=t;return e}';
+    expect(problems(`${CALLS}${measure}${LOADER}`)).toMatch(/web page/);
+  });
+
+  it('refuses two loaders, no loader, and a loader that is not readable', () => {
+    const other = 'async function o(t){const e=new Image;e.src=t;return e}';
+    const two =
+      'chrome.scripting.executeScript({target:{},func:l});chrome.scripting.executeScript({target:{},func:o});';
+    expect(problems(`${two}${LOADER}${other}`)).toContain('exactly one of the functions');
+    const none =
+      'chrome.scripting.executeScript({target:{},func:m});chrome.scripting.executeScript({target:{},func:n});';
+    expect(problems(`${none}${MEASURE}async function n(t){return t}`)).toContain(
+      'exactly one of the functions',
+    );
+    expect(problems(`${CALLS}${MEASURE}`.replace('func:l', 'func:gone'))).toContain(
+      'could not be read',
+    );
+  });
+
+  it('the first parameter is read by position, whatever it is called', () => {
+    const loader =
+      'async function l(x){const y=new Image;y.crossOrigin="anonymous";y.src=x;return y}';
+    expect(problems(`${CALLS}${MEASURE}${loader}`)).toBe('');
+    const bad =
+      'async function l(x,z){const y=new Image;y.crossOrigin="anonymous";y.src=z;return y}';
+    expect(problems(`${CALLS}${MEASURE}${bad}`)).toMatch(/web page/);
   });
 });
