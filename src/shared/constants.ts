@@ -2,6 +2,9 @@
 export const CONTENT_SCRIPT_FILE = 'select.js';
 export const BACKGROUND_FILE = 'background.js';
 
+/** Id of the "identify font in this image" context-menu item: the service worker creates it, the tests click it. */
+export const MENU_IMAGE = 'fontsnap-image';
+
 /**
  * The pages of the extension, name → HTML file relative to src/. The ONE declared list: the manifest,
  * the build inputs, verify-dist and the page tests all read it. To add a page (side panel, offscreen

@@ -1,4 +1,4 @@
-import { CONTENT_SCRIPT_FILE, EXTENSION_PAGES } from '../shared/constants';
+import { CONTENT_SCRIPT_FILE, EXTENSION_PAGES, MENU_IMAGE } from '../shared/constants';
 import { errorMessage } from '../shared/errors';
 import { t } from '../shared/i18n';
 import { onMessage } from '../shared/messaging';
@@ -9,7 +9,6 @@ import { handleRect, imageToDataUrl, openResult, resultUrl } from './shot';
 const RESTRICTED =
   /^(chrome|edge|about|devtools|view-source|chrome-extension|chrome-search):|^https:\/\/(chrome\.google\.com\/webstore|chromewebstore\.google\.com)/;
 
-const MENU_IMAGE = 'fontsnap-image';
 const MENU_SELECT = 'fontsnap-select';
 
 async function startSelect(tab: chrome.tabs.Tab | undefined): Promise<void> {

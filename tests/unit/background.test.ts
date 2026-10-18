@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerBackground } from '../../src/background/handlers';
 import { MAX_DATA_URL_CHARS, MAX_IMAGE_BYTES } from '../../src/shared/capture';
+import { MENU_IMAGE } from '../../src/shared/constants';
 import {
   CONTENT_SCRIPT_SENDER,
   createChromeStub,
@@ -73,7 +74,7 @@ describe('onInstalled: context menus and welcome page', () => {
     expect(stub.chrome.contextMenus.removeAll).toHaveBeenCalledTimes(1);
     expect(stub.chrome.contextMenus.create.mock.calls.map(([item]) => item)).toEqual([
       {
-        id: 'fontsnap-image',
+        id: MENU_IMAGE,
         title: stub.chrome.i18n.getMessage('ctxImage'),
         contexts: ['image'],
       },
@@ -182,7 +183,7 @@ describe('toolbar icon and region menu: start selection', () => {
 
   it('ignores an unknown context menu item and an image item without a source URL', async () => {
     await stub.fireMenuClicked({ menuItemId: 'other' }, tab);
-    await stub.fireMenuClicked({ menuItemId: 'fontsnap-image' }, tab);
+    await stub.fireMenuClicked({ menuItemId: MENU_IMAGE }, tab);
     expect(stub.chrome.scripting.executeScript).not.toHaveBeenCalled();
     expect(stub.chrome.tabs.create).not.toHaveBeenCalled();
   });
@@ -346,7 +347,7 @@ describe('right-click on an image', () => {
     `data:${type};base64,${Buffer.from(bytes).toString('base64')}`;
   const png = () => dataUrl('image/png', new Uint8Array(1000).fill(7));
   const click = (srcUrl = 'https://cdn.example/photo.png') =>
-    stub.fireMenuClicked({ menuItemId: 'fontsnap-image', srcUrl }, tab);
+    stub.fireMenuClicked({ menuItemId: MENU_IMAGE, srcUrl }, tab);
   const measured = (w = 100, h = 50) =>
     stub.chrome.scripting.executeScript.mockResolvedValueOnce([
       { result: { rect: { x: 30, y: 40, w, h }, dpr: 2 } },
@@ -449,7 +450,7 @@ describe('measuring an image inside the page', () => {
   it('finds the image by URL, scrolls it into view and measures it after two frames', async () => {
     setup();
     stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: null }]);
-    await stub.fireMenuClicked({ menuItemId: 'fontsnap-image', srcUrl: 'https://x/y.png' }, tab);
+    await stub.fireMenuClicked({ menuItemId: MENU_IMAGE, srcUrl: 'https://x/y.png' }, tab);
     await openedResult();
     const injection = stub.chrome.scripting.executeScript.mock.calls[0]?.[0] as {
       func: (src: string) => Promise<unknown>;
