@@ -12,7 +12,8 @@ import {
 import { beforeAll, describe, expect, it } from 'vitest';
 import { EXTENSION_PAGES } from '../../src/shared/constants';
 import { unexpectedConfigKeys } from '../../scripts/lib/vite-config-keys';
-import { pageEntries, sharedConfig } from '../../vite.shared';
+import { ORT_EXTERNAL, ORT_SPECIFIER } from '../../scripts/lib/vendor';
+import { pageEntries, sharedConfig, vendorPlugin } from '../../vite.shared';
 
 // The src-only guard (scripts/lib/src-only.ts) works only where it is plugged in: the main build,
 // the worker pipeline and the content-script build. These tests load the real configurations, so
@@ -263,5 +264,48 @@ describe('pageEntries', () => {
       string
     >;
     expect(Object.keys(pageEntries(pages, '/p'))).toEqual(['__proto__', 'constructor']);
+  });
+});
+
+describe('vendorPlugin', () => {
+  const resolveId = vendorPlugin().resolveId as (this: unknown, source: string) => unknown;
+
+  it('answers the one import of the onnxruntime-web entry point with the external runtime, and only that', () => {
+    expect(resolveId.call({}, ORT_SPECIFIER)).toEqual({ id: ORT_EXTERNAL, external: true });
+  });
+
+  it.each([
+    'onnxruntime-web',
+    'onnxruntime-web/webgpu',
+    'onnxruntime-web/wasm?url',
+    'onnxruntime-web/wasm/',
+    '../ort/ort.wasm.min.mjs',
+    'onnxruntime-node',
+    '',
+  ])('leaves %j to the other resolvers', (source) => {
+    expect(resolveId.call({}, source)).toBeNull();
+  });
+
+  it('runs before Vite resolves the package itself (or the package would be bundled)', () => {
+    expect(vendorPlugin().enforce).toBe('pre');
+  });
+
+  it('emits exactly the five pinned files as assets', () => {
+    const emitted: { fileName: string; type: string; size: number }[] = [];
+    const generate = vendorPlugin().generateBundle as (this: unknown) => void;
+    generate.call({
+      emitFile: (file: { fileName: string; type: string; source: Buffer }) => {
+        emitted.push({ fileName: file.fileName, type: file.type, size: file.source.length });
+      },
+    });
+    expect(emitted.map((file) => file.fileName).sort()).toEqual([
+      'model/meta.json',
+      'model/model_fp16.onnx',
+      'ort/ort-wasm-simd-threaded.mjs',
+      'ort/ort-wasm-simd-threaded.wasm',
+      'ort/ort.wasm.min.mjs',
+    ]);
+    expect(emitted.every((file) => file.type === 'asset')).toBe(true);
+    expect(emitted.find((file) => file.fileName === 'model/model_fp16.onnx')?.size).toBe(32697050);
   });
 });

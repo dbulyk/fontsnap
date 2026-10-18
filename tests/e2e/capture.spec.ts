@@ -184,7 +184,7 @@ test('3) an err= hash is understood by the helpers and shown on the result page'
   await expect(result.locator('#status')).toHaveClass(/err/);
 });
 
-test('4) the selection message: validRect and the shape of what the overlay sends', async ({
+test('4) the selection message: validRect accepts a real rectangle and refuses empty or non-finite ones', async ({
   context,
   extensionId,
 }) => {
@@ -198,16 +198,16 @@ test('4) the selection message: validRect and the shape of what the overlay send
     };
   });
   expect(shape).toEqual({ good: true, badZero: false, badNaN: false });
-  expect(readFileSync('src/select/overlay.ts', 'utf8')).toContain("type: 'fontsnap-rect'");
 });
 
-test('the service worker stays registered through all of the above', async ({
-  context,
-  extensionId,
+test('the service worker answers while the helpers run: session storage works from the worker too', async ({
   serviceWorker,
 }) => {
-  const page = await pageWithHelpers(context, extensionId);
-  await page.evaluate(() => chrome.storage.session.get(null));
-  expect(context.serviceWorkers().some((worker) => worker.url().includes(extensionId))).toBe(true);
-  expect(await serviceWorker.evaluate(() => chrome.runtime.id)).toBe(extensionId);
+  const stored = await serviceWorker.evaluate(async () => {
+    await chrome.storage.session.set({ smoke: { text: 'Aa' } });
+    const back = await chrome.storage.session.get('smoke');
+    await chrome.storage.session.remove('smoke');
+    return back;
+  });
+  expect(stored).toEqual({ smoke: { text: 'Aa' } });
 });

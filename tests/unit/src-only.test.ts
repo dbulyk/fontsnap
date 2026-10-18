@@ -11,6 +11,7 @@ import {
   inlineQueryPaths,
   srcOnlyPlugin,
 } from '../../scripts/lib/src-only';
+import { ORT_EXTERNAL } from '../../scripts/lib/vendor';
 import { bundleKinds, sharedConfig, type BundleKind } from '../../vite.shared';
 
 let root: string;
@@ -168,6 +169,52 @@ describe('srcOnlyPlugin hooks', () => {
     await expect(
       resolveId.call(ctx(external), 'https://cdn.example/x.js', undefined, {}),
     ).rejects.toThrow(/external module/);
+  });
+});
+
+// The one external module of the build is the vendored onnxruntime-web runtime (scripts/lib/vendor.ts, the template's
+// WebAssembly exception). It is let through by its exact id; any other external module, however similar, still fails.
+describe('srcOnlyPlugin: the single external exception', () => {
+  type Resolve = (
+    this: unknown,
+    source: string,
+    importer: string | undefined,
+    options: object,
+  ) => Promise<unknown>;
+  /** What the plugin answers when the other resolvers found `resolved` for an import in src/. */
+  const run = (resolved: unknown) =>
+    (srcOnlyPlugin(dirs()).resolveId as Resolve).call(
+      { resolve: () => Promise.resolve(resolved) },
+      'anything',
+      at('src/b.ts'),
+      {},
+    );
+
+  it('lets the vendored runtime through, unchanged', async () => {
+    const vendored = { id: ORT_EXTERNAL, external: true };
+    expect(await run(vendored)).toBe(vendored);
+  });
+
+  it.each([
+    '../ort/ort-wasm-simd-threaded.mjs',
+    '../ort/ort.wasm.min.mjs?x',
+    './ort/ort.wasm.min.mjs',
+    '../ort/ort.wasm.min.js',
+    '../ort/../ort/ort.wasm.min.mjs',
+    '../model/model_fp16.onnx',
+    'onnxruntime-web',
+    'https://cdn.example.com/ort.wasm.min.mjs',
+    '//cdn.example.com/ort.wasm.min.mjs',
+    'node:fs',
+    '/abs/ort.wasm.min.mjs',
+  ])('still refuses the external module %s', async (id) => {
+    await expect(run({ id, external: true })).rejects.toThrow(/external module/);
+  });
+
+  it('does not accept the vendored id for a module that is not external', async () => {
+    await expect(run({ id: ORT_EXTERNAL, external: false })).rejects.toThrow(
+      /not a file|outside src/,
+    );
   });
 });
 

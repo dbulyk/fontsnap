@@ -143,6 +143,28 @@ function dataUrls(dir: string): string[] {
     );
 }
 
+/**
+ * Static imports of built scripts (`from"./x.js"`, `import"../ort/x.mjs"`) that point at a file the build does not
+ * have. The vendored runtime is imported as `../ort/ort.wasm.min.mjs`, which is right for a chunk in assets/ only: the
+ * same import in a script at the root would leave the extension and fail at run time, with no other check noticing.
+ */
+function unresolvedImports(dir: string): string[] {
+  return filesBelow(dir)
+    .filter((file) => file.endsWith('.js'))
+    .flatMap((file) => {
+      const text = readFileSync(join(dir, file), 'utf8');
+      return [...text.matchAll(/\b(?:from|import)\s*["'](\.{1,2}\/[^"']+)["']/g)].flatMap(
+        (match) => {
+          const specifier = match[1] ?? '';
+          const target = posix.join(posix.dirname(file), specifier);
+          return existsSync(join(dir, target))
+            ? []
+            : [`${file}: imports ${specifier}, which is not in the build (${target})`];
+        },
+      );
+    });
+}
+
 /** <script> tags in built pages that are inline, external or do not point at a chunk the bundler emitted. */
 function strayScripts(dir: string, chunks: ReadonlySet<string>): string[] {
   return filesBelow(dir)
@@ -261,6 +283,7 @@ export function verifyDist(
     ...vendorDistProblems(dir, filesBelow(dir), vendor),
     ...dataUrls(dir),
     ...strayScripts(dir, chunks),
+    ...unresolvedImports(dir),
   );
 
   const files = [

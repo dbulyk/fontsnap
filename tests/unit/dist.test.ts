@@ -771,6 +771,45 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     expect(verifyDist(dir, release).join('\n')).toContain(`${file}: not an allowed file`);
   });
 
+  describe('imports between the built scripts', () => {
+    const ORT_IMPORT = 'import*as o from"../ort/ort.wasm.min.mjs";export{o};';
+
+    it('accepts the vendored runtime imported from a chunk in assets/', () => {
+      const files = { 'assets/result-abc.js': ORT_IMPORT };
+      expect(
+        verifyDist(makeDist({ files }), withMain({ 'assets/result-abc.js': 'chunk' })),
+      ).toEqual([]);
+    });
+
+    it('rejects the same import from the service worker at the root (it would leave the extension)', () => {
+      const dir = makeDist({ files: { 'background.js': ORT_IMPORT } });
+      expect(verifyDist(dir, release).join('\n')).toContain(
+        'background.js: imports ../ort/ort.wasm.min.mjs',
+      );
+    });
+
+    it('rejects an import of a chunk the build does not have, in every spelling', () => {
+      for (const code of [
+        'import{a}from"./gone.js";',
+        "import './gone.js';",
+        "export * from '../gone.js';",
+      ]) {
+        const problems = verifyDist(makeDist({ files: { 'background.js': code } }), release).join(
+          '\n',
+        );
+        expect(problems, code).toMatch(/background\.js: imports \.{1,2}\/gone\.js/);
+      }
+    });
+
+    it('accepts imports of chunks that exist', () => {
+      const files = {
+        'background.js': 'import{a}from"./assets/x-abc.js";',
+        'assets/x-abc.js': 'export const a=1;',
+      };
+      expect(verifyDist(makeDist({ files }), withMain({ 'assets/x-abc.js': 'chunk' }))).toEqual([]);
+    });
+  });
+
   describe('WebAssembly, models and runtime scripts', () => {
     it.each([
       ['a stray foo.wasm in the root', 'foo.wasm', 'asset'],
