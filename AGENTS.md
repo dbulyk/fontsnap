@@ -53,7 +53,7 @@ Setup: `git lfs pull` (model and test images), `npm ci`, then once `npx playwrig
   worker (`env.wasm.proxy = true`, checked at start-up and in `verify-dist`); do not turn that off.
   All of `src/select/` (by glob: a new file there is under the rules at once) and `src/background/measure.ts` run in the web page's process,
   outside the CSP: they are held to `PAGE_PROCESS_GLOBS` in `eslint.config.js` (the Window is the first parameter of `startSelection` and
-  only its listed members are used; no computed key, no cast, no `Object.*` but `Object.assign(el.style, ...)`). `src/select` imports values
+  only its listed members are used; no computed key, no cast, no `Object.*` but `Object.assign(el.style, { key: value })` with the keys of `STYLE_KEYS`: a style can load a file with `url()`, so no other way to write one). `src/select` imports values
   from itself only (everything else as `import type`) and `tests/unit/select-bundle.test.ts` checks the real `select.js`; do not import a
   shared module there, write the few lines in `src/select/` (see `chrome.ts`). `measureImage` is the only function lint accepts as `func`
   of `executeScript`; `fetch` is on no file's allowlist, and `this` is only for class constructors.

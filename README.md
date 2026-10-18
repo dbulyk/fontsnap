@@ -146,7 +146,7 @@ reach and replace those one after another, so the layers do not try to list the 
    else), is held to a closed class (`PAGE_PROCESS_GLOBS`): the Window is the first parameter of `startSelection`, under any name, used only
    as `.document`, `.addEventListener`, `.removeEventListener`, `.getSelection`, `.requestAnimationFrame`, `.devicePixelRatio` (the marker
    `__fontsnapActive` is the one thing written); no computed key, no cast, no `for...in`, no `typeof`/indexed types, no `Object.*` but
-   `Object.assign(el.style, ...)`, only `div` elements, nothing that loads or navigates; `fetch` is on no file's list. `src/select` imports
+   `Object.assign(el.style, { key: value })` with the overlay's own style keys (`cursor` and `background`, the two that could take a `url()`, only as a keyword, hex colour or `rgb()`; no `.style` anywhere else, no `setProperty`/`cssText`), only `div` elements, nothing that loads or navigates, no `import.meta`; `fetch` is on no file's list. `src/select` imports
    **values only from itself** (`./name`; other modules only as `import type`, `measure.ts` takes no value import), so nothing outside the
    folder can be bundled into `select.js`, and `tests/unit/select-bundle.test.ts` reads the real bundle to show it. `this` is allowed only
    in a class constructor (in a callback it is the window).
