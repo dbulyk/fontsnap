@@ -2,9 +2,6 @@ import { sendMessage } from '../shared/messaging';
 import { t } from '../shared/i18n';
 import type { Rect } from '../shared/capture';
 
-/** Marks a window that already shows the overlay, so a second injection does nothing. */
-const ACTIVE_KEY = '__fontsnapActive';
-
 // text of the page under the dragged rectangle (used as the preview sample when nothing is selected)
 export function textInRect(doc: Document, r: Rect): string {
   const out: string[] = [];
@@ -31,11 +28,18 @@ export function textInRect(doc: Document, r: Rect): string {
   return out.join(' ').slice(0, 80);
 }
 
-/** Injected on demand: draw a selection rectangle, then send its viewport rect to the service worker. */
+/**
+ * Injected on demand: draw a selection rectangle, then send its viewport rect to the service worker.
+ *
+ * This runs in the page's process, where the CSP of the extension does not apply, so `win` is used through a closed list of
+ * members (eslint.config.js, OVERLAY_WINDOW_MEMBERS): document, addEventListener, removeEventListener, getSelection,
+ * requestAnimationFrame, devicePixelRatio, and `__fontsnapActive`, the marker of a window that already shows the overlay (a
+ * second injection does nothing; it lives in the isolated world of the content script, which the page can not see).
+ * It is never aliased, cast, destructured, indexed by a computed name or passed on.
+ */
 export function startSelection(win: Window): void {
-  const flags = win as unknown as Record<string, unknown>;
-  if (flags[ACTIVE_KEY] === true) return;
-  flags[ACTIVE_KEY] = true;
+  if (win.__fontsnapActive === true) return;
+  win.__fontsnapActive = true;
   const doc = win.document;
   const ov = doc.createElement('div');
   const box = doc.createElement('div');
@@ -76,7 +80,7 @@ export function startSelection(win: Window): void {
     if (!ov.isConnected) return;
     ov.remove();
     win.removeEventListener('keydown', key, true);
-    flags[ACTIVE_KEY] = false;
+    win.__fontsnapActive = false;
   };
   const key = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {

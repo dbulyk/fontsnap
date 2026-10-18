@@ -6,7 +6,7 @@
     ".nvmrc": "22\n",
     ".prettierignore": "node_modules\ndist\ndist-e2e\nrelease\ncoverage\nplaywright-report\ntest-results\n.superpowers\npackage-lock.json\nxvfb.log\nreports\ntests/guard-snapshots\n# Outside the Node toolchain (see AGENTS.md): never reformatted.\nstore\ndata\npython\nmodel\nscripts/i18n\ntests/fixtures\nout\n",
     ".prettierrc.json": "{\n  \"singleQuote\": true,\n  \"printWidth\": 100,\n  \"trailingComma\": \"all\"\n}\n",
-    "src/env.d.ts": "/// <reference types=\"vite/client\" />\n"
+    "src/env.d.ts": "/// <reference types=\"vite/client\" />\n\n/** The marker of a window that already shows the selection overlay (src/select/overlay.ts), the only property FontSnap adds. */\ninterface Window {\n  __fontsnapActive?: boolean;\n}\n"
   },
   "playwright": {
     "ci": {

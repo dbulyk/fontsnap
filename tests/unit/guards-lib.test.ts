@@ -66,6 +66,8 @@ describe('contextOf', () => {
     ['src/result/app.ts', 'src-page-window/result'],
     ['src/welcome/app.ts', 'src-page-window/welcome'],
     ['src/result/render.ts', 'src/result'],
+    ['src/select/overlay.ts', 'src-select-overlay'],
+    ['src/select/index.ts', 'src/select'],
     ['src/result/model.ts', 'src-ort-model'],
     ['src/sidepanel/deep/x.ts', 'src/sidepanel'],
     ['tests/unit/guards.test.ts', 'tests/unit'],

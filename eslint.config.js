@@ -172,6 +172,11 @@ const globalTampering = [
   `UnaryExpression[operator='delete'] Identifier[name=${HOST_OBJECTS}]`,
   // Object.assign(<host object or a member of it>, ...) is a write to it (the first argument is the target)
   `CallExpression[callee.object.name='Object'][callee.property.name='assign']:matches([arguments.0.name=${HOST_OBJECTS}], [arguments.0.object.name=${HOST_OBJECTS}], [arguments.0.object.object.name=${HOST_OBJECTS}], [arguments.0.object.object.object.name=${HOST_OBJECTS}])`,
+  // `this` of an ordinary function is the global object when it is called as a callback (setTimeout(function () { this... })):
+  // allowed only in a class constructor (always called with new), not in a function nested in it, and never as a parameter
+  "ThisExpression:not(MethodDefinition[kind='constructor'] ThisExpression)",
+  "MethodDefinition[kind='constructor'] > FunctionExpression :matches(FunctionExpression, FunctionDeclaration) ThisExpression",
+  "Identifier[name='this']",
   // the primitives, by name, as identifiers, strings and templates
   `Identifier[name=${TAMPER_NAMES}]`,
   `Literal[value=${TAMPER_NAMES}]`,
@@ -241,11 +246,11 @@ const GLOBAL_ACCESS = {
   },
   files: {
     // the page of the selection overlay is a content script: its Window is the web page's, not the extension's
-    'src/select/index.ts': { window: true },
+    // the window is only handed to startSelection(window) (a bare use: no member of it is read here)
+    'src/select/index.ts': { window: [''] },
     'src/select/overlay.ts': { Window: true, Object: ['assign'] },
     'src/background/shot.ts': {
       btoa: true,
-      fetch: true,
       String: ['fromCharCode'],
       window: ['devicePixelRatio'],
     },
@@ -442,6 +447,30 @@ const reachSelectors = (names, except = '') => {
   ].map((selector) => ({ selector, message: REACH_MESSAGE }));
 };
 const reachDefault = reachSelectors(REACH_NAMES);
+// src/select/overlay.ts runs in the web page's process, where the CSP of the extension does not apply: its `win` (the Window of
+// the page, handed in by src/select/index.ts) is used through a closed list of members, as a parameter only. `__fontsnapActive` is
+// the marker of a window that already shows the overlay (declared in src/env.d.ts); it is the one member that is written.
+const OVERLAY_FILE = 'src/select/overlay.ts';
+const OVERLAY_WINDOW_MEMBERS = [
+  'document',
+  'addEventListener',
+  'removeEventListener',
+  'getSelection',
+  'requestAnimationFrame',
+  'devicePixelRatio',
+  '__fontsnapActive',
+];
+const OVERLAY_MESSAGE = `win is used only as win.<${OVERLAY_WINDOW_MEMBERS.join('|')}>, read or called (only __fontsnapActive is written): no fetch, no alias, cast, destructuring, computed access or passing it on (this code runs in the web page's process, outside the CSP of the extension).`;
+const reachOverlay = [
+  ...reachDefault,
+  ...[
+    `Identifier[name='win']:not(MemberExpression[computed=false][property.name=/^(${OVERLAY_WINDOW_MEMBERS.join('|')})$/] > Identifier.object):not(FunctionDeclaration > Identifier.params)`,
+    "AssignmentExpression > MemberExpression.left Identifier[name='win']:not(MemberExpression[property.name='__fontsnapActive'] > Identifier)",
+    "UpdateExpression MemberExpression Identifier[name='win']",
+    "UnaryExpression[operator='delete'] MemberExpression Identifier[name='win']",
+  ].map((selector) => ({ selector, message: OVERLAY_MESSAGE })),
+];
+
 // The two page scripts that listen to the window (hashchange, pagehide): `const win = doc.defaultView;` is the one place
 // a Window is held, and `win` is only ever used for `win.location` and `win.addEventListener`.
 const PAGE_WINDOW_FILES = ['src/result/app.ts', 'src/welcome/app.ts'];
@@ -575,7 +604,7 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.ts'],
-    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES],
+    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES, OVERLAY_FILE],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -585,6 +614,21 @@ export default tseslint.config(
         ...noDynamicIn,
         ...numbersAndText,
         ...reachDefault,
+      ],
+    },
+  },
+  {
+    // The overlay of the content script holds the Window of the web page, through a closed list of members.
+    files: [OVERLAY_FILE],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        noDynamicImport,
+        ...noRequireOrDeclare,
+        ...noInjectedCode,
+        ...noDynamicIn,
+        ...numbersAndText,
+        ...reachOverlay,
       ],
     },
   },

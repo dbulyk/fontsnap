@@ -218,6 +218,8 @@ export function contextOf(file: string): string {
     // the one file that configures onnxruntime-web has its own rule set (see eslint.config.js)
     if (file === ORT_CONFIG_FILE) return 'src-ort-model';
     // the two page scripts that hold the Window of their page have their own rule set (PAGE_WINDOW_FILES in eslint.config.js)
+    // the overlay of the content script holds the Window of the web page through a closed list of members (OVERLAY_FILE)
+    if (file === 'src/select/overlay.ts') return 'src-select-overlay';
     if (PAGE_WINDOW_FILES.includes(file)) return `src-page-window/${String(second)}`;
     if (file.endsWith('.d.ts')) return 'src-dts';
     return parts.length === 2 ? 'src-root' : `src/${String(second)}`;

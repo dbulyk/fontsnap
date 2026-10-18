@@ -231,7 +231,7 @@ describe('extension code: boundaries, loading, number formatting and ambient dec
     const code = [
       "if ('documentElement' in root) run();",
       'class A { constructor() { this.x = 1; } }',
-      'const kind = this.constructor.name;',
+      'const kind = x.constructor.name;',
       'const o = { constructor: 1, write: 2 };',
       'const s = new Set<string>(); s.has(key);',
     ].join('\n');
@@ -488,76 +488,76 @@ describe('extension code does not tamper with globals, host objects or prototype
 // three times (Object.assign(document.defaultView, { fetch }), top, parent, ...). src/ now reaches the environment through an
 // ALLOWLIST (GLOBAL_ACCESS in eslint.config.js): a global that is not named there cannot be used, a restricted one only through
 // its listed members, and never written, aliased, destructured, computed or passed on.
-describe('src/ reaches the environment only through the allowlist of globals', () => {
-  // the names the fixtures use freely; they are declared, so that only real globals are "global" for the rule
-  const FREE_NAMES = `declare let ${[
-    'Other',
-    'blob',
-    'css',
-    'data',
-    'd',
-    'doc',
-    'el',
-    'event',
-    'frame',
-    'handler',
-    'iframe',
-    'key',
-    'name',
-    'node',
-    'o',
-    'other',
-    'patched',
-    'render',
-    'rows',
-    's',
-    'sender',
-    'stop',
-    'tab',
-    'target',
-    'text',
-    'u',
-    'url',
-    'use',
-    'v',
-    'w',
-    'x',
-    'y',
-    'run',
-    'b',
-    'evil',
-    'startSelection',
-  ].join(', ')}: any;`;
-  /** Messages of the allowlist rule alone, for `code` as if it were the file `file` (the DOM types are known). */
-  async function reached(file: string, code: string): Promise<string[]> {
-    const config = (await eslint.calculateConfigForFile(file)) as {
-      rules?: Record<string, Linter.RuleEntry>;
-    };
-    const entry = config.rules?.['fontsnap/global-access'];
-    expect(entry, `${file} is held to the allowlist`).toBeDefined();
-    return new Linter()
-      .verify(
-        `${FREE_NAMES}\n${code}`,
-        [
-          {
-            files: ['**/*.ts'],
-            languageOptions: {
-              parser: tseslint.parser,
-              parserOptions: { lib: ['esnext', 'dom', 'dom.iterable'] },
-            },
-            plugins: { fontsnap: fontsnapPlugin },
-            rules: { 'fontsnap/global-access': entry ?? 'off' },
+// the names the fixtures use freely; they are declared, so that only real globals are "global" for the rule
+const FREE_NAMES = `declare let ${[
+  'Other',
+  'blob',
+  'css',
+  'data',
+  'd',
+  'doc',
+  'el',
+  'event',
+  'frame',
+  'handler',
+  'iframe',
+  'key',
+  'name',
+  'node',
+  'o',
+  'other',
+  'patched',
+  'render',
+  'rows',
+  's',
+  'sender',
+  'stop',
+  'tab',
+  'target',
+  'text',
+  'u',
+  'url',
+  'use',
+  'v',
+  'w',
+  'x',
+  'y',
+  'run',
+  'b',
+  'evil',
+  'startSelection',
+].join(', ')}: any;`;
+/** Messages of the allowlist rule alone, for `code` as if it were the file `file` (the DOM types are known). */
+async function reached(file: string, code: string): Promise<string[]> {
+  const config = (await eslint.calculateConfigForFile(file)) as {
+    rules?: Record<string, Linter.RuleEntry>;
+  };
+  const entry = config.rules?.['fontsnap/global-access'];
+  expect(entry, `${file} is held to the allowlist`).toBeDefined();
+  return new Linter()
+    .verify(
+      `${FREE_NAMES}\n${code}`,
+      [
+        {
+          files: ['**/*.ts'],
+          languageOptions: {
+            parser: tseslint.parser,
+            parserOptions: { lib: ['esnext', 'dom', 'dom.iterable'] },
           },
-        ],
-        join(process.cwd(), file),
-      )
-      .map((message) => message.message);
-  }
-  /** Both rules: the allowlist and the restrictions on properties that hand over a Window. */
-  async function either(file: string, code: string): Promise<string[]> {
-    return [...(await reached(file, code)), ...(await flagged(file, code))];
-  }
+          plugins: { fontsnap: fontsnapPlugin },
+          rules: { 'fontsnap/global-access': entry ?? 'off' },
+        },
+      ],
+      join(process.cwd(), file),
+    )
+    .map((message) => message.message);
+}
+/** Both rules: the allowlist and the restrictions on properties that hand over a Window. */
+async function either(file: string, code: string): Promise<string[]> {
+  return [...(await reached(file, code)), ...(await flagged(file, code))];
+}
 
+describe('src/ reaches the environment only through the allowlist of globals', () => {
   const FILES = [
     'src/result/render.ts',
     'src/result/index.ts',
@@ -718,9 +718,10 @@ describe('src/ reaches the environment only through the allowlist of globals', (
     expect(
       await reached('src/background/shot.ts', "const b = btoa('x') + String.fromCharCode(1);"),
     ).toEqual([]);
+    // the service worker makes no request at all any more (connect-src 'self'): fetch is on no file's list
     expect(
       await reached('src/background/shot.ts', "await fetch(url, { credentials: 'omit' });"),
-    ).toEqual([]);
+    ).not.toEqual([]);
     expect(
       await reached('src/result/render.ts', "await fetch('https://evil.example/');"),
     ).not.toEqual([]);
@@ -796,5 +797,187 @@ describe('src/ reaches the environment only through the allowlist of globals', (
         await flagged('src/result/render.ts', 'const win = doc.defaultView; win.location.hash;'),
       ).not.toEqual([]);
     });
+  });
+});
+
+// Round 4 of the review of PR #6 (blocker D): src/select/index.ts hands `window` to startSelection(win: Window), and the content
+// script runs in the web page's process, where the CSP of the extension does not apply. The allowlist of GLOBAL_ACCESS looks
+// at globals only, so `win.fetch(url)`, a cast, an alias, ... passed everything. And `this` of a callback is the window.
+describe('the Window of the content script is used through a closed list of members', () => {
+  const OVERLAY = 'src/select/overlay.ts';
+  // the URLs of every fixture are on example.invalid, which never resolves
+  const URL_PARTS = "['https:/', 'example.invalid', 'm'].join('/')";
+
+  it('accepts the overlay as it is: win.document/addEventListener/removeEventListener/getSelection/requestAnimationFrame/devicePixelRatio and the marker', async () => {
+    const code = [
+      'export function startSelection(win: Window): void {',
+      '  if (win.__fontsnapActive === true) return;',
+      '  win.__fontsnapActive = true;',
+      '  const doc = win.document;',
+      "  win.addEventListener('keydown', key, true);",
+      "  win.removeEventListener('keydown', key, true);",
+      '  const text = win.getSelection()?.toString();',
+      '  win.requestAnimationFrame(() => { win.requestAnimationFrame(() => undefined); });',
+      '  const ratio = win.devicePixelRatio || 1;',
+      '  win.__fontsnapActive = false;',
+      '}',
+    ].join('\n');
+    expect(await either(OVERLAY, code)).toEqual([]);
+  });
+
+  it.each([
+    // the mutation of the reviewer, word for word
+    [
+      'win.fetch',
+      `void win.fetch(${URL_PARTS}).then(async (r) => sendMessage({ type: 'fontsnap-rect', text: await r.text() }));`,
+    ],
+    ['win.fetch with a plain URL', "void win.fetch('https://example.invalid/m');"],
+    ['win.XMLHttpRequest', 'const x = new win.XMLHttpRequest();'],
+    ['win.WebSocket', "const s = new win.WebSocket('wss://example.invalid/');"],
+    ['win.navigator', 'win.navigator.sendBeacon(u, d);'],
+    ['win.location', "win.location.href = 'https://example.invalid/';"],
+    [
+      'win.top, win.parent, win.opener, win.frames',
+      'const w = [win.top, win.parent, win.opener, win.frames];',
+    ],
+    ['win.eval', "win.eval('1');"],
+    ['win.setTimeout', "win.setTimeout('1', 0);"],
+    // the cast the overlay used to have, and the other ways to hold or pass it on
+    [
+      'a cast to a Record',
+      "const flags = win as unknown as Record<string, unknown>; flags['k'] = true;",
+    ],
+    [
+      'a cast to a type with fetch',
+      'const w = win as unknown as { fetch: typeof fetch }; void w.fetch(u);',
+    ],
+    ['an alias', 'const w = win; void w;'],
+    ['an alias of a member of it that is a window', 'const w = win.document.defaultView;'],
+    ['a destructured fetch', 'const { fetch } = win; void fetch(u);'],
+    ['a destructured fetch, renamed', 'const { fetch: f } = win; void f(u);'],
+    ['a computed name', 'void win[name];'],
+    ['a computed literal', "void win['fetch'](u);"],
+    ['a template name', 'void win[`fetch`](u);'],
+    ['passing it on', 'use(win);'],
+    ['returning it', 'const f = () => win; void f;'],
+    ['a spread', 'const copy = { ...win };'],
+    ['Object.assign onto it', 'Object.assign(win, { fetch: patched });'],
+    ['Reflect.get on it', "Reflect.get(win, 'fetch');"],
+    ['a write to a member', 'win.devicePixelRatio = 1;'],
+    ['a write to the document', "win.document.title = 'x';"],
+    ["a write to the marker's neighbour", 'win.__fontsnapActive2 = true;'],
+    ['an update', 'win.devicePixelRatio++;'],
+    ['a delete', 'delete win.__fontsnapActive;'],
+    ['an optional call of fetch', 'void win.fetch?.(u);'],
+    ['a typeof', 'const k = typeof win.fetch;'],
+  ])('refuses %s', async (_what, code) => {
+    expect(await either(OVERLAY, code), code).not.toEqual([]);
+  });
+
+  it('is the overlay that gets this treatment: another file may not name win this way, and index.ts only passes window on', async () => {
+    expect(await reached('src/select/index.ts', 'startSelection(window);')).toEqual([]);
+    for (const code of [
+      'window.fetch(u);',
+      'const w = window;',
+      'window.document;',
+      'self.fetch(u);',
+      'globalThis.fetch(u);',
+    ]) {
+      expect(await either('src/select/index.ts', code), code).not.toEqual([]);
+    }
+    expect(await reached('src/select/overlay.ts', 'window.fetch(u);')).not.toEqual([]);
+  });
+
+  it('keeps the other restrictions of src/ on the overlay', async () => {
+    for (const code of [
+      'eval("1");',
+      'document.write("x");',
+      'const w = document.defaultView;',
+      'Object.defineProperty(el, "a", d);',
+    ]) {
+      expect(await either(OVERLAY, code), code).not.toEqual([]);
+    }
+  });
+
+  it('holds measureImage, which runs in the page through chrome.scripting, to the same list: window.devicePixelRatio, document, requestAnimationFrame', async () => {
+    const measure = 'src/background/shot.ts';
+    const ok =
+      'const img = [...document.images][0]; requestAnimationFrame(() => undefined); const dpr = window.devicePixelRatio || 1;';
+    expect(await either(measure, ok)).toEqual([]);
+    for (const code of [
+      "void fetch('https://example.invalid/m');",
+      'void window.fetch(u);',
+      'void window.document;',
+      "void new Request('https://example.invalid/m');",
+      'const w = window; void w;',
+      'void self.fetch(u);',
+      'void globalThis.fetch(u);',
+      'void document.defaultView;',
+      'void navigator.sendBeacon(u, d);',
+      'void new XMLHttpRequest();',
+    ]) {
+      expect(await either(measure, code), code).not.toEqual([]);
+    }
+  });
+});
+
+describe('`this` is the global object when a function is called as a callback', () => {
+  const FILES = [
+    'src/result/render.ts',
+    'src/background/handlers.ts',
+    'src/shared/messaging.ts',
+    'src/select/overlay.ts',
+    'src/result/model.ts',
+  ];
+
+  it.each([
+    [
+      'a setTimeout callback (the mutation of the reviewer)',
+      'setTimeout(function (this: Record<string, unknown>) { this[key] = evil; }, 0);',
+    ],
+    ['a function expression', 'const f = function () { return this; }; void f;'],
+    ['a function declaration', 'function f() { return this; } void f;'],
+    ['a this parameter', 'function f(this: Window) { return 1; } void f;'],
+    ['a this parameter of a method', 'class A { m(this: A) { return 1; } }'],
+    [
+      'a this parameter of an arrow type',
+      'type F = (this: Window) => void; const f: F = () => undefined; void f;',
+    ],
+    ['an arrow function at the top level', 'const f = () => this; void f;'],
+    ['an arrow function in a function', 'function f() { return () => this; } void f;'],
+    ['a method of a class', 'class A { m() { return this; } }'],
+    ['a method used as a callback', 'class A { m() { return this; } } setTimeout(new A().m, 0);'],
+    ['a getter', 'class A { get v() { return this; } }'],
+    ['a static method', 'class A { static m() { return this; } }'],
+    ['a field initialiser', 'class A { x = this; }'],
+    ['an object method', 'const o = { m() { return this; } }; void o;'],
+    [
+      'a function nested in a constructor',
+      'class A { constructor() { setTimeout(function () { this.x = 1; }, 0); } }',
+    ],
+    [
+      'a function declaration in a constructor',
+      'class A { constructor() { function f() { return this; } void f; } }',
+    ],
+    ['a plain top-level this', 'const g = this; void g;'],
+    ['this.constructor', 'const c = this.constructor; void c;'],
+  ])('refuses %s', async (_what, code) => {
+    for (const file of FILES) expect(await flagged(file, code), `${file}: ${code}`).not.toEqual([]);
+  });
+
+  it('allows this in the constructor of a class, and an arrow function inside it (the instance)', async () => {
+    for (const code of [
+      "class MessagingError extends Error { constructor(m: string) { super(m); this.name = 'MessagingError'; } }",
+      'class A { x = 1; constructor() { const f = () => this.x; void f; } }',
+    ]) {
+      for (const file of FILES) expect(await flagged(file, code), `${file}: ${code}`).toEqual([]);
+    }
+  });
+
+  it('is part of every context of src/, d.ts files included', async () => {
+    expect(
+      await flagged('src/env.d.ts', 'const f = function () { return this; }; void f;'),
+    ).not.toEqual([]);
+    expect(await flagged('src/shared/format.ts', 'const g = this; void g;')).not.toEqual([]);
   });
 });
