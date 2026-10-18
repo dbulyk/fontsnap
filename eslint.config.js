@@ -222,6 +222,7 @@ const PAGE_PROCESS_GLOBS = [
 const MEASURE_FILE = 'src/background/measure.ts';
 // The function that loads the clicked image in its own frame: the one file with an exception to "nothing that loads" (see below).
 const LOAD_IMAGE_FILE = 'src/background/load-image.ts';
+const LOAD_IMAGE_FUNCTION = 'loadImagePixels';
 
 // --- every member of every DOM object the page code touches: an ALLOWLIST by type (review round 8 of PR #6) -------------------------
 // Rounds 6, 7 and 8 each found a new way for the code of the page to reach the network through a DOM object (a style written
@@ -294,7 +295,7 @@ const DOM_MEMBERS = [
     // the function that loads the clicked image: the images of the document, one image and one canvas, the bytes of a blob. `src` is
     // written by `fromParameter` only (once, from the first parameter of loadImagePixels); `new Image()` is constructed once.
     match: LOAD_IMAGE_FILE,
-    fromParameter: [{ member: 'src', fn: 'loadImagePixels' }],
+    fromParameter: [{ member: 'src', fn: LOAD_IMAGE_FUNCTION }],
     once: ['Image'],
     members: {
       images: 'r',
@@ -1143,6 +1144,8 @@ const loadImageSelectors = [
   ...pageProcessSelectorSources.map((selector) =>
     selector === LOADING_WRITE ? `${LOADING_WRITE}:not([property.name='src'])` : selector,
   ),
+  // the loader is never called, not even by itself (it could hand itself another address) and not taken as a value
+  `Identifier[name='${LOAD_IMAGE_FUNCTION}']:not(FunctionDeclaration > Identifier.id)`,
   "NewExpression[callee.name='Image']:not([arguments.length=0])",
   "Identifier[name='Image']:not(NewExpression > Identifier.callee)",
   "AssignmentExpression[left.property.name='crossOrigin']:not([right.type='Literal'][right.value='anonymous'])",

@@ -390,6 +390,13 @@ export interface InjectedFunction {
   text: string;
   /** The name of its first parameter, if it has one that is a plain name. */
   firstParam: string | undefined;
+  /** References, inside the function, to the function itself (by scope): a loader that calls itself can hand itself another address. */
+  selfReferences: number;
+  /** Writes of a `.src` property whose value is the first parameter itself (by scope), and of any other value. */
+  srcFromParameter: number;
+  srcFromElsewhere: number;
+  /** Is the first parameter assigned to, incremented, destructured into or a loop target anywhere? */
+  parameterWritten: boolean;
 }
 
 export function injectedFunctions(file: string, text: string): (string | undefined)[] {
@@ -478,9 +485,58 @@ export function injectedFunctionDetails(
       return;
     }
     const first = ts.isFunctionLike(node) ? node.parameters[0] : undefined;
+    const parameter =
+      first !== undefined && ts.isIdentifier(first.name)
+        ? checker.getSymbolAtLocation(first.name)
+        : undefined;
+    // the symbol of the function itself: its own name, or the const it is the value of
+    const nameNode =
+      (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) && node.name !== undefined
+        ? node.name
+        : ts.isVariableDeclaration(node.parent)
+          ? node.parent.name
+          : undefined;
+    const self = nameNode !== undefined ? checker.getSymbolAtLocation(nameNode) : undefined;
+    let selfReferences = 0;
+    let srcFromParameter = 0;
+    let srcFromElsewhere = 0;
+    const walk = (inner: ts.Node): void => {
+      if (
+        self !== undefined &&
+        ts.isIdentifier(inner) &&
+        inner !== nameNode &&
+        checker.getSymbolAtLocation(inner) === self
+      ) {
+        selfReferences += 1;
+      }
+      if (
+        ts.isBinaryExpression(inner) &&
+        inner.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+        inner.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+        ts.isPropertyAccessExpression(inner.left) &&
+        inner.left.name.text === 'src'
+      ) {
+        if (
+          inner.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+          ts.isIdentifier(inner.right) &&
+          parameter !== undefined &&
+          checker.getSymbolAtLocation(inner.right) === parameter
+        ) {
+          srcFromParameter += 1;
+        } else {
+          srcFromElsewhere += 1;
+        }
+      }
+      ts.forEachChild(inner, walk);
+    };
+    walk(node);
     found.push({
       text: node.getText(source),
       firstParam: first !== undefined && ts.isIdentifier(first.name) ? first.name.text : undefined,
+      selfReferences,
+      srcFromParameter,
+      srcFromElsewhere,
+      parameterWritten: parameter !== undefined && isWrittenTo(parameter),
     });
   };
   const isTheName = (node: ts.Node): boolean =>
@@ -570,7 +626,15 @@ export function loaderProblems(loader: InjectedFunction): string[] {
   if (crossOrigins !== 1 || anonymous.length !== 1) {
     problems.push('crossOrigin other than a single assignment of "anonymous"');
   }
-  if (sources.length !== 1) problems.push(`not exactly one .src = ${param} (the first parameter)`);
+  if (loader.srcFromParameter !== 1 || loader.srcFromElsewhere !== 0 || sources.length !== 1) {
+    problems.push(
+      `not exactly one .src = ${param}, the first parameter itself (by scope), and no other write of src`,
+    );
+  }
+  if (loader.parameterWritten) problems.push(`the first parameter ${param} is assigned to`);
+  if (loader.selfReferences > 0) {
+    problems.push('the loader refers to itself (it could hand itself another address)');
+  }
   let rest = loader.text;
   for (const found of [...constructions, ...anonymous, ...sources].sort(
     (a, b) => b.index - a.index,

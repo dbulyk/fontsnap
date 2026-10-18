@@ -2228,6 +2228,11 @@ describe('loadImagePixels: the narrow exception to "nothing that loads"', () => 
     ['href', 'const image = new Image();\n  image.srcset = src;'],
     ['a style', 'const image = new Image();\n  void image.style;'],
     [
+      'a call of the loader itself with another address (review: recursion)',
+      "if (src) return loadImagePixels('https://example.invalid/' + src);",
+    ],
+    ['the loader taken as a value', 'const again = loadImagePixels;\n  void again;'],
+    [
       'src set from the parameter of another function',
       'const inner = (s: string): void => {\n    const image = new Image();\n    image.src = s;\n  };\n  inner(src);',
     ],

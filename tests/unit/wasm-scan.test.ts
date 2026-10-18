@@ -1115,4 +1115,43 @@ describe('background.js hands two functions to executeScript: the measuring one 
       'async function l(x,z){const y=new Image;y.crossOrigin="anonymous";y.src=z;return y}';
     expect(problems(`${CALLS}${MEASURE}${bad}`)).toMatch(/web page/);
   });
+
+  describe('the loader is bound to its first parameter by scope (review of the branch)', () => {
+    const within = (loader: string) => problems(`${CALLS}${MEASURE}${loader}`);
+
+    it('accepts a loader whose inner variable has the name of the loader itself', () => {
+      const loader =
+        'async function l(t){const n=async l=>{return l.naturalWidth};const e=new Image;e.crossOrigin="anonymous",e.src=t;try{await e.decode()}catch{return null}return n(e)}';
+      expect(within(loader)).toBe('');
+    });
+
+    it.each([
+      [
+        'a call of itself with another address',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;if(t)return l("https://example.invalid/"+t);return null}',
+      ],
+      [
+        'itself taken as a value',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;const f=l;return f}',
+      ],
+      [
+        'the parameter reassigned before the write',
+        'async function l(t){t=document.title;const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'the parameter reassigned by a destructuring',
+        'async function l(t){[t]=[document.title];const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'the write made in an inner function with a parameter of its own',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";((t)=>{e.src=t})(document.title);return e}',
+      ],
+      [
+        'the write from a local variable',
+        'async function l(t){const u=document.title;const e=new Image;e.crossOrigin="anonymous";e.src=u;return e}',
+      ],
+    ])('refuses a loader with %s', (_what, loader) => {
+      expect(within(loader)).toMatch(/web page's process/);
+    });
+  });
 });
