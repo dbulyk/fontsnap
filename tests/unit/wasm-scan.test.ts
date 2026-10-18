@@ -925,6 +925,91 @@ describe('injectedFunctions: the func of executeScript is followed by scope, and
     expect(scriptProblems('background.js', text).join('\n'), text).toContain('could not be read');
   });
 
+  // the nit of round 8 (r4308256047): an alias by destructuring read as 'no function', a func reassigned read by its first value
+  it.each([
+    [
+      'a destructured alias',
+      'const{executeScript:x}=chrome.scripting;x({target:{},func:()=>{location.href=u}})',
+    ],
+    [
+      'a destructured alias, shorthand',
+      'const{executeScript}=chrome.scripting;executeScript({target:{},func:()=>{fetch(u)}})',
+    ],
+    [
+      'a destructuring assignment',
+      'let x;({executeScript:x}=chrome.scripting);x({target:{},func:()=>{fetch(u)}})',
+    ],
+    [
+      'an alias in a parameter',
+      'function run({executeScript:x}){x({target:{},func:()=>{fetch(u)}})}',
+    ],
+    [
+      'executeScript.call',
+      'chrome.scripting.executeScript.call(null,{target:{},func:()=>{fetch(u)}})',
+    ],
+    [
+      'executeScript.apply',
+      'chrome.scripting.executeScript.apply(null,[{target:{},func:()=>{fetch(u)}}])',
+    ],
+    [
+      'executeScript.bind',
+      'chrome.scripting.executeScript.bind(chrome.scripting)({target:{},func:()=>{fetch(u)}})',
+    ],
+    ['a comma expression', '(0,chrome.scripting.executeScript)({target:{},func:()=>{fetch(u)}})'],
+    ['a string key', 'chrome.scripting["executeScript"]({target:{},func:()=>{fetch(u)}})'],
+    ['a template key', 'chrome.scripting[`executeScript`]({target:{},func:()=>{fetch(u)}})'],
+    [
+      'an object key',
+      'const o={executeScript:chrome.scripting.executeScript};o.executeScript({target:{},func:()=>{fetch(u)}})',
+    ],
+    [
+      'a let that is reassigned',
+      'let f=function(){};f=()=>{location.href=u};chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    [
+      'a function declaration that is reassigned',
+      'function f(){}f=()=>{location.href=u};chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    [
+      'a const arrow in a var that is reassigned',
+      'var f=()=>1;f=()=>{location.href=u};chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    ['a name incremented', 'function f(){}f++;chrome.scripting.executeScript({target:{},func:f})'],
+    [
+      'a name that is a loop target',
+      'function f(){}for(f of [1]);chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    [
+      'a compound assignment',
+      'function f(){}f||=()=>1;chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    ['a let holding a function', 'let f=()=>1;chrome.scripting.executeScript({target:{},func:f})'],
+    ['a var holding a function', 'var f=()=>1;chrome.scripting.executeScript({target:{},func:f})'],
+  ])('fails on %s', (_what, text) => {
+    expect(read(text), text).toContain(undefined);
+    expect(scriptProblems('background.js', text).join('\n'), text).toMatch(
+      /could not be read|exactly one function/,
+    );
+  });
+
+  it('background.js must hand over exactly one function: zero fails too', () => {
+    expect(scriptProblems('background.js', 'chrome.tabs.create({url:u})').join('\n')).toContain(
+      'exactly one function must be handed',
+    );
+    expect(
+      scriptProblems(
+        'background.js',
+        'chrome.scripting.executeScript({target:{},files:["select.js"]})',
+      ).join('\n'),
+    ).toContain('exactly one function must be handed');
+    expect(
+      scriptProblems(
+        'background.js',
+        'chrome.scripting.executeScript({target:{},func:m});const m=t=>t',
+      ).join('\n'),
+    ).not.toContain('exactly one');
+  });
+
   it('resolves a reused short name by scope, not by the last declaration in the file', () => {
     // the b of the call is the outer function; a later b lives inside another function
     const text = `${CALL};function b(t){return fetch(t)}function other(){function b(){return 2}return b}`;
@@ -942,7 +1027,9 @@ describe('injectedFunctions: the func of executeScript is followed by scope, and
   it('exactly one function may be handed over, and executeScript belongs to background.js', () => {
     const two =
       'chrome.scripting.executeScript({target:{},func:a});chrome.scripting.executeScript({target:{},func:c});function a(){}function c(){}';
-    expect(scriptProblems('background.js', two).join('\n')).toContain('more than one function');
+    expect(scriptProblems('background.js', two).join('\n')).toContain(
+      'exactly one function must be handed',
+    );
     expect(scriptProblems('assets/result-abc.js', CALL).join('\n')).toContain(
       'executeScript outside background.js',
     );

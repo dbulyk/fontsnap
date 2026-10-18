@@ -407,25 +407,75 @@ export function injectedFunctions(file: string, text: string): (string | undefin
   const isFunction = (node: ts.Node | undefined): node is ts.Node =>
     node !== undefined &&
     (ts.isFunctionExpression(node) || ts.isArrowFunction(node) || ts.isFunctionDeclaration(node));
-  /** The function a symbol is, when it has exactly one declaration and that is a function. */
+  /** Is the symbol assigned to, incremented, or the target of a loop or a destructuring, anywhere in the file? */
+  const isWrittenTo = (symbol: ts.Symbol): boolean => {
+    let written = false;
+    const refersTo = (node: ts.Node): boolean => {
+      let hit = false;
+      const look = (inner: ts.Node): void => {
+        if (ts.isIdentifier(inner) && checker.getSymbolAtLocation(inner) === symbol) hit = true;
+        ts.forEachChild(inner, look);
+      };
+      look(node);
+      return hit;
+    };
+    const scan = (node: ts.Node): void => {
+      if (
+        (ts.isBinaryExpression(node) &&
+          node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+          node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+          refersTo(node.left)) ||
+        ((ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+          (node.operator === ts.SyntaxKind.PlusPlusToken ||
+            node.operator === ts.SyntaxKind.MinusMinusToken) &&
+          refersTo(node.operand)) ||
+        ((ts.isForOfStatement(node) || ts.isForInStatement(node)) &&
+          !ts.isVariableDeclarationList(node.initializer) &&
+          refersTo(node.initializer))
+      ) {
+        written = true;
+      }
+      ts.forEachChild(node, scan);
+    };
+    scan(source);
+    return written;
+  };
+  /** The function a symbol is: ONE declaration, a function declaration or a `const` holding a function, and never written to. */
   const functionOf = (symbol: ts.Symbol | undefined): ts.Node | undefined => {
     const declarations = symbol?.declarations ?? [];
     const only = declarations.length === 1 ? declarations[0] : undefined;
-    if (only === undefined) return undefined;
+    if (symbol === undefined || only === undefined || isWrittenTo(symbol)) return undefined;
     if (ts.isFunctionDeclaration(only)) return only;
-    if (ts.isVariableDeclaration(only) && isFunction(only.initializer)) return only.initializer;
+    if (
+      ts.isVariableDeclaration(only) &&
+      ts.isVariableDeclarationList(only.parent) &&
+      (only.parent.flags & ts.NodeFlags.Const) !== 0 &&
+      isFunction(only.initializer)
+    ) {
+      return only.initializer;
+    }
     return undefined;
   };
   const found: (string | undefined)[] = [];
   const read = (node: ts.Node | undefined): void => {
     found.push(node?.getText(source));
   };
+  const isTheName = (node: ts.Node): boolean =>
+    (ts.isIdentifier(node) && node.text === 'executeScript') ||
+    ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) &&
+      node.text === 'executeScript');
   const visit = (node: ts.Node): void => {
-    if (ts.isPropertyAccessExpression(node) && node.name.text === 'executeScript') {
-      const call = node.parent;
-      if (!ts.isCallExpression(call) || call.expression !== node) {
-        found.push(undefined); // an alias or a value: the call can not be followed
-      } else {
+    if (isTheName(node)) {
+      // the name may only be the callee of a direct call `x.executeScript({ ... })`; anything else - an alias, a destructuring
+      // (`const { executeScript: run } = chrome.scripting`), a string key, `.call`, a value passed on - cannot be followed
+      const access = node.parent;
+      const call = access.parent;
+      if (
+        ts.isPropertyAccessExpression(access) &&
+        access.name === node &&
+        ts.isCallExpression(call) &&
+        call.expression === access
+      ) {
         const options0 = call.arguments[0];
         if (options0 === undefined || !ts.isObjectLiteralExpression(options0)) {
           found.push(undefined);
@@ -452,13 +502,9 @@ export function injectedFunctions(file: string, text: string): (string | undefin
             }
           }
         }
+      } else {
+        found.push(undefined);
       }
-    } else if (
-      ts.isElementAccessExpression(node) &&
-      ts.isStringLiteralLike(node.argumentExpression) &&
-      node.argumentExpression.text === 'executeScript'
-    ) {
-      found.push(undefined); // chrome.scripting['executeScript']: not followed
     }
     ts.forEachChild(node, visit);
   };
@@ -506,7 +552,9 @@ export function scriptProblems(file: string, text: string): string[] {
           ]
         : pagePlatformProblems(body),
     ),
-    ...(injected.length > 1 ? ['more than one function handed to executeScript'] : []),
+    ...(file === 'background.js' && injected.length !== 1
+      ? [`exactly one function must be handed to executeScript (found ${String(injected.length)})`]
+      : []),
     ...(file !== 'background.js' && /\bexecuteScript\b/.test(text)
       ? ['executeScript outside background.js']
       : []),
