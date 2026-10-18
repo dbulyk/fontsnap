@@ -39,4 +39,4 @@ If this policy changes, the new version will be published at this address with a
 
 ## Contact
 
-Questions: dmbulyk+fontsnap.support@gmail.com
+Questions: dmbulyk+fontsnap@gmail.com
