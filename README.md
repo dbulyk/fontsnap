@@ -100,6 +100,11 @@ card (name and percent) with `tests/fixtures/chrome-top5.json`, a slice of the f
 to TypeScript and terser. The whole set can be compared the same way in a browser; any difference between the minified build and
 the Python/Node pipelines shows up there.
 
+Transparency: a PNG is composited over white before it reaches the pipeline (`fromRGBA` in `src/shared/core/image.ts`,
+`to_rgb` in `python/fontsnap_ref/image.py`, the same integer sum; the canvases of the result page and of the crop are also
+painted white first). `tests/fixtures/alpha-composite.json` is the table both sides are tested with, and
+`tests/e2e/transparent.spec.ts` checks a transparent PNG against the same one on white, by upload and by the context menu.
+
 ## Exceptions to the template (WebAssembly, the model, the CSP)
 
 The template forbids WebAssembly. FontSnap runs its model with onnxruntime-web, so it has a short, explicit list of exceptions;
