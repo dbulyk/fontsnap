@@ -30,6 +30,12 @@ export const ORT_SPECIFIER = 'onnxruntime-web/wasm';
 /** How a chunk in dist/assets/ reaches the vendored runtime. */
 export const ORT_EXTERNAL = '../ort/ort.wasm.min.mjs';
 
+/**
+ * The only source file that may import or configure onnxruntime-web (eslint.config.js lists it too; the guard context
+ * test fails if the two disagree). A unit test pins what it assigns to `ort.env.wasm`.
+ */
+export const ORT_CONFIG_FILE = 'src/result/model.ts';
+
 const ORT_DIST = 'node_modules/onnxruntime-web/dist';
 
 // A Map: a path such as `constructor` is not a vendor file because every object has one.

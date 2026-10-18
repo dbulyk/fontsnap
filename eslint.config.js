@@ -148,7 +148,7 @@ const noDynamicIn = [
       'No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.',
   },
 ];
-const noInjectedCode = [
+const noInjectedCodeBase = [
   ...injectedCodeSelectors.map((selector) => ({
     selector,
     message:
@@ -165,6 +165,24 @@ const noInjectedCode = [
       'WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see "WebAssembly" in README.md.',
   })),
 ];
+// FontSnap runs WebAssembly only through the files pinned in scripts/lib/vendor.ts. onnxruntime-web can be pointed at
+// other code through its environment (env.wasm.wasmPaths: another URL or a different .wasm; env.wasm.wasmBinary:
+// other bytes), which no build check sees. So the runtime is imported and configured in ONE file,
+// src/result/model.ts, whose assignments a unit test pins; everywhere else in src/ the names are refused as
+// identifiers, strings and templates (the names assembled at run time are the accepted boundary of this template),
+// together with `env` (the way to reach them) and any import of onnxruntime-*.
+const ORT_NAMES = '/^(env|wasmPaths|wasmBinary)$/';
+const ORT_MESSAGE =
+  'onnxruntime-web is imported and configured only in src/result/model.ts (env.wasm.wasmPaths / wasmBinary can run WebAssembly other than the pinned files of scripts/lib/vendor.ts).';
+const ortConfinement = [
+  `Identifier[name=${ORT_NAMES}]`,
+  `Literal[value=${ORT_NAMES}]`,
+  `TemplateLiteral[quasis.length=1][quasis.0.value.cooked=${ORT_NAMES}]`,
+  'ImportDeclaration[source.value=/^onnxruntime-/]',
+  'ExportAllDeclaration[source.value=/^onnxruntime-/]',
+  'ExportNamedDeclaration[source.value=/^onnxruntime-/]',
+].map((selector) => ({ selector, message: ORT_MESSAGE }));
+const noInjectedCode = [...noInjectedCodeBase, ...ortConfinement];
 const numbersAndText = [
   ...[
     "MemberExpression[property.name='NumberFormat']",
@@ -250,6 +268,20 @@ export default tseslint.config(
         noDynamicImport,
         ...noRequireOrDeclare,
         ...noInjectedCode,
+        ...noDynamicIn,
+        ...numbersAndText,
+      ],
+    },
+  },
+  {
+    // The one file that configures onnxruntime-web: every other src rule applies to it.
+    files: ['src/result/model.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        noDynamicImport,
+        ...noRequireOrDeclare,
+        ...noInjectedCodeBase,
         ...noDynamicIn,
         ...numbersAndText,
       ],

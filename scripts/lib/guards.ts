@@ -6,6 +6,7 @@ import ts from 'typescript';
 import { parse } from 'yaml';
 import { inspectPrettier } from './prettier-guard';
 import { parseTsconfig } from './tsconfig';
+import { ORT_CONFIG_FILE } from './vendor';
 import vitestConfig from '../../vitest.config';
 import { listRepoFiles, listSourceFiles } from './source-scan';
 
@@ -211,6 +212,8 @@ export function contextOf(file: string): string {
   if (parts.length === 1) return file.endsWith('.js') ? 'root-js' : 'root-ts';
   if (first === 'src') {
     if (file === 'src/shared/format.ts') return 'src-format';
+    // the one file that configures onnxruntime-web has its own rule set (see eslint.config.js)
+    if (file === ORT_CONFIG_FILE) return 'src-ort-model';
     if (file.endsWith('.d.ts')) return 'src-dts';
     return parts.length === 2 ? 'src-root' : `src/${String(second)}`;
   }

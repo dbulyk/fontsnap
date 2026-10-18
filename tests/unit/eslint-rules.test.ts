@@ -269,3 +269,85 @@ describe('extension code: boundaries, loading, number formatting and ambient dec
     expect(await flagged('src/env.d.ts', code)).toEqual([]);
   });
 });
+
+// onnxruntime-web can be pointed at other code through its environment: env.wasm.wasmPaths (another URL, a different
+// .wasm) and env.wasm.wasmBinary (other bytes) run WebAssembly past the pinned files of scripts/lib/vendor.ts, with
+// every build check green. So only src/result/model.ts, which a test pins line by line, may touch the runtime at all.
+describe('onnxruntime-web is configured in src/result/model.ts and nowhere else', () => {
+  const ORT_FILES = [
+    'src/result/app.ts',
+    'src/result/render.ts',
+    'src/background/handlers.ts',
+    'src/background/shot.ts',
+    'src/shared/capture.ts',
+    'src/shared/core/pipeline.ts',
+    'src/select/overlay.ts',
+    'src/welcome/app.ts',
+    'src/manifest.ts',
+    'src/env.d.ts',
+  ];
+
+  it.each([
+    ['a member access', "ort.env.wasm.wasmPaths = 'https://cdn.example.com/ort/';"],
+    ['wasmBinary', 'ort.env.wasm.wasmBinary = bytes;'],
+    ['an object as wasmPaths', 'ort.env.wasm.wasmPaths = { wasm: url, mjs: url };'],
+    ['an object key', "const options = { wasmPaths: 'https://cdn.example.com/' };"],
+    ['a string key', "const options = { 'wasmBinary': bytes };"],
+    ['a shorthand property', 'const wasmPaths = url; use({ wasmPaths });'],
+    ['a destructured name', 'const { wasmBinary } = env.wasm;'],
+    ['a renamed destructured name', 'const { wasmPaths: where } = settings;'],
+    ['a computed string', "ort.env.wasm['wasmBinary'] = bytes;"],
+    ['a computed template', 'ort.env.wasm[`wasmPaths`] = url;'],
+    ['a template as a key', 'const o = { [`wasmBinary`]: bytes };'],
+    ['reading it', 'const where = ort.env.wasm.wasmPaths;'],
+    ['Object.assign on the environment', 'Object.assign(ort.env.wasm, config);'],
+    ['Reflect.set with a string', "Reflect.set(ort.env.wasm, 'wasmBinary', bytes);"],
+    ['the env of a destructured import', "const { env } = await load('x');"],
+    ['an env member', 'globalThis.ort.env.wasm.numThreads = 8;'],
+    ['a computed env', "ort['env'].wasm.numThreads = 8;"],
+    ['an import of onnxruntime-web', "import * as ort from 'onnxruntime-web/wasm';"],
+    ['another entry point', "import * as ort from 'onnxruntime-web';"],
+    ['onnxruntime-node', "import * as ort from 'onnxruntime-node';"],
+    ['a named import', "import { env } from 'onnxruntime-web/wasm';"],
+    ['a re-export', "export * from 'onnxruntime-web/wasm';"],
+    ['a named re-export', "export { env } from 'onnxruntime-web/wasm';"],
+  ])('rejects %s', async (_name, code) => {
+    for (const file of ORT_FILES)
+      expect(await flagged(file, code), `${file}: ${code}`).not.toEqual([]);
+  });
+
+  it('is not tied to one spelling: the names are matched as identifiers, strings and templates', async () => {
+    for (const code of ['x.wasmPaths', "x['wasmPaths']", 'x[`wasmBinary`]', '({ wasmBinary })']) {
+      expect(await flagged('src/result/app.ts', code), code).not.toEqual([]);
+    }
+  });
+
+  it('lets src/result/model.ts do exactly what it does today', async () => {
+    const code = [
+      "import * as ort from 'onnxruntime-web/wasm';",
+      "ort.env.wasm.wasmPaths = chrome.runtime.getURL('ort/');",
+      'ort.env.wasm.numThreads = 1;',
+    ].join('\n');
+    expect(await flagged('src/result/model.ts', code)).toEqual([]);
+  });
+
+  it('still applies every other src rule to src/result/model.ts', async () => {
+    for (const code of [
+      "eval('1');",
+      'WebAssembly.compile(bytes);',
+      "document.createElement('script');",
+    ]) {
+      expect(await flagged('src/result/model.ts', code), code).not.toEqual([]);
+    }
+  });
+
+  it('does not touch ordinary code that merely looks similar', async () => {
+    const code = [
+      'const environment = 1;',
+      'const wasmPathsCount = 2;',
+      "const label = 'environment';",
+      'const o = { envelope: 1, binary: 2 };',
+    ].join('\n');
+    expect(await flagged('src/result/app.ts', code)).toEqual([]);
+  });
+});

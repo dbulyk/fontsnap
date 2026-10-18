@@ -64,6 +64,7 @@ describe('contextOf', () => {
     ['src/shared/format.ts', 'src-format'],
     ['src/shared/settings.ts', 'src/shared'],
     ['src/result/app.ts', 'src/result'],
+    ['src/result/model.ts', 'src-ort-model'],
     ['src/sidepanel/deep/x.ts', 'src/sidepanel'],
     ['tests/unit/guards.test.ts', 'tests/unit'],
     ['tests/unit/helpers/chrome-stub.ts', 'tests/unit/helpers'],
