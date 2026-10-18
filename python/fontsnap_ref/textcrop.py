@@ -8,6 +8,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
+from .image import to_rgb
+
 LINE_H = 96  # target line height in px before final 320 resize
 
 
@@ -35,7 +37,7 @@ def _runs(mask, min_gap):
 
 def text_lines(img):
     """returns (normalized dark-on-white uint8 gray image, list of (y0,y1,x0,x1) line boxes)"""
-    g = cv2.cvtColor(np.asarray(img.convert("RGB")), cv2.COLOR_RGB2GRAY).astype(np.float32)
+    g = cv2.cvtColor(np.asarray(to_rgb(img)), cv2.COLOR_RGB2GRAY).astype(np.float32)
     h, w = g.shape
     k = int(np.clip(h * 0.5, 9, 61)) | 1
     ker = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
