@@ -26,8 +26,12 @@ export function bytesToDataUrl(buf: Uint8Array, type: string): string {
   let s = '';
   for (let i = 0; i < buf.length; i += 0x8000)
     s += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-  return `data:${type};base64,` + btoa(s);
+  return base64ToDataUrl(btoa(s), type);
 }
+
+/** A data: URL for bytes that are already base64. */
+export const base64ToDataUrl = (base64: string, type: string): string =>
+  `data:${type};base64,${base64}`;
 
 export async function cropToDataUrl(dataUrl: string, rect: Rect, dpr: number): Promise<string> {
   const bmp = await createImageBitmap(dataUrlToBlob(dataUrl));

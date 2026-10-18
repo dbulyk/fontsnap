@@ -4,7 +4,7 @@
  * web page's process, outside the CSP of the extension, so it is held to the rules of the content script (eslint.config.js,
  * PAGE_PROCESS_GLOBS) with ONE exception that nothing else has: `new Image()` with `crossOrigin = 'anonymous'` and a single
  * `<image>.src = src`, where `src` is the first parameter - the srcUrl of the click and no other address (DOM_MEMBERS.fromParameter).
- * It returns the pixels as a PNG data URL, or null; they go to the service worker as the result of executeScript and nowhere else.
+ * It returns the pixels as a PNG, base64 encoded (the worker makes a data URL of it), or null; they go to the service worker as the result of executeScript and nowhere else.
  */
 // Runs inside the page (serialized by chrome.scripting): it may not touch anything from this module.
 export async function loadImagePixels(src: string): Promise<string | null> {
@@ -26,7 +26,7 @@ export async function loadImagePixels(src: string): Promise<string | null> {
       let text = '';
       for (const byte of new Uint8Array(await blob.arrayBuffer()))
         text += String.fromCharCode(byte);
-      return `data:image/png;base64,${btoa(text)}`;
+      return btoa(text);
     } catch {
       return null;
     }

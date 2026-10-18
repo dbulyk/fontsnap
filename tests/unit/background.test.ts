@@ -356,7 +356,7 @@ describe('right-click on an image', () => {
       box: { x: 0, y: 0, w: 400, h: 300 },
     },
   });
-  const PIXELS = 'data:image/png;base64,UElYRUxT';
+  const PIXELS = 'UElYRUxT';
 
   it('decodes a data: URL image itself and hands it over: no request, no screenshot', async () => {
     setup();

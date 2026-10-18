@@ -150,7 +150,7 @@ describe('measureImage', () => {
 
 describe('loadImagePixels', () => {
   const PNG_BYTES = [137, 80, 78, 71];
-  const PNG = `data:image/png;base64,${btoa(String.fromCharCode(...PNG_BYTES))}`;
+  const PNG = btoa(String.fromCharCode(...PNG_BYTES));
   const constructed: FakeImage[] = [];
   const canvases: FakeCanvas[] = [];
   /** What the next convertToBlob calls do, in order; the last entry repeats. */

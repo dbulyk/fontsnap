@@ -15,7 +15,7 @@ const tab = {
   url: 'https://page.example/article',
 } as chrome.tabs.Tab;
 const SRC = 'https://cdn.example/photo.png';
-const PIXELS = 'data:image/png;base64,UElYRUxT';
+const PIXELS = 'UElYRUxT';
 
 interface Call {
   fn: 'load' | 'measure';
@@ -136,7 +136,7 @@ describe('step 1: the pixels are loaded in the frame of the click', () => {
 
   it.each([
     ['null', () => null],
-    ['not a PNG data URL', () => 'https://example.invalid/x'],
+    ['not base64', () => 'https://example.invalid/x'],
     ['a refused injection', () => new Error('Cannot access contents of the page')],
   ])('goes to step 2 when the loader answers %s', async (_what, load) => {
     script({ load, measure: () => measured() });

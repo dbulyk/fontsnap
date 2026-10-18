@@ -9,7 +9,7 @@ import { frameRect, validRect, type CaptureEntry, type Rect } from '../shared/ca
 import { errorMessage } from '../shared/errors';
 import { loadImagePixels } from './load-image';
 import { measureImage, type MeasuredImage } from './measure';
-import { cropToDataUrl, decodeDataImage, reencodeWithinQuota } from './shot';
+import { base64ToDataUrl, cropToDataUrl, decodeDataImage, reencodeWithinQuota } from './shot';
 
 export interface ClickedImageInfo {
   srcUrl: string;
@@ -18,7 +18,7 @@ export interface ClickedImageInfo {
   frameUrl?: string | undefined;
 }
 
-const PNG_DATA_URL = 'data:image/png;base64,';
+const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
 async function loadedPixels(
   tabId: number,
@@ -31,7 +31,9 @@ async function loadedPixels(
     func: loadImagePixels,
   });
   const pixels = first?.result;
-  return typeof pixels === 'string' && pixels.startsWith(PNG_DATA_URL) ? pixels : undefined;
+  return typeof pixels === 'string' && BASE64.test(pixels)
+    ? base64ToDataUrl(pixels, 'image/png')
+    : undefined;
 }
 
 async function measure(
