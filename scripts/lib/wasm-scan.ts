@@ -770,7 +770,7 @@ export function loaderProblems(loader: InjectedFunction): string[] {
     rest = rest.slice(0, from) + rest.slice(to);
   }
   // a second spelling of the property (`e['crossOrigin']`) is not an assignment the tree above counts
-  if (/crossOrigin/.test(rest)) {
+  if (rest.includes('crossOrigin')) {
     problems.push('crossOrigin other than a single assignment of "anonymous" to the new Image');
   }
   return [...problems, ...pagePlatformProblems(rest)];
