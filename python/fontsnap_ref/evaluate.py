@@ -44,7 +44,7 @@ def main(argv=None):
     fam, model = Families(), Model(Path(a.model)) if a.model else Model()
     preds = {}
     for im, _ in labels:
-        p = predict_variants(model, Image.open(d / "images" / im).convert("RGB"))
+        p = predict_variants(model, Image.open(d / "images" / im))
         preds[im] = {c: fam.rank_families([p[v] for v in vs], al, mg) for c, (vs, al, mg) in CONFIGS.items()}
     res = {"metrics": score(preds, labels), "preds": preds}
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)

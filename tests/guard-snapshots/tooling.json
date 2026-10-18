@@ -71,7 +71,7 @@
       "trailingComma": "all",
       "useTabs": false
     },
-    "ignoredFiles": ["model/meta.json","package-lock.json","python/data/classes_v2.yaml","python/data/gf_extra.json","python/data/gf_meta.json","scripts/i18n/README.md","store/privacy-policy.md","tests/fixtures/chrome-top5.json","tests/fixtures/textcrop.json","tests/guard-snapshots/eslint.json","tests/guard-snapshots/scripts.json","tests/guard-snapshots/tooling.json","tests/guard-snapshots/workflows.json"]
+    "ignoredFiles": ["model/meta.json","package-lock.json","python/data/classes_v2.yaml","python/data/gf_extra.json","python/data/gf_meta.json","scripts/i18n/README.md","store/privacy-policy.md","tests/fixtures/alpha-composite.json","tests/fixtures/chrome-top5.json","tests/fixtures/textcrop.json","tests/guard-snapshots/eslint.json","tests/guard-snapshots/scripts.json","tests/guard-snapshots/tooling.json","tests/guard-snapshots/workflows.json"]
   },
   "tsconfig": {
     "tsconfig.json": {

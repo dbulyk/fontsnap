@@ -2,7 +2,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { at } from '../../src/shared/core/at';
-import { fromRGBA, resize, toGray, type Img } from '../../src/shared/core/image';
+import {
+  chooseBackdrop,
+  compositeOver,
+  fromRGBA,
+  type Backdrop,
+  resize,
+  toGray,
+  type Img,
+} from '../../src/shared/core/image';
 import { cropNormalize, nz, prep, softmax } from '../../src/shared/core/pipeline';
 import { makeRanker, type Meta } from '../../src/shared/core/ranker';
 import {
@@ -31,6 +39,12 @@ const ROOT = process.cwd();
 const FX = JSON.parse(
   readFileSync(join(ROOT, 'tests', 'fixtures', 'textcrop.json'), 'utf8'),
 ) as Fixture;
+const TABLE = JSON.parse(
+  readFileSync(join(ROOT, 'tests', 'fixtures', 'alpha-composite.json'), 'utf8'),
+) as {
+  cases: { bg: Backdrop; rgba: number[]; rgb: number[] }[];
+  images: { name: string; rgba: number[][]; backdrop: Backdrop; rgb: number[] }[];
+};
 const gray = (w: number, h: number, f: (x: number, y: number) => number): Img => {
   const d = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) d[y * w + x] = f(x, y);
@@ -40,6 +54,13 @@ const mean = (a: ArrayLike<number>) => {
   let s = 0;
   for (let i = 0; i < a.length; i++) s += at(a, i);
   return s / a.length;
+};
+
+// Independent reference: round((c*a + bg*(255 - a)) / 255) from quotient and remainder
+// (no ties: 255 is odd).
+const over = (c: number, a: number, bg: number) => {
+  const n = c * a + bg * (255 - a);
+  return Math.floor(n / 255) + (2 * (n % 255) > 255 ? 1 : 0);
 };
 
 describe('at', () => {
@@ -115,6 +136,95 @@ describe('textcrop primitives', () => {
     expect([...toGray(fromRGBA(rgba, 3, 1))]).toEqual([76, 150, 29]);
     const g = gray(2, 1, () => 9);
     expect(toGray(g)).toBe(g.data);
+  });
+
+  it('the reference rounds (c*a + bg*(255 - a)) / 255 to the nearest integer', () => {
+    // |255 * over - n| <= 127 is |over - n / 255| < 1/2 in integers; a = 0 gives bg, a = 255 gives c.
+    const wrong: string[] = [];
+    for (const bg of [0, 255])
+      for (let a = 0; a < 256; a++)
+        for (let c = 0; c < 256; c++) {
+          const n = c * a + bg * (255 - a);
+          const v = over(c, a, bg);
+          if (Math.abs(255 * v - n) > 127 || (a === 0 && v !== bg) || (a === 255 && v !== c))
+            wrong.push(`bg=${bg} c=${c} a=${a}: ${v}`);
+        }
+    expect({ total: wrong.length, first: wrong.slice(0, 10) }).toEqual({ total: 0, first: [] });
+  });
+
+  it('the alpha fixture agrees with the reference, each row over its own backdrop', () => {
+    for (const { bg, rgba, rgb } of TABLE.cases) {
+      expect(rgba).toHaveLength(4);
+      const [r = 0, g = 0, b = 0, a = 0] = rgba;
+      expect(rgb, JSON.stringify({ bg, rgba })).toEqual([
+        over(r, a, bg),
+        over(g, a, bg),
+        over(b, a, bg),
+      ]);
+    }
+  });
+
+  it('composites each row of the table over its backdrop (the table the Python reference is tested with)', () => {
+    for (const { bg, rgba, rgb } of TABLE.cases) {
+      const label = JSON.stringify({ bg, rgba });
+      expect([...compositeOver(Uint8Array.from(rgba), 1, 1, bg).data], label).toEqual(rgb);
+      expect([...compositeOver(Uint8ClampedArray.from(rgba), 1, 1, bg).data], label).toEqual(rgb);
+    }
+  });
+
+  it('picks the backdrop by contrast: light content goes on black, anything else on white', () => {
+    for (const image of TABLE.images) {
+      const rgba = Uint8Array.from(image.rgba.flat());
+      expect(chooseBackdrop(rgba, image.rgba.length), image.name).toBe(image.backdrop);
+      expect([...fromRGBA(rgba, image.rgba.length, 1).data], image.name).toEqual(image.rgb);
+    }
+  });
+
+  it('composites every (c, a) pair like an independent integer rounding, over black and over white', () => {
+    // A 256 x 256 image, row a, column c: pixel a * 256 + c holds (c, 255 - c, (c + 128) % 256, a),
+    // so every channel differs from the others (a channel swap shows) and w * h indexing is pinned.
+    const rgba = new Uint8Array(256 * 256 * 4);
+    for (let a = 0; a < 256; a++)
+      for (let c = 0; c < 256; c++) rgba.set([c, 255 - c, (c + 128) % 256, a], (a * 256 + c) * 4);
+    for (const bg of [0, 255] as const) {
+      const im = compositeOver(rgba, 256, 256, bg);
+      expect([im.w, im.h, im.data.length]).toEqual([256, 256, 256 * 256 * 3]);
+      const wrong: string[] = [];
+      for (let a = 0; a < 256; a++)
+        for (let c = 0; c < 256; c++) {
+          const i = (a * 256 + c) * 3;
+          const want = [over(c, a, bg), over(255 - c, a, bg), over((c + 128) % 256, a, bg)];
+          const got = [...im.data.subarray(i, i + 3)];
+          if (got.join() !== want.join())
+            wrong.push(
+              `bg=${String(bg)} c=${String(c)} a=${String(a)}: ${got.join()} != ${want.join()}`,
+            );
+        }
+      expect({ total: wrong.length, first: wrong.slice(0, 10) }).toEqual({ total: 0, first: [] });
+    }
+  });
+
+  it('leaves every opaque pixel byte for byte as it was', () => {
+    const rgba = new Uint8Array(256 * 4);
+    for (let i = 0; i < 256; i++) rgba.set([i, 255 - i, (i * 7) % 256, 255], i * 4);
+    for (const backdrop of [undefined, 0, 255] as const) {
+      const rgb = (
+        backdrop === undefined ? fromRGBA(rgba, 256, 1) : compositeOver(rgba, 256, 1, backdrop)
+      ).data;
+      for (let i = 0; i < 256; i++)
+        expect([...rgb.subarray(i * 3, i * 3 + 3)]).toEqual([...rgba.subarray(i * 4, i * 4 + 3)]);
+    }
+  });
+
+  it('reads black text on a transparent background like text on white, and white text like text on black', () => {
+    const text = [255, 0, 255, 0, 255];
+    const on = (ink: number, ground: number, alpha: number) =>
+      Uint8Array.from(
+        text.flatMap((t) => (t ? [ink, ink, ink, 255] : [ground, ground, ground, alpha])),
+      );
+    const clear = (ink: number) => [...fromRGBA(on(ink, 0, 0), 5, 1).data];
+    expect(clear(0)).toEqual([...fromRGBA(on(0, 255, 255), 5, 1).data]);
+    expect(clear(255)).toEqual([...fromRGBA(on(255, 0, 255), 5, 1).data]);
   });
 });
 

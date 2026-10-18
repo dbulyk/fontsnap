@@ -11,6 +11,7 @@ import cv2
 import numpy as np
 import yaml
 
+from .image import to_rgb
 from .textcrop import crop_normalize
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -85,7 +86,7 @@ class Families:
 
 
 def prep(pil, size=320):
-    im = np.array(pil.convert("RGB"))[:1024, :1024]
+    im = np.array(to_rgb(pil))[:1024, :1024]
     h, w = im.shape[:2]
     r = size / max(h, w)
     nw, nh = max(1, int(w * r)), max(1, int(h * r))

@@ -302,6 +302,27 @@ describe('identifying an image', () => {
     expect($('results').children.length).toBeGreaterThan(0);
   });
 
+  it.each([
+    ['black', 0],
+    ['white', 255],
+  ])(
+    'finds the lines of %s text on a transparent background (alpha reaches the pipeline, the canvas is not painted)',
+    async (_name, ink) => {
+      await start();
+      const clear = textScene();
+      for (let i = 0; i < clear.rgba.length; i += 4) {
+        const glyph = clear.rgba[i] === 10;
+        clear.rgba.set(glyph ? [ink, ink, ink, 255] : [0, 0, 0, 0], i);
+      }
+      scene = clear;
+      pick(new Blob(['png']));
+      await vi.waitFor(() => {
+        expect(probs).toHaveBeenCalledTimes(2);
+      });
+      expect(status().textContent).toBe('');
+    },
+  );
+
   it('says so when the file is not a readable image', async () => {
     await start();
     vi.mocked(createImageBitmap).mockRejectedValueOnce(new Error('decode'));
