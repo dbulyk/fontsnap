@@ -128,9 +128,11 @@ a per-page list of strings that are not translated by design (`UNTRANSLATED_ALLO
 - Locales have identical keys and placeholders; keys used in code, HTML and the manifest exist in `en` and `en` has no unused
   keys (a key counts as used only through `t()`, `data-i18n*`, `__MSG_x__` or an explicit `[...] satisfies MessageKey[]` list);
   the name is at most 75 characters and contains "FontSnap", the description at most 132; no hardcoded text in HTML.
-- The built `dist/manifest.json` is compared in full with `buildManifest()`, `manifest.test.ts` pins the exact key set and the
-  hand-written expected manifest, and `verify-dist` is an allowlist over the files on disk: chunks, stylesheets in `assets/`,
-  the manifest and its pages, locale messages, the manifest icons and the five pinned vendor files; anything else is an error.
+- One hand-written expected manifest (`scripts/lib/expected-manifest.ts`) is compared in full with `buildManifest()` by
+  `manifest.test.ts` (which also pins the exact key set) and with the built `dist/manifest.json` by `verify-dist`, so a wrong
+  `src/manifest.ts` fails the build as well as the tests. `verify-dist` is also an allowlist over the files on disk: chunks,
+  stylesheets in `assets/`, the manifest and its pages, locale messages, the manifest icons and the five pinned vendor files;
+  anything else is an error.
 - e2e tests run fully parallel, each with its own browser profile and each worker with its own HTTP server. Coverage is at least
   80% for `src/shared`, `scripts/lib` and for the unit-tested sources overall.
 
@@ -161,7 +163,7 @@ to it. Extend a list by editing it and following the recipe, never by editing gu
 - **Add a page**: add it to `EXTENSION_PAGES` (`src/shared/constants.ts`), create `src/<area>/<page>.html` (only
   `<script type="module" src="./index.ts">`), a thin `index.ts` and the logic in `app.ts`; add the `data-i18n` keys to every
   locale; run `npm run guards:update` and read the diff; if the manifest names the page, edit `src/manifest.ts` and
-  `tests/unit/helpers/expected-manifest.ts`.
+  `scripts/lib/expected-manifest.ts`.
 - **Add a dependency**: `npm i some-lib` (runtime) or `npm i -D some-tool`, from the npm registry only (no `file:`, git, URL or
   tarball). A library that brings a `.wasm` file fails the build.
 - **Allow a media type**: add the extension to `ALLOWED_MEDIA` in `scripts/lib/static-assets.ts`.
