@@ -156,7 +156,7 @@ reach and replace those one after another, so the layers do not try to list the 
    module header or a `.wasm` name in any spelling, including base64 (at every alignment), hex and byte lists that DECODE to one or to a URL;
    every URL in a string must be on `fonts.googleapis.com` or `fonts.google.com`; no `Worker`, `XMLHttpRequest`, `WebSocket`, `atob`, `eval`, `fetch`/`Request` outside `background.js` and the result chunk,
    `Function`, dynamic `import()`, `postMessage`, `webdriver`, resource-timing resizing, `WebAssembly`; `defaultView` only in the one form
-   of the page scripts; and in the chunk that imports the runtime `wasmPaths` is assigned exactly once to `chrome.runtime.getURL("ort/")`,
+   of the page scripts; in `select.js` and in the function that `background.js` hands to `executeScript` (found in the AST) no literal network API or way to load/navigate (`fetch`, `Image`, `.src =`, `setAttribute`, `open(`, `location`, `url(`...); and in the chunk that imports the runtime `wasmPaths` is assigned exactly once to `chrome.runtime.getURL("ort/")`,
    `proxy` exactly once to `true`, and the start-up check is there.
 
 What this does not do: a script that already runs in the page can defeat any check that runs in the same page; layers 3 and 4 and the
