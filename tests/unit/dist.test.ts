@@ -754,6 +754,23 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     expect(asRecord(expectedManifest(VERSION))['host_permissions']).toBeUndefined();
   });
 
+  it.each([
+    'tests/unit/x.test.ts',
+    'tests/e2e/x.spec.ts',
+    'python/fontsnap_ref/pipeline.py',
+    'data/realset3/labels.csv',
+    'out/py_realset3.json',
+    'store/privacy-policy.md',
+    'src/background/index.ts',
+    'scripts/zip.ts',
+    'assets/result-abc.js.map',
+    'select.js.map',
+    'README.md',
+  ])('refuses %s, which must never be in the Chrome Web Store zip', (file) => {
+    const dir = makeDist({ files: { [file]: 'x' } });
+    expect(verifyDist(dir, release).join('\n')).toContain(`${file}: not an allowed file`);
+  });
+
   describe('WebAssembly, models and runtime scripts', () => {
     it.each([
       ['a stray foo.wasm in the root', 'foo.wasm', 'asset'],
