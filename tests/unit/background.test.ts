@@ -189,12 +189,6 @@ describe('toolbar icon and region menu: start selection', () => {
 });
 
 describe('selection message: screenshot → crop → session → result tab', () => {
-  it('paints the canvas white before the crop is drawn, so transparent pixels are not black', async () => {
-    setup();
-    await stub.dispatch(rectMessage);
-    expect(images.ops).toEqual(['fill #fff 0,0,200,80', 'draw']);
-  });
-
   it('crops the selection in device pixels and hands a PNG to the result page', async () => {
     setup();
     expect(await stub.dispatch(rectMessage)).toEqual({ ok: true, data: { opened: true } });

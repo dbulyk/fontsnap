@@ -71,11 +71,16 @@ def test_palette_with_transparent_index_and_with_alpha_bytes():
     idx = Image.new("P", (2, 1))
     idx.putpalette([0, 0, 0, 255, 255, 255])
     idx.putpixel((1, 0), 1)
-    assert np.array(to_rgb(png_roundtrip(idx, transparency=0))).tolist() == [[[255] * 3, [255] * 3]]
+    # transparent black next to opaque white: light content, black backdrop
+    assert np.array(to_rgb(png_roundtrip(idx, transparency=0))).tolist() == [[[0] * 3, [255] * 3]]
+    # transparent white next to opaque black: dark content, white backdrop
     assert np.array(to_rgb(png_roundtrip(idx, transparency=1))).tolist() == [[[0] * 3, [255] * 3]]
-    alpha = png_roundtrip(idx, transparency=bytes([128, 255]))
+    grays = Image.new("P", (2, 1))
+    grays.putpalette([200, 200, 200, 255, 255, 255])
+    grays.putpixel((1, 0), 1)
+    alpha = png_roundtrip(grays, transparency=bytes([128, 255]))
     assert isinstance(alpha.info["transparency"], bytes)
-    assert np.array(to_rgb(alpha)).tolist() == [[[over(0, 128, 255)] * 3, [255] * 3]]
+    assert np.array(to_rgb(alpha)).tolist() == [[[over(200, 128, 0)] * 3, [255] * 3]]
 
 
 def test_gray_and_rgb_with_a_transparent_colour_key():

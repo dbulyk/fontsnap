@@ -48,7 +48,6 @@ let probs: ReturnType<typeof vi.fn<(crop: unknown) => Promise<Float64Array>>>;
 let scene: { width: number; height: number; rgba: Uint8ClampedArray };
 let bitmapClose: ReturnType<typeof vi.fn>;
 let canvasDraws: { id: string; args: number[] }[];
-let canvasOps: string[];
 
 /** A white page with a line of dark glyph-like blocks: enough for the text finder to see a line. */
 function textScene(width = 160, height = 48) {
@@ -82,24 +81,16 @@ async function start(options: { hash?: string; locale?: string } = {}): Promise<
   document = win.document as unknown as Document;
   document.documentElement.innerHTML = readFileSync('src/result/result.html', 'utf8');
   canvasDraws = [];
-  canvasOps = [];
   (win.HTMLCanvasElement.prototype as unknown as { getContext: unknown }).getContext = function (
     this: HTMLCanvasElement,
   ) {
     const id = this.id;
-    const ctx = {
-      fillStyle: '',
-      fillRect: (...args: number[]) =>
-        canvasOps.push(`fill ${id} ${ctx.fillStyle} ${args.join(',')}`),
-      drawImage: (...args: number[]) => {
-        canvasOps.push(`draw ${id}`);
-        return canvasDraws.push({ id, args: args.slice(1) });
-      },
+    return {
+      drawImage: (...args: number[]) => canvasDraws.push({ id, args: args.slice(1) }),
       getImageData: () => ({ data: scene.rgba }),
       createImageData: (w: number, h: number) => ({ data: new Uint8ClampedArray(w * h * 4) }),
       putImageData: vi.fn(),
     };
-    return ctx;
   };
   initResult(document);
   await Promise.resolve();
@@ -233,6 +224,27 @@ describe('identifying an image', () => {
     expect($('results').children.length).toBeGreaterThan(0);
   });
 
+  it.each([
+    ['black', 0],
+    ['white', 255],
+  ])(
+    'finds the lines of %s text on a transparent background (alpha reaches the pipeline, the canvas is not painted)',
+    async (_name, ink) => {
+      await start();
+      const clear = textScene();
+      for (let i = 0; i < clear.rgba.length; i += 4) {
+        const glyph = clear.rgba[i] === 10;
+        clear.rgba.set(glyph ? [ink, ink, ink, 255] : [0, 0, 0, 0], i);
+      }
+      scene = clear;
+      pick(new Blob(['png']));
+      await vi.waitFor(() => {
+        expect(probs).toHaveBeenCalledTimes(2);
+      });
+      expect(status().textContent).toBe('');
+    },
+  );
+
   it('says so when the file is not a readable image', async () => {
     await start();
     vi.mocked(createImageBitmap).mockRejectedValueOnce(new Error('decode'));
@@ -262,18 +274,6 @@ describe('identifying an image', () => {
     });
     expect($('shot').getAttribute('height')).toBe('1200');
     expect(canvasDraws.find((d) => d.id === 'shot')?.args).toEqual([0, 0, 2400, 1200]);
-  });
-
-  it('paints the canvas white before the image is drawn, so transparent pixels are not black', async () => {
-    await start();
-    pick(new Blob(['png']));
-    await vi.waitFor(() => {
-      expect(canvasOps).toContain('draw shot');
-    });
-    expect(canvasOps.filter((o) => o.endsWith(' shot') || o.includes(' shot '))).toEqual([
-      'fill shot #fff 0,0,160,48',
-      'draw shot',
-    ]);
   });
 
   it('keeps small images at their size', async () => {

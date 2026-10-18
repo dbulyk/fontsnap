@@ -95,12 +95,7 @@ export function initResult(doc: Document): void {
     const cv = shot;
     cv.width = Math.round(bmp.width * sc);
     cv.height = Math.round(bmp.height * sc);
-    const ctx = cv.getContext('2d', { willReadFrequently: true });
-    if (ctx) {
-      ctx.fillStyle = '#fff'; // transparent pixels would read as black; fromRGBA is the second line of defence
-      ctx.fillRect(0, 0, cv.width, cv.height);
-      ctx.drawImage(bmp, 0, 0, cv.width, cv.height);
-    }
+    cv.getContext('2d', { willReadFrequently: true })?.drawImage(bmp, 0, 0, cv.width, cv.height);
     bmp.close();
     identify(cv).catch((e: unknown) => {
       status(t('errorMsg', [errorMessage(e)]), true);
