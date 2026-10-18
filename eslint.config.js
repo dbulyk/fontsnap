@@ -935,6 +935,11 @@ export const pageTypesRule = {
       TSMappedType(node) {
         report(node, 'A mapped type');
       },
+      // `import('../shared/x').Doc` and `typeof import('../shared/x')` name a type without an `import type` declaration, so the
+      // table of imports (a name from a file) could not judge them: the only way to import a type is the declaration
+      TSImportType(node) {
+        report(node, 'An import type expression (import("...") or typeof import("..."))');
+      },
       ClassDeclaration(node) {
         report(node, 'A class');
       },

@@ -2114,6 +2114,16 @@ describe('page code has no types of its own', () => {
       'const o = [1].map(() => ({ src: u }));\n  void o;',
       'object literal',
     ],
+    [
+      'P19 a type named by import("...") instead of an import type declaration',
+      "const r: import('../shared/capture').Rect = { x: 0, y: 0, w: 1, h: 1 };\n  void r;",
+      'import type expression',
+    ],
+    [
+      'P20 a type taken by typeof import("...")',
+      "const m: typeof import('../shared/capture') | null = null;\n  void m;",
+      'import type expression',
+    ],
   ];
 
   it.each(FORMS)('refuses %s', async (_what, body, reason) => {
@@ -2121,6 +2131,38 @@ describe('page code has no types of its own', () => {
       [OVERLAY, inSelect(body)],
       [NEW_FILE, inSelect(body)],
       [MEASURE, inMeasure(body)],
+    ] as const) {
+      const messages = await pageTypes(file, code);
+      expect(messages, `${file}: ${body}`).not.toEqual([]);
+      expect(messages.join('\n'), `${file}: reported for ${reason}`).toContain(reason);
+    }
+  });
+
+  // The three forms of the reviewer's comment, as written there (only the line that gets the DOM value differs: `doc` is the
+  // Document of the overlay, `img` the image that measureImage found, `document` the global of the page function).
+  const VERBATIM: [string, string, string][] = [
+    [
+      'F4 by narrowing: querySelector("a"), host and click()',
+      "interface Ck { click(): void; host: string }\n  interface Qs { querySelector(s: string): Ck | null }\n  const pick = (d: Qs) => d.querySelector('a');\n  const a7 = pick(DOC);\n  if (a7) { a7.host = 'example.invalid'; a7.click(); }",
+      'interface',
+    ],
+    [
+      'E2 by narrowing: createElementNS("style") with a text from run time',
+      "interface Mk { createElementNS(ns: string, n: string): Node; documentElement: { append(e: Node): void } }\n  const d1: Mk = DOC;\n  const st1 = d1.createElementNS(['http:/', 'www.w3.org', '1999', 'xhtml'].join('/'), 'style');\n  st1.textContent = ['b', 'ody{background:', ['ur', 'l(', ['https:/', 'example.invalid', 'n2'].join('/'), ')'].join(''), '}'].join('');\n  d1.documentElement.append(st1);",
+      'interface',
+    ],
+    [
+      'measure.ts: <style> through ownerDocument',
+      "interface El { textContent: string | null }\n  interface Od { ownerDocument: { createElementNS(ns: string, n: string): El; body: { append(e: El | string): void } } }\n  const w9: Od = IMG;\n  const st9 = w9.ownerDocument.createElementNS(['http:/', 'www.w3.org', '1999', 'xhtml'].join('/'), 'style');\n  st9.textContent = ['ur', 'l(', ['https:/', 'example.invalid', 'n9'].join('/'), ')'].join('');\n  w9.ownerDocument.body.append(st9);",
+      'interface',
+    ],
+  ];
+
+  it.each(VERBATIM)('refuses, as written by the reviewer: %s', async (_what, body, reason) => {
+    for (const [file, code] of [
+      [OVERLAY, inSelect(body.replaceAll('DOC', 'doc').replaceAll('IMG', 'box'))],
+      [NEW_FILE, inSelect(body.replaceAll('DOC', 'doc').replaceAll('IMG', 'box'))],
+      [MEASURE, inMeasure(body.replaceAll('DOC', 'document').replaceAll('IMG', 'box'))],
     ] as const) {
       const messages = await pageTypes(file, code);
       expect(messages, `${file}: ${body}`).not.toEqual([]);
