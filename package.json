@@ -1,34 +1,59 @@
 {
-  "name": "fontsnap",
+  "name": "fontsnap-extension",
   "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
   "description": "FontSnap: AI Font Identifier from Image (Chrome MV3)",
-  "directories": {
-    "test": "tests"
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
   },
   "scripts": {
-    "fetch-ort": "node scripts/fetch-ort.mjs",
-    "postinstall": "node scripts/fetch-ort.mjs",
-    "lint": "eslint .",
-    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
-    "test:unit": "node --test tests/js/unit/*.test.mjs",
-    "test:capture-smoke": "node scripts/capture-smoke.mjs",
-    "eval:js": "node scripts/eval-js.mjs",
-    "test:regression": "node --test tests/js/regression/",
-    "build": "node scripts/build-zip.mjs"
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.src.json && tsc -p tsconfig.node.json",
+    "test": "vitest run --coverage && tsx scripts/check-reports.ts vitest",
+    "check:locales": "tsx scripts/check-locales.ts",
+    "dev": "tsx scripts/dev.ts",
+    "build": "vite build --configLoader bundle -c vite.config.ts && vite build --configLoader bundle -c vite.content.config.ts && tsx scripts/verify-dist.ts",
+    "build:e2e": "vite build --configLoader bundle -c vite.config.ts --mode e2e && vite build --configLoader bundle -c vite.content.config.ts --mode e2e && tsx scripts/verify-dist.ts --e2e",
+    "zip": "tsx scripts/zip.ts",
+    "check:version": "tsx scripts/check-version.ts",
+    "test:e2e": "npm run build:e2e && playwright test && tsx scripts/check-reports.ts playwright",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run check:locales && npm run build && npm run check:version && npm run test:e2e:auto",
+    "test:e2e:xvfb": "xvfb-run -a -e xvfb.log --server-args=\"-screen 0 1280x1024x24 -noreset\" npm run test:e2e",
+    "test:e2e:auto": "tsx scripts/e2e.ts",
+    "guards:update": "tsx scripts/guards-update.ts",
+    "test:regression": "tsx --test tests/regression/realset3.test.ts",
+    "eval:js": "tsx scripts/eval/eval-js.ts"
   },
-  "license": "UNLICENSED",
-  "private": true,
-  "type": "module",
+  "dependencies": {
+    "onnxruntime-web": "1.30.0"
+  },
   "devDependencies": {
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
     "@eslint/js": "^10.0.1",
-    "eslint": "^10.12.0",
+    "@playwright/test": "^1.64.1",
+    "@types/chrome": "^0.3.5",
+    "@types/node": "^22.20.5",
+    "@types/pngjs": "^6.0.5",
+    "@vitest/coverage-v8": "^4.1.12",
+    "@vitest/eslint-plugin": "^1.6.27",
+    "eslint": "^10.13.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-playwright": "^2.12.1",
     "fflate": "^0.8.3",
-    "globals": "^17.13.0",
+    "happy-dom": "^21.0.3",
     "onnxruntime-node": "1.30.0",
-    "onnxruntime-web": "1.30.0",
-    "playwright-core": "^1.64.0",
     "pngjs": "^7.0.0",
-    "prettier": "^3.9.10"
+    "prettier": "^3.9.10",
+    "terser": "^5.51.2",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.2",
+    "vite": "^8.3.4",
+    "vitest": "^4.1.12",
+    "yaml": "^2.9.1"
   }
 }
