@@ -1183,6 +1183,11 @@ describe('the code that runs in the web page cannot reach the Window or a global
     ['Function.prototype.apply with the window', inStart('  void f.apply(win, []);')],
     ['bind with the window', inStart('  void f.bind(win);')],
     ['a spread of the window', inStart('  void { ...win };')],
+    [
+      'a spread of an event',
+      inStart("  win.addEventListener('keydown', (e: KeyboardEvent) => { void { ...e }; });"),
+    ],
+    ['a spread of the document', inStart('  const copy = { ...doc };\\n  void copy;')],
     ['a spread of the window into a call', inStart('  void f(...[win]);')],
     ['with', inStart('  with (win) { void fetch; }')],
     ['this in a callback', inStart('  setTimeout(function () { void this; }, 0);')],

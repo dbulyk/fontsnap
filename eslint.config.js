@@ -580,6 +580,10 @@ const pageProcessSelectors = [
   // nothing that enumerates, nothing that names a type from a value or from a key
   'ForInStatement',
   'WithStatement',
+  // a spread of an object (an event, a node) copies what it enumerates; only arrays are spread here
+  'ObjectExpression > SpreadElement',
+  'CallExpression > SpreadElement',
+  'NewExpression > SpreadElement',
   'TSIndexedAccessType',
   'TSTypeQuery',
   'TSIndexSignature',
