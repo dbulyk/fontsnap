@@ -1,7 +1,7 @@
 import type { BrowserContext, Page } from '@playwright/test';
 import { PNG } from 'pngjs';
 import { EXTENSION_PAGES, MENU_IMAGE } from '../../src/shared/constants';
-import { fromRGBA, type Backdrop } from '../../src/shared/core/image';
+import { compositeOver, type Backdrop } from '../../src/shared/core/image';
 import { expect, isExtensionPage, openResultPage, test } from './fixtures';
 import { SAMPLE_TEXT } from './site-data';
 
@@ -178,8 +178,8 @@ test('getImageData of a drawn transparent image composites to the same bytes as 
   }, PNG.sync.write(source).toString('base64'));
   expect(read).toHaveLength(256 * 256 * 4);
   for (const backdrop of [0, 255] as const satisfies Backdrop[]) {
-    const want = fromRGBA(source.data, 256, 256, backdrop).data;
-    const got = fromRGBA(Uint8Array.from(read), 256, 256, backdrop).data;
+    const want = compositeOver(source.data, 256, 256, backdrop).data;
+    const got = compositeOver(Uint8Array.from(read), 256, 256, backdrop).data;
     const differing = [...want].flatMap((byte, i) => (byte === got[i] ? [] : [i]));
     expect(differing, `backdrop ${String(backdrop)}: bytes that differ`).toEqual([]);
   }

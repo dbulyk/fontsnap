@@ -35,24 +35,29 @@ export function chooseBackdrop(rgba: Uint8Array | Uint8ClampedArray, pixels: num
 }
 
 /**
- * RGBA (not premultiplied, as getImageData gives it) → RGB over a backdrop: c' = round((c·a + bg·(255 − a)) / 255).
- * A fully opaque image keeps its bytes whichever backdrop is chosen; python/fontsnap_ref/image.py does the same sum.
+ * RGBA (not premultiplied, as getImageData gives it) → RGB over the backdrop `bg`: c' = round((c·a + bg·(255 − a)) / 255).
+ * A fully opaque image keeps its bytes whichever backdrop is given; python/fontsnap_ref/image.py `composite_over` is the same sum.
  */
-export function fromRGBA(
+export function compositeOver(
   rgba: Uint8Array | Uint8ClampedArray,
   w: number,
   h: number,
-  backdrop: Backdrop = chooseBackdrop(rgba, w * h),
+  bg: Backdrop,
 ): Img {
   const d = new Uint8Array(w * h * 3);
   for (let i = 0, j = 0; i < w * h; i++, j += 4) {
     const a = atU8(rgba, j + 3);
     for (let ch = 0; ch < 3; ch++) {
       const c = atU8(rgba, j + ch);
-      d[i * 3 + ch] = a === 255 ? c : Math.floor((c * a + backdrop * (255 - a) + 127) / 255);
+      d[i * 3 + ch] = a === 255 ? c : Math.floor((c * a + bg * (255 - a) + 127) / 255);
     }
   }
   return { w, h, c: 3, data: d };
+}
+
+/** RGBA → RGB over the backdrop `chooseBackdrop` picks. */
+export function fromRGBA(rgba: Uint8Array | Uint8ClampedArray, w: number, h: number): Img {
+  return compositeOver(rgba, w, h, chooseBackdrop(rgba, w * h));
 }
 
 export function toGray(im: Img): Uint8Array {

@@ -10,7 +10,7 @@ import pytest
 from PIL import Image
 from test_reference import text_image
 
-from fontsnap_ref.image import choose_backdrop, to_rgb
+from fontsnap_ref.image import choose_backdrop, composite_over, to_rgb
 from fontsnap_ref.textcrop import text_lines
 
 TABLE = json.loads((Path(__file__).resolve().parents[1] / "fixtures" / "alpha-composite.json").read_text())
@@ -43,10 +43,10 @@ def test_over_rounds_to_the_nearest_integer():
                 assert over(ci, ai, b) == round(Fraction(ci * ai + b * (255 - ai), 255)), (b, ci, ai)
 
 
-def test_alpha_fixture_agrees_with_the_reference():
+def test_alpha_fixture_agrees_with_the_reference_each_row_over_its_own_backdrop():
     for case in TABLE["cases"]:
         *rgb, a = case["rgba"]
-        assert case["rgb"] == [int(over(v, a, TABLE["bg"])) for v in rgb], case
+        assert case["rgb"] == [int(over(v, a, case["bg"])) for v in rgb], case
 
 
 def png_roundtrip(im, **save):
@@ -55,11 +55,10 @@ def png_roundtrip(im, **save):
     return Image.open(io.BytesIO(buf.getvalue()))
 
 
-@pytest.mark.parametrize(("backdrop", "key"), [(255, "cases"), (0, "blackCases")])
-def test_pixels_match_the_table_the_js_tests_use(backdrop, key):
-    rows = TABLE[key]
-    out = np.array(to_rgb(rgba_image([r["rgba"] for r in rows]), backdrop))
-    assert out.tolist() == [[r["rgb"] for r in rows]]
+@pytest.mark.parametrize("case", TABLE["cases"], ids=lambda c: f"bg{c['bg']}-{c['rgba']}")
+def test_composite_over_matches_each_row_of_the_table_the_js_tests_use(case):
+    out = composite_over(np.array([[case["rgba"]]], np.uint8), case["bg"])
+    assert out.tolist() == [[case["rgb"]]]
 
 
 @pytest.mark.parametrize("image", TABLE["images"], ids=lambda i: i["name"])
@@ -69,24 +68,26 @@ def test_backdrop_by_contrast_matches_the_table_the_js_tests_use(image):
     assert np.array(to_rgb(im)).ravel().tolist() == image["rgb"]
 
 
-def test_to_rgb_composites_every_c_a_pair_like_an_independent_rounding():
+@pytest.mark.parametrize("bg", [0, 255])
+def test_composite_over_every_c_a_pair_like_an_independent_rounding(bg):
     # Row a, column c holds (c, 255 - c, (c + 128) % 256, a): every channel differs from the others, so a channel swap shows.
     a, c = np.meshgrid(np.arange(256, dtype=np.int64), np.arange(256, dtype=np.int64), indexing="ij")
     rgba = np.stack([c, 255 - c, (c + 128) % 256, a], axis=-1)
-    expected = over(rgba[..., :3], a[..., None], TABLE["bg"])
-    got = np.array(to_rgb(Image.fromarray(rgba.astype(np.uint8), "RGBA")), np.int64)
+    expected = over(rgba[..., :3], a[..., None], bg)
+    got = composite_over(rgba.astype(np.uint8), bg).astype(np.int64)
     assert got.shape == (256, 256, 3)
     wrong = np.argwhere((got != expected).any(axis=-1))
     first = [(int(c[i, j]), int(a[i, j])) for i, j in wrong[:10]]
-    assert len(wrong) == 0, f"{len(wrong)} mismatches, first 10 (c, a): {first}"
+    assert len(wrong) == 0, f"bg={bg}: {len(wrong)} mismatches, first 10 (c, a): {first}"
 
 
-@pytest.mark.parametrize("backdrop", [None, 0, 255])
-def test_opaque_images_keep_their_bytes(backdrop):
+def test_opaque_images_keep_their_bytes():
     rgb = np.random.default_rng(0).integers(0, 256, (8, 8, 3), dtype=np.uint8)
-    im = Image.fromarray(rgb)
-    assert (np.array(to_rgb(im, backdrop)) == rgb).all()
-    assert (np.array(to_rgb(im.convert("RGBA"), backdrop)) == rgb).all()
+    rgba = np.dstack([rgb, np.full((8, 8), 255, np.uint8)])
+    for bg in (0, 255):
+        assert (composite_over(rgba, bg) == rgb).all()
+    assert (np.array(to_rgb(Image.fromarray(rgb))) == rgb).all()
+    assert (np.array(to_rgb(Image.fromarray(rgba, "RGBA"))) == rgb).all()
 
 
 def test_gray_with_alpha():

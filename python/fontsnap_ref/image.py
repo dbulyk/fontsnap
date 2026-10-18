@@ -19,11 +19,21 @@ def choose_backdrop(rgba: np.ndarray) -> int:
     return 0 if 2 * int((gray * px[:, 3]).sum()) > 255 * int(px[:, 3].sum()) else 255
 
 
-def to_rgb(im: Image.Image, backdrop: int | None = None) -> Image.Image:
-    """RGB over a black or white backdrop: c' = round((c*a + bg*(255-a)) / 255), done in integers so that JS and Python agree.
+def composite_over(rgba: np.ndarray, bg: int) -> np.ndarray:
+    """(H, W, 4) uint8 RGBA → (H, W, 3) uint8 RGB over the backdrop `bg` (0 or 255): c' = round((c*a + bg*(255-a)) / 255).
 
-    `convert("RGB")` alone drops the alpha channel, which turns every transparent pixel (0, 0, 0, 0) black. A fully
-    opaque image keeps its bytes. `backdrop` (0 or 255) overrides `choose_backdrop`, for tests.
+    Integers only, so that JS (`compositeOver`) and Python agree. A fully opaque image keeps its bytes.
+    """
+    px = rgba.astype(np.uint32)
+    a = px[..., 3:4]
+    return ((px[..., :3] * a + bg * (255 - a) + 127) // 255).astype(np.uint8)
+
+
+def to_rgb(im: Image.Image) -> Image.Image:
+    """RGB with the transparency composited over the backdrop `choose_backdrop` picks.
+
+    `convert("RGB")` alone drops the alpha channel, which turns every transparent pixel (0, 0, 0, 0) black. An image
+    without transparency, and a fully opaque one, keep their bytes.
 
     Not the extension's reading: 16-bit gray (`I;16`, which the browser scales to 8 bits and `convert` clips) and
     CMYK or ICC profiles (the browser applies them). Those were never matched, and no alpha is involved.
@@ -31,9 +41,4 @@ def to_rgb(im: Image.Image, backdrop: int | None = None) -> Image.Image:
     if im.mode not in ALPHA_MODES and "transparency" not in im.info:
         return im.convert("RGB")
     rgba = np.asarray(im.convert("RGBA"))
-    if backdrop is None:
-        backdrop = choose_backdrop(rgba)
-    px = rgba.astype(np.uint32)
-    a = px[..., 3:4]
-    rgb = (px[..., :3] * a + backdrop * (255 - a) + 127) // 255
-    return Image.fromarray(rgb.astype(np.uint8), "RGB")
+    return Image.fromarray(composite_over(rgba, choose_backdrop(rgba)), "RGB")

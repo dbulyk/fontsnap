@@ -103,8 +103,8 @@ the Python/Node pipelines shows up there.
 Transparency: an image with an alpha channel (PNG, WebP, GIF, AVIF) is composited before it reaches the pipeline. The backdrop
 is chosen by contrast, so that text stays against its ground: when the alpha-weighted mean luminance of the content (the `toGray`
 formula, integers) is above 127.5 the image goes on black, otherwise on white; the tie and an image without content go to white. A
-fully opaque image is not changed. `chooseBackdrop` and `fromRGBA` in `src/shared/core/image.ts` and `choose_backdrop` and `to_rgb`
-in `python/fontsnap_ref/image.py` apply the same integer sum, and the result page does not paint its canvas, so the alpha reaches
+fully opaque image is not changed. `chooseBackdrop`, `compositeOver` and `fromRGBA` in `src/shared/core/image.ts` and `choose_backdrop`, `composite_over` and
+`to_rgb` in `python/fontsnap_ref/image.py` apply the same integer sum, and the result page does not paint its canvas, so the alpha reaches
 `fromRGBA`. A screenshot (region selection, right click on an image of another site) is opaque: transparency there is already
 composited on the background of the page. `tests/fixtures/alpha-composite.json` is the table both sides are tested with, and
 `tests/e2e/transparent.spec.ts` checks black text on transparent against black on white and white text on transparent against

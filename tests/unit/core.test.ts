@@ -2,7 +2,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { at } from '../../src/shared/core/at';
-import { chooseBackdrop, fromRGBA, resize, toGray, type Img } from '../../src/shared/core/image';
+import {
+  chooseBackdrop,
+  compositeOver,
+  fromRGBA,
+  type Backdrop,
+  resize,
+  toGray,
+  type Img,
+} from '../../src/shared/core/image';
 import { cropNormalize, nz, prep, softmax } from '../../src/shared/core/pipeline';
 import { makeRanker, type Meta } from '../../src/shared/core/ranker';
 import {
@@ -31,16 +39,11 @@ const ROOT = process.cwd();
 const FX = JSON.parse(
   readFileSync(join(ROOT, 'tests', 'fixtures', 'textcrop.json'), 'utf8'),
 ) as Fixture;
-interface PixelRow {
-  rgba: number[];
-  rgb: number[];
-}
 const TABLE = JSON.parse(
   readFileSync(join(ROOT, 'tests', 'fixtures', 'alpha-composite.json'), 'utf8'),
 ) as {
-  cases: PixelRow[];
-  blackCases: PixelRow[];
-  images: { name: string; rgba: number[][]; backdrop: 0 | 255; rgb: number[] }[];
+  cases: { bg: Backdrop; rgba: number[]; rgb: number[] }[];
+  images: { name: string; rgba: number[][]; backdrop: Backdrop; rgb: number[] }[];
 };
 const gray = (w: number, h: number, f: (x: number, y: number) => number): Img => {
   const d = new Uint8Array(w * h);
@@ -53,11 +56,6 @@ const mean = (a: ArrayLike<number>) => {
   return s / a.length;
 };
 
-const ALPHA = JSON.parse(
-  readFileSync(join(ROOT, 'tests/fixtures/alpha-composite.json'), 'utf8'),
-) as { bg: number; cases: { rgba: number[]; rgb: number[] }[] };
-// The backdrop the fixture and the grid composite over (white in production).
-const BG = ALPHA.bg;
 // Independent reference: round((c*a + bg*(255 - a)) / 255) from quotient and remainder
 // (no ties: 255 is odd).
 const over = (c: number, a: number, bg: number) => {
@@ -154,25 +152,23 @@ describe('textcrop primitives', () => {
     expect({ total: wrong.length, first: wrong.slice(0, 10) }).toEqual({ total: 0, first: [] });
   });
 
-  it('the alpha fixture agrees with the reference', () => {
-    for (const { rgba, rgb } of ALPHA.cases) {
+  it('the alpha fixture agrees with the reference, each row over its own backdrop', () => {
+    for (const { bg, rgba, rgb } of TABLE.cases) {
       expect(rgba).toHaveLength(4);
       const [r = 0, g = 0, b = 0, a = 0] = rgba;
-      expect(rgb).toEqual([over(r, a, BG), over(g, a, BG), over(b, a, BG)]);
+      expect(rgb, JSON.stringify({ bg, rgba })).toEqual([
+        over(r, a, bg),
+        over(g, a, bg),
+        over(b, a, bg),
+      ]);
     }
   });
 
-  it('composites RGBA over a white or a black backdrop (the tables the Python reference is tested with)', () => {
-    for (const [backdrop, rows] of [
-      [255, TABLE.cases],
-      [0, TABLE.blackCases],
-    ] as const) {
-      const rgba = Uint8Array.from(rows.flatMap((c) => c.rgba));
-      const expected = rows.flatMap((c) => c.rgb);
-      expect([...fromRGBA(rgba, rows.length, 1, backdrop).data]).toEqual(expected);
-      expect([...fromRGBA(new Uint8ClampedArray(rgba), rows.length, 1, backdrop).data]).toEqual(
-        expected,
-      );
+  it('composites each row of the table over its backdrop (the table the Python reference is tested with)', () => {
+    for (const { bg, rgba, rgb } of TABLE.cases) {
+      const label = JSON.stringify({ bg, rgba });
+      expect([...compositeOver(Uint8Array.from(rgba), 1, 1, bg).data], label).toEqual(rgb);
+      expect([...compositeOver(Uint8ClampedArray.from(rgba), 1, 1, bg).data], label).toEqual(rgb);
     }
   });
 
@@ -184,49 +180,37 @@ describe('textcrop primitives', () => {
     }
   });
 
-  it('matches the integer reference for every (c, a) pair, all three channels, both backdrops', () => {
-    const rgba = new Uint8Array(256 * 256 * 4);
-    for (let a = 0; a < 256; a++)
-      for (let c = 0; c < 256; c++) rgba.set([c, 255 - c, c ^ 0x55, a], (a * 256 + c) * 4);
-    for (const backdrop of [0, 255] as const) {
-      const rgb = fromRGBA(rgba, 256, 256, backdrop).data;
-      const mismatches: string[] = [];
-      for (let i = 0; i < 256 * 256; i++)
-        for (let ch = 0; ch < 3; ch++) {
-          const c = at(rgba, i * 4 + ch);
-          const a = at(rgba, i * 4 + 3);
-          const want = Math.floor((2 * (c * a + backdrop * (255 - a)) + 255) / 510); // round half up, a second way
-          if (at(rgb, i * 3 + ch) !== want) mismatches.push(`${String(c)},${String(a)}`);
-        }
-      expect(mismatches, `backdrop ${String(backdrop)}`).toEqual([]);
-    }
-  });
-
-  it('composites every (c, a) pair like an independent integer rounding', () => {
+  it('composites every (c, a) pair like an independent integer rounding, over black and over white', () => {
     // A 256 x 256 image, row a, column c: pixel a * 256 + c holds (c, 255 - c, (c + 128) % 256, a),
     // so every channel differs from the others (a channel swap shows) and w * h indexing is pinned.
     const rgba = new Uint8Array(256 * 256 * 4);
     for (let a = 0; a < 256; a++)
       for (let c = 0; c < 256; c++) rgba.set([c, 255 - c, (c + 128) % 256, a], (a * 256 + c) * 4);
-    const im = fromRGBA(rgba, 256, 256);
-    expect([im.w, im.h, im.data.length]).toEqual([256, 256, 256 * 256 * 3]);
-    const wrong: string[] = [];
-    for (let a = 0; a < 256; a++)
-      for (let c = 0; c < 256; c++) {
-        const i = (a * 256 + c) * 3;
-        const want = [over(c, a, BG), over(255 - c, a, BG), over((c + 128) % 256, a, BG)];
-        const got = [...im.data.subarray(i, i + 3)];
-        if (got.join() !== want.join())
-          wrong.push(`c=${c} a=${a}: ${got.join()} != ${want.join()}`);
-      }
-    expect({ total: wrong.length, first: wrong.slice(0, 10) }).toEqual({ total: 0, first: [] });
+    for (const bg of [0, 255] as const) {
+      const im = compositeOver(rgba, 256, 256, bg);
+      expect([im.w, im.h, im.data.length]).toEqual([256, 256, 256 * 256 * 3]);
+      const wrong: string[] = [];
+      for (let a = 0; a < 256; a++)
+        for (let c = 0; c < 256; c++) {
+          const i = (a * 256 + c) * 3;
+          const want = [over(c, a, bg), over(255 - c, a, bg), over((c + 128) % 256, a, bg)];
+          const got = [...im.data.subarray(i, i + 3)];
+          if (got.join() !== want.join())
+            wrong.push(
+              `bg=${String(bg)} c=${String(c)} a=${String(a)}: ${got.join()} != ${want.join()}`,
+            );
+        }
+      expect({ total: wrong.length, first: wrong.slice(0, 10) }).toEqual({ total: 0, first: [] });
+    }
   });
 
   it('leaves every opaque pixel byte for byte as it was', () => {
     const rgba = new Uint8Array(256 * 4);
     for (let i = 0; i < 256; i++) rgba.set([i, 255 - i, (i * 7) % 256, 255], i * 4);
     for (const backdrop of [undefined, 0, 255] as const) {
-      const rgb = fromRGBA(rgba, 256, 1, backdrop).data;
+      const rgb = (
+        backdrop === undefined ? fromRGBA(rgba, 256, 1) : compositeOver(rgba, 256, 1, backdrop)
+      ).data;
       for (let i = 0; i < 256; i++)
         expect([...rgb.subarray(i * 3, i * 3 + 3)]).toEqual([...rgba.subarray(i * 4, i * 4 + 3)]);
     }
