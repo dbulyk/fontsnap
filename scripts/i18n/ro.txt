@@ -3,12 +3,12 @@ Identificator de fonturi din imagine cu AI: selectați un text, iar FontSnap gă
 FontSnap: identifică un font
 FontSnap: identifică fontul din această imagine
 FontSnap: selectează o zonă pentru a identifica fontul
-FontSnap: trageți peste text (Esc pentru anulare)
+FontSnap: trageți doar peste textul vizibil (Esc pentru anulare)
 FontSnap — rezultate
 Identificator de fonturi cu AI · rulează pe dispozitivul dvs.
 Lipiți (Ctrl+V) sau plasați o imagine cu text ori alegeți un fișier.
 Alege imaginea
-Sfat: pe orice pagină, faceți clic pe pictograma FontSnap și trageți peste text.
+Sfat: faceți clic pe pictograma FontSnap și trageți peste textul din zona vizibilă (conținutul derulat în afara ecranului nu este capturat).
 Ce vede modelul
 Se încarcă modelul…
 Se analizează…
@@ -32,7 +32,7 @@ Găsiți FontSnap în listă.
 Faceți clic pe pictograma pioneză de lângă el.
 Deja fixat? Vezi cum se folosește
 Cum identificați un font
-Faceți clic pe pictograma FontSnap sau apăsați Alt+Shift+F și trageți peste orice text.
+Faceți clic pe pictograma FontSnap sau apăsați Alt+Shift+F, apoi trageți peste textul din zona vizibilă (nu în afara ecranului).
 Clic dreapta pe o imagine și alegeți „Identifică fontul din această imagine”.
 Sau deschideți FontSnap și lipiți, plasați sau încărcați o captură de ecran.
 Primiți cele mai apropiate 5 fonturi Google, comparați previzualizările și copiați CSS.

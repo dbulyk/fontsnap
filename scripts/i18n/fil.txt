@@ -3,12 +3,12 @@ Alamin ang font mula sa larawan gamit ang AI: piliin ang teksto at ipapakita ng 
 FontSnap: tukuyin ang font
 FontSnap: tukuyin ang font sa larawang ito
 FontSnap: pumili ng lugar para tukuyin ang font
-FontSnap: i-drag sa ibabaw ng teksto (Esc para kanselahin)
+FontSnap: i-drag lang sa nakikitang text (Esc para kanselahin)
 FontSnap — mga resulta
 AI font identifier · tumatakbo sa iyong device
 I-paste (Ctrl+V) o i-drop ang larawang may teksto, o pumili ng file.
 Pumili ng larawan
-Tip: sa anumang page, i-click ang icon ng FontSnap at i-drag sa ibabaw ng teksto.
+Tip: i-click ang icon ng FontSnap at i-drag sa text sa nakikitang viewport (hindi kinukuha ang content na nasa labas ng screen).
 Ang nakikita ng model
 Nilo-load ang model…
 Sinusuri…
@@ -32,7 +32,7 @@ Hanapin ang FontSnap sa listahan.
 I-click ang icon na pin sa tabi nito.
 Naka-pin na? Ipakita kung paano gamitin
 Paano tukuyin ang font
-I-click ang icon ng FontSnap o pindutin ang Alt+Shift+F, saka i-drag sa anumang teksto.
+I-click ang icon ng FontSnap o pindutin ang Alt+Shift+F, pagkatapos i-drag sa text sa nakikitang viewport (hindi sa labas ng screen).
 I-right-click ang larawan at piliin ang "Tukuyin ang font sa larawang ito".
 O buksan ang FontSnap at i-paste, i-drop o i-upload ang screenshot.
 Makuha ang 5 pinakakahawig na Google Fonts, ihambing ang mga preview at kopyahin ang CSS.

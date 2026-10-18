@@ -3,12 +3,12 @@ Lettertype herkennen met AI: selecteer tekst en deze font finder toont de 5 mees
 FontSnap: lettertype herkennen
 FontSnap: lettertype in deze afbeelding herkennen
 FontSnap: gebied selecteren om lettertype te herkennen
-FontSnap: sleep over de tekst (Esc om te annuleren)
+FontSnap: sleep alleen over zichtbare tekst (Esc om te annuleren)
 FontSnap — resultaten
 AI-lettertypeherkenning · werkt op je apparaat
 Plak (Ctrl+V) of sleep een afbeelding met tekst hierheen, of kies een bestand.
 Afbeelding kiezen
-Tip: klik op elke pagina op het FontSnap-pictogram en sleep over de tekst.
+Tip: klik op het FontSnap-pictogram en sleep over tekst in het zichtbare viewport (buiten beeld gescrolde inhoud wordt niet vastgelegd).
 Wat het model ziet
 Model laden…
 Analyseren…
@@ -32,7 +32,7 @@ Zoek FontSnap in de lijst.
 Klik op het punaise-pictogram ernaast.
 Al vastgezet? Bekijk hoe het werkt
 Zo herken je een lettertype
-Klik op het FontSnap-pictogram of druk op Alt+Shift+F en sleep over tekst op de pagina.
+Klik op het FontSnap-pictogram of druk op Alt+Shift+F en sleep over tekst in het zichtbare viewport (niet buiten beeld).
 Klik met rechts op een afbeelding en kies 'Lettertype in deze afbeelding herkennen'.
 Of open FontSnap en plak, sleep of upload een screenshot.
 Krijg de 5 meest gelijkende Google Fonts, vergelijk voorbeelden en kopieer de CSS.

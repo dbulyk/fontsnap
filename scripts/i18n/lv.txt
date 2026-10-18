@@ -3,12 +3,12 @@ Atpazīstiet fontu no attēla ar AI: atlasiet tekstu, un FontSnap parāda 5 līd
 FontSnap: atpazīt fontu
 FontSnap: atpazīt fontu šajā attēlā
 FontSnap: atlasīt apgabalu fonta atpazīšanai
-FontSnap: velciet pāri tekstam (Esc — atcelt)
+FontSnap: velciet tikai pār redzamo tekstu (Esc, lai atceltu)
 FontSnap — rezultāti
 AI fontu atpazīšana · darbojas jūsu ierīcē
 Ielīmējiet (Ctrl+V) vai nometiet attēlu ar tekstu, vai izvēlieties failu.
 Izvēlēties attēlu
-Padoms: jebkurā lapā noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam.
+Padoms: noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam redzamajā skatā (ārpus ekrāna ritinātais saturs netiek uztverts).
 Ko redz modelis
 Ielādē modeli…
 Analizē…
@@ -32,7 +32,7 @@ Atrodiet sarakstā FontSnap.
 Noklikšķiniet uz piespraudes ikonas blakus tam.
 Jau piesprausts? Parādīt, kā lietot
 Kā atpazīt fontu
-Noklikšķiniet uz FontSnap ikonas vai nospiediet Alt+Shift+F un velciet pāri jebkuram tekstam.
+Noklikšķiniet uz FontSnap ikonas vai nospiediet Alt+Shift+F un velciet pāri tekstam redzamajā skatā (ne ārpus ekrāna).
 Ar peles labo pogu noklikšķiniet uz attēla un izvēlieties “Atpazīt fontu šajā attēlā”.
 Vai atveriet FontSnap un ielīmējiet, nometiet vai augšupielādējiet ekrānuzņēmumu.
 Saņemiet 5 līdzīgākos Google Fonts, salīdziniet priekšskatījumus un kopējiet CSS.

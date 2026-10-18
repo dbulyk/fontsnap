@@ -3,12 +3,12 @@ Rozpoznání písma z obrázku pomocí AI: označte text a FontSnap najde font a
 FontSnap: rozpoznat písmo
 FontSnap: rozpoznat písmo na tomto obrázku
 FontSnap: vybrat oblast a rozpoznat písmo
-FontSnap: táhněte přes text (Esc pro zrušení)
+FontSnap: táhněte jen přes viditelný text (Esc pro zrušení)
 FontSnap – výsledky
 Rozpoznávání písma pomocí AI · běží ve vašem zařízení
 Vložte (Ctrl+V) nebo přetáhněte obrázek s textem, nebo vyberte soubor.
 Vybrat obrázek
-Tip: na libovolné stránce klikněte na ikonu FontSnap a táhněte přes text.
+Tip: klikněte na ikonu FontSnap a táhněte přes text ve viditelné oblasti (obsah mimo obrazovku se nezachytí).
 Co vidí model
 Načítání modelu…
 Analýza…
@@ -32,7 +32,7 @@ Najděte FontSnap v seznamu.
 Klikněte na ikonu špendlíku vedle něj.
 Už je připnuto? Ukázat, jak ho používat
 Jak rozpoznat písmo
-Klikněte na ikonu FontSnap nebo stiskněte Alt+Shift+F a táhněte přes libovolný text.
+Klikněte na ikonu FontSnap nebo stiskněte Alt+Shift+F a táhněte přes text ve viditelné oblasti (ne mimo obrazovku).
 Klikněte pravým tlačítkem na obrázek a zvolte „Rozpoznat písmo na tomto obrázku“.
 Nebo otevřete FontSnap a vložte, přetáhněte či nahrajte snímek obrazovky.
 Získejte 5 nejpodobnějších Google Fonts, porovnejte náhledy a zkopírujte CSS.

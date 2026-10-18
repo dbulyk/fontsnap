@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title data-i18n="wTitle">FontSnap is installed</title>
+    <link rel="stylesheet" href="./welcome.css" />
+  </head>
+  <body data-mode="pin">
+    <header>
+      <img src="/icons/icon-48.png" alt="" width="40" height="40" />
+      <div>
+        <h1 data-i18n="wTitle">FontSnap is installed</h1>
+        <p class="sub" data-i18n="tagline">AI font identifier · runs on your device</p>
+      </div>
+    </header>
+
+    <main>
+      <section class="mode-pin">
+        <h2 data-i18n="wPinH">Pin FontSnap to the toolbar</h2>
+        <div class="toolbar" aria-hidden="true">
+          <span class="omni"></span>
+          <span class="tb-ic puzzle"
+            ><svg viewBox="0 0 24 24">
+              <path
+                d="M20.5 11H19V7a2 2 0 0 0-2-2h-4V3.5a2.5 2.5 0 0 0-5 0V5H4a2 2 0 0 0-2 2v3.8h1.5a2.7 2.7 0 0 1 0 5.4H2V20a2 2 0 0 0 2 2h3.8v-1.5a2.7 2.7 0 0 1 5.4 0V22H17a2 2 0 0 0 2-2v-4h1.5a2.5 2.5 0 0 0 0-5z"
+              /></svg
+          ></span>
+          <span class="tb-ic menu">⋮</span>
+          <div class="popup">
+            <div class="pop-row">
+              <img src="/icons/icon-16.png" alt="" /> FontSnap <span class="pin">📌</span>
+            </div>
+          </div>
+          <svg class="cursor" viewBox="0 0 24 24">
+            <path
+              d="M4 2l16 10-7 1.5 4 7.5-3 1.5-4-7.5L4 20z"
+              fill="#111"
+              stroke="#fff"
+              stroke-width="1.5"
+            />
+          </svg>
+        </div>
+        <ol class="steps">
+          <li data-i18n="wPin1">Click the puzzle icon in the top-right corner of Chrome.</li>
+          <li data-i18n="wPin2">Find FontSnap in the list.</li>
+          <li data-i18n="wPin3">Click the pin icon next to it.</li>
+        </ol>
+        <p>
+          <a href="#usage" class="switch" data-i18n="wPinned">Already pinned? Show how to use it</a>
+        </p>
+      </section>
+
+      <section class="mode-usage">
+        <h2 data-i18n="wUseH">How to identify a font</h2>
+        <ol class="cards">
+          <li>
+            <span class="ic">1</span
+            ><span data-i18n="wUse1"
+              >Click the FontSnap icon or press Alt+Shift+F, then drag over text in the visible
+              viewport (not scrolled off-screen).</span
+            >
+          </li>
+          <li>
+            <span class="ic">2</span
+            ><span data-i18n="wUse2"
+              >Right-click an image and choose “Identify font in this image”.</span
+            >
+          </li>
+          <li>
+            <span class="ic">3</span
+            ><span data-i18n="wUse3">Or open FontSnap and paste, drop or upload a screenshot.</span>
+          </li>
+          <li>
+            <span class="ic">4</span
+            ><span data-i18n="wUse4"
+              >Get the 5 closest Google Fonts, compare previews and copy the CSS.</span
+            >
+          </li>
+        </ol>
+        <p><a id="try" class="btn" href="#" data-i18n="wTry">Try it now</a></p>
+        <p><a href="#pin" class="switch" data-i18n="wShowPin">How to pin FontSnap</a></p>
+      </section>
+      <p class="privacy" data-i18n="wPrivacy">
+        Everything runs on your device. Images are never uploaded.
+      </p>
+    </main>
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>

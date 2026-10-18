@@ -1,0 +1,226 @@
+{
+  "declarationFilesUnderSrc": ["src/env.d.ts"],
+  "files": {
+    ".gitignore": "node_modules/\ndist/\ndist-e2e/\nrelease/\ncoverage/\nplaywright-report/\ntest-results/\n.superpowers/\n*.log\n.DS_Store\nxvfb.log\nreports/\n.lfs-assets-id\n\n# Python reference pipeline and evaluation outputs\n.venv/\n__pycache__/\n*.pyc\n*.pkl\nout/\n.pytest_cache/\n.ruff_cache/\n*.zip\n.env\n",
+    ".npmrc": "<absent>",
+    ".nvmrc": "22\n",
+    ".prettierignore": "node_modules\ndist\ndist-e2e\nrelease\ncoverage\nplaywright-report\ntest-results\n.superpowers\npackage-lock.json\nxvfb.log\nreports\ntests/guard-snapshots\n# Outside the Node toolchain (see AGENTS.md): never reformatted.\nstore\ndata\npython\nmodel\nscripts/i18n\ntests/fixtures\nout\n",
+    ".prettierrc.json": "{\n  \"singleQuote\": true,\n  \"printWidth\": 100,\n  \"trailingComma\": \"all\"\n}\n",
+    "src/env.d.ts": "/// <reference types=\"vite/client\" />\n\n/** The marker of a window that already shows the selection overlay (src/select/overlay.ts), the only property FontSnap adds. */\ninterface Window {\n  __fontsnapActive?: boolean;\n}\n"
+  },
+  "playwright": {
+    "ci": {
+      "expect": {
+        "timeout": 10000
+      },
+      "forbidOnly": true,
+      "fullyParallel": true,
+      "reporter": [
+        ["list"],
+        [
+          "json",
+          {
+            "outputFile": "reports/playwright.json"
+          }
+        ],
+        [
+          "html",
+          {
+            "open": "never"
+          }
+        ]
+      ],
+      "retries": 0,
+      "testDir": "tests/e2e",
+      "timeout": 30000,
+      "use": {
+        "trace": "retain-on-failure"
+      },
+      "workers": 2
+    },
+    "local": {
+      "expect": {
+        "timeout": 10000
+      },
+      "forbidOnly": false,
+      "fullyParallel": true,
+      "reporter": [
+        ["list"],
+        [
+          "json",
+          {
+            "outputFile": "reports/playwright.json"
+          }
+        ]
+      ],
+      "retries": 0,
+      "testDir": "tests/e2e",
+      "timeout": 30000,
+      "use": {
+        "trace": "retain-on-failure"
+      },
+      "workers": 3
+    }
+  },
+  "prettier": {
+    "config": {
+      "endOfLine": "lf",
+      "printWidth": 100,
+      "singleQuote": true,
+      "tabWidth": 2,
+      "trailingComma": "all",
+      "useTabs": false
+    },
+    "ignoredFiles": ["model/meta.json","package-lock.json","python/data/classes_v2.yaml","python/data/gf_extra.json","python/data/gf_meta.json","scripts/i18n/README.md","store/privacy-policy.md","tests/fixtures/chrome-top5.json","tests/fixtures/textcrop.json","tests/guard-snapshots/eslint.json","tests/guard-snapshots/scripts.json","tests/guard-snapshots/tooling.json","tests/guard-snapshots/workflows.json"]
+  },
+  "tsconfig": {
+    "tsconfig.json": {
+      "include": ["src","tests","scripts","*.ts"],
+      "options": {
+        "exactOptionalPropertyTypes": true,
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true,
+        "lib": ["lib.es2023.d.ts","lib.dom.d.ts","lib.dom.iterable.d.ts"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "noEmit": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitOverride": true,
+        "noImplicitReturns": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUncheckedIndexedAccess": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "ES2022",
+        "types": ["chrome","node"],
+        "verbatimModuleSyntax": true
+      },
+      "strict": {
+        "alwaysStrict": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "strictBindCallApply": true,
+        "strictBuiltinIteratorReturn": true,
+        "strictFunctionTypes": true,
+        "strictNullChecks": true,
+        "strictPropertyInitialization": true,
+        "useUnknownInCatchVariables": true
+      }
+    },
+    "tsconfig.node.json": {
+      "include": ["tests","scripts","*.ts","src/env.d.ts"],
+      "options": {
+        "exactOptionalPropertyTypes": true,
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true,
+        "lib": ["lib.es2023.d.ts","lib.dom.d.ts","lib.dom.iterable.d.ts"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "noEmit": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitOverride": true,
+        "noImplicitReturns": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUncheckedIndexedAccess": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "ES2022",
+        "types": ["chrome","node"],
+        "verbatimModuleSyntax": true
+      },
+      "strict": {
+        "alwaysStrict": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "strictBindCallApply": true,
+        "strictBuiltinIteratorReturn": true,
+        "strictFunctionTypes": true,
+        "strictNullChecks": true,
+        "strictPropertyInitialization": true,
+        "useUnknownInCatchVariables": true
+      }
+    },
+    "tsconfig.src.json": {
+      "include": ["src"],
+      "options": {
+        "exactOptionalPropertyTypes": true,
+        "forceConsistentCasingInFileNames": true,
+        "isolatedModules": true,
+        "lib": ["lib.es2023.d.ts","lib.dom.d.ts","lib.dom.iterable.d.ts"],
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "noEmit": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitOverride": true,
+        "noImplicitReturns": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noUncheckedIndexedAccess": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "ES2022",
+        "types": ["chrome"],
+        "verbatimModuleSyntax": true
+      },
+      "strict": {
+        "alwaysStrict": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "strictBindCallApply": true,
+        "strictBuiltinIteratorReturn": true,
+        "strictFunctionTypes": true,
+        "strictNullChecks": true,
+        "strictPropertyInitialization": true,
+        "useUnknownInCatchVariables": true
+      }
+    }
+  },
+  "vitest": {
+    "css": {
+      "postcss": {}
+    },
+    "test": {
+      "coverage": {
+        "exclude": ["src/**/*.d.ts"],
+        "include": ["src/**/*.ts","scripts/lib/**/*.ts"],
+        "provider": "v8",
+        "reporter": ["text-summary","html"],
+        "thresholds": {
+          "branches": 80,
+          "functions": 80,
+          "lines": 80,
+          "scripts/lib/**": {
+            "branches": 80,
+            "functions": 80,
+            "lines": 80,
+            "statements": 80
+          },
+          "src/shared/**": {
+            "branches": 80,
+            "functions": 80,
+            "lines": 80,
+            "statements": 80
+          },
+          "statements": 80
+        }
+      },
+      "env": {
+        "TSESTREE_SINGLE_RUN": "false"
+      },
+      "include": ["tests/unit/**/*.test.ts"],
+      "outputFile": {
+        "json": "reports/vitest.json"
+      },
+      "reporters": ["default","json","./scripts/lib/guard-reporter.ts"],
+      "testTimeout": 30000
+    }
+  }
+}

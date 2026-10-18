@@ -3,12 +3,12 @@ Prepoznajte pisavo iz slike z umetno inteligenco: označite besedilo in FontSnap
 FontSnap: prepoznaj pisavo
 FontSnap: prepoznaj pisavo na tej sliki
 FontSnap: izberi območje za prepoznavanje pisave
-FontSnap: povlecite čez besedilo (Esc za preklic)
+FontSnap: povlecite samo čez vidno besedilo (Esc za preklic)
 FontSnap – rezultati
 Prepoznavanje pisav z UI · deluje v vaši napravi
 Prilepite (Ctrl+V) ali spustite sliko z besedilom ali izberite datoteko.
 Izberi sliko
-Namig: na kateri koli strani kliknite ikono FontSnap in povlecite čez besedilo.
+Namig: kliknite ikono FontSnap in povlecite čez besedilo v vidnem pogledu (vsebina zunaj zaslona se ne zajame).
 Kaj vidi model
 Nalaganje modela…
 Analiziranje…
@@ -32,7 +32,7 @@ Poiščite FontSnap na seznamu.
 Kliknite ikono žebljička poleg njega.
 Že pripeto? Pokaži, kako ga uporabljati
 Kako prepoznati pisavo
-Kliknite ikono FontSnap ali pritisnite Alt+Shift+F in povlecite čez poljubno besedilo.
+Kliknite ikono FontSnap ali pritisnite Alt+Shift+F, nato povlecite čez besedilo v vidnem pogledu (ne zunaj zaslona).
 Z desno tipko kliknite sliko in izberite »Prepoznaj pisavo na tej sliki«.
 Ali odprite FontSnap in prilepite, spustite ali naložite posnetek zaslona.
 Dobite 5 najbolj podobnih Google Fonts, primerjajte predoglede in kopirajte CSS.

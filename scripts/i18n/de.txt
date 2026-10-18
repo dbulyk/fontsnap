@@ -3,12 +3,12 @@ Schriftart erkennen per KI: Text markieren, und der Font Finder zeigt die 5 ähn
 FontSnap: Schriftart erkennen
 FontSnap: Schriftart in diesem Bild erkennen
 FontSnap: Bereich auswählen und Schriftart erkennen
-FontSnap: Ziehen Sie über den Text (Esc zum Abbrechen)
+FontSnap: nur über sichtbaren Text ziehen (Esc zum Abbrechen)
 FontSnap – Ergebnisse
 KI-Schriftarterkennung · läuft auf Ihrem Gerät
 Bild mit Text einfügen (Strg+V), hierher ziehen oder Datei auswählen.
 Bild auswählen
-Tipp: Klicken Sie auf einer beliebigen Seite auf das FontSnap-Symbol und ziehen Sie über den Text.
+Tipp: Klicken Sie auf das FontSnap-Symbol und ziehen Sie über Text im sichtbaren Viewport (außerhalb des Bildschirms gescrollter Inhalt wird nicht erfasst).
 Was das Modell sieht
 Modell wird geladen…
 Wird analysiert…
@@ -32,7 +32,7 @@ Suchen Sie FontSnap in der Liste.
 Klicken Sie auf die Stecknadel daneben.
 Schon angeheftet? So funktioniert es
 So erkennen Sie eine Schriftart
-Klicken Sie auf das FontSnap-Symbol oder drücken Sie Alt+Shift+F und ziehen Sie über einen Text.
+Klicken Sie auf das FontSnap-Symbol oder drücken Sie Alt+Shift+F und ziehen Sie über Text im sichtbaren Viewport (nicht außerhalb des Bildschirms).
 Rechtsklick auf ein Bild und „Schriftart in diesem Bild erkennen“ wählen.
 Oder FontSnap öffnen und einen Screenshot einfügen, hineinziehen oder hochladen.
 Die 5 ähnlichsten Google Fonts erhalten, Vorschauen vergleichen und CSS kopieren.

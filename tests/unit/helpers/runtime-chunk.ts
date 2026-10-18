@@ -1,0 +1,5 @@
+// The chunk of src/result/model.ts as terser emits it (see dist/assets/result-*.js after `npm run build`).
+export const REAL_CHUNK =
+  'import*as o from"../ort/ort.wasm.min.mjs";var I=()=>chrome.runtime.getURL("ort/");async function $(){var t;(t=o.env).wasm.wasmPaths=I(),t.wasm.proxy=!0,t.wasm.numThreads=globalThis.crossOriginIsolated?Math.min(4,navigator.hardwareConcurrency||1):1;' +
+  'const e=f;!function(t,e){const{wasm:n}=t,s=Object.getOwnPropertyDescriptor(n,"proxy");if(void 0===s||!0!==s.value)throw new Error("Refusing to start: proxy must be true (the runtime must load its files in its own worker).");const r=Object.getOwnPropertyDescriptor(n,"wasmPaths");if(void 0===r||"string"!=typeof r.value||r.value!==e)throw new Error(`Refusing to start: wasmPaths must be exactly ${e} (the packaged runtime).`);' +
+  'const{wasmBinary:o}=n;if(void 0!==Object.getOwnPropertyDescriptor(n,"wasmBinary")||void 0!==o)throw new Error("Refusing to start: wasmBinary must not be set (the runtime would run other bytes).")}(o.env,I())}';

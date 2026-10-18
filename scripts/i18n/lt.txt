@@ -3,12 +3,12 @@ Atpažinkite šriftą iš paveikslėlio su AI: pažymėkite tekstą ir FontSnap 
 FontSnap: atpažinti šriftą
 FontSnap: atpažinti šriftą šiame paveikslėlyje
 FontSnap: pažymėti sritį šriftui atpažinti
-FontSnap: vilkite per tekstą (Esc – atšaukti)
+FontSnap: vilkite tik per matomą tekstą (Esc atšaukti)
 FontSnap – rezultatai
 AI šriftų atpažinimas · veikia jūsų įrenginyje
 Įklijuokite (Ctrl+V) arba nutempkite paveikslėlį su tekstu, arba pasirinkite failą.
 Pasirinkti paveikslėlį
-Patarimas: bet kuriame puslapyje spustelėkite FontSnap piktogramą ir vilkite per tekstą.
+Patarimas: spustelėkite FontSnap piktogramą ir vilkite per tekstą matomoje srityje (už ekrano ribų nuslinkęs turinys nefiksuojamas).
 Ką mato modelis
 Įkeliamas modelis…
 Analizuojama…
@@ -32,7 +32,7 @@ Sąraše raskite FontSnap.
 Spustelėkite šalia esančią smeigtuko piktogramą.
 Jau prisegta? Rodyti, kaip naudotis
 Kaip atpažinti šriftą
-Spustelėkite FontSnap piktogramą arba paspauskite Alt+Shift+F ir vilkite per bet kokį tekstą.
+Spustelėkite FontSnap piktogramą arba paspauskite Alt+Shift+F ir vilkite per tekstą matomoje srityje (ne už ekrano).
 Dešiniuoju pelės mygtuku spustelėkite paveikslėlį ir pasirinkite „Atpažinti šriftą šiame paveikslėlyje“.
 Arba atidarykite FontSnap ir įklijuokite, nutempkite ar įkelkite ekrano kopiją.
 Gaukite 5 panašiausius Google Fonts, palyginkite peržiūras ir nukopijuokite CSS.

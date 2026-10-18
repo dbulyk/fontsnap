@@ -3,12 +3,12 @@ Pendeteksi font dari gambar dengan AI: pilih teks, lalu font finder FontSnap men
 FontSnap: kenali font
 FontSnap: kenali font di gambar ini
 FontSnap: pilih area untuk mengenali font
-FontSnap: seret di atas teks (Esc untuk batal)
+FontSnap: seret hanya di atas teks yang terlihat (Esc untuk batal)
 FontSnap — hasil
 Pendeteksi font AI · berjalan di perangkat Anda
 Tempel (Ctrl+V) atau letakkan gambar berisi teks, atau pilih file.
 Pilih gambar
-Tips: di halaman mana pun, klik ikon FontSnap lalu seret di atas teks.
+Tips: klik ikon FontSnap lalu seret di atas teks di area yang terlihat (konten di luar layar tidak diambil).
 Yang dilihat model
 Memuat model…
 Menganalisis…
@@ -32,7 +32,7 @@ Temukan FontSnap di daftar.
 Klik ikon pin di sebelahnya.
 Sudah disematkan? Lihat cara pakainya
 Cara mengenali font
-Klik ikon FontSnap atau tekan Alt+Shift+F, lalu seret di atas teks apa pun.
+Klik ikon FontSnap atau tekan Alt+Shift+F, lalu seret di atas teks di area yang terlihat (bukan di luar layar).
 Klik kanan gambar dan pilih "Kenali font di gambar ini".
 Atau buka FontSnap lalu tempel, letakkan, atau unggah tangkapan layar.
 Dapatkan 5 Google Fonts paling mirip, bandingkan pratinjau, dan salin CSS.

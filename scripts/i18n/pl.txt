@@ -3,12 +3,12 @@ Rozpoznawanie czcionki ze zdjęcia z AI: zaznacz tekst, a FontSnap znajdzie czci
 FontSnap: rozpoznaj czcionkę
 FontSnap: rozpoznaj czcionkę na tym obrazie
 FontSnap: zaznacz obszar, aby rozpoznać czcionkę
-FontSnap: przeciągnij nad tekstem (Esc, aby anulować)
+FontSnap: przeciągnij tylko po widocznym tekście (Esc — anuluj)
 FontSnap — wyniki
 Rozpoznawanie czcionek AI · działa na Twoim urządzeniu
 Wklej (Ctrl+V) lub upuść obraz z tekstem albo wybierz plik.
 Wybierz obraz
-Wskazówka: na dowolnej stronie kliknij ikonę FontSnap i przeciągnij nad tekstem.
+Wskazówka: kliknij ikonę FontSnap i przeciągnij po tekście w widocznym obszarze (treść poza ekranem nie jest przechwytywana).
 Co widzi model
 Ładowanie modelu…
 Analizowanie…
@@ -32,7 +32,7 @@ Znajdź FontSnap na liście.
 Kliknij ikonę pinezki obok.
 Już przypięte? Pokaż, jak używać
 Jak rozpoznać czcionkę
-Kliknij ikonę FontSnap lub naciśnij Alt+Shift+F i przeciągnij nad dowolnym tekstem.
+Kliknij ikonę FontSnap lub naciśnij Alt+Shift+F, a następnie przeciągnij po tekście w widocznym obszarze (nie poza ekranem).
 Kliknij obraz prawym przyciskiem i wybierz „Rozpoznaj czcionkę na tym obrazie”.
 Albo otwórz FontSnap i wklej, upuść lub prześlij zrzut ekranu.
 Otrzymaj 5 najbliższych czcionek Google, porównaj podglądy i skopiuj CSS.

@@ -3,12 +3,12 @@ Resimden yazı tipi bulma aracı: metni seçin, yapay zeka ile font bulucu FontS
 FontSnap: yazı tipini bul
 FontSnap: bu resimdeki yazı tipini bul
 FontSnap: yazı tipini bulmak için alan seç
-FontSnap: metnin üzerinden sürükleyin (iptal için Esc)
+FontSnap: yalnızca görünür metnin üzerinde sürükleyin (Esc ile iptal)
 FontSnap — sonuçlar
 Yapay zeka ile yazı tipi bulucu · cihazınızda çalışır
 Metin içeren bir resmi yapıştırın (Ctrl+V) veya sürükleyin ya da dosya seçin.
 Resim seç
-İpucu: herhangi bir sayfada FontSnap simgesine tıklayın ve metnin üzerinden sürükleyin.
+İpucu: FontSnap simgesine tıklayın ve görünür alandaki metnin üzerinde sürükleyin (ekran dışına kaydırılmış içerik yakalanmaz).
 Modelin gördüğü
 Model yükleniyor…
 Analiz ediliyor…
@@ -32,7 +32,7 @@ Listede FontSnap'i bulun.
 Yanındaki raptiye simgesine tıklayın.
 Zaten sabitlendi mi? Nasıl kullanılacağını göster
 Yazı tipi nasıl bulunur
-FontSnap simgesine tıklayın veya Alt+Shift+F'ye basın ve sayfadaki bir metnin üzerinden sürükleyin.
+FontSnap simgesine tıklayın veya Alt+Shift+F tuşlarına basın, ardından görünür alandaki metnin üzerinde sürükleyin (ekran dışında değil).
 Bir resme sağ tıklayıp "Bu resimdeki yazı tipini bul"u seçin.
 Ya da FontSnap'i açıp bir ekran görüntüsü yapıştırın, sürükleyin veya yükleyin.
 En yakın 5 Google yazı tipini alın, önizlemeleri karşılaştırın ve CSS'yi kopyalayın.

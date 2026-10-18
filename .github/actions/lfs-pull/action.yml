@@ -1,0 +1,37 @@
+name: Pull Git LFS objects
+description: >-
+  Fetches only the Git LFS files a job needs (the repository has a small LFS bandwidth quota), through a cache
+  of .git/lfs keyed by the object ids. Checkout runs with persist-credentials: false, so the token is given to
+  git for the duration of the pull only.
+inputs:
+  include:
+    description: Comma-separated path patterns to fetch, for example model/model_fp16.onnx,data/realset3/images/**
+    required: true
+  token:
+    description: Token that may read the repository (github.token)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: LFS cache key
+      shell: bash
+      env:
+        INCLUDE: ${{ inputs.include }}
+      run: git lfs ls-files --long --include="$INCLUDE" | cut -d ' ' -f1 | sort > .lfs-assets-id
+    - name: Cache LFS objects
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .git/lfs
+        key: lfs-${{ hashFiles('.lfs-assets-id') }}
+        # LFS objects are content-addressed: any earlier cache is a good start, and git lfs pull fetches what is missing.
+        restore-keys: lfs-
+    - name: Pull LFS objects
+      shell: bash
+      env:
+        INCLUDE: ${{ inputs.include }}
+        GIT_TOKEN: ${{ inputs.token }}
+      run: |
+        trap 'git config --local --unset-all http.https://github.com/.extraheader || true' EXIT
+        git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GIT_TOKEN" | base64 -w0)"
+        git lfs pull --include="$INCLUDE"

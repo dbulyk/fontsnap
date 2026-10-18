@@ -1,5 +1,18 @@
 node_modules/
-extension/ort/
+dist/
+dist-e2e/
+release/
+coverage/
+playwright-report/
+test-results/
+.superpowers/
+*.log
+.DS_Store
+xvfb.log
+reports/
+.lfs-assets-id
+
+# Python reference pipeline and evaluation outputs
 .venv/
 __pycache__/
 *.pyc
@@ -9,4 +22,3 @@ out/
 .ruff_cache/
 *.zip
 .env
-dist/

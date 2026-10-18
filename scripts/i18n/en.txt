@@ -3,12 +3,12 @@ Snap any text with this AI font identifier from image: a font finder and font ma
 FontSnap: identify a font
 FontSnap: identify font in this image
 FontSnap: select an area to identify font
-FontSnap: drag over the text (Esc to cancel)
+FontSnap: drag over visible text only (Esc to cancel)
 FontSnap — results
 AI font identifier · runs on your device
 Paste (Ctrl+V) or drop an image with text, or choose a file.
 Choose image
-Tip: click the FontSnap toolbar icon on any page and drag over text.
+Tip: click the FontSnap icon and drag over text in the visible viewport (scrolled-off content is not captured).
 What the model sees
 Loading model…
 Analyzing…
@@ -32,7 +32,7 @@ Find FontSnap in the list.
 Click the pin icon next to it.
 Already pinned? Show how to use it
 How to identify a font
-Click the FontSnap icon or press Alt+Shift+F, then drag over any text on the page.
+Click the FontSnap icon or press Alt+Shift+F, then drag over text in the visible viewport (not scrolled off-screen).
 Right-click an image and choose “Identify font in this image”.
 Or open FontSnap and paste, drop or upload a screenshot.
 Get the 5 closest Google Fonts, compare previews and copy the CSS.
