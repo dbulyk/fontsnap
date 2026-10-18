@@ -148,6 +148,33 @@ const noDynamicIn = [
       'No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.',
   },
 ];
+const GLOBAL_OBJECTS = '/^(globalThis|self|window)$/';
+// the objects whose members must not be written, however the write is spelled
+const HOST_OBJECTS =
+  '/^(globalThis|self|window|chrome|navigator|performance|crypto|fetch|Object|Reflect|JSON|Math|Promise|Array|Function|Response|Request|Headers|URL|Blob|XMLHttpRequest|WebSocket|EventSource)$/';
+// the only properties of the global object that src/ reads
+const READABLE_GLOBALS =
+  '/^(crossOriginIsolated|crypto|devicePixelRatio|setTimeout|clearTimeout|setInterval|clearInterval|requestAnimationFrame)$/';
+// the primitives that change properties, prototypes or what an object is
+const TAMPER_NAMES =
+  '/^(defineProperty|defineProperties|setPrototypeOf|getPrototypeOf|getOwnPropertyDescriptors|__proto__|__defineGetter__|__defineSetter__|__lookupGetter__|__lookupSetter__|prototype|Proxy|Reflect)$/';
+const TAMPER_MESSAGE =
+  'No writing to global objects, host objects or prototypes, and no defineProperty/Reflect/Proxy/setPrototypeOf/__proto__/prototype in src/: replacing fetch, WebAssembly or a prototype would load code or bytes the build never checked.';
+const globalTampering = [
+  // a global object used as anything but `globalThis.<name>`: aliased, passed on, spread, computed, `with`
+  `Identifier[name=${GLOBAL_OBJECTS}]:not(MemberExpression[computed=false] > Identifier.object):not(CallExpression[callee.name='startSelection'] > Identifier)`,
+  `MemberExpression[computed=true][object.name=${GLOBAL_OBJECTS}]`,
+  `MemberExpression[computed=false][object.name=${GLOBAL_OBJECTS}]:not([property.name=${READABLE_GLOBALS}])`,
+  // a write whose target is rooted at a global or host object: assignment, update, delete, destructuring
+  `AssignmentExpression > Identifier.left[name=${HOST_OBJECTS}]`,
+  `AssignmentExpression > .left Identifier[name=${HOST_OBJECTS}]`,
+  `UpdateExpression > .argument Identifier[name=${HOST_OBJECTS}]`,
+  `UnaryExpression[operator='delete'] Identifier[name=${HOST_OBJECTS}]`,
+  // the primitives, by name, as identifiers, strings and templates
+  `Identifier[name=${TAMPER_NAMES}]`,
+  `Literal[value=${TAMPER_NAMES}]`,
+  `TemplateLiteral[quasis.length=1][quasis.0.value.cooked=${TAMPER_NAMES}]`,
+].map((selector) => ({ selector, message: TAMPER_MESSAGE }));
 const noInjectedCodeBase = [
   ...injectedCodeSelectors.map((selector) => ({
     selector,
@@ -164,6 +191,13 @@ const noInjectedCodeBase = [
     message:
       'WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see "WebAssembly" in README.md.',
   })),
+
+  // Nothing in src/ writes to the global objects, to host objects or to prototypes (review of PR #6): onnxruntime-web
+  // fetches its .wasm through the global fetch and compiles it with the global WebAssembly, so replacing either (or
+  // Response.prototype, chrome.runtime.getURL, ...) loads other bytes with every other check green. The names assembled at
+  // run time stay the accepted boundary of the template, but the global objects can not even be named in a way that
+  // lets them be written: they are read as `globalThis.<allowed name>` only.
+  ...globalTampering,
 ];
 // FontSnap runs WebAssembly only through the files pinned in scripts/lib/vendor.ts. onnxruntime-web can be pointed at
 // other code through its environment (env.wasm.wasmPaths: another URL or a different .wasm; env.wasm.wasmBinary:

@@ -33,8 +33,9 @@ export function textInRect(doc: Document, r: Rect): string {
 
 /** Injected on demand: draw a selection rectangle, then send its viewport rect to the service worker. */
 export function startSelection(win: Window): void {
-  if (Reflect.get(win, ACTIVE_KEY) === true) return;
-  Reflect.set(win, ACTIVE_KEY, true);
+  const flags = win as unknown as Record<string, unknown>;
+  if (flags[ACTIVE_KEY] === true) return;
+  flags[ACTIVE_KEY] = true;
   const doc = win.document;
   const ov = doc.createElement('div');
   const box = doc.createElement('div');
@@ -75,7 +76,7 @@ export function startSelection(win: Window): void {
     if (!ov.isConnected) return;
     ov.remove();
     win.removeEventListener('keydown', key, true);
-    Reflect.set(win, ACTIVE_KEY, false);
+    flags[ACTIVE_KEY] = false;
   };
   const key = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {

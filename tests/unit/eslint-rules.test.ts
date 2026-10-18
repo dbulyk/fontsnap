@@ -351,3 +351,116 @@ describe('onnxruntime-web is configured in src/result/model.ts and nowhere else'
     expect(await flagged('src/result/app.ts', code)).toEqual([]);
   });
 });
+
+// The runtime fetches its .wasm through the global fetch and compiles it with the global WebAssembly (round 2 of the review
+// of PR #6): replacing either, or the prototypes they rely on, loads other bytes with every other check green. So src/
+// (model.ts included) may not write to the global objects, to host objects (chrome, navigator, ...) or to prototypes, and
+// may not use the primitives that do it.
+describe('extension code does not tamper with globals, host objects or prototypes', () => {
+  const FILES = [
+    'src/result/app.ts',
+    'src/result/render.ts',
+    'src/result/model.ts',
+    'src/background/handlers.ts',
+    'src/background/shot.ts',
+    'src/shared/capture.ts',
+    'src/shared/core/pipeline.ts',
+    'src/select/overlay.ts',
+    'src/welcome/app.ts',
+    'src/manifest.ts',
+    'src/env.d.ts',
+  ];
+
+  it.each([
+    ['assigning globalThis.fetch', 'globalThis.fetch = (u: string) => realFetch(other(u));'],
+    ['self.fetch', 'self.fetch = patched;'],
+    ['window.fetch', 'window.fetch = patched;'],
+    ['a computed string', "globalThis['fetch'] = patched;"],
+    ['a computed template', 'globalThis[`fetch`] = patched;'],
+    ['a computed name', 'globalThis[name] = patched;'],
+    ['a nested write', 'globalThis.WebAssembly.instantiateStreaming = patched;'],
+    ['a deep write', 'self.crypto.subtle.digest = patched;'],
+    ['an update', 'globalThis.counter++;'],
+    ['a compound assignment', 'globalThis.log += "x";'],
+    ['a delete', 'delete globalThis.fetch;'],
+    ['a write to an allowed read', 'globalThis.crypto = fake;'],
+    ['a bare assignment of fetch', 'fetch = patched;'],
+    ['a bare assignment of Response', 'Response = Fake;'],
+    ['a destructuring write', '({ f: globalThis.fetch } = { f: patched });'],
+    ['an array destructuring write', '[self.fetch] = [patched];'],
+    ['Object.defineProperty', "Object.defineProperty(globalThis, 'fetch', { value: patched });"],
+    [
+      'Object.defineProperty on a prototype',
+      "Object.defineProperty(Response.prototype, 'arrayBuffer', { value: patched });",
+    ],
+    ['Object.defineProperties', 'Object.defineProperties(window, descriptors);'],
+    [
+      'an alias of defineProperty',
+      "const define = Object['defineProperty']; define(globalThis, 'fetch', d);",
+    ],
+    ['Reflect.set', "Reflect.set(globalThis, 'fetch', patched);"],
+    ['Reflect.defineProperty', "Reflect.defineProperty(self, 'fetch', d);"],
+    ['Reflect.get(...).call', "Reflect.get(globalThis, 'fetch').call(globalThis, url);"],
+    ['Object.assign on a global', 'Object.assign(globalThis, { fetch: patched });'],
+    ['Object.assign on window', 'Object.assign(window, patch);'],
+    ['an alias of globalThis', 'const g = globalThis; g.fetch = patched;'],
+    ['an alias of self', 'const g = self; use(g);'],
+    ['an alias of window', 'let w; w = window;'],
+    ['passing globalThis on', 'install(globalThis);'],
+    ['a spread of the global', 'const copy = { ...globalThis };'],
+    ['with', 'with (globalThis) { fetch = patched; }'],
+    ['an optional write chain', 'globalThis.a.b.c = 1;'],
+    ['Object.setPrototypeOf', 'Object.setPrototypeOf(globalThis, evil);'],
+    ['__proto__', 'x.__proto__ = evil;'],
+    ['__proto__ in a literal', 'const o = { __proto__: evil };'],
+    ['a prototype write', 'Response.prototype.arrayBuffer = patched;'],
+    ['a prototype method', 'Promise.prototype.then = patched;'],
+    ['the prototype of an instance', 'x.constructor.prototype.y = 1;'],
+    ['a computed prototype', "Array['prototype'].push = patched;"],
+    ['getPrototypeOf', 'Object.getPrototypeOf(ort.env.wasm).wasmBinary = bytes;'],
+    ['Proxy', 'globalThis.fetch;\nnew Proxy(target, handler);'],
+    ['__defineGetter__', "x.__defineGetter__('wasmBinary', () => bytes);"],
+    ['a write to chrome', "chrome.runtime.getURL = () => 'https://evil.example/ort/';"],
+    ['a write below chrome', 'chrome.runtime.id = "x";'],
+    ['a write to navigator', 'navigator.hardwareConcurrency = 1;'],
+    ['a write to performance', 'performance.getEntriesByType = () => [];'],
+    ['a write to Object', 'Object.hasOwn = () => true;'],
+    ['a write to a native static', 'JSON.parse = patched;'],
+    ['a write to Math', 'Math.min = patched;'],
+    ['a write to URL', 'URL.createObjectURL = patched;'],
+  ])('rejects %s', async (_name, code) => {
+    for (const file of FILES) expect(await flagged(file, code), `${file}: ${code}`).not.toEqual([]);
+  });
+
+  it.each([
+    'const isolated = globalThis.crossOriginIsolated;',
+    'const id = globalThis.crypto.randomUUID();',
+    'const ratio = window.devicePixelRatio || 1;',
+    'startSelection(window);',
+    'initWelcome(document);',
+    "doc.title = 'x'; el.style.width = '1px'; el.textContent = text;",
+    "Object.assign(el.style, { left: '1px' });",
+    "const url = chrome.runtime.getURL('x');",
+    'await navigator.clipboard.writeText(css);',
+    'const n = Object.keys(o).length + Object.entries(o).length;',
+    "if (Object.hasOwn(o, 'k')) run();",
+    'const p = Promise.resolve(1);',
+    'class Box { value = 1; }',
+    "const flags = win as unknown as Record<string, unknown>; flags['k'] = true;",
+    'const f = (x: string) => x.prototypeless;',
+  ])('lets ordinary code through: %s', async (code) => {
+    for (const file of ['src/result/app.ts', 'src/result/model.ts', 'src/select/overlay.ts']) {
+      expect(await flagged(file, code), `${file}: ${code}`).toEqual([]);
+    }
+  });
+
+  it('applies to src/result/model.ts too, the one file that may configure the runtime', async () => {
+    expect(await flagged('src/result/model.ts', 'globalThis.fetch = patched;')).not.toEqual([]);
+    expect(
+      await flagged('src/result/model.ts', "Object.defineProperty(globalThis, 'fetch', d);"),
+    ).not.toEqual([]);
+    expect(await flagged('src/result/model.ts', 'ort.env.wasm.wasmPaths = runtimeUrl();')).toEqual(
+      [],
+    );
+  });
+});
