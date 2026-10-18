@@ -526,6 +526,7 @@ const FREE_NAMES = `declare let ${[
   'b',
   'evil',
   'startSelection',
+  'initResult',
 ].join(', ')}: any;`;
 /** Messages of the allowlist rule alone, for `code` as if it were the file `file` (the DOM types are known). */
 async function reached(file: string, code: string): Promise<string[]> {
@@ -683,9 +684,9 @@ describe('src/ reaches the environment only through the allowlist of globals', (
     'const e = new Error(String(v)); const r = new RangeError("x");',
     'const f = new Float32Array(2); const u = new Uint8ClampedArray(2); const i = new Int32Array(1);',
     "if (Object.hasOwn(o, 'k')) run(Object.entries(o));",
-    'const el = document.createElement("div"); document.body.append(el); el.textContent = text;',
+    'const el = doc.createElement("div"); doc.body.append(el); el.textContent = text;',
     'await navigator.clipboard.writeText(css); const n = navigator.hardwareConcurrency || 1;',
-    'const p = new Promise<void>((resolve) => setTimeout(resolve, 0)); requestAnimationFrame(run);',
+    'const p = new Promise<void>((resolve) => setTimeout(resolve, 0));',
     'const timer = setInterval(run, 1500); clearInterval(timer);',
     'const bmp = await createImageBitmap(blob); const c = new OffscreenCanvas(1, 1);',
     'const q = new URLSearchParams(s); const e = encodeURIComponent(x);',
@@ -712,9 +713,19 @@ describe('src/ reaches the environment only through the allowlist of globals', (
     ).toEqual([]);
     // the screenshot of the service worker
     expect(
-      await reached('src/background/shot.ts', 'const ratio = window.devicePixelRatio || 1;'),
+      await reached('src/background/measure.ts', 'const ratio = window.devicePixelRatio || 1;'),
     ).toEqual([]);
-    expect(await reached('src/background/shot.ts', 'const w = window.document;')).not.toEqual([]);
+    expect(
+      await reached('src/background/shot.ts', 'const ratio = window.devicePixelRatio || 1;'),
+    ).not.toEqual([]);
+    expect(await reached('src/background/shot.ts', 'void document.images;')).not.toEqual([]);
+    expect(await reached('src/background/measure.ts', 'void document.body;')).not.toEqual([]);
+    expect(await reached('src/result/index.ts', 'initResult(document);')).toEqual([]);
+    expect(await reached('src/welcome/index.ts', 'void document.body;')).not.toEqual([]);
+    expect(await reached('src/result/render.ts', 'void document.title;')).not.toEqual([]);
+    expect(await reached('src/background/measure.ts', 'const w = window.document;')).not.toEqual(
+      [],
+    );
     expect(
       await reached('src/background/shot.ts', "const b = btoa('x') + String.fromCharCode(1);"),
     ).toEqual([]);
@@ -900,7 +911,7 @@ describe('the Window of the content script is used through a closed list of memb
   });
 
   it('holds measureImage, which runs in the page through chrome.scripting, to the same list: window.devicePixelRatio, document, requestAnimationFrame', async () => {
-    const measure = 'src/background/shot.ts';
+    const measure = 'src/background/measure.ts';
     const ok =
       'const img = [...document.images][0]; requestAnimationFrame(() => undefined); const dpr = window.devicePixelRatio || 1;';
     expect(await either(measure, ok)).toEqual([]);

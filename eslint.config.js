@@ -234,12 +234,10 @@ const GLOBAL_ACCESS = {
     ],
     clearInterval: true,
     createImageBitmap: true,
-    document: true,
     encodeURIComponent: true,
     navigator: ['clipboard.writeText', 'hardwareConcurrency'],
     NodeFilter: true,
     OffscreenCanvas: true,
-    requestAnimationFrame: true,
     setInterval: true,
     setTimeout: true,
     undefined: true,
@@ -249,11 +247,16 @@ const GLOBAL_ACCESS = {
     // the window is only handed to startSelection(window) (a bare use: no member of it is read here)
     'src/select/index.ts': { window: [''] },
     'src/select/overlay.ts': { Window: true, Object: ['assign'] },
-    'src/background/shot.ts': {
-      btoa: true,
-      String: ['fromCharCode'],
+    'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
+    // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_FILES): the images of the page, its pixel ratio
+    'src/background/measure.ts': {
+      document: ['images'],
+      requestAnimationFrame: true,
       window: ['devicePixelRatio'],
     },
+    // the entry scripts of the extension pages hand their document to the page script, and do nothing else with it
+    'src/result/index.ts': { document: [''] },
+    'src/welcome/index.ts': { document: [''] },
     'src/shared/capture.ts': { decodeURIComponent: true, globalThis: ['crypto'] },
     // data: URLs are decoded here instead of fetched (the CSP has connect-src 'self')
     'src/shared/data-url.ts': { Blob: true, Number: ['parseInt'], TypeError: true },

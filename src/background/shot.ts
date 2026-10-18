@@ -19,6 +19,7 @@ import { dataUrlToBlob } from '../shared/data-url';
 import { errorMessage } from '../shared/errors';
 import { EXTENSION_PAGES } from '../shared/constants';
 import type { RequestOf } from '../shared/messages';
+import { measureImage } from './measure';
 
 export const resultUrl = (hash = ''): string =>
   chrome.runtime.getURL(EXTENSION_PAGES.result) + hash;
@@ -46,31 +47,9 @@ export async function cropToDataUrl(dataUrl: string, rect: Rect, dpr: number): P
   });
 }
 
-interface MeasuredImage {
-  rect: Rect;
-  dpr: number;
-}
-
-// Runs inside the page (serialized by chrome.scripting): it may not touch anything from this module.
-async function measureImage(src: string): Promise<MeasuredImage | null> {
-  const img = [...document.images].find((i) => i.currentSrc === src || i.src === src);
-  if (!img) return null;
-  img.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  await new Promise((ok) => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(ok);
-    });
-  });
-  const b = img.getBoundingClientRect();
-  return {
-    rect: { x: b.left, y: b.top, w: b.width, h: b.height },
-    dpr: window.devicePixelRatio || 1,
-  };
-}
-
 // Right-click on an image: analyse that image. A data: URL is decoded here, without a request. Any other image is read from a
 // screenshot of the tab, cropped to the image's on-screen box (activeTab): the CSP of the extension (connect-src 'self',
-// src/manifest.ts) applies to this worker too, so the image can not be downloaded from its own origin any more.
+// src/manifest.ts) applies to this worker too, so the image can not be downloaded from another origin any more.
 export async function imageToDataUrl(
   srcUrl: string,
   tab: chrome.tabs.Tab | undefined,
