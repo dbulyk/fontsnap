@@ -10,6 +10,20 @@ from PIL import Image
 
 LINE_H = 96  # target line height in px before final 320 resize
 
+_ALPHA_MODES = ("RGBA", "LA", "PA", "RGBa", "La")
+
+
+def to_rgb(img):
+    """PIL image -> RGB; transparency is composited over white, exactly like fromRGBA in src/shared/core/image.ts:
+    c' = round((c*a + 255*(255-a)) / 255), in integers (the quotient never ends in .5). Images without alpha, and
+    opaque pixels, keep the bytes of img.convert("RGB")."""
+    if img.mode not in _ALPHA_MODES and "transparency" not in img.info:
+        return img.convert("RGB")
+    px = np.asarray(img.convert("RGBA"), np.int32)
+    a = px[..., 3:]
+    out = (px[..., :3] * a + 255 * (255 - a) + 127) // 255
+    return Image.fromarray(out.astype(np.uint8), "RGB")
+
 
 def _otsu(v):
     v = np.clip(v, 0, 255).astype(np.uint8)
@@ -35,7 +49,7 @@ def _runs(mask, min_gap):
 
 def text_lines(img):
     """returns (normalized dark-on-white uint8 gray image, list of (y0,y1,x0,x1) line boxes)"""
-    g = cv2.cvtColor(np.asarray(img.convert("RGB")), cv2.COLOR_RGB2GRAY).astype(np.float32)
+    g = cv2.cvtColor(np.asarray(to_rgb(img)), cv2.COLOR_RGB2GRAY).astype(np.float32)
     h, w = g.shape
     k = int(np.clip(h * 0.5, 9, 61)) | 1
     ker = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))

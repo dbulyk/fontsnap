@@ -3,7 +3,7 @@ import pytest
 from PIL import Image, ImageDraw, ImageFont
 
 from fontsnap_ref.evaluate import score
-from fontsnap_ref.pipeline import DATA, MODEL, Families, merge_family, nz, prep, softmax
+from fontsnap_ref.pipeline import DATA, MODEL, Families, merge_family, nz, prep, softmax, to_rgb
 from fontsnap_ref.textcrop import crop_normalize, text_lines
 
 
@@ -25,6 +25,59 @@ def test_text_lines_finds_two_lines_both_polarities(dark):
     norm, lines = text_lines(text_image(dark))
     assert len(lines) == 2
     assert norm.mean() > 200  # normalized to dark text on white
+
+
+def rgba_px(r, g, b, a):
+    return Image.new("RGBA", (1, 1), (r, g, b, a))
+
+
+def test_to_rgb_composites_over_white():
+    px = lambda *c: tuple(to_rgb(rgba_px(*c)).getpixel((0, 0)))  # noqa: E731
+    assert px(0, 0, 0, 0) == (255, 255, 255)
+    assert px(12, 34, 56, 0) == (255, 255, 255)
+    assert px(0, 0, 0, 255) == (0, 0, 0)
+    assert px(10, 20, 30, 255) == (10, 20, 30)
+    assert px(0, 0, 0, 128) == (127, 127, 127)
+    assert px(255, 0, 0, 64) == (255, 191, 191)
+
+
+def test_to_rgb_matches_the_rounded_formula_for_every_colour_and_alpha():
+    a, c = np.meshgrid(np.arange(256), np.arange(256), indexing="ij")
+    rgba = np.stack([c, c, c, a], -1).astype(np.uint8)
+    got = np.array(to_rgb(Image.fromarray(rgba, "RGBA")))[..., 0]
+    assert (got == np.floor((c * a + 255 * (255 - a) + 127) / 255)).all()
+    assert (got == np.rint((c * a + 255 * (255 - a)) / 255)).all()
+
+
+def test_to_rgb_leaves_opaque_and_alpha_free_images_alone():
+    rng = np.random.default_rng(1)
+    rgb = Image.fromarray(rng.integers(0, 256, (8, 9, 3), dtype=np.uint8), "RGB")
+    opaque = rgb.convert("RGBA")
+    assert np.array_equal(np.array(to_rgb(opaque)), np.array(opaque.convert("RGB")))
+    assert np.array_equal(np.array(to_rgb(rgb)), np.array(rgb))
+    gray = rgb.convert("L")
+    assert np.array_equal(np.array(to_rgb(gray)), np.array(gray.convert("RGB")))
+
+
+def test_to_rgb_handles_gray_alpha_and_palette_transparency():
+    la = Image.new("LA", (1, 1), (0, 0))
+    assert tuple(to_rgb(la).getpixel((0, 0))) == (255, 255, 255)
+    pal = Image.new("P", (2, 1), 0)
+    pal.putpalette([0, 0, 0, 10, 20, 30] + [0] * 750)
+    pal.putpixel((1, 0), 1)
+    pal.info["transparency"] = 0
+    out = np.array(to_rgb(pal))
+    assert out[0, 0].tolist() == [255, 255, 255] and out[0, 1].tolist() == [10, 20, 30]
+
+
+def test_black_text_on_transparent_background_reads_like_the_same_text_on_white():
+    on_white = text_image(True)
+    mask = on_white.convert("L").point(lambda v: 255 - v)  # ink coverage
+    transparent = Image.new("RGBA", on_white.size, (0, 0, 0, 0))
+    transparent.putalpha(mask)
+    assert len(text_lines(transparent)[1]) == len(text_lines(on_white)[1]) == 2
+    assert np.array_equal(prep(transparent), prep(to_rgb(transparent)))
+    assert np.abs(np.array(to_rgb(transparent)).astype(int) - np.array(on_white).astype(int)).max() <= 20
 
 
 @pytest.mark.parametrize("mode", ["pack", "crop"])

@@ -13,13 +13,13 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 from fontsnap_ref.pipeline import prep  # noqa: E402
-from fontsnap_ref.textcrop import _otsu, crop_normalize, text_lines  # noqa: E402
+from fontsnap_ref.textcrop import _otsu, crop_normalize, text_lines, to_rgb  # noqa: E402
 
 rows = list(csv.DictReader(open(ROOT / "data/realset3/labels.csv")))
 imgs = [rows[i]["image"] for i in (0, 7, 42, 99, 150, 201, 262)]
 out = {"images": [], "ellipse": {}, "otsu": []}
 for im in imgs:
-    pil = Image.open(ROOT / "data/realset3/images" / im).convert("RGB")
+    pil = to_rgb(Image.open(ROOT / "data/realset3/images" / im))
     norm, lines = text_lines(pil)
     e = {"image": im, "lines": [list(map(int, b)) for b in lines]}
     for v in ("pack", "crop"):
