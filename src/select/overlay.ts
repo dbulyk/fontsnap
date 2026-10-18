@@ -1,10 +1,9 @@
-import { sendMessage } from '../shared/messaging';
-import { t } from '../shared/i18n';
+import { nonEmpty, sendRect } from './chrome';
 import type { Rect } from '../shared/capture';
 
 /**
  * A document can lack <body> (an SVG or XML page) although the DOM types say otherwise: the element is taken as a parameter
- * that may be null, so that no cast is needed (this code takes none, see eslint.config.js, PAGE_PROCESS_FILES).
+ * that may be null, so that no cast is needed (this code takes none, see eslint.config.js, PAGE_PROCESS_GLOBS).
  */
 function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
   return body ?? root;
@@ -77,7 +76,7 @@ export function startSelection(win: Window): void {
     borderRadius: '6px',
     pointerEvents: 'none',
   });
-  hint.textContent = t('selectHint');
+  hint.textContent = nonEmpty(chrome.i18n.getMessage('selectHint'), 'selectHint');
   ov.append(box, hint);
   doc.documentElement.appendChild(ov);
   let sx = 0;
@@ -143,9 +142,7 @@ export function startSelection(win: Window): void {
     win.requestAnimationFrame(() => {
       win.requestAnimationFrame(() => {
         setTimeout(() => {
-          sendMessage({ type: 'fontsnap-rect', rect, dpr: win.devicePixelRatio || 1, text }).catch(
-            () => undefined,
-          );
+          void sendRect({ type: 'fontsnap-rect', rect, dpr: win.devicePixelRatio || 1, text });
         }, 30);
       });
     });

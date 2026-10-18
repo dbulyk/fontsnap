@@ -1,3 +1,6 @@
+import ts from 'typescript';
+import { CSS_LOADING_SOURCE, cssUnescape } from '../../eslint.config.js';
+
 /**
  * WebAssembly other than the pinned vendor files could reach the extension inside a built script, past every check
  * of the build: as the bytes of a module (a literal, base64, hex, an escape, a list of numbers) or through the
@@ -325,6 +328,191 @@ function runtimeSettingProblems(file: string, text: string): string[] {
 }
 
 /**
+ * The SECOND layer for the code that runs in the web page's process, where the CSP of the extension does not apply (round 6 of
+ * the review of PR #6; the first layer is lint plus the module graph of select.js, which also hold names built at run time):
+ * no network API, no way to load or navigate, spelled with a literal name. `select.js` is that code as a whole; of
+ * `background.js` it is the function handed to `chrome.scripting.executeScript({ func })` (measureImage), found in the AST.
+ */
+const PAGE_CODE_FORBIDDEN: readonly { pattern: RegExp; what: string }[] = [
+  {
+    pattern:
+      /\b(?:fetch|Request|XMLHttpRequest|WebSocket|EventSource|WebTransport\w*|sendBeacon|importScripts|SharedWorker|Worker|Image|Audio|Option|DOMParser|FontFace|(?:webkit|moz)?RTC[A-Z]\w*)\b/,
+    what: 'a network API (fetch, XMLHttpRequest, WebSocket, EventSource, Image, Audio, Worker, RTC*, ...)',
+  },
+  { pattern: /\bimport\s*\(/, what: 'a dynamic import()' },
+  {
+    pattern:
+      /\.\s*(?:src|srcset|srcdoc|href|action|formAction|poster|ping|innerHTML|outerHTML)\s*=(?!=)/,
+    what: 'an assignment to src/href/srcset/action/innerHTML/...',
+  },
+  {
+    pattern:
+      /\b(?:setAttribute|setAttributeNS|setAttributeNode|insertAdjacentHTML|insertAdjacentElement|createContextualFragment|insertRule|replaceSync)\b/,
+    what: 'setAttribute / insertAdjacentHTML / insertRule',
+  },
+  { pattern: /\bopen\s*\(/, what: 'open(...) (window.open, XMLHttpRequest.open)' },
+  { pattern: /\blocation\b/, what: 'location' },
+];
+
+/**
+ * Does a string literal of the script hold CSS that loads something (url(), image-set(), @import, ...)? Judged as lint judges it
+ * (CSS_LOADING_SOURCE and cssUnescape of eslint.config.js): only strings are looked at, so `getURL(` and `new URL(` in the code are
+ * not CSS; the CSS escapes of a string (`u\\72 l(`) are undone first, and so are the JS ones (`\\\\`).
+ */
+export function cssLoadingInStrings(text: string): boolean {
+  const loading = new RegExp(CSS_LOADING_SOURCE, 'i');
+  return stringForms(text).some((form) => {
+    const jsDecoded = form.replace(/\\\\/g, '\\');
+    return [form, jsDecoded, cssUnescape(form), cssUnescape(jsDecoded)].some((candidate) =>
+      loading.test(candidate),
+    );
+  });
+}
+
+/** What of the page-process rules a text breaks; empty if nothing. */
+export function pagePlatformProblems(text: string): string[] {
+  const found = PAGE_CODE_FORBIDDEN.filter(({ pattern }) => pattern.test(text)).map(
+    ({ what }) => what,
+  );
+  if (cssLoadingInStrings(text)) found.push('url(...) / image-set / @import in a string');
+  return found;
+}
+
+/**
+ * The text of every function that a script hands to `executeScript({ func })`, found with the TypeScript compiler so that names
+ * are resolved by SCOPE (a minified file reuses short names): the `func` must be a function written in place or a name with ONE
+ * declaration, in this file, that is a function declaration or a variable holding a function; a shorthand `{ func }` and a method
+ * `func() {}` are read too. Anything else - an import, a member (`o.f`), a computed key, a spread, options that are not an object
+ * literal, an `executeScript` that is not called at once (an alias) - is an `undefined` entry, which fails the build.
+ */
+export function injectedFunctions(file: string, text: string): (string | undefined)[] {
+  const options: ts.CompilerOptions = {
+    allowJs: true,
+    noLib: true,
+    noResolve: true,
+    target: ts.ScriptTarget.Latest,
+  };
+  const host = ts.createCompilerHost(options);
+  const getSourceFile = host.getSourceFile.bind(host);
+  host.getSourceFile = (name, languageVersion, ...rest) =>
+    name === file
+      ? ts.createSourceFile(name, text, languageVersion, true, ts.ScriptKind.JS)
+      : getSourceFile(name, languageVersion, ...rest);
+  host.fileExists = (name) => name === file;
+  host.readFile = (name) => (name === file ? text : undefined);
+  const program = ts.createProgram([file], options, host);
+  const checker = program.getTypeChecker();
+  const source = program.getSourceFile(file);
+  if (source === undefined) return [undefined];
+  const isFunction = (node: ts.Node | undefined): node is ts.Node =>
+    node !== undefined &&
+    (ts.isFunctionExpression(node) || ts.isArrowFunction(node) || ts.isFunctionDeclaration(node));
+  /** Is the symbol assigned to, incremented, or the target of a loop or a destructuring, anywhere in the file? */
+  const isWrittenTo = (symbol: ts.Symbol): boolean => {
+    let written = false;
+    const refersTo = (node: ts.Node): boolean => {
+      let hit = false;
+      const look = (inner: ts.Node): void => {
+        if (ts.isIdentifier(inner) && checker.getSymbolAtLocation(inner) === symbol) hit = true;
+        ts.forEachChild(inner, look);
+      };
+      look(node);
+      return hit;
+    };
+    const scan = (node: ts.Node): void => {
+      if (
+        (ts.isBinaryExpression(node) &&
+          node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+          node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+          refersTo(node.left)) ||
+        ((ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+          (node.operator === ts.SyntaxKind.PlusPlusToken ||
+            node.operator === ts.SyntaxKind.MinusMinusToken) &&
+          refersTo(node.operand)) ||
+        ((ts.isForOfStatement(node) || ts.isForInStatement(node)) &&
+          !ts.isVariableDeclarationList(node.initializer) &&
+          refersTo(node.initializer))
+      ) {
+        written = true;
+      }
+      ts.forEachChild(node, scan);
+    };
+    scan(source);
+    return written;
+  };
+  /** The function a symbol is: ONE declaration, a function declaration or a `const` holding a function, and never written to. */
+  const functionOf = (symbol: ts.Symbol | undefined): ts.Node | undefined => {
+    const declarations = symbol?.declarations ?? [];
+    const only = declarations.length === 1 ? declarations[0] : undefined;
+    if (symbol === undefined || only === undefined || isWrittenTo(symbol)) return undefined;
+    if (ts.isFunctionDeclaration(only)) return only;
+    if (
+      ts.isVariableDeclaration(only) &&
+      ts.isVariableDeclarationList(only.parent) &&
+      (only.parent.flags & ts.NodeFlags.Const) !== 0 &&
+      isFunction(only.initializer)
+    ) {
+      return only.initializer;
+    }
+    return undefined;
+  };
+  const found: (string | undefined)[] = [];
+  const read = (node: ts.Node | undefined): void => {
+    found.push(node?.getText(source));
+  };
+  const isTheName = (node: ts.Node): boolean =>
+    (ts.isIdentifier(node) && node.text === 'executeScript') ||
+    ((ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) &&
+      node.text === 'executeScript');
+  const visit = (node: ts.Node): void => {
+    if (isTheName(node)) {
+      // the name may only be the callee of a direct call `x.executeScript({ ... })`; anything else - an alias, a destructuring
+      // (`const { executeScript: run } = chrome.scripting`), a string key, `.call`, a value passed on - cannot be followed
+      const access = node.parent;
+      const call = access.parent;
+      if (
+        ts.isPropertyAccessExpression(access) &&
+        access.name === node &&
+        ts.isCallExpression(call) &&
+        call.expression === access
+      ) {
+        const options0 = call.arguments[0];
+        if (options0 === undefined || !ts.isObjectLiteralExpression(options0)) {
+          found.push(undefined);
+        } else {
+          for (const property of options0.properties) {
+            if (ts.isSpreadAssignment(property) || ts.isComputedPropertyName(property.name)) {
+              found.push(undefined);
+              continue;
+            }
+            const key = property.name;
+            const name = ts.isIdentifier(key) || ts.isStringLiteral(key) ? key.text : undefined;
+            if (name !== 'func') continue;
+            if (ts.isShorthandPropertyAssignment(property)) {
+              read(functionOf(checker.getShorthandAssignmentValueSymbol(property)));
+            } else if (ts.isMethodDeclaration(property)) {
+              read(property);
+            } else if (ts.isPropertyAssignment(property)) {
+              const value = property.initializer;
+              if (ts.isIdentifier(value)) read(functionOf(checker.getSymbolAtLocation(value)));
+              else if (ts.isFunctionExpression(value) || ts.isArrowFunction(value)) read(value);
+              else found.push(undefined);
+            } else {
+              found.push(undefined);
+            }
+          }
+        }
+      } else {
+        found.push(undefined);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return found;
+}
+
+/**
  * Problems of one built script (`file` relative to the build, `text` its contents): a WebAssembly module in it, or settings
  * that would make onnxruntime-web load other code or bytes.
  */
@@ -354,10 +542,31 @@ export function scriptProblems(file: string, text: string): string[] {
     (name) =>
       `${file}: uses ${name}, which no script of the build uses (the sources are held to an allowlist of globals, see eslint.config.js)`,
   );
+  const injected = file === 'background.js' ? injectedFunctions(file, text) : [];
+  const page = [
+    ...(file === 'select.js' ? pagePlatformProblems(text) : []),
+    ...injected.flatMap((body) =>
+      body === undefined
+        ? [
+            'a func of executeScript that could not be read (not a function declared once in this file)',
+          ]
+        : pagePlatformProblems(body),
+    ),
+    ...(file === 'background.js' && injected.length !== 1
+      ? [`exactly one function must be handed to executeScript (found ${String(injected.length)})`]
+      : []),
+    ...(file !== 'background.js' && /\bexecuteScript\b/.test(text)
+      ? ['executeScript outside background.js']
+      : []),
+  ].map(
+    (what) =>
+      `${file}: code that runs in the web page's process (outside the CSP of the extension) has ${what}`,
+  );
   return [
     ...problems,
     ...origins,
     ...tampering,
+    ...page,
     ...ice,
     ...hidden,
     ...names,

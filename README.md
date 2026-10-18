@@ -152,19 +152,22 @@ reach and replace those one after another, so the layers do not try to list the 
    `String`, ...) only through the members named there, and never written, aliased, destructured, computed or passed on; the properties
    that hand over a Window (`defaultView`, `contentWindow`, `view`, `source`, `currentTarget`, ...) are refused, the two page scripts that
    listen to their window hold it in one exact form. Adding a line is a decision about what the extension may touch, like a permission.
-   The code that runs in the web page's process, where the CSP does not apply (`src/select/*` and `src/background/measure.ts`, the one function
-   handed to `chrome.scripting.executeScript`, which lint accepts as `func` and nothing else), is held to a closed class (`PAGE_PROCESS_FILES`): the
-   Window is the first parameter of `startSelection`, under any name, used only as `.document`, `.addEventListener`, `.removeEventListener`,
-   `.getSelection`, `.requestAnimationFrame`, `.devicePixelRatio` (the marker `__fontsnapActive` is the one thing written); no computed key,
-   no cast, no `for...in`, no `typeof`/indexed types, no `Object.*` but `Object.assign(el.style, ...)`, only `div` elements, nothing that loads or
-   navigates; `fetch` is on no file's list. `this` is allowed only in a class constructor (in a callback it is the window).
+   The code that runs in the web page's process, where the CSP does not apply (**all of `src/select/`**, by glob, a new file included, and
+   `src/background/measure.ts`, the one function handed to `chrome.scripting.executeScript`, which lint accepts as `func` and nothing
+   else), is held to a closed class (`PAGE_PROCESS_GLOBS`): the Window is the first parameter of `startSelection`, under any name, used only
+   as `.document`, `.addEventListener`, `.removeEventListener`, `.getSelection`, `.requestAnimationFrame`, `.devicePixelRatio` (the marker
+   `__fontsnapActive` is the one thing written); no computed key, no cast, no `for...in`, no `typeof`/indexed types, no `Object.*` but
+   `Object.assign(el.style, { key: value })` (a statement of its own; its result is never kept) with the overlay's own style keys (`cursor` and `background`, the two that could take a `url()`, only as a keyword, hex colour or `rgb()`; no `.style` anywhere else, no `setProperty`/`cssText`), only `div` elements, nothing that loads or navigates, no `import.meta`, and **every member of every DOM object is on an allowlist by type** (`DOM_MEMBERS`, the type-aware rule `fontsnap/dom-members`: a member declared in `lib.dom.d.ts` may be read, called or written only as the list says, on any expression of a DOM type - `createElementNS`, `createAttribute`, `setAttributeNode*`, `querySelector*`, `ownerDocument`, `click`, `href`, `innerHTML` and the rest are not on it; `left`/`top`/`width`/`height` take a literal length or exactly `${number}px`); `fetch` is on no file's list. `src/select` imports
+   **values only from itself** (`./name`; other modules only as `import type`, `measure.ts` takes no value import), so nothing outside the
+   folder can be bundled into `select.js`, and `tests/unit/select-bundle.test.ts` reads the real bundle to show it. `this` is allowed only
+   in a class constructor (in a callback it is the window).
    The runtime's settings (`env`, `wasmPaths`, `wasmBinary`, the `onnxruntime-*` import) exist only in `src/result/model.ts`, which
    `model.test.ts` pins as an allowlist of its calls, strings, properties and operators.
 4. **`verify-dist`** scans every built `.js`/`.mjs` (the vendor files are exempt by exact path and sha256 only; `scripts/lib/wasm-scan.ts`): a
    module header or a `.wasm` name in any spelling, including base64 (at every alignment), hex and byte lists that DECODE to one or to a URL;
    every URL in a string must be on `fonts.googleapis.com` or `fonts.google.com`; no `Worker`, `XMLHttpRequest`, `WebSocket`, `atob`, `eval`, `fetch`/`Request` outside `background.js` and the result chunk,
    `Function`, dynamic `import()`, `postMessage`, `webdriver`, resource-timing resizing, `WebAssembly`; `defaultView` only in the one form
-   of the page scripts; and in the chunk that imports the runtime `wasmPaths` is assigned exactly once to `chrome.runtime.getURL("ort/")`,
+   of the page scripts; in `select.js` and in the function that `background.js` hands to `executeScript` (found in the AST) no literal network API or way to load/navigate (`fetch`, `Image`, `.src =`, `setAttribute`, `open(`, `location`, `url(`...); and in the chunk that imports the runtime `wasmPaths` is assigned exactly once to `chrome.runtime.getURL("ort/")`,
    `proxy` exactly once to `true`, and the start-up check is there.
 
 What this does not do: a script that already runs in the page can defeat any check that runs in the same page; layers 3 and 4 and the

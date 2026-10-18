@@ -6,7 +6,10 @@ import {
   ALLOWED_ORIGINS,
   forbiddenNames,
   hiddenTexts,
+  cssLoadingInStrings,
   iceServerSchemes,
+  injectedFunctions,
+  pagePlatformProblems,
   windowReaches,
   importsRuntime,
   scriptProblems,
@@ -646,5 +649,392 @@ describe('WebRTC: servers and names that no script of the build uses', () => {
     ).join('\n');
     expect(problems).toContain('assets/result-abc.js: uses RTCPeerConnection');
     expect(problems).toContain('assets/result-abc.js: names a WebRTC server (stun:)');
+  });
+});
+
+// The second layer for the code that runs in the web page's process (select.js, and the function handed to executeScript):
+// no network API and no way to load or navigate, spelled with a literal name. Names built at run time are for lint and the
+// module graph of select.js, which this layer does not see.
+describe('the code of the web page: no network API, no way to load or navigate', () => {
+  it.each([
+    ['fetch', 'void window.fetch("https://example.invalid/m")'],
+    ['a bare fetch', 'fetch(u)'],
+    ['Request', 'new Request(u)'],
+    ['XMLHttpRequest', 'new XMLHttpRequest()'],
+    ['WebSocket', 'new WebSocket("wss://example.invalid/")'],
+    ['EventSource', 'new EventSource(u)'],
+    ['sendBeacon', 'navigator.sendBeacon(u, d)'],
+    ['Image', 'new Image()'],
+    ['Audio', 'new Audio(u)'],
+    ['Worker', 'new Worker(u)'],
+    ['FontFace', 'new FontFace("x", u)'],
+    ['RTCPeerConnection', 'new RTCPeerConnection({})'],
+    ['webkitRTCPeerConnection', 'new webkitRTCPeerConnection({})'],
+    ['WebTransport', 'new WebTransport(u)'],
+    ['a dynamic import', 'import(u)'],
+    ['an img src', 'const i = document.createElement("img"); i.src = u;'],
+    ['a src with spaces', 'i . src  =  u'],
+    ['an href', 'a.href = u'],
+    ['srcset', 'i.srcset = u'],
+    ['srcdoc', 'f.srcdoc = "<img>"'],
+    ['action', 'f.action = u'],
+    ['innerHTML', 'e.innerHTML = "<img src=x>"'],
+    ['outerHTML', 'e.outerHTML = "x"'],
+    ['setAttribute', 'e.setAttribute("src", u)'],
+    ['setAttribute with a variable', 'e.setAttribute(n, u)'],
+    ['insertAdjacentHTML', 'e.insertAdjacentHTML("beforeend", h)'],
+    ['insertRule', 's.insertRule(r)'],
+    ['window.open', 'window.open(u)'],
+    ['open', 'x.open("GET", u)'],
+    ['location', 'location.href = u'],
+    ['document.location', 'document.location = u'],
+    ['url() in a string', 'e.style.background = "url(https://example.invalid/m)"'],
+    ['url () with a space', 'e.style.background = "URL (https://example.invalid/m)"'],
+    ['image-set', 'e.style.background = "image-set(x 1x)"'],
+    ['@import', 's.textContent = "@import x"'],
+  ])('refuses %s', (_what, code) => {
+    expect(pagePlatformProblems(code), code).not.toEqual([]);
+    expect(scriptProblems('select.js', code).join('\n'), code).toContain('runs in the web page');
+  });
+
+  it.each([
+    'Object.assign(e.style, { position: "fixed", inset: "0", background: "rgba(0,0,0,0.15)" })',
+    'const m = [...document.images].find((i) => i.currentSrc === s || i.src === s)',
+    'img.scrollIntoView({ block: "nearest" }); const b = img.getBoundingClientRect()',
+    'const bmp = ImageBitmap; Object.assign(e.style, { cursor: "crosshair" })',
+    'if (a.src == b) run(); if (a.href === b) run()',
+    'win.addEventListener("keydown", f, true); win.removeEventListener("keydown", f, true)',
+    'const opened = isOpen; const reopen = 1; const locations = 2',
+  ])('lets what the real code does through: %s', (code) => {
+    expect(pagePlatformProblems(code), code).toEqual([]);
+  });
+
+  it('applies to select.js as a whole, and not to the other scripts', () => {
+    expect(scriptProblems('select.js', 'new Image()').join('')).toContain('web page');
+    expect(scriptProblems('assets/result-abc.js', 'new Image()').join('')).not.toContain(
+      'web page',
+    );
+    expect(
+      scriptProblems('assets/welcome-abc.js', 'e.setAttribute("src", u)').join(''),
+    ).not.toContain('web page');
+  });
+
+  describe('the function handed to executeScript, found in the minified background.js', () => {
+    const MINIFIED = (
+      body: string,
+      call = 'chrome.scripting.executeScript({target:{tabId:r.id},args:[e],func:b})',
+    ) =>
+      `async function k(){const x=1;await ${call}}async function b(t){${body}}function other(){return fetch(u)}`;
+
+    it('finds a named function, a variable and a function written in place', () => {
+      expect(injectedFunctions('background.js', MINIFIED('return 1'))).toEqual([
+        'async function b(t){return 1}',
+      ]);
+      expect(
+        injectedFunctions(
+          'background.js',
+          'const m=async t=>{return 2};chrome.scripting.executeScript({target:{},func:m})',
+        ),
+      ).toEqual(['async t=>{return 2}']);
+      expect(
+        injectedFunctions(
+          'background.js',
+          'chrome.scripting.executeScript({target:{},"func":function(t){return 3}})',
+        ),
+      ).toEqual(['function(t){return 3}']);
+    });
+
+    it('finds nothing to check when no function is injected, and a func that cannot be read fails', () => {
+      expect(injectedFunctions('background.js', 'chrome.tabs.create({url:u})')).toEqual([]);
+      expect(
+        injectedFunctions(
+          'background.js',
+          'chrome.scripting.executeScript({target:{},files:["select.js"]})',
+        ),
+      ).toEqual([]);
+      expect(
+        injectedFunctions('background.js', 'chrome.scripting.executeScript({target:{},func:gone})'),
+      ).toEqual([undefined]);
+      expect(
+        injectedFunctions('background.js', 'chrome.scripting.executeScript({target:{},func:o.f})'),
+      ).toEqual([undefined]);
+      expect(
+        scriptProblems(
+          'background.js',
+          'chrome.scripting.executeScript({target:{},func:gone})',
+        ).join(''),
+      ).toContain('could not be read');
+    });
+
+    it.each([
+      ['new Image', 'return new Image()'],
+      ['fetch', 'return fetch("https://example.invalid/m")'],
+      ['an img src', 'const i=document.createElement("img");i.src=t;return i'],
+      ['setAttribute', 'document.body.setAttribute("src",t)'],
+      ['location', 'location.href=t'],
+      ['open', 'window.open(t)'],
+      ['url()', 'document.body.style.background="url(https://example.invalid/m)"'],
+      ['XMLHttpRequest', 'new XMLHttpRequest().open("GET",t)'],
+    ])('refuses %s inside that function', (_what, body) => {
+      expect(scriptProblems('background.js', MINIFIED(body)).join('\n'), body).toContain(
+        'runs in the web page',
+      );
+    });
+
+    it('does not mind the service worker code around it: fetch is allowed in background.js outside the injected function', () => {
+      const problems = scriptProblems('background.js', MINIFIED('return t'));
+      expect(problems.join('\n')).not.toContain('runs in the web page');
+    });
+
+    it('accepts the function as the build has it', () => {
+      expect(
+        scriptProblems(
+          'background.js',
+          MINIFIED(
+            'const e=[...document.images].find(e=>e.currentSrc===t||e.src===t);if(!e)return null;e.scrollIntoView({block:"nearest",inline:"nearest"});await new Promise(o=>{requestAnimationFrame(()=>{requestAnimationFrame(o)})});const n=e.getBoundingClientRect();return{rect:{x:n.left,y:n.top,w:n.width,h:n.height},dpr:window.devicePixelRatio||1}',
+          ),
+        ).join('\n'),
+      ).not.toContain('runs in the web page');
+    });
+  });
+});
+
+// Round 7 of the review of PR #6 (nits and blocker E): CSS that loads is judged in STRINGS, as lint judges it, with the CSS escapes
+// undone; code that merely says getURL( or new URL( is not CSS. And an executeScript func that cannot be followed fails.
+describe('CSS that loads something, in the strings of the code of the page', () => {
+  it.each([
+    ['url(x)', true],
+    ['URL(x)', true],
+    ['uRl(x)', true],
+    ['url (x)', true],
+    ['u\\72 l(x)', true],
+    ['\\75 rl(x)', true],
+    ['\\000075rl(x)', true],
+    ['background:url(x)', true],
+    ['image-set(x 1x)', true],
+    ['-webkit-image-set(x 1x)', true],
+    ['image(x)', true],
+    ['cross-fade(x)', true],
+    ['element(#x)', true],
+    ['paint(x)', true],
+    ['src(x)', true],
+    ['@import "x"', true],
+    ['getURL(x)', false],
+    ['chrome.runtime.getURL(x)', false],
+    ['myurl(x)', false],
+    ['$url(x)', false],
+    ['my-url(x)', false],
+    ['a url is here', false],
+    ['getU\\52 L(x)', false],
+  ])('the string %j: %s', (value, expected) => {
+    for (const quote of ['"', "'", '`']) {
+      const source = value.replaceAll('\\', '\\\\');
+      expect(cssLoadingInStrings(`x(${quote}${source}${quote})`), `${quote}${source}${quote}`).toBe(
+        expected,
+      );
+    }
+    expect(pagePlatformProblems(`x("${value.replaceAll('\\', '\\\\')}")`).length > 0).toBe(
+      expected,
+    );
+  });
+
+  it.each([
+    'chrome.runtime.getURL("x")',
+    'new URL("x", base)',
+    'URL(x)',
+    'const u = chrome.runtime.getURL(e); void new URL(u)',
+    'x.getURL(y)',
+  ])('does not take the code %j for CSS (the false positive of the review)', (code) => {
+    expect(cssLoadingInStrings(code), code).toBe(false);
+    expect(pagePlatformProblems(code), code).toEqual([]);
+    expect(scriptProblems('select.js', code).join('\n'), code).not.toContain('url(');
+  });
+
+  it('a string built at run time is not seen here (lint refuses it: no key, no join, no call in a style)', () => {
+    expect(cssLoadingInStrings("x(['ur', 'l(x)'].join(''))")).toBe(false);
+  });
+});
+
+describe('injectedFunctions: the func of executeScript is followed by scope, and what cannot be followed fails', () => {
+  const CALL = 'chrome.scripting.executeScript({target:{tabId:1},args:[u],func:b})';
+  const read = (text: string) => injectedFunctions('background.js', text);
+
+  it.each([
+    [
+      'a function declaration',
+      `${CALL};async function b(t){return 1}`,
+      ['async function b(t){return 1}'],
+    ],
+    ['a const arrow', `${CALL};const b=async t=>1`, ['async t=>1']],
+    [
+      'a const function expression',
+      `${CALL};const b=function(t){return 1}`,
+      ['function(t){return 1}'],
+    ],
+    [
+      'a shorthand',
+      'chrome.scripting.executeScript({target:{},func});function func(t){return 1}',
+      ['function func(t){return 1}'],
+    ],
+    [
+      'a method',
+      'chrome.scripting.executeScript({target:{},func(t){return 1}})',
+      ['func(t){return 1}'],
+    ],
+    [
+      'a string key',
+      'chrome.scripting.executeScript({target:{},"func":function(t){return 1}})',
+      ['function(t){return 1}'],
+    ],
+    [
+      'a function written in place',
+      'chrome.scripting.executeScript({target:{},func:t=>1})',
+      ['t=>1'],
+    ],
+    ['files only', 'chrome.scripting.executeScript({target:{},files:["select.js"]})', []],
+    ['no call at all', 'chrome.tabs.create({url:u})', []],
+  ])('reads %s', (_what, text, expected) => {
+    expect(read(text)).toEqual(expected);
+  });
+
+  it.each([
+    ['an undeclared name', 'chrome.scripting.executeScript({target:{},func:gone})'],
+    ['a member', 'chrome.scripting.executeScript({target:{},func:o.f})'],
+    ['a call result', 'chrome.scripting.executeScript({target:{},func:make()})'],
+    ['a computed key', 'chrome.scripting.executeScript({target:{},["fu"+"nc"]:b});function b(){}'],
+    ['a spread', 'chrome.scripting.executeScript({target:{},...o});function b(){}'],
+    ['options in a variable', 'chrome.scripting.executeScript(o);function b(){}'],
+    ['no options', 'chrome.scripting.executeScript();function b(){}'],
+    [
+      'an alias of executeScript',
+      'const run=chrome.scripting.executeScript;run({target:{},func:b});function b(){}',
+    ],
+    ['executeScript passed on', 'use(chrome.scripting.executeScript)'],
+    [
+      'executeScript by a string key',
+      'chrome.scripting["executeScript"]({target:{},func:b});function b(){}',
+    ],
+    ['a name declared twice', `${CALL};function b(){return 1}function b(){return 2}`],
+    ['a name that is a parameter', `${CALL};function k(b){return b}`],
+    ['a name that is an import', `import {b} from "./x.js";${CALL}`],
+    ['a name that is a class', `${CALL};class b{}`],
+    ['a name that is a plain value', `${CALL};const b=5`],
+    ['a name declared twice by var', `${CALL};var b=function(){};var b=function(){}`],
+  ])('fails on %s', (_what, text) => {
+    expect(read(text), text).toContain(undefined);
+    expect(scriptProblems('background.js', text).join('\n'), text).toContain('could not be read');
+  });
+
+  // the nit of round 8 (r4308256047): an alias by destructuring read as 'no function', a func reassigned read by its first value
+  it.each([
+    [
+      'a destructured alias',
+      'const{executeScript:x}=chrome.scripting;x({target:{},func:()=>{location.href=u}})',
+    ],
+    [
+      'a destructured alias, shorthand',
+      'const{executeScript}=chrome.scripting;executeScript({target:{},func:()=>{fetch(u)}})',
+    ],
+    [
+      'a destructuring assignment',
+      'let x;({executeScript:x}=chrome.scripting);x({target:{},func:()=>{fetch(u)}})',
+    ],
+    [
+      'an alias in a parameter',
+      'function run({executeScript:x}){x({target:{},func:()=>{fetch(u)}})}',
+    ],
+    [
+      'executeScript.call',
+      'chrome.scripting.executeScript.call(null,{target:{},func:()=>{fetch(u)}})',
+    ],
+    [
+      'executeScript.apply',
+      'chrome.scripting.executeScript.apply(null,[{target:{},func:()=>{fetch(u)}}])',
+    ],
+    [
+      'executeScript.bind',
+      'chrome.scripting.executeScript.bind(chrome.scripting)({target:{},func:()=>{fetch(u)}})',
+    ],
+    ['a comma expression', '(0,chrome.scripting.executeScript)({target:{},func:()=>{fetch(u)}})'],
+    ['a string key', 'chrome.scripting["executeScript"]({target:{},func:()=>{fetch(u)}})'],
+    ['a template key', 'chrome.scripting[`executeScript`]({target:{},func:()=>{fetch(u)}})'],
+    [
+      'an object key',
+      'const o={executeScript:chrome.scripting.executeScript};o.executeScript({target:{},func:()=>{fetch(u)}})',
+    ],
+    [
+      'a let that is reassigned',
+      'let f=function(){};f=()=>{location.href=u};chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    [
+      'a function declaration that is reassigned',
+      'function f(){}f=()=>{location.href=u};chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    [
+      'a const arrow in a var that is reassigned',
+      'var f=()=>1;f=()=>{location.href=u};chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    ['a name incremented', 'function f(){}f++;chrome.scripting.executeScript({target:{},func:f})'],
+    [
+      'a name that is a loop target',
+      'function f(){}for(f of [1]);chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    [
+      'a compound assignment',
+      'function f(){}f||=()=>1;chrome.scripting.executeScript({target:{},func:f})',
+    ],
+    ['a let holding a function', 'let f=()=>1;chrome.scripting.executeScript({target:{},func:f})'],
+    ['a var holding a function', 'var f=()=>1;chrome.scripting.executeScript({target:{},func:f})'],
+  ])('fails on %s', (_what, text) => {
+    expect(read(text), text).toContain(undefined);
+    expect(scriptProblems('background.js', text).join('\n'), text).toMatch(
+      /could not be read|exactly one function/,
+    );
+  });
+
+  it('background.js must hand over exactly one function: zero fails too', () => {
+    expect(scriptProblems('background.js', 'chrome.tabs.create({url:u})').join('\n')).toContain(
+      'exactly one function must be handed',
+    );
+    expect(
+      scriptProblems(
+        'background.js',
+        'chrome.scripting.executeScript({target:{},files:["select.js"]})',
+      ).join('\n'),
+    ).toContain('exactly one function must be handed');
+    expect(
+      scriptProblems(
+        'background.js',
+        'chrome.scripting.executeScript({target:{},func:m});const m=t=>t',
+      ).join('\n'),
+    ).not.toContain('exactly one');
+  });
+
+  it('resolves a reused short name by scope, not by the last declaration in the file', () => {
+    // the b of the call is the outer function; a later b lives inside another function
+    const text = `${CALL};function b(t){return fetch(t)}function other(){function b(){return 2}return b}`;
+    const found = read(text);
+    expect(found).toEqual(['function b(t){return fetch(t)}']);
+    expect(scriptProblems('background.js', text).join('\n')).toContain('runs in the web page');
+  });
+
+  it('a name shadowed where the call is made is the inner one', () => {
+    const text =
+      'function b(){return fetch(1)}function k(){function b(){return 3}chrome.scripting.executeScript({target:{},func:b})}';
+    expect(read(text)).toEqual(['function b(){return 3}']);
+  });
+
+  it('exactly one function may be handed over, and executeScript belongs to background.js', () => {
+    const two =
+      'chrome.scripting.executeScript({target:{},func:a});chrome.scripting.executeScript({target:{},func:c});function a(){}function c(){}';
+    expect(scriptProblems('background.js', two).join('\n')).toContain(
+      'exactly one function must be handed',
+    );
+    expect(scriptProblems('assets/result-abc.js', CALL).join('\n')).toContain(
+      'executeScript outside background.js',
+    );
+    expect(scriptProblems('select.js', CALL).join('\n')).toContain(
+      'executeScript outside background.js',
+    );
   });
 });

@@ -7,6 +7,7 @@ import vitest from '@vitest/eslint-plugin';
 import prettier from 'eslint-config-prettier';
 import playwright from 'eslint-plugin-playwright';
 import tseslint from 'typescript-eslint';
+import ts from 'typescript';
 
 // The effective result of this file is pinned by tests/guard-snapshots/eslint.json (see AGENTS.md):
 // change a rule or an option and that snapshot must be regenerated deliberately.
@@ -195,7 +196,7 @@ const globalTampering = [
 // The CSP of the extension does not apply there, so Window, and any object that leads to it, must not be reachable from this code
 // at all - not by a name (`win`), not by a computed key (`doc[['default', 'View'].join('')]`), not through a cast, an event, a
 // parameter that was renamed. Review round 5 of PR #6 found four such ways past a rule that looked for the name `win`; the class is
-// closed instead (PAGE_PROCESS_FILES): the first parameter of `startSelection` - whatever it is called - is the one Window, and it
+// closed instead (PAGE_PROCESS_GLOBS): the first parameter of `startSelection` - whatever it is called - is the one Window, and it
 // is used through the members below (read or called; only the marker is written); in these files there is no computed access, no
 // cast, no `for...in`, no `typeof x` or `T[K]` type, no `Object.*` but `Object.assign(el.style, ...)`, and only `div` elements.
 const OVERLAY_FILE = 'src/select/overlay.ts';
@@ -209,7 +210,73 @@ const OVERLAY_WINDOW_MEMBERS = [
 ];
 /** Written by the overlay: the marker of a window that already shows it (declared in src/env.d.ts). */
 const OVERLAY_WINDOW_WRITTEN = ['__fontsnapActive'];
-const PAGE_PROCESS_FILES = [OVERLAY_FILE, 'src/select/index.ts', 'src/background/measure.ts'];
+// By GLOB, not by a list of files (review round 6 of PR #6: a module outside a hand-kept list, src/shared/page-probe.ts, was handed
+// `doc` or an event by the overlay and reached the Window with a cast and a key built at run time): everything in src/select is
+// held to these rules, a new file there too, and the code of src/select imports no value from anywhere else (selectImportSelectors),
+// so nothing outside the folder gets into select.js. tests/unit/select-bundle.test.ts reads the real bundle to prove it.
+const PAGE_PROCESS_GLOBS = ['src/select/**/*.ts', 'src/background/measure.ts'];
+const MEASURE_FILE = 'src/background/measure.ts';
+
+// --- every member of every DOM object the page code touches: an ALLOWLIST by type (review round 8 of PR #6) -------------------------
+// Rounds 6, 7 and 8 each found a new way for the code of the page to reach the network through a DOM object (a style written
+// through the result of Object.assign, createElementNS('style'), createAttribute('style'), an SVG <image> reached by a type
+// predicate, <meta refresh>, `[im.src] = [u]`, ...). Lists of forbidden names were completed four times. So the rule is turned
+// around like it was for `win`: the type checker tells which members belong to the DOM (those declared in lib.dom.d.ts), and in
+// these files only the members named below may be used on ANY expression of a DOM type - however it was obtained (a parameter,
+// a call result, a predicate, a destructuring) - and only the way named: r = read, c = call, w = write. A member that is not
+// here (createElementNS, createAttribute, setAttributeNode*, querySelector*, ownerDocument, getRootNode, parentNode, host,
+// click, href, src as a write, innerHTML, outerHTML, insertAdjacent*, namespaceURI, baseVal, dataset, attributes, animate,
+// ...) is an error, as is a member of an `any`/`unknown` receiver and an index into a DOM collection. What the code of the page
+// really uses, read from the code:
+const DOM_MEMBERS = [
+  {
+    // the overlay: a few elements of its own, a range and a tree walker over the text, two mouse/keyboard events
+    match: 'src/select/',
+    members: {
+      body: 'r',
+      documentElement: 'r',
+      isConnected: 'r',
+      nodeValue: 'r',
+      key: 'r',
+      clientX: 'r',
+      clientY: 'r',
+      top: 'r',
+      right: 'r',
+      bottom: 'r',
+      left: 'r',
+      style: 'r',
+      SHOW_TEXT: 'r',
+      createElement: 'c',
+      createRange: 'c',
+      createTreeWalker: 'c',
+      append: 'c',
+      appendChild: 'c',
+      remove: 'c',
+      addEventListener: 'c',
+      preventDefault: 'c',
+      selectNodeContents: 'c',
+      getBoundingClientRect: 'c',
+      nextNode: 'c',
+      toString: 'c',
+      textContent: 'w',
+    },
+  },
+  {
+    // the function injected into the page: the images of the document, one image, its box
+    match: MEASURE_FILE,
+    members: {
+      images: 'r',
+      currentSrc: 'r',
+      src: 'r',
+      left: 'r',
+      top: 'r',
+      width: 'r',
+      height: 'r',
+      scrollIntoView: 'c',
+      getBoundingClientRect: 'c',
+    },
+  },
+];
 /** The one function FontSnap hands to chrome.scripting.executeScript({ func }) (src/background/measure.ts). */
 const INJECTED_FUNCTION = 'measureImage';
 
@@ -258,7 +325,7 @@ const GLOBAL_ACCESS = {
     createImageBitmap: true,
     encodeURIComponent: true,
     navigator: ['clipboard.writeText', 'hardwareConcurrency'],
-    NodeFilter: true,
+    NodeFilter: ['SHOW_TEXT'],
     OffscreenCanvas: true,
     setInterval: true,
     setTimeout: true,
@@ -270,7 +337,7 @@ const GLOBAL_ACCESS = {
     'src/select/index.ts': { window: [''] },
     'src/select/overlay.ts': { Object: ['assign'] },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
-    // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_FILES): the images of the page, its pixel ratio
+    // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_GLOBS): the images of the page, its pixel ratio
     'src/background/measure.ts': {
       document: ['images'],
       requestAnimationFrame: true,
@@ -512,7 +579,142 @@ export const globalAccessRule = {
     };
   },
 };
-export const fontsnapPlugin = { rules: { 'global-access': globalAccessRule } };
+/**
+ * Local rule (type-aware): the members of DOM objects in the code of the page, see DOM_MEMBERS. A member is a DOM member when its
+ * symbol is declared in lib.dom.d.ts; Window is left to GLOBAL_ACCESS (windowParams, `window`).
+ */
+export const domMembersRule = {
+  meta: { type: 'problem', schema: [{ type: 'array' }] },
+  create(context) {
+    const relative = context.filename
+      .slice(context.cwd.length + 1)
+      .split('\\')
+      .join('/');
+    const entry = context.options[0].find(
+      (candidate) =>
+        relative === candidate.match ||
+        (candidate.match.endsWith('/') && relative.startsWith(candidate.match)),
+    );
+    if (entry === undefined) return {};
+    const services = context.sourceCode.parserServices;
+    if (services.program === undefined || services.program === null) {
+      throw new Error('fontsnap/dom-members needs type information (parserOptions.project)');
+    }
+    const checker = services.program.getTypeChecker();
+    const tsOf = (node) => services.esTreeNodeToTSNodeMap.get(node);
+    const inDom = (declaration) =>
+      /lib\.dom(\.[\w.]+)?\.d\.ts$/.test(declaration.getSourceFile().fileName);
+    const constituents = (type) =>
+      type.isUnionOrIntersection() ? type.types.flatMap(constituents) : [type];
+    const isDomType = (type) =>
+      constituents(type).some((one) => (one.symbol?.declarations ?? []).some(inDom));
+    const isWindow = (type) => {
+      const text = checker.typeToString(type);
+      return (
+        text === 'Window' || text === 'typeof globalThis' || text === 'Window & typeof globalThis'
+      );
+    };
+    const kindOf = (node) => {
+      let current = node;
+      while (
+        current.parent &&
+        (current.parent.type === 'TSNonNullExpression' || current.parent.type === 'ChainExpression')
+      ) {
+        current = current.parent;
+      }
+      const parent = current.parent;
+      switch (parent?.type) {
+        case 'CallExpression':
+          return parent.callee === current ? 'c' : 'r';
+        case 'AssignmentExpression':
+          return parent.left === current ? 'w' : 'r';
+        case 'UpdateExpression':
+        case 'ArrayPattern':
+        case 'RestElement':
+          return 'w';
+        case 'UnaryExpression':
+          return parent.operator === 'delete' ? 'd' : 'r';
+        case 'ForInStatement':
+        case 'ForOfStatement':
+          return parent.left === current ? 'w' : 'r';
+        case 'AssignmentPattern':
+          return parent.left === current ? 'w' : 'r';
+        case 'Property':
+          return parent.parent.type === 'ObjectPattern' && parent.value === current ? 'w' : 'r';
+        default:
+          return 'r';
+      }
+    };
+    const report = (node, text) => {
+      context.report({ node, message: text });
+    };
+    return {
+      MemberExpression(node) {
+        const receiver = checker.getTypeAtLocation(tsOf(node.object));
+        if (receiver.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
+          report(
+            node,
+            'A member of a value of unknown type (any/unknown) in the code of the web page: its type must be known to be checked (DOM_MEMBERS in eslint.config.js).',
+          );
+          return;
+        }
+        if (isWindow(receiver)) return;
+        if (node.computed) {
+          if (isDomType(receiver)) {
+            report(
+              node,
+              'No indexing of a DOM object or collection in the code of the web page (DOM_MEMBERS in eslint.config.js).',
+            );
+          }
+          return;
+        }
+        const name = node.property.name;
+        const symbol = checker.getSymbolAtLocation(tsOf(node.property));
+        const dom =
+          symbol === undefined ? isDomType(receiver) : (symbol.declarations ?? []).some(inDom);
+        if (!dom) return;
+        const kind = kindOf(node);
+        const allowed = Object.hasOwn(entry.members, name) ? entry.members[name] : '';
+        if (!allowed.includes(kind)) {
+          report(
+            node,
+            `The DOM member ${name} (${{ r: 'read', c: 'call', w: 'write' }[kind]}) is not on the list for ${relative}: ${Object.entries(
+              entry.members,
+            )
+              .map(([member, how]) => `${member}:${how}`)
+              .join(
+                ' ',
+              )} (DOM_MEMBERS in eslint.config.js). A DOM object reaches the network through members like createElementNS, setAttributeNode, ownerDocument, href, innerHTML.`,
+          );
+        }
+      },
+      // the width of a box is a number and px, nothing else
+      'CallExpression[callee.object.name="Object"][callee.property.name="assign"] > ObjectExpression > Property[key.name=/^(left|top|width|height)$/] > TemplateLiteral'(
+        node,
+      ) {
+        const [first, second] = node.quasis;
+        const [expression] = node.expressions;
+        const numeric =
+          expression !== undefined &&
+          (checker.getTypeAtLocation(tsOf(expression)).flags & ts.TypeFlags.NumberLike) !== 0;
+        if (
+          node.expressions.length !== 1 ||
+          first?.value.cooked !== '' ||
+          second?.value.cooked !== 'px' ||
+          !numeric
+        ) {
+          report(
+            node,
+            'left/top/width/height are a number and px, written `${number}px` (a template with one expression of type number), or a literal such as 0, auto, 12px, 50% (STYLE_KEYS in eslint.config.js).',
+          );
+        }
+      },
+    };
+  },
+};
+export const fontsnapPlugin = {
+  rules: { 'global-access': globalAccessRule, 'dom-members': domMembersRule },
+};
 // Values that are a Window, or a stand-in for one, however they are reached: document.defaultView, iframe.contentWindow,
 // event.view, message.source, event.currentTarget (the window an event was added to), getBackgroundPage(). GLOBAL_ACCESS closes
 // the names `window`, `self`, `top`, `parent`, `frames`, `opener`; these are the properties that hand one over.
@@ -561,13 +763,43 @@ const reachPages = [
     "Identifier[name='win']:not(MemberExpression[computed=false][property.name=/^(location|addEventListener)$/] > Identifier.object):not(VariableDeclarator > Identifier.id):not(UnaryExpression[operator='!'] > Identifier)",
   ].map((selector) => ({ selector, message: REACH_MESSAGE })),
 ];
+// CSS that loads something, in a string (round 7 of the review of PR #6: a style built at run time, `['ur', 'l(', ...].join('')`, or
+// written with a CSS escape, `u\\72 l(`, made the page request an image although no rule saw the word url). It is a pattern
+// and a function in ONE place: the rule below (strings of the code of the page) and verify-dist (scripts/lib/wasm-scan.ts, which
+// imports them) judge the same way. A CSS function that fetches (url, image-set, image, cross-fade, element, paint, src) not
+// after a name character (so `getURL(` and `new URL(` are not CSS), and @import.
+export const CSS_LOADING_SOURCE =
+  '(?<![\\w$-])(?:url|image-set|-webkit-image-set|image|cross-fade|-webkit-cross-fade|element|-moz-element|paint|src)\\s*\\(|@import';
+/** The text with its CSS escapes undone (`u\\72 l(` is `url(` to a style sheet). */
+export function cssUnescape(text) {
+  return text.replace(/\\([0-9a-f]{1,6})[ \t\n\r\f]?|\\([^0-9a-f\n])/gi, (_all, hex, plain) =>
+    hex === undefined ? plain : String.fromCodePoint(Number.parseInt(hex, 16) || 0xfffd),
+  );
+}
 const PAGE_PROCESS_MESSAGE =
-  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_FILES in eslint.config.js.";
+  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_GLOBS in eslint.config.js.";
 // what makes an element load something or navigate
 const LOADING_NAMES =
   '/^(src|srcset|srcdoc|href|action|formAction|ping|poster|data|location|innerHTML|outerHTML|cssText|adoptedStyleSheets)$/';
 const LOADING_CALLS =
   '/^(setAttribute|setAttributeNS|setAttributeNode|insertAdjacentHTML|insertAdjacentElement|insertRule|addRule|replaceSync|open|write|writeln|createContextualFragment|parseFromString|setHTMLUnsafe)$/';
+// Imports of the code that runs in the web page's process: value imports only from src/select itself (a relative path of plain
+// names below this folder, no extension, no `..`); anything else - another folder of src, a package, an absolute or aliased
+// path, a `..` that finds its way back - only as `import type`, which leaves nothing in the bundle. The function of
+// src/background/measure.ts is serialized by chrome.scripting, so it takes no value import at all.
+const SELECT_SIBLING = '/^\\.\\x2f([\\w-]+\\x2f)*[\\w-]+$/';
+const IMPORT_MESSAGE =
+  "Code that runs in the web page's process imports values only from src/select (./name); other modules only as `import type` (they would be bundled into select.js, outside the rules of this code). See PAGE_PROCESS_GLOBS in eslint.config.js.";
+const importSelectors = (valueFrom) =>
+  [
+    `ImportDeclaration:not([importKind='type'])${valueFrom}`,
+    `ExportNamedDeclaration[source]:not([exportKind='type'])${valueFrom}`,
+    `ExportAllDeclaration:not([exportKind='type'])${valueFrom}`,
+    'TSImportEqualsDeclaration',
+    'TSExportAssignment',
+  ].map((selector) => ({ selector, message: IMPORT_MESSAGE }));
+const selectImportSelectors = importSelectors(`:not([source.value=${SELECT_SIBLING}])`);
+const measureImportSelectors = importSelectors('');
 const pageProcessSelectors = [
   // no key that is computed at run time (a numeric index is fine), in access, destructuring, literals, classes
   "MemberExpression[computed=true]:not([property.type='Literal'][property.raw=/^[0-9]+$/])",
@@ -596,9 +828,108 @@ const pageProcessSelectors = [
   `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`,
   `CallExpression[callee.property.name=${LOADING_CALLS}]`,
   `Property[key.name=${LOADING_NAMES}]`,
-  'Literal[value=/url\\s*\\(|image-set|@import|expression\\s*\\(|javascript:/i]',
-  'TemplateElement[value.cooked=/url\\s*\\(|image-set|@import|expression\\s*\\(|javascript:/i]',
+  // strings: nothing that loads (CSS_LOADING_SOURCE), and no backslash at all (a CSS escape hides `url(`; JS escapes like \n are no backslash)
+  `Literal[value=/${CSS_LOADING_SOURCE}|expression\\s*\\(|javascript:/i]`,
+  `TemplateElement[value.cooked=/${CSS_LOADING_SOURCE}|expression\\s*\\(|javascript:/i]`,
+  'Literal[value=/\\x5c/]',
+  'TemplateElement[value.cooked=/\\x5c/]',
+  // import.meta (Vite turns import.meta.glob into static imports)
+  'MetaProperty',
+  // a type predicate or an assertion function is a cast without `as` (round 8: `(e): e is SVGImageElement`); an overload signature
+  // is another (the implementation is looser than the signature)
+  'TSTypePredicate',
+  'TSEmptyBodyFunctionExpression',
+  // no object destructuring at all: `const { ownerDocument } = el` takes a member without naming it as an access
+  'ObjectPattern',
+  // a member as the TARGET of a destructuring or a loop writes to it like an assignment does: `[im.src] = [u]`, `for (im.src of [u])`
+  'ArrayPattern > MemberExpression',
+  'RestElement > MemberExpression',
+  'AssignmentPattern > MemberExpression.left',
+  'ObjectPattern > Property > MemberExpression.value',
+  'ForOfStatement > MemberExpression.left',
+  'ForInStatement > MemberExpression.left',
+  // elements: createElement('div') and nothing else, no second argument (`{ is }`)
+  "CallExpression[callee.property.name='createElement']:not([arguments.length=1])",
 ].map((selector) => ({ selector, message: PAGE_PROCESS_MESSAGE }));
+
+// --- style of the code that runs in the web page (review round 7 of PR #6, blocker E) -------------------------------------------
+// A style can load a file: `box.style.backgroundImage = 'url(...)'`, with the string built at run time or written with a CSS escape.
+// So style is written in ONE way only, `Object.assign(<el>.style, { key: value, ... })`, with the keys the overlay uses and nothing
+// else (no spread, no computed or string key, no method). Of those keys only `cursor` and `background` accept a url(): their value
+// is a string literal that is a keyword, a hex colour or rgb()/rgba() of numbers - nothing else. The others cannot hold a url() by
+// their grammar; they take string literals too, and left/top/width/height a literal or a template (`${x}px`). Everything else about
+// style is refused: .style as a value or an alias, setProperty, cssText, attributeStyleMap, adoptedStyleSheets, insertRule,
+// animate (keyframes can carry a url), setAttribute('style'), createElement('style' | 'link') (div only).
+const STYLE_KEYS = [
+  'position',
+  'inset',
+  'zIndex',
+  'cursor',
+  'background',
+  'border',
+  'display',
+  'pointerEvents',
+  'top',
+  'left',
+  'width',
+  'height',
+  'transform',
+  'color',
+  'font',
+  'padding',
+  'borderRadius',
+];
+const STYLE_MESSAGE =
+  "Style of the code that runs in the web page's process is written only as Object.assign(<el>.style, { key: value }) with the keys listed as STYLE_KEYS in eslint.config.js; `cursor` and `background` take a keyword, a hex colour or rgb()/rgba() written as a string literal, left/top/width/height a literal or a template, the others a string literal (a style can load a file with url(), and this code is outside the CSP of the extension).";
+const ASSIGN = "CallExpression[callee.object.name='Object'][callee.property.name='assign']";
+const URL_KEYS = '/^(cursor|background)$/';
+const SAFE_URL_KEY_VALUE = '/^(?:[a-z-]+|\\x23[0-9a-f]{3,8}|rgba?\\([0-9., %]+\\))$/i';
+const STYLE_NAMES =
+  '/^(setProperty|removeProperty|getPropertyValue|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem|getComputedStyle)$/';
+const styleObject = `${ASSIGN} > ObjectExpression`;
+const styleSelectors = [
+  // Object.assign(el.style, { ... }) is a statement of its own: its result - the style declaration itself - is never kept, passed
+  // on or returned (round 8: `const s = Object.assign(el.style, {}); s.backgroundImage = ...`); Object.assign is only ever called, at
+  // once (no alias, no .call/.apply/.bind, no `{ assign } = Object`); no object literal has a `style` key (`{ style: 'background:url(x)' }`)
+  `${ASSIGN}:not(ExpressionStatement > CallExpression)`,
+  "MemberExpression[object.name='Object'][property.name='assign']:not(CallExpression > MemberExpression.callee)",
+  "Property[key.name='style']",
+  // left/top/width/height: 0, auto, a length or a percentage as a literal (or `${number}px`, checked by fontsnap/dom-members)
+  "Property[key.name=/^(left|top|width|height)$/][value.type='Literal']:not([value.value=/^(?:0|auto|-?[0-9]+(?:[.][0-9]+)?(?:px|%))$/])",
+  // style appears only as the first argument of Object.assign
+  `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child)`,
+  "ObjectPattern > Property[key.name='style']",
+  "Property[key.value='style']",
+  `Identifier[name=${STYLE_NAMES}]`,
+  `Literal[value=${STYLE_NAMES}]`,
+  // Object.assign(el.style, { ... }): exactly two arguments, the second an object literal of plain `key: value` properties
+  `${ASSIGN}:not([arguments.length=2])`,
+  `${ASSIGN}:not([arguments.1.type='ObjectExpression'])`,
+  `${styleObject} > SpreadElement`,
+  `${styleObject} > Property:not([kind='init'])`,
+  `${styleObject} > Property[method=true]`,
+  `${styleObject} > Property[computed=true]`,
+  `${styleObject} > Property[shorthand=true]`,
+  `${styleObject} > Property:not([key.type='Identifier'])`,
+  `${styleObject} > Property[key.type='Identifier']:not([key.name=/^(${STYLE_KEYS.join('|')})$/])`,
+  // values
+  `${styleObject} > Property[key.name=${URL_KEYS}]:not([value.type='Literal'])`,
+  `${styleObject} > Property[key.name=${URL_KEYS}][value.type='Literal']:not([value.value=${SAFE_URL_KEY_VALUE}])`,
+  `${styleObject} > Property:not([key.name=/^(left|top|width|height)$/]):not([value.type='Literal'])`,
+  `${styleObject} > Property[key.name=/^(left|top|width|height)$/]:not([value.type=/^(Literal|TemplateLiteral)$/])`,
+  `${styleObject} > Property[value.type='Literal']:not([value.raw=/^['"]/])`,
+].map((selector) => ({ selector, message: STYLE_MESSAGE }));
+// the injected function writes no style at all
+const noStyleSelectors = [
+  "MemberExpression[property.name='style']",
+  "Property[key.name='style']",
+  "Identifier[name='Object']",
+  `Identifier[name=${STYLE_NAMES}]`,
+].map((selector) => ({
+  selector,
+  message:
+    'The function that chrome.scripting injects into the page writes no style and uses no Object (src/background/measure.ts): a style can load a file with url(), outside the CSP of the extension.',
+}));
 
 // The one function that may be injected into a page with chrome.scripting.executeScript, and in no other world than the isolated one.
 const INJECTION_MESSAGE = `chrome.scripting.executeScript is called directly, with an object literal whose func is ${INJECTED_FUNCTION} (src/background/measure.ts, held to the rules of the content script) or a files list, and no world: any other function would run in the web page's process outside the CSP of the extension.`;
@@ -733,7 +1064,7 @@ export default tseslint.config(
   },
   {
     files: ['src/**/*.ts'],
-    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES, ...PAGE_PROCESS_FILES],
+    ignores: ['src/shared/format.ts', 'src/**/*.d.ts', ...PAGE_WINDOW_FILES, ...PAGE_PROCESS_GLOBS],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -749,7 +1080,7 @@ export default tseslint.config(
   {
     // The code that runs in the web page's process: the Window of the page only through the first parameter of startSelection
     // (GLOBAL_ACCESS.windowParams), and the rules of pageProcessSelectors.
-    files: PAGE_PROCESS_FILES,
+    files: ['src/select/**/*.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -760,6 +1091,26 @@ export default tseslint.config(
         ...numbersAndText,
         ...reachDefault,
         ...pageProcessSelectors,
+        ...styleSelectors,
+        ...selectImportSelectors,
+      ],
+    },
+  },
+  {
+    // The function chrome.scripting serializes into the page: no import of a value at all.
+    files: [MEASURE_FILE],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        noDynamicImport,
+        ...noRequireOrDeclare,
+        ...noInjectedCode,
+        ...noDynamicIn,
+        ...numbersAndText,
+        ...reachDefault,
+        ...pageProcessSelectors,
+        ...noStyleSelectors,
+        ...measureImportSelectors,
       ],
     },
   },
@@ -784,6 +1135,11 @@ export default tseslint.config(
     ignores: ['src/**/*.d.ts'],
     plugins: { fontsnap: fontsnapPlugin },
     rules: { 'fontsnap/global-access': ['error', GLOBAL_ACCESS] },
+  },
+  {
+    // The members of every DOM object in the code of the web page: an allowlist by type, see DOM_MEMBERS.
+    files: PAGE_PROCESS_GLOBS,
+    rules: { 'fontsnap/dom-members': ['error', DOM_MEMBERS] },
   },
   {
     // The one file that configures onnxruntime-web: every other src rule applies to it.

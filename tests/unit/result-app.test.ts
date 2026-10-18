@@ -136,6 +136,84 @@ describe('loading', () => {
     expect(status().className).toBe('status');
   });
 
+  // Found by the tester: an unreadable file chosen BEFORE the model was ready showed "Could not read this image." for about half a
+  // second, and then the model became ready and "Ready. Paste, drop or choose an image." replaced the error.
+  it('keeps the error of an unreadable file that was chosen before the model was ready', async () => {
+    let release: (m: Model) => void = () => undefined;
+    modelMock.loadModel.mockReturnValue(new Promise<Model>((r) => (release = r)));
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(() => Promise.reject(new Error('not an image'))),
+    );
+    await start();
+    pick(new Blob(['not an image']));
+    await vi.waitFor(() => {
+      expect(status().textContent).toBe('Could not read this image.');
+    });
+    release({ ranker: makeRanker(META), probs });
+    for (let tick = 0; tick < 30; tick++) await Promise.resolve();
+    expect(status().textContent).toBe('Could not read this image.');
+    expect(status().className).toBe('status err');
+  });
+
+  it('does not put "Ready." over "Analyzing…" or the result of an image chosen before the model was ready', async () => {
+    let release: (m: Model) => void = () => undefined;
+    modelMock.loadModel.mockReturnValue(new Promise<Model>((r) => (release = r)));
+    await start();
+    const shown: string[] = [];
+    new win.MutationObserver(() => {
+      shown.push(status().textContent);
+    }).observe(
+      $('status') as unknown as Node &
+        Parameters<InstanceType<typeof win.MutationObserver>['observe']>[0],
+      {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      },
+    );
+    pick(new Blob(['png']));
+    await vi.waitFor(() => {
+      expect(status().textContent).toBe('Analyzing…');
+    });
+    release({ ranker: makeRanker(META), probs });
+    await vi.waitFor(() => {
+      expect(names().length).toBeGreaterThan(0);
+    });
+    for (let tick = 0; tick < 30; tick++) await Promise.resolve();
+    expect(status().textContent).toBe('');
+    expect(shown.some((text) => text.startsWith('Ready'))).toBe(false);
+  });
+
+  it('still says "Ready." when nothing was shown while the model loaded', async () => {
+    let release: (m: Model) => void = () => undefined;
+    modelMock.loadModel.mockReturnValue(new Promise<Model>((r) => (release = r)));
+    await start();
+    expect(status().textContent).toBe('Loading model…');
+    release({ ranker: makeRanker(META), probs });
+    await vi.waitFor(() => {
+      expect(status().textContent).toMatch(/^Ready/);
+    });
+  });
+
+  it('shows a model that failed to load even over an error already shown', async () => {
+    let fail: (e: Error) => void = () => undefined;
+    modelMock.loadModel.mockReturnValue(new Promise<Model>((_, r) => (fail = r)));
+    vi.stubGlobal(
+      'createImageBitmap',
+      vi.fn(() => Promise.reject(new Error('not an image'))),
+    );
+    await start();
+    pick(new Blob(['x']));
+    await vi.waitFor(() => {
+      expect(status().textContent).toBe('Could not read this image.');
+    });
+    fail(new Error('wasm compile failed'));
+    await vi.waitFor(() => {
+      expect(status().textContent).toBe('Model failed to load: wasm compile failed');
+    });
+  });
+
   it('shows why the model failed to load', async () => {
     modelMock.loadModel.mockRejectedValue(new Error('wasm compile failed'));
     await start();
