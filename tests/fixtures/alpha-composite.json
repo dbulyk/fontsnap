@@ -1,5 +1,6 @@
 {
-  "comment": "RGBA pixels composited over white: c' = round((c*a + 255*(255-a))/255). The last cases sit on the rounding boundary, c*a mod 255 = 127 (down) or 128 (up). Read by tests/unit/core.test.ts and tests/python/test_reference.py.",
+  "comment": "RGBA pixels composited over the backdrop bg: c' = round((c*a + bg*(255-a))/255). Production composites over white, bg = 255; a later change may make bg per case. The last cases sit on the rounding boundary, c*a mod 255 = 127 (down) or 128 (up). Read by tests/unit/core.test.ts and tests/python/test_reference.py.",
+  "bg": 255,
   "cases": [
     {
       "rgba": [

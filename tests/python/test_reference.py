@@ -1,4 +1,5 @@
 import json
+from fractions import Fraction
 from pathlib import Path
 
 import numpy as np
@@ -110,11 +111,39 @@ def test_meta_json_is_generated():
     assert json.load(open(ROOT / "model" / "meta.json")) == json.loads(json.dumps(build()))
 
 
-ALPHA_TABLE = json.loads((Path(__file__).resolve().parents[1] / "fixtures" / "alpha-composite.json").read_text())["cases"]
+ALPHA_FIXTURE = json.loads((Path(__file__).resolve().parents[1] / "fixtures" / "alpha-composite.json").read_text())
+ALPHA_TABLE = ALPHA_FIXTURE["cases"]
+# The backdrop the fixture and the grid composite over (white in production).
+ALPHA_BG = ALPHA_FIXTURE["bg"]
 
 
-def over_white(c, a):
-    return (c * a + 255 * (255 - a) + 127) // 255
+def over(c, a, bg):
+    """Independent reference (scalars or arrays): round((c*a + bg*(255-a)) / 255) by quotient and remainder, no ties as 255 is odd."""
+    a = np.asarray(a, np.int64)
+    q, r = np.divmod(np.asarray(c, np.int64) * a + bg * (255 - a), 255)
+    return q + (2 * r > 255)
+
+
+def test_over_rounds_to_the_nearest_integer():
+    # |255 * over - n| <= 127 is |over - n / 255| < 1/2 in integers; a = 0 gives bg, a = 255 gives c.
+    axis = np.arange(256, dtype=np.int64)
+    bg, a, c = np.meshgrid(np.array([0, 255], np.int64), axis, axis, indexing="ij")
+    n = c * a + bg * (255 - a)
+    v = over(c, a, bg)
+    wrong = np.argwhere((np.abs(255 * v - n) > 127) | ((a == 0) & (v != bg)) | ((a == 255) & (v != c)))
+    first = [(int(bg[k]), int(c[k]), int(a[k])) for k in map(tuple, wrong[:10])]
+    assert len(wrong) == 0, f"{len(wrong)} mismatches, first 10 (bg, c, a): {first}"
+    # A sample (c and a in 0, 17, ..., 255) against exact rational rounding; round() of a Fraction is safe: no ties.
+    for b in (0, 255):
+        for ai in range(0, 256, 17):
+            for ci in range(0, 256, 17):
+                assert over(ci, ai, b) == round(Fraction(ci * ai + b * (255 - ai), 255)), (b, ci, ai)
+
+
+def test_alpha_fixture_agrees_with_the_reference():
+    for case in ALPHA_TABLE:
+        *rgb, a = case["rgba"]
+        assert case["rgb"] == [int(over(v, a, ALPHA_BG)) for v in rgb], case
 
 
 def test_to_rgb_composites_over_white_like_js():
@@ -123,21 +152,20 @@ def test_to_rgb_composites_over_white_like_js():
 
 
 def test_to_rgb_composites_every_c_a_pair_like_an_independent_rounding():
-    # Pixel (a, c) holds (c, 255 - c, c, a); round to nearest from quotient and remainder (no ties: 255 is odd).
+    # Row a, column c holds (c, 255 - c, (c + 128) % 256, a): every channel differs from the others, so a channel swap shows.
     a, c = np.meshgrid(np.arange(256, dtype=np.int64), np.arange(256, dtype=np.int64), indexing="ij")
-    rgba = np.stack([c, 255 - c, c, a], axis=-1)
-    n = rgba[..., :3] * a[..., None] + 255 * (255 - a[..., None])
-    q, r = np.divmod(n, 255)
-    expected = q + (2 * r > 255)
+    rgba = np.stack([c, 255 - c, (c + 128) % 256, a], axis=-1)
+    expected = over(rgba[..., :3], a[..., None], ALPHA_BG)
     got = np.array(to_rgb(Image.fromarray(rgba.astype(np.uint8), "RGBA")), np.int64)
     assert got.shape == (256, 256, 3)
     wrong = np.argwhere((got != expected).any(axis=-1))
-    assert wrong.size == 0, [(int(c[i, j]), int(a[i, j])) for i, j in wrong[:10]]
+    first = [(int(c[i, j]), int(a[i, j])) for i, j in wrong[:10]]
+    assert len(wrong) == 0, f"{len(wrong)} mismatches, first 10 (c, a): {first}"
 
 
 def test_to_rgb_composites_gray_with_alpha_and_palette_transparency():
     la = Image.fromarray(np.array([[[0, 0], [0, 255], [90, 100]]], np.uint8), "LA")
-    assert np.array(to_rgb(la))[0].tolist() == [[255] * 3, [0] * 3, [over_white(90, 100)] * 3]
+    assert np.array(to_rgb(la))[0].tolist() == [[255] * 3, [0] * 3, [over(90, 100, 255)] * 3]
     pal = Image.new("P", (1, 1), 0)
     pal.putpalette([0, 0, 0])
     pal.info["transparency"] = 0
