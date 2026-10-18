@@ -1,0 +1,717 @@
+{
+  "commonRules": {
+    "@eslint-community/eslint-comments/disable-enable-pair": ["error"],
+    "@eslint-community/eslint-comments/no-aggregating-enable": ["error"],
+    "@eslint-community/eslint-comments/no-duplicate-disable": ["error"],
+    "@eslint-community/eslint-comments/no-unlimited-disable": ["error"],
+    "@eslint-community/eslint-comments/no-unused-enable": ["error"],
+    "@eslint-community/eslint-comments/no-use": ["error",{"allow":[]}],
+    "@typescript-eslint/adjacent-overload-signatures": ["error"],
+    "@typescript-eslint/array-type": ["error"],
+    "@typescript-eslint/await-thenable": ["error"],
+    "@typescript-eslint/ban-ts-comment": ["error",{"ts-check":false,"ts-expect-error":true,"ts-ignore":true,"ts-nocheck":true}],
+    "@typescript-eslint/ban-tslint-comment": ["error"],
+    "@typescript-eslint/class-literal-property-style": ["error"],
+    "@typescript-eslint/consistent-generic-constructors": ["error"],
+    "@typescript-eslint/consistent-indexed-object-style": ["error"],
+    "@typescript-eslint/consistent-type-assertions": ["error"],
+    "@typescript-eslint/consistent-type-definitions": ["error"],
+    "@typescript-eslint/consistent-type-imports": ["error"],
+    "@typescript-eslint/dot-notation": ["error",{"allowIndexSignaturePropertyAccess":false,"allowKeywords":true,"allowPattern":"","allowPrivateClassPropertyAccess":false,"allowProtectedClassPropertyAccess":false}],
+    "@typescript-eslint/no-array-constructor": ["error"],
+    "@typescript-eslint/no-array-delete": ["error"],
+    "@typescript-eslint/no-base-to-string": ["error"],
+    "@typescript-eslint/no-confusing-non-null-assertion": ["error"],
+    "@typescript-eslint/no-confusing-void-expression": ["error"],
+    "@typescript-eslint/no-deprecated": ["error"],
+    "@typescript-eslint/no-duplicate-enum-values": ["error"],
+    "@typescript-eslint/no-duplicate-type-constituents": ["error"],
+    "@typescript-eslint/no-dynamic-delete": ["error"],
+    "@typescript-eslint/no-empty-function": ["error",{"allow":[]}],
+    "@typescript-eslint/no-empty-object-type": ["error"],
+    "@typescript-eslint/no-explicit-any": ["error"],
+    "@typescript-eslint/no-extra-non-null-assertion": ["error"],
+    "@typescript-eslint/no-extraneous-class": ["error"],
+    "@typescript-eslint/no-floating-promises": ["error"],
+    "@typescript-eslint/no-for-in-array": ["error"],
+    "@typescript-eslint/no-generated-empty-object-type": ["error"],
+    "@typescript-eslint/no-implied-eval": ["error"],
+    "@typescript-eslint/no-inferrable-types": ["error"],
+    "@typescript-eslint/no-invalid-void-type": ["error"],
+    "@typescript-eslint/no-meaningless-void-operator": ["error"],
+    "@typescript-eslint/no-misused-new": ["error"],
+    "@typescript-eslint/no-misused-promises": ["error"],
+    "@typescript-eslint/no-misused-spread": ["error"],
+    "@typescript-eslint/no-mixed-enums": ["error"],
+    "@typescript-eslint/no-namespace": ["error"],
+    "@typescript-eslint/no-non-null-asserted-nullish-coalescing": ["error"],
+    "@typescript-eslint/no-non-null-asserted-optional-chain": ["error"],
+    "@typescript-eslint/no-non-null-assertion": ["error"],
+    "@typescript-eslint/no-redundant-type-constituents": ["error"],
+    "@typescript-eslint/no-require-imports": ["error"],
+    "@typescript-eslint/no-this-alias": ["error"],
+    "@typescript-eslint/no-unnecessary-boolean-literal-compare": ["error"],
+    "@typescript-eslint/no-unnecessary-condition": ["error"],
+    "@typescript-eslint/no-unnecessary-template-expression": ["error"],
+    "@typescript-eslint/no-unnecessary-type-arguments": ["error"],
+    "@typescript-eslint/no-unnecessary-type-assertion": ["error"],
+    "@typescript-eslint/no-unnecessary-type-constraint": ["error"],
+    "@typescript-eslint/no-unnecessary-type-conversion": ["error"],
+    "@typescript-eslint/no-unnecessary-type-parameters": ["error"],
+    "@typescript-eslint/no-unsafe-argument": ["error"],
+    "@typescript-eslint/no-unsafe-assignment": ["error"],
+    "@typescript-eslint/no-unsafe-call": ["error"],
+    "@typescript-eslint/no-unsafe-declaration-merging": ["error"],
+    "@typescript-eslint/no-unsafe-enum-assignment": ["error"],
+    "@typescript-eslint/no-unsafe-enum-comparison": ["error"],
+    "@typescript-eslint/no-unsafe-function-type": ["error"],
+    "@typescript-eslint/no-unsafe-member-access": ["error"],
+    "@typescript-eslint/no-unsafe-return": ["error"],
+    "@typescript-eslint/no-unsafe-unary-minus": ["error"],
+    "@typescript-eslint/no-unused-expressions": ["error",{"allowShortCircuit":false,"allowTaggedTemplates":false,"allowTernary":false}],
+    "@typescript-eslint/no-unused-vars": ["error"],
+    "@typescript-eslint/no-useless-constructor": ["error"],
+    "@typescript-eslint/no-useless-default-assignment": ["error"],
+    "@typescript-eslint/no-wrapper-object-types": ["error"],
+    "@typescript-eslint/non-nullable-type-assertion-style": ["error"],
+    "@typescript-eslint/only-throw-error": ["error"],
+    "@typescript-eslint/prefer-as-const": ["error"],
+    "@typescript-eslint/prefer-find": ["error"],
+    "@typescript-eslint/prefer-for-of": ["error"],
+    "@typescript-eslint/prefer-function-type": ["error"],
+    "@typescript-eslint/prefer-includes": ["error"],
+    "@typescript-eslint/prefer-literal-enum-member": ["error"],
+    "@typescript-eslint/prefer-namespace-keyword": ["error"],
+    "@typescript-eslint/prefer-nullish-coalescing": ["error"],
+    "@typescript-eslint/prefer-optional-chain": ["error"],
+    "@typescript-eslint/prefer-promise-reject-errors": ["error"],
+    "@typescript-eslint/prefer-reduce-type-parameter": ["error"],
+    "@typescript-eslint/prefer-regexp-exec": ["error"],
+    "@typescript-eslint/prefer-return-this-type": ["error"],
+    "@typescript-eslint/prefer-string-starts-ends-with": ["error"],
+    "@typescript-eslint/related-getter-setter-pairs": ["error"],
+    "@typescript-eslint/require-await": ["error"],
+    "@typescript-eslint/restrict-plus-operands": ["error",{"allowAny":false,"allowBoolean":false,"allowNullish":false,"allowNumberAndString":false,"allowRegExp":false}],
+    "@typescript-eslint/restrict-template-expressions": ["error",{"allowNumber":true}],
+    "@typescript-eslint/return-await": ["error","error-handling-correctness-only"],
+    "@typescript-eslint/triple-slash-reference": ["error"],
+    "@typescript-eslint/unbound-method": ["error"],
+    "@typescript-eslint/unified-signatures": ["error"],
+    "@typescript-eslint/use-unknown-in-catch-callback-variable": ["error"],
+    "eqeqeq": ["error","always"],
+    "for-direction": ["error"],
+    "no-async-promise-executor": ["error"],
+    "no-case-declarations": ["error"],
+    "no-compare-neg-zero": ["error"],
+    "no-cond-assign": ["error","except-parens"],
+    "no-constant-binary-expression": ["error",{"checkRelationalComparisons":false}],
+    "no-constant-condition": ["error",{"checkLoops":"allExceptWhileTrue"}],
+    "no-control-regex": ["error"],
+    "no-debugger": ["error"],
+    "no-delete-var": ["error"],
+    "no-dupe-else-if": ["error"],
+    "no-duplicate-case": ["error"],
+    "no-empty": ["error",{"allowEmptyCatch":false}],
+    "no-empty-character-class": ["error"],
+    "no-empty-static-block": ["error"],
+    "no-ex-assign": ["error"],
+    "no-extra-boolean-cast": ["error",{}],
+    "no-fallthrough": ["error",{"allowEmptyCase":false,"reportUnusedFallthroughComment":false}],
+    "no-global-assign": ["error",{"exceptions":[]}],
+    "no-invalid-regexp": ["error",{}],
+    "no-irregular-whitespace": ["error",{"skipComments":false,"skipJSXText":false,"skipRegExps":false,"skipStrings":true,"skipTemplates":false}],
+    "no-loss-of-precision": ["error"],
+    "no-misleading-character-class": ["error",{"allowEscape":false}],
+    "no-nonoctal-decimal-escape": ["error"],
+    "no-octal": ["error"],
+    "no-prototype-builtins": ["error"],
+    "no-regex-spaces": ["error"],
+    "no-self-assign": ["error",{"props":true}],
+    "no-shadow-restricted-names": ["error",{"reportGlobalThis":true}],
+    "no-sparse-arrays": ["error"],
+    "no-unassigned-vars": ["error"],
+    "no-unsafe-finally": ["error"],
+    "no-unsafe-optional-chaining": ["error",{"disallowArithmeticOperators":false}],
+    "no-unused-labels": ["error"],
+    "no-unused-private-class-members": ["error"],
+    "no-useless-assignment": ["error"],
+    "no-useless-backreference": ["error"],
+    "no-useless-catch": ["error"],
+    "no-useless-escape": ["error",{"allowRegexCharacters":[]}],
+    "no-var": ["error"],
+    "prefer-const": ["error",{"destructuring":"any","ignoreReadBeforeAssign":false}],
+    "prefer-rest-params": ["error"],
+    "prefer-spread": ["error"],
+    "preserve-caught-error": ["error",{"errorClassNames":[],"requireCatchParameter":false}],
+    "require-yield": ["error"],
+    "use-isnan": ["error",{"enforceForIndexOf":false,"enforceForSwitchCase":true}],
+    "valid-typeof": ["error",{"requireStringLiterals":false}]
+  },
+  "contexts": {
+    "root-js": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "program": null,
+          "project": false,
+          "projectService": false
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "@typescript-eslint/await-thenable": null,
+        "@typescript-eslint/dot-notation": null,
+        "@typescript-eslint/no-array-delete": null,
+        "@typescript-eslint/no-base-to-string": null,
+        "@typescript-eslint/no-confusing-void-expression": null,
+        "@typescript-eslint/no-deprecated": null,
+        "@typescript-eslint/no-duplicate-type-constituents": null,
+        "@typescript-eslint/no-floating-promises": null,
+        "@typescript-eslint/no-for-in-array": null,
+        "@typescript-eslint/no-generated-empty-object-type": null,
+        "@typescript-eslint/no-implied-eval": null,
+        "@typescript-eslint/no-meaningless-void-operator": null,
+        "@typescript-eslint/no-misused-promises": null,
+        "@typescript-eslint/no-misused-spread": null,
+        "@typescript-eslint/no-mixed-enums": null,
+        "@typescript-eslint/no-redundant-type-constituents": null,
+        "@typescript-eslint/no-unnecessary-boolean-literal-compare": null,
+        "@typescript-eslint/no-unnecessary-condition": null,
+        "@typescript-eslint/no-unnecessary-template-expression": null,
+        "@typescript-eslint/no-unnecessary-type-arguments": null,
+        "@typescript-eslint/no-unnecessary-type-assertion": null,
+        "@typescript-eslint/no-unnecessary-type-conversion": null,
+        "@typescript-eslint/no-unnecessary-type-parameters": null,
+        "@typescript-eslint/no-unsafe-argument": null,
+        "@typescript-eslint/no-unsafe-assignment": null,
+        "@typescript-eslint/no-unsafe-call": null,
+        "@typescript-eslint/no-unsafe-enum-assignment": null,
+        "@typescript-eslint/no-unsafe-enum-comparison": null,
+        "@typescript-eslint/no-unsafe-member-access": null,
+        "@typescript-eslint/no-unsafe-return": null,
+        "@typescript-eslint/no-unsafe-unary-minus": null,
+        "@typescript-eslint/no-useless-default-assignment": null,
+        "@typescript-eslint/non-nullable-type-assertion-style": null,
+        "@typescript-eslint/only-throw-error": null,
+        "@typescript-eslint/prefer-find": null,
+        "@typescript-eslint/prefer-includes": null,
+        "@typescript-eslint/prefer-nullish-coalescing": null,
+        "@typescript-eslint/prefer-optional-chain": null,
+        "@typescript-eslint/prefer-promise-reject-errors": null,
+        "@typescript-eslint/prefer-reduce-type-parameter": null,
+        "@typescript-eslint/prefer-regexp-exec": null,
+        "@typescript-eslint/prefer-return-this-type": null,
+        "@typescript-eslint/prefer-string-starts-ends-with": null,
+        "@typescript-eslint/related-getter-setter-pairs": null,
+        "@typescript-eslint/require-await": null,
+        "@typescript-eslint/restrict-plus-operands": null,
+        "@typescript-eslint/restrict-template-expressions": null,
+        "@typescript-eslint/return-await": null,
+        "@typescript-eslint/unbound-method": null,
+        "@typescript-eslint/use-unknown-in-catch-callback-variable": null,
+        "constructor-super": ["error"],
+        "getter-return": ["error",{"allowImplicit":false}],
+        "no-class-assign": ["error"],
+        "no-const-assign": ["error"],
+        "no-dupe-args": ["error"],
+        "no-dupe-class-members": ["error"],
+        "no-dupe-keys": ["error"],
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-func-assign": ["error"],
+        "no-import-assign": ["error"],
+        "no-new-native-nonconstructor": ["error"],
+        "no-obj-calls": ["error"],
+        "no-redeclare": ["error",{"builtinGlobals":true}],
+        "no-setter-return": ["error"],
+        "no-this-before-super": ["error"],
+        "no-undef": ["error",{"typeof":false}],
+        "no-unreachable": ["error"],
+        "no-unsafe-negation": ["error",{"enforceForOrderingRelations":false}],
+        "no-var": null,
+        "no-with": ["error"],
+        "prefer-const": null,
+        "prefer-rest-params": null,
+        "prefer-spread": null
+      }
+    },
+    "root-ts": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.node.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-syntax": ["error",{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"}]
+      }
+    },
+    "scripts": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.node.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-syntax": ["error",{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"}]
+      }
+    },
+    "scripts/lib": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.node.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-syntax": ["error",{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"}]
+      }
+    },
+    "src-dts": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.src.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No Node built-ins in extension code.","name":"assert"},{"message":"No Node built-ins in extension code.","name":"assert/strict"},{"message":"No Node built-ins in extension code.","name":"async_hooks"},{"message":"No Node built-ins in extension code.","name":"buffer"},{"message":"No Node built-ins in extension code.","name":"child_process"},{"message":"No Node built-ins in extension code.","name":"cluster"},{"message":"No Node built-ins in extension code.","name":"console"},{"message":"No Node built-ins in extension code.","name":"constants"},{"message":"No Node built-ins in extension code.","name":"crypto"},{"message":"No Node built-ins in extension code.","name":"dgram"},{"message":"No Node built-ins in extension code.","name":"diagnostics_channel"},{"message":"No Node built-ins in extension code.","name":"dns"},{"message":"No Node built-ins in extension code.","name":"dns/promises"},{"message":"No Node built-ins in extension code.","name":"domain"},{"message":"No Node built-ins in extension code.","name":"events"},{"message":"No Node built-ins in extension code.","name":"fs"},{"message":"No Node built-ins in extension code.","name":"fs/promises"},{"message":"No Node built-ins in extension code.","name":"http"},{"message":"No Node built-ins in extension code.","name":"http2"},{"message":"No Node built-ins in extension code.","name":"https"},{"message":"No Node built-ins in extension code.","name":"inspector"},{"message":"No Node built-ins in extension code.","name":"inspector/promises"},{"message":"No Node built-ins in extension code.","name":"module"},{"message":"No Node built-ins in extension code.","name":"net"},{"message":"No Node built-ins in extension code.","name":"os"},{"message":"No Node built-ins in extension code.","name":"path"},{"message":"No Node built-ins in extension code.","name":"path/posix"},{"message":"No Node built-ins in extension code.","name":"path/win32"},{"message":"No Node built-ins in extension code.","name":"perf_hooks"},{"message":"No Node built-ins in extension code.","name":"process"},{"message":"No Node built-ins in extension code.","name":"punycode"},{"message":"No Node built-ins in extension code.","name":"querystring"},{"message":"No Node built-ins in extension code.","name":"readline"},{"message":"No Node built-ins in extension code.","name":"readline/promises"},{"message":"No Node built-ins in extension code.","name":"repl"},{"message":"No Node built-ins in extension code.","name":"stream"},{"message":"No Node built-ins in extension code.","name":"stream/consumers"},{"message":"No Node built-ins in extension code.","name":"stream/promises"},{"message":"No Node built-ins in extension code.","name":"stream/web"},{"message":"No Node built-ins in extension code.","name":"string_decoder"},{"message":"No Node built-ins in extension code.","name":"sys"},{"message":"No Node built-ins in extension code.","name":"timers"},{"message":"No Node built-ins in extension code.","name":"timers/promises"},{"message":"No Node built-ins in extension code.","name":"tls"},{"message":"No Node built-ins in extension code.","name":"trace_events"},{"message":"No Node built-ins in extension code.","name":"tty"},{"message":"No Node built-ins in extension code.","name":"url"},{"message":"No Node built-ins in extension code.","name":"util"},{"message":"No Node built-ins in extension code.","name":"util/types"},{"message":"No Node built-ins in extension code.","name":"v8"},{"message":"No Node built-ins in extension code.","name":"vm"},{"message":"No Node built-ins in extension code.","name":"wasi"},{"message":"No Node built-ins in extension code.","name":"worker_threads"},{"message":"No Node built-ins in extension code.","name":"zlib"}],"patterns":[{"group":["node:*"],"message":"No Node built-ins in extension code."}]}],
+        "no-restricted-syntax": ["error",{"message":"No dynamic import() in extension code; import statically.","selector":"ImportExpression"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElement'], [callee.property.value='createElement'], [callee.property.quasis.0.value.cooked='createElement']):matches([arguments.0.value=/^(script|iframe|frame|embed|object)$/i], [arguments.0.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElementNS'], [callee.property.value='createElementNS'], [callee.property.quasis.0.value.cooked='createElementNS']):matches([arguments.1.value=/^(script|iframe|frame|embed|object)$/i], [arguments.1.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='eval']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='Function']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"MemberExpression[computed=true]:matches([property.name=/^(eval|Function|importScripts)$/], [property.value=/^(eval|Function|importScripts)$/], [property.quasis.0.value.cooked=/^(eval|Function|importScripts)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='importScripts']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.name=/^(setTimeout|setInterval)$/], :matches([callee.property.name=/^(setTimeout|setInterval)$/], [callee.property.value=/^(setTimeout|setInterval)$/], [callee.property.quasis.0.value.cooked=/^(setTimeout|setInterval)$/]))[arguments.0.type=/^(Literal|TemplateLiteral)$/]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name=/^(write|writeln)$/], [callee.property.value=/^(write|writeln)$/], [callee.property.quasis.0.value.cooked=/^(write|writeln)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"NewExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"Identifier[name='WebAssembly']"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"MemberExpression[computed=true]:matches([property.name='WebAssembly'], [property.value='WebAssembly'], [property.quasis.0.value.cooked='WebAssembly'])"},{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[computed=true][property.value='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"ObjectPattern > Property[key.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toFixed']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toLocaleString']"},{"message":"UI text must come from chrome.i18n (t() or data-i18n), not literals.","selector":"AssignmentExpression[left.property.name=/^(textContent|innerText|innerHTML)$/][right.type=/^(Literal|TemplateLiteral)$/]"}]
+      }
+    },
+    "src-root": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.src.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No Node built-ins in extension code.","name":"assert"},{"message":"No Node built-ins in extension code.","name":"assert/strict"},{"message":"No Node built-ins in extension code.","name":"async_hooks"},{"message":"No Node built-ins in extension code.","name":"buffer"},{"message":"No Node built-ins in extension code.","name":"child_process"},{"message":"No Node built-ins in extension code.","name":"cluster"},{"message":"No Node built-ins in extension code.","name":"console"},{"message":"No Node built-ins in extension code.","name":"constants"},{"message":"No Node built-ins in extension code.","name":"crypto"},{"message":"No Node built-ins in extension code.","name":"dgram"},{"message":"No Node built-ins in extension code.","name":"diagnostics_channel"},{"message":"No Node built-ins in extension code.","name":"dns"},{"message":"No Node built-ins in extension code.","name":"dns/promises"},{"message":"No Node built-ins in extension code.","name":"domain"},{"message":"No Node built-ins in extension code.","name":"events"},{"message":"No Node built-ins in extension code.","name":"fs"},{"message":"No Node built-ins in extension code.","name":"fs/promises"},{"message":"No Node built-ins in extension code.","name":"http"},{"message":"No Node built-ins in extension code.","name":"http2"},{"message":"No Node built-ins in extension code.","name":"https"},{"message":"No Node built-ins in extension code.","name":"inspector"},{"message":"No Node built-ins in extension code.","name":"inspector/promises"},{"message":"No Node built-ins in extension code.","name":"module"},{"message":"No Node built-ins in extension code.","name":"net"},{"message":"No Node built-ins in extension code.","name":"os"},{"message":"No Node built-ins in extension code.","name":"path"},{"message":"No Node built-ins in extension code.","name":"path/posix"},{"message":"No Node built-ins in extension code.","name":"path/win32"},{"message":"No Node built-ins in extension code.","name":"perf_hooks"},{"message":"No Node built-ins in extension code.","name":"process"},{"message":"No Node built-ins in extension code.","name":"punycode"},{"message":"No Node built-ins in extension code.","name":"querystring"},{"message":"No Node built-ins in extension code.","name":"readline"},{"message":"No Node built-ins in extension code.","name":"readline/promises"},{"message":"No Node built-ins in extension code.","name":"repl"},{"message":"No Node built-ins in extension code.","name":"stream"},{"message":"No Node built-ins in extension code.","name":"stream/consumers"},{"message":"No Node built-ins in extension code.","name":"stream/promises"},{"message":"No Node built-ins in extension code.","name":"stream/web"},{"message":"No Node built-ins in extension code.","name":"string_decoder"},{"message":"No Node built-ins in extension code.","name":"sys"},{"message":"No Node built-ins in extension code.","name":"timers"},{"message":"No Node built-ins in extension code.","name":"timers/promises"},{"message":"No Node built-ins in extension code.","name":"tls"},{"message":"No Node built-ins in extension code.","name":"trace_events"},{"message":"No Node built-ins in extension code.","name":"tty"},{"message":"No Node built-ins in extension code.","name":"url"},{"message":"No Node built-ins in extension code.","name":"util"},{"message":"No Node built-ins in extension code.","name":"util/types"},{"message":"No Node built-ins in extension code.","name":"v8"},{"message":"No Node built-ins in extension code.","name":"vm"},{"message":"No Node built-ins in extension code.","name":"wasi"},{"message":"No Node built-ins in extension code.","name":"worker_threads"},{"message":"No Node built-ins in extension code.","name":"zlib"}],"patterns":[{"group":["node:*"],"message":"No Node built-ins in extension code."}]}],
+        "no-restricted-syntax": ["error",{"message":"No dynamic import() in extension code; import statically.","selector":"ImportExpression"},{"message":"No CommonJS require() in extension code.","selector":"CallExpression[callee.name='require']"},{"message":"No CommonJS require() in extension code.","selector":"MemberExpression[object.name='require']"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSModuleDeclaration"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSDeclareFunction"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"VariableDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"FunctionDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"ClassDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSEnumDeclaration[declare=true]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElement'], [callee.property.value='createElement'], [callee.property.quasis.0.value.cooked='createElement']):matches([arguments.0.value=/^(script|iframe|frame|embed|object)$/i], [arguments.0.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElementNS'], [callee.property.value='createElementNS'], [callee.property.quasis.0.value.cooked='createElementNS']):matches([arguments.1.value=/^(script|iframe|frame|embed|object)$/i], [arguments.1.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='eval']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='Function']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"MemberExpression[computed=true]:matches([property.name=/^(eval|Function|importScripts)$/], [property.value=/^(eval|Function|importScripts)$/], [property.quasis.0.value.cooked=/^(eval|Function|importScripts)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='importScripts']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.name=/^(setTimeout|setInterval)$/], :matches([callee.property.name=/^(setTimeout|setInterval)$/], [callee.property.value=/^(setTimeout|setInterval)$/], [callee.property.quasis.0.value.cooked=/^(setTimeout|setInterval)$/]))[arguments.0.type=/^(Literal|TemplateLiteral)$/]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name=/^(write|writeln)$/], [callee.property.value=/^(write|writeln)$/], [callee.property.quasis.0.value.cooked=/^(write|writeln)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"NewExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"Identifier[name='WebAssembly']"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"MemberExpression[computed=true]:matches([property.name='WebAssembly'], [property.value='WebAssembly'], [property.quasis.0.value.cooked='WebAssembly'])"},{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[computed=true][property.value='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"ObjectPattern > Property[key.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toFixed']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toLocaleString']"},{"message":"UI text must come from chrome.i18n (t() or data-i18n), not literals.","selector":"AssignmentExpression[left.property.name=/^(textContent|innerText|innerHTML)$/][right.type=/^(Literal|TemplateLiteral)$/]"}]
+      }
+    },
+    "src/background": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.src.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No Node built-ins in extension code.","name":"assert"},{"message":"No Node built-ins in extension code.","name":"assert/strict"},{"message":"No Node built-ins in extension code.","name":"async_hooks"},{"message":"No Node built-ins in extension code.","name":"buffer"},{"message":"No Node built-ins in extension code.","name":"child_process"},{"message":"No Node built-ins in extension code.","name":"cluster"},{"message":"No Node built-ins in extension code.","name":"console"},{"message":"No Node built-ins in extension code.","name":"constants"},{"message":"No Node built-ins in extension code.","name":"crypto"},{"message":"No Node built-ins in extension code.","name":"dgram"},{"message":"No Node built-ins in extension code.","name":"diagnostics_channel"},{"message":"No Node built-ins in extension code.","name":"dns"},{"message":"No Node built-ins in extension code.","name":"dns/promises"},{"message":"No Node built-ins in extension code.","name":"domain"},{"message":"No Node built-ins in extension code.","name":"events"},{"message":"No Node built-ins in extension code.","name":"fs"},{"message":"No Node built-ins in extension code.","name":"fs/promises"},{"message":"No Node built-ins in extension code.","name":"http"},{"message":"No Node built-ins in extension code.","name":"http2"},{"message":"No Node built-ins in extension code.","name":"https"},{"message":"No Node built-ins in extension code.","name":"inspector"},{"message":"No Node built-ins in extension code.","name":"inspector/promises"},{"message":"No Node built-ins in extension code.","name":"module"},{"message":"No Node built-ins in extension code.","name":"net"},{"message":"No Node built-ins in extension code.","name":"os"},{"message":"No Node built-ins in extension code.","name":"path"},{"message":"No Node built-ins in extension code.","name":"path/posix"},{"message":"No Node built-ins in extension code.","name":"path/win32"},{"message":"No Node built-ins in extension code.","name":"perf_hooks"},{"message":"No Node built-ins in extension code.","name":"process"},{"message":"No Node built-ins in extension code.","name":"punycode"},{"message":"No Node built-ins in extension code.","name":"querystring"},{"message":"No Node built-ins in extension code.","name":"readline"},{"message":"No Node built-ins in extension code.","name":"readline/promises"},{"message":"No Node built-ins in extension code.","name":"repl"},{"message":"No Node built-ins in extension code.","name":"stream"},{"message":"No Node built-ins in extension code.","name":"stream/consumers"},{"message":"No Node built-ins in extension code.","name":"stream/promises"},{"message":"No Node built-ins in extension code.","name":"stream/web"},{"message":"No Node built-ins in extension code.","name":"string_decoder"},{"message":"No Node built-ins in extension code.","name":"sys"},{"message":"No Node built-ins in extension code.","name":"timers"},{"message":"No Node built-ins in extension code.","name":"timers/promises"},{"message":"No Node built-ins in extension code.","name":"tls"},{"message":"No Node built-ins in extension code.","name":"trace_events"},{"message":"No Node built-ins in extension code.","name":"tty"},{"message":"No Node built-ins in extension code.","name":"url"},{"message":"No Node built-ins in extension code.","name":"util"},{"message":"No Node built-ins in extension code.","name":"util/types"},{"message":"No Node built-ins in extension code.","name":"v8"},{"message":"No Node built-ins in extension code.","name":"vm"},{"message":"No Node built-ins in extension code.","name":"wasi"},{"message":"No Node built-ins in extension code.","name":"worker_threads"},{"message":"No Node built-ins in extension code.","name":"zlib"}],"patterns":[{"group":["node:*"],"message":"No Node built-ins in extension code."},{"group":["**/result","**/result/**"],"message":"Move shared code to src/shared instead of importing from result."},{"group":["**/select","**/select/**"],"message":"Move shared code to src/shared instead of importing from select."},{"group":["**/welcome","**/welcome/**"],"message":"Move shared code to src/shared instead of importing from welcome."}]}],
+        "no-restricted-syntax": ["error",{"message":"No dynamic import() in extension code; import statically.","selector":"ImportExpression"},{"message":"No CommonJS require() in extension code.","selector":"CallExpression[callee.name='require']"},{"message":"No CommonJS require() in extension code.","selector":"MemberExpression[object.name='require']"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSModuleDeclaration"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSDeclareFunction"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"VariableDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"FunctionDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"ClassDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSEnumDeclaration[declare=true]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElement'], [callee.property.value='createElement'], [callee.property.quasis.0.value.cooked='createElement']):matches([arguments.0.value=/^(script|iframe|frame|embed|object)$/i], [arguments.0.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElementNS'], [callee.property.value='createElementNS'], [callee.property.quasis.0.value.cooked='createElementNS']):matches([arguments.1.value=/^(script|iframe|frame|embed|object)$/i], [arguments.1.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='eval']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='Function']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"MemberExpression[computed=true]:matches([property.name=/^(eval|Function|importScripts)$/], [property.value=/^(eval|Function|importScripts)$/], [property.quasis.0.value.cooked=/^(eval|Function|importScripts)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='importScripts']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.name=/^(setTimeout|setInterval)$/], :matches([callee.property.name=/^(setTimeout|setInterval)$/], [callee.property.value=/^(setTimeout|setInterval)$/], [callee.property.quasis.0.value.cooked=/^(setTimeout|setInterval)$/]))[arguments.0.type=/^(Literal|TemplateLiteral)$/]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name=/^(write|writeln)$/], [callee.property.value=/^(write|writeln)$/], [callee.property.quasis.0.value.cooked=/^(write|writeln)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"NewExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"Identifier[name='WebAssembly']"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"MemberExpression[computed=true]:matches([property.name='WebAssembly'], [property.value='WebAssembly'], [property.quasis.0.value.cooked='WebAssembly'])"},{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[computed=true][property.value='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"ObjectPattern > Property[key.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toFixed']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toLocaleString']"},{"message":"UI text must come from chrome.i18n (t() or data-i18n), not literals.","selector":"AssignmentExpression[left.property.name=/^(textContent|innerText|innerHTML)$/][right.type=/^(Literal|TemplateLiteral)$/]"}]
+      }
+    },
+    "src/result": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.src.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No Node built-ins in extension code.","name":"assert"},{"message":"No Node built-ins in extension code.","name":"assert/strict"},{"message":"No Node built-ins in extension code.","name":"async_hooks"},{"message":"No Node built-ins in extension code.","name":"buffer"},{"message":"No Node built-ins in extension code.","name":"child_process"},{"message":"No Node built-ins in extension code.","name":"cluster"},{"message":"No Node built-ins in extension code.","name":"console"},{"message":"No Node built-ins in extension code.","name":"constants"},{"message":"No Node built-ins in extension code.","name":"crypto"},{"message":"No Node built-ins in extension code.","name":"dgram"},{"message":"No Node built-ins in extension code.","name":"diagnostics_channel"},{"message":"No Node built-ins in extension code.","name":"dns"},{"message":"No Node built-ins in extension code.","name":"dns/promises"},{"message":"No Node built-ins in extension code.","name":"domain"},{"message":"No Node built-ins in extension code.","name":"events"},{"message":"No Node built-ins in extension code.","name":"fs"},{"message":"No Node built-ins in extension code.","name":"fs/promises"},{"message":"No Node built-ins in extension code.","name":"http"},{"message":"No Node built-ins in extension code.","name":"http2"},{"message":"No Node built-ins in extension code.","name":"https"},{"message":"No Node built-ins in extension code.","name":"inspector"},{"message":"No Node built-ins in extension code.","name":"inspector/promises"},{"message":"No Node built-ins in extension code.","name":"module"},{"message":"No Node built-ins in extension code.","name":"net"},{"message":"No Node built-ins in extension code.","name":"os"},{"message":"No Node built-ins in extension code.","name":"path"},{"message":"No Node built-ins in extension code.","name":"path/posix"},{"message":"No Node built-ins in extension code.","name":"path/win32"},{"message":"No Node built-ins in extension code.","name":"perf_hooks"},{"message":"No Node built-ins in extension code.","name":"process"},{"message":"No Node built-ins in extension code.","name":"punycode"},{"message":"No Node built-ins in extension code.","name":"querystring"},{"message":"No Node built-ins in extension code.","name":"readline"},{"message":"No Node built-ins in extension code.","name":"readline/promises"},{"message":"No Node built-ins in extension code.","name":"repl"},{"message":"No Node built-ins in extension code.","name":"stream"},{"message":"No Node built-ins in extension code.","name":"stream/consumers"},{"message":"No Node built-ins in extension code.","name":"stream/promises"},{"message":"No Node built-ins in extension code.","name":"stream/web"},{"message":"No Node built-ins in extension code.","name":"string_decoder"},{"message":"No Node built-ins in extension code.","name":"sys"},{"message":"No Node built-ins in extension code.","name":"timers"},{"message":"No Node built-ins in extension code.","name":"timers/promises"},{"message":"No Node built-ins in extension code.","name":"tls"},{"message":"No Node built-ins in extension code.","name":"trace_events"},{"message":"No Node built-ins in extension code.","name":"tty"},{"message":"No Node built-ins in extension code.","name":"url"},{"message":"No Node built-ins in extension code.","name":"util"},{"message":"No Node built-ins in extension code.","name":"util/types"},{"message":"No Node built-ins in extension code.","name":"v8"},{"message":"No Node built-ins in extension code.","name":"vm"},{"message":"No Node built-ins in extension code.","name":"wasi"},{"message":"No Node built-ins in extension code.","name":"worker_threads"},{"message":"No Node built-ins in extension code.","name":"zlib"}],"patterns":[{"group":["node:*"],"message":"No Node built-ins in extension code."},{"group":["**/background","**/background/**"],"message":"Move shared code to src/shared instead of importing from background."},{"group":["**/select","**/select/**"],"message":"Move shared code to src/shared instead of importing from select."},{"group":["**/welcome","**/welcome/**"],"message":"Move shared code to src/shared instead of importing from welcome."}]}],
+        "no-restricted-syntax": ["error",{"message":"No dynamic import() in extension code; import statically.","selector":"ImportExpression"},{"message":"No CommonJS require() in extension code.","selector":"CallExpression[callee.name='require']"},{"message":"No CommonJS require() in extension code.","selector":"MemberExpression[object.name='require']"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSModuleDeclaration"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSDeclareFunction"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"VariableDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"FunctionDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"ClassDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSEnumDeclaration[declare=true]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElement'], [callee.property.value='createElement'], [callee.property.quasis.0.value.cooked='createElement']):matches([arguments.0.value=/^(script|iframe|frame|embed|object)$/i], [arguments.0.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElementNS'], [callee.property.value='createElementNS'], [callee.property.quasis.0.value.cooked='createElementNS']):matches([arguments.1.value=/^(script|iframe|frame|embed|object)$/i], [arguments.1.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='eval']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='Function']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"MemberExpression[computed=true]:matches([property.name=/^(eval|Function|importScripts)$/], [property.value=/^(eval|Function|importScripts)$/], [property.quasis.0.value.cooked=/^(eval|Function|importScripts)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='importScripts']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.name=/^(setTimeout|setInterval)$/], :matches([callee.property.name=/^(setTimeout|setInterval)$/], [callee.property.value=/^(setTimeout|setInterval)$/], [callee.property.quasis.0.value.cooked=/^(setTimeout|setInterval)$/]))[arguments.0.type=/^(Literal|TemplateLiteral)$/]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name=/^(write|writeln)$/], [callee.property.value=/^(write|writeln)$/], [callee.property.quasis.0.value.cooked=/^(write|writeln)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"NewExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"Identifier[name='WebAssembly']"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"MemberExpression[computed=true]:matches([property.name='WebAssembly'], [property.value='WebAssembly'], [property.quasis.0.value.cooked='WebAssembly'])"},{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[computed=true][property.value='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"ObjectPattern > Property[key.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toFixed']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toLocaleString']"},{"message":"UI text must come from chrome.i18n (t() or data-i18n), not literals.","selector":"AssignmentExpression[left.property.name=/^(textContent|innerText|innerHTML)$/][right.type=/^(Literal|TemplateLiteral)$/]"}]
+      }
+    },
+    "src/select": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.src.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No Node built-ins in extension code.","name":"assert"},{"message":"No Node built-ins in extension code.","name":"assert/strict"},{"message":"No Node built-ins in extension code.","name":"async_hooks"},{"message":"No Node built-ins in extension code.","name":"buffer"},{"message":"No Node built-ins in extension code.","name":"child_process"},{"message":"No Node built-ins in extension code.","name":"cluster"},{"message":"No Node built-ins in extension code.","name":"console"},{"message":"No Node built-ins in extension code.","name":"constants"},{"message":"No Node built-ins in extension code.","name":"crypto"},{"message":"No Node built-ins in extension code.","name":"dgram"},{"message":"No Node built-ins in extension code.","name":"diagnostics_channel"},{"message":"No Node built-ins in extension code.","name":"dns"},{"message":"No Node built-ins in extension code.","name":"dns/promises"},{"message":"No Node built-ins in extension code.","name":"domain"},{"message":"No Node built-ins in extension code.","name":"events"},{"message":"No Node built-ins in extension code.","name":"fs"},{"message":"No Node built-ins in extension code.","name":"fs/promises"},{"message":"No Node built-ins in extension code.","name":"http"},{"message":"No Node built-ins in extension code.","name":"http2"},{"message":"No Node built-ins in extension code.","name":"https"},{"message":"No Node built-ins in extension code.","name":"inspector"},{"message":"No Node built-ins in extension code.","name":"inspector/promises"},{"message":"No Node built-ins in extension code.","name":"module"},{"message":"No Node built-ins in extension code.","name":"net"},{"message":"No Node built-ins in extension code.","name":"os"},{"message":"No Node built-ins in extension code.","name":"path"},{"message":"No Node built-ins in extension code.","name":"path/posix"},{"message":"No Node built-ins in extension code.","name":"path/win32"},{"message":"No Node built-ins in extension code.","name":"perf_hooks"},{"message":"No Node built-ins in extension code.","name":"process"},{"message":"No Node built-ins in extension code.","name":"punycode"},{"message":"No Node built-ins in extension code.","name":"querystring"},{"message":"No Node built-ins in extension code.","name":"readline"},{"message":"No Node built-ins in extension code.","name":"readline/promises"},{"message":"No Node built-ins in extension code.","name":"repl"},{"message":"No Node built-ins in extension code.","name":"stream"},{"message":"No Node built-ins in extension code.","name":"stream/consumers"},{"message":"No Node built-ins in extension code.","name":"stream/promises"},{"message":"No Node built-ins in extension code.","name":"stream/web"},{"message":"No Node built-ins in extension code.","name":"string_decoder"},{"message":"No Node built-ins in extension code.","name":"sys"},{"message":"No Node built-ins in extension code.","name":"timers"},{"message":"No Node built-ins in extension code.","name":"timers/promises"},{"message":"No Node built-ins in extension code.","name":"tls"},{"message":"No Node built-ins in extension code.","name":"trace_events"},{"message":"No Node built-ins in extension code.","name":"tty"},{"message":"No Node built-ins in extension code.","name":"url"},{"message":"No Node built-ins in extension code.","name":"util"},{"message":"No Node built-ins in extension code.","name":"util/types"},{"message":"No Node built-ins in extension code.","name":"v8"},{"message":"No Node built-ins in extension code.","name":"vm"},{"message":"No Node built-ins in extension code.","name":"wasi"},{"message":"No Node built-ins in extension code.","name":"worker_threads"},{"message":"No Node built-ins in extension code.","name":"zlib"}],"patterns":[{"group":["node:*"],"message":"No Node built-ins in extension code."},{"group":["**/background","**/background/**"],"message":"Move shared code to src/shared instead of importing from background."},{"group":["**/result","**/result/**"],"message":"Move shared code to src/shared instead of importing from result."},{"group":["**/welcome","**/welcome/**"],"message":"Move shared code to src/shared instead of importing from welcome."}]}],
+        "no-restricted-syntax": ["error",{"message":"No dynamic import() in extension code; import statically.","selector":"ImportExpression"},{"message":"No CommonJS require() in extension code.","selector":"CallExpression[callee.name='require']"},{"message":"No CommonJS require() in extension code.","selector":"MemberExpression[object.name='require']"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSModuleDeclaration"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSDeclareFunction"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"VariableDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"FunctionDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"ClassDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSEnumDeclaration[declare=true]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElement'], [callee.property.value='createElement'], [callee.property.quasis.0.value.cooked='createElement']):matches([arguments.0.value=/^(script|iframe|frame|embed|object)$/i], [arguments.0.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElementNS'], [callee.property.value='createElementNS'], [callee.property.quasis.0.value.cooked='createElementNS']):matches([arguments.1.value=/^(script|iframe|frame|embed|object)$/i], [arguments.1.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='eval']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='Function']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"MemberExpression[computed=true]:matches([property.name=/^(eval|Function|importScripts)$/], [property.value=/^(eval|Function|importScripts)$/], [property.quasis.0.value.cooked=/^(eval|Function|importScripts)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='importScripts']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.name=/^(setTimeout|setInterval)$/], :matches([callee.property.name=/^(setTimeout|setInterval)$/], [callee.property.value=/^(setTimeout|setInterval)$/], [callee.property.quasis.0.value.cooked=/^(setTimeout|setInterval)$/]))[arguments.0.type=/^(Literal|TemplateLiteral)$/]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name=/^(write|writeln)$/], [callee.property.value=/^(write|writeln)$/], [callee.property.quasis.0.value.cooked=/^(write|writeln)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"NewExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"Identifier[name='WebAssembly']"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"MemberExpression[computed=true]:matches([property.name='WebAssembly'], [property.value='WebAssembly'], [property.quasis.0.value.cooked='WebAssembly'])"},{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[computed=true][property.value='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"ObjectPattern > Property[key.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toFixed']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toLocaleString']"},{"message":"UI text must come from chrome.i18n (t() or data-i18n), not literals.","selector":"AssignmentExpression[left.property.name=/^(textContent|innerText|innerHTML)$/][right.type=/^(Literal|TemplateLiteral)$/]"}]
+      }
+    },
+    "src/shared": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.src.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No Node built-ins in extension code.","name":"assert"},{"message":"No Node built-ins in extension code.","name":"assert/strict"},{"message":"No Node built-ins in extension code.","name":"async_hooks"},{"message":"No Node built-ins in extension code.","name":"buffer"},{"message":"No Node built-ins in extension code.","name":"child_process"},{"message":"No Node built-ins in extension code.","name":"cluster"},{"message":"No Node built-ins in extension code.","name":"console"},{"message":"No Node built-ins in extension code.","name":"constants"},{"message":"No Node built-ins in extension code.","name":"crypto"},{"message":"No Node built-ins in extension code.","name":"dgram"},{"message":"No Node built-ins in extension code.","name":"diagnostics_channel"},{"message":"No Node built-ins in extension code.","name":"dns"},{"message":"No Node built-ins in extension code.","name":"dns/promises"},{"message":"No Node built-ins in extension code.","name":"domain"},{"message":"No Node built-ins in extension code.","name":"events"},{"message":"No Node built-ins in extension code.","name":"fs"},{"message":"No Node built-ins in extension code.","name":"fs/promises"},{"message":"No Node built-ins in extension code.","name":"http"},{"message":"No Node built-ins in extension code.","name":"http2"},{"message":"No Node built-ins in extension code.","name":"https"},{"message":"No Node built-ins in extension code.","name":"inspector"},{"message":"No Node built-ins in extension code.","name":"inspector/promises"},{"message":"No Node built-ins in extension code.","name":"module"},{"message":"No Node built-ins in extension code.","name":"net"},{"message":"No Node built-ins in extension code.","name":"os"},{"message":"No Node built-ins in extension code.","name":"path"},{"message":"No Node built-ins in extension code.","name":"path/posix"},{"message":"No Node built-ins in extension code.","name":"path/win32"},{"message":"No Node built-ins in extension code.","name":"perf_hooks"},{"message":"No Node built-ins in extension code.","name":"process"},{"message":"No Node built-ins in extension code.","name":"punycode"},{"message":"No Node built-ins in extension code.","name":"querystring"},{"message":"No Node built-ins in extension code.","name":"readline"},{"message":"No Node built-ins in extension code.","name":"readline/promises"},{"message":"No Node built-ins in extension code.","name":"repl"},{"message":"No Node built-ins in extension code.","name":"stream"},{"message":"No Node built-ins in extension code.","name":"stream/consumers"},{"message":"No Node built-ins in extension code.","name":"stream/promises"},{"message":"No Node built-ins in extension code.","name":"stream/web"},{"message":"No Node built-ins in extension code.","name":"string_decoder"},{"message":"No Node built-ins in extension code.","name":"sys"},{"message":"No Node built-ins in extension code.","name":"timers"},{"message":"No Node built-ins in extension code.","name":"timers/promises"},{"message":"No Node built-ins in extension code.","name":"tls"},{"message":"No Node built-ins in extension code.","name":"trace_events"},{"message":"No Node built-ins in extension code.","name":"tty"},{"message":"No Node built-ins in extension code.","name":"url"},{"message":"No Node built-ins in extension code.","name":"util"},{"message":"No Node built-ins in extension code.","name":"util/types"},{"message":"No Node built-ins in extension code.","name":"v8"},{"message":"No Node built-ins in extension code.","name":"vm"},{"message":"No Node built-ins in extension code.","name":"wasi"},{"message":"No Node built-ins in extension code.","name":"worker_threads"},{"message":"No Node built-ins in extension code.","name":"zlib"}],"patterns":[{"group":["node:*"],"message":"No Node built-ins in extension code."},{"group":["**/background","**/background/**"],"message":"Move shared code to src/shared instead of importing from background."},{"group":["**/result","**/result/**"],"message":"Move shared code to src/shared instead of importing from result."},{"group":["**/select","**/select/**"],"message":"Move shared code to src/shared instead of importing from select."},{"group":["**/welcome","**/welcome/**"],"message":"Move shared code to src/shared instead of importing from welcome."}]}],
+        "no-restricted-syntax": ["error",{"message":"No dynamic import() in extension code; import statically.","selector":"ImportExpression"},{"message":"No CommonJS require() in extension code.","selector":"CallExpression[callee.name='require']"},{"message":"No CommonJS require() in extension code.","selector":"MemberExpression[object.name='require']"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSModuleDeclaration"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSDeclareFunction"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"VariableDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"FunctionDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"ClassDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSEnumDeclaration[declare=true]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElement'], [callee.property.value='createElement'], [callee.property.quasis.0.value.cooked='createElement']):matches([arguments.0.value=/^(script|iframe|frame|embed|object)$/i], [arguments.0.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElementNS'], [callee.property.value='createElementNS'], [callee.property.quasis.0.value.cooked='createElementNS']):matches([arguments.1.value=/^(script|iframe|frame|embed|object)$/i], [arguments.1.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='eval']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='Function']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"MemberExpression[computed=true]:matches([property.name=/^(eval|Function|importScripts)$/], [property.value=/^(eval|Function|importScripts)$/], [property.quasis.0.value.cooked=/^(eval|Function|importScripts)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='importScripts']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.name=/^(setTimeout|setInterval)$/], :matches([callee.property.name=/^(setTimeout|setInterval)$/], [callee.property.value=/^(setTimeout|setInterval)$/], [callee.property.quasis.0.value.cooked=/^(setTimeout|setInterval)$/]))[arguments.0.type=/^(Literal|TemplateLiteral)$/]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name=/^(write|writeln)$/], [callee.property.value=/^(write|writeln)$/], [callee.property.quasis.0.value.cooked=/^(write|writeln)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"NewExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"Identifier[name='WebAssembly']"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"MemberExpression[computed=true]:matches([property.name='WebAssembly'], [property.value='WebAssembly'], [property.quasis.0.value.cooked='WebAssembly'])"},{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[computed=true][property.value='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"ObjectPattern > Property[key.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toFixed']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toLocaleString']"},{"message":"UI text must come from chrome.i18n (t() or data-i18n), not literals.","selector":"AssignmentExpression[left.property.name=/^(textContent|innerText|innerHTML)$/][right.type=/^(Literal|TemplateLiteral)$/]"}]
+      }
+    },
+    "src/welcome": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.src.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No Node built-ins in extension code.","name":"assert"},{"message":"No Node built-ins in extension code.","name":"assert/strict"},{"message":"No Node built-ins in extension code.","name":"async_hooks"},{"message":"No Node built-ins in extension code.","name":"buffer"},{"message":"No Node built-ins in extension code.","name":"child_process"},{"message":"No Node built-ins in extension code.","name":"cluster"},{"message":"No Node built-ins in extension code.","name":"console"},{"message":"No Node built-ins in extension code.","name":"constants"},{"message":"No Node built-ins in extension code.","name":"crypto"},{"message":"No Node built-ins in extension code.","name":"dgram"},{"message":"No Node built-ins in extension code.","name":"diagnostics_channel"},{"message":"No Node built-ins in extension code.","name":"dns"},{"message":"No Node built-ins in extension code.","name":"dns/promises"},{"message":"No Node built-ins in extension code.","name":"domain"},{"message":"No Node built-ins in extension code.","name":"events"},{"message":"No Node built-ins in extension code.","name":"fs"},{"message":"No Node built-ins in extension code.","name":"fs/promises"},{"message":"No Node built-ins in extension code.","name":"http"},{"message":"No Node built-ins in extension code.","name":"http2"},{"message":"No Node built-ins in extension code.","name":"https"},{"message":"No Node built-ins in extension code.","name":"inspector"},{"message":"No Node built-ins in extension code.","name":"inspector/promises"},{"message":"No Node built-ins in extension code.","name":"module"},{"message":"No Node built-ins in extension code.","name":"net"},{"message":"No Node built-ins in extension code.","name":"os"},{"message":"No Node built-ins in extension code.","name":"path"},{"message":"No Node built-ins in extension code.","name":"path/posix"},{"message":"No Node built-ins in extension code.","name":"path/win32"},{"message":"No Node built-ins in extension code.","name":"perf_hooks"},{"message":"No Node built-ins in extension code.","name":"process"},{"message":"No Node built-ins in extension code.","name":"punycode"},{"message":"No Node built-ins in extension code.","name":"querystring"},{"message":"No Node built-ins in extension code.","name":"readline"},{"message":"No Node built-ins in extension code.","name":"readline/promises"},{"message":"No Node built-ins in extension code.","name":"repl"},{"message":"No Node built-ins in extension code.","name":"stream"},{"message":"No Node built-ins in extension code.","name":"stream/consumers"},{"message":"No Node built-ins in extension code.","name":"stream/promises"},{"message":"No Node built-ins in extension code.","name":"stream/web"},{"message":"No Node built-ins in extension code.","name":"string_decoder"},{"message":"No Node built-ins in extension code.","name":"sys"},{"message":"No Node built-ins in extension code.","name":"timers"},{"message":"No Node built-ins in extension code.","name":"timers/promises"},{"message":"No Node built-ins in extension code.","name":"tls"},{"message":"No Node built-ins in extension code.","name":"trace_events"},{"message":"No Node built-ins in extension code.","name":"tty"},{"message":"No Node built-ins in extension code.","name":"url"},{"message":"No Node built-ins in extension code.","name":"util"},{"message":"No Node built-ins in extension code.","name":"util/types"},{"message":"No Node built-ins in extension code.","name":"v8"},{"message":"No Node built-ins in extension code.","name":"vm"},{"message":"No Node built-ins in extension code.","name":"wasi"},{"message":"No Node built-ins in extension code.","name":"worker_threads"},{"message":"No Node built-ins in extension code.","name":"zlib"}],"patterns":[{"group":["node:*"],"message":"No Node built-ins in extension code."},{"group":["**/background","**/background/**"],"message":"Move shared code to src/shared instead of importing from background."},{"group":["**/result","**/result/**"],"message":"Move shared code to src/shared instead of importing from result."},{"group":["**/select","**/select/**"],"message":"Move shared code to src/shared instead of importing from select."}]}],
+        "no-restricted-syntax": ["error",{"message":"No dynamic import() in extension code; import statically.","selector":"ImportExpression"},{"message":"No CommonJS require() in extension code.","selector":"CallExpression[callee.name='require']"},{"message":"No CommonJS require() in extension code.","selector":"MemberExpression[object.name='require']"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSModuleDeclaration"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSDeclareFunction"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"VariableDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"FunctionDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"ClassDeclaration[declare=true]"},{"message":"No ambient declarations or namespaces outside .d.ts files.","selector":"TSEnumDeclaration[declare=true]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElement'], [callee.property.value='createElement'], [callee.property.quasis.0.value.cooked='createElement']):matches([arguments.0.value=/^(script|iframe|frame|embed|object)$/i], [arguments.0.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='createElementNS'], [callee.property.value='createElementNS'], [callee.property.quasis.0.value.cooked='createElementNS']):matches([arguments.1.value=/^(script|iframe|frame|embed|object)$/i], [arguments.1.quasis.0.value.cooked=/^(script|iframe|frame|embed|object)$/i])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='eval']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='Function']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"MemberExpression[computed=true]:matches([property.name=/^(eval|Function|importScripts)$/], [property.value=/^(eval|Function|importScripts)$/], [property.quasis.0.value.cooked=/^(eval|Function|importScripts)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"Identifier[name='importScripts']"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.name=/^(setTimeout|setInterval)$/], :matches([callee.property.name=/^(setTimeout|setInterval)$/], [callee.property.value=/^(setTimeout|setInterval)$/], [callee.property.quasis.0.value.cooked=/^(setTimeout|setInterval)$/]))[arguments.0.type=/^(Literal|TemplateLiteral)$/]"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name=/^(write|writeln)$/], [callee.property.value=/^(write|writeln)$/], [callee.property.quasis.0.value.cooked=/^(write|writeln)$/])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"CallExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"No code loaded or built at run time (script/iframe/embed/object elements, eval, Function, importScripts, setTimeout with a string, document.write).","selector":"NewExpression:matches([callee.property.name='constructor'], [callee.property.value='constructor'], [callee.property.quasis.0.value.cooked='constructor'])"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"Identifier[name='WebAssembly']"},{"message":"WebAssembly is intentionally not supported by this template (it needs wasm-unsafe-eval in the CSP); see \"WebAssembly\" in README.md.","selector":"MemberExpression[computed=true]:matches([property.name='WebAssembly'], [property.value='WebAssembly'], [property.quasis.0.value.cooked='WebAssembly'])"},{"message":"No `key in object` with a dynamic key (it finds inherited names like constructor): use a Map, a Set or Object.hasOwn.","selector":"BinaryExpression[operator='in']:not([left.type='Literal'])"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[computed=true][property.value='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"ObjectPattern > Property[key.name='NumberFormat']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toFixed']"},{"message":"No number formatting in extension code (FontSnap shows its scores through percentLabel in src/shared/ui.ts); a locale-aware format needs src/shared/format.ts from the template.","selector":"MemberExpression[property.name='toLocaleString']"},{"message":"UI text must come from chrome.i18n (t() or data-i18n), not literals.","selector":"AssignmentExpression[left.property.name=/^(textContent|innerText|innerHTML)$/][right.type=/^(Literal|TemplateLiteral)$/]"}]
+      }
+    },
+    "tests/e2e": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.node.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"},
+        "playwright": {"name":null,"rulesHash":"180c67e0f11d4fbc"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-restricted-imports": ["error",{"paths":[{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"timers"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"node:timers"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"timers/promises"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"node:timers/promises"}],"patterns":[{"group":["timers/*","node:timers/*"],"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction."},{"group":["**/unit","**/unit/**"],"message":"e2e tests do not import unit-test code."}]}],
+        "no-restricted-properties": ["error",{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","property":"waitForTimeout"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","property":"setInterval"}],
+        "no-restricted-syntax": ["error",{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"MemberExpression[property.name=/^(skip|fixme|only|todo|skipIf|runIf|fails|fail)$/]:matches([object.name=/^(test|it|describe|suite)$/], [object.property.name=/^(test|it|describe|suite)$/], [object.object.name=/^(test|it|describe|suite)$/], [object.object.property.name=/^(test|it|describe|suite)$/], [object.object.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"MemberExpression[property.value=/^(skip|fixme|only|todo|skipIf|runIf|fails|fail)$/]:matches([object.name=/^(test|it|describe|suite)$/], [object.property.name=/^(test|it|describe|suite)$/], [object.object.name=/^(test|it|describe|suite)$/], [object.object.property.name=/^(test|it|describe|suite)$/], [object.object.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"VariableDeclarator:matches([init.name=/^(test|it|describe|suite)$/], [init.object.name=/^(test|it|describe|suite)$/], [init.property.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"AssignmentExpression:matches([right.name=/^(test|it|describe|suite)$/], [right.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='test'][local.name!='test']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='it'][local.name!='it']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='describe'][local.name!='describe']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='suite'][local.name!='suite']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":":matches(IfStatement, SwitchStatement, ConditionalExpression, LogicalExpression) CallExpression:matches([callee.name=/^(test|it|describe|suite)$/], [callee.object.name=/^(test|it|describe|suite)$/], [callee.object.property.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure']:not([arguments.0.type='ObjectExpression'])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > Property[key.name!='mode']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > Property[computed=true]"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > SpreadElement"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"MemberExpression[property.name='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"MemberExpression[property.value='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"ObjectPattern > Property[key.name='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Identifier[name='setTimeout']:not(MemberExpression[object.name=/^(test|testInfo)$/] > Identifier.property)"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Identifier[name=/^(setInterval|setImmediate)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Literal[value=/^(setTimeout|setInterval|setImmediate|waitForTimeout)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"TemplateLiteral[quasis.length=1][quasis.0.value.cooked=/^(setTimeout|setInterval|setImmediate|waitForTimeout)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Literal[value='networkidle']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"ImportExpression"}],
+        "playwright/consistent-spacing-between-blocks": ["warn"],
+        "playwright/expect-expect": ["warn"],
+        "playwright/max-nested-describe": ["warn"],
+        "playwright/missing-playwright-await": ["error"],
+        "playwright/no-conditional-expect": ["warn"],
+        "playwright/no-conditional-in-test": ["warn"],
+        "playwright/no-duplicate-hooks": ["warn"],
+        "playwright/no-duplicate-slow": ["warn"],
+        "playwright/no-element-handle": ["warn"],
+        "playwright/no-eval": ["warn"],
+        "playwright/no-focused-test": ["error"],
+        "playwright/no-force-option": ["warn"],
+        "playwright/no-identical-title": ["warn"],
+        "playwright/no-nested-step": ["warn"],
+        "playwright/no-networkidle": ["error"],
+        "playwright/no-page-pause": ["warn"],
+        "playwright/no-skipped-test": ["error",{"allowConditional":false,"disallowFixme":true}],
+        "playwright/no-standalone-expect": ["error"],
+        "playwright/no-unnecessary-assertions": ["error"],
+        "playwright/no-unsafe-references": ["error"],
+        "playwright/no-unused-locators": ["error"],
+        "playwright/no-useless-await": ["warn"],
+        "playwright/no-useless-not": ["warn"],
+        "playwright/no-wait-for-navigation": ["error"],
+        "playwright/no-wait-for-selector": ["warn"],
+        "playwright/no-wait-for-timeout": ["error"],
+        "playwright/prefer-hooks-in-order": ["warn"],
+        "playwright/prefer-hooks-on-top": ["warn"],
+        "playwright/prefer-locator": ["warn"],
+        "playwright/prefer-to-have-count": ["warn"],
+        "playwright/prefer-to-have-length": ["warn"],
+        "playwright/prefer-web-first-assertions": ["error"],
+        "playwright/valid-describe-callback": ["error"],
+        "playwright/valid-expect": ["error"],
+        "playwright/valid-expect-in-promise": ["error"],
+        "playwright/valid-test-tags": ["error"],
+        "playwright/valid-title": ["error"]
+      }
+    },
+    "tests/regression": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.node.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"timers"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"node:timers"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"timers/promises"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"node:timers/promises"}],"patterns":[{"group":["timers/*","node:timers/*"],"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction."}]}],
+        "no-restricted-properties": ["error",{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","property":"waitForTimeout"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","property":"setInterval"}],
+        "no-restricted-syntax": ["error",{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"MemberExpression[property.name=/^(skip|fixme|only|todo|skipIf|runIf|fails|fail)$/]:matches([object.name=/^(test|it|describe|suite)$/], [object.property.name=/^(test|it|describe|suite)$/], [object.object.name=/^(test|it|describe|suite)$/], [object.object.property.name=/^(test|it|describe|suite)$/], [object.object.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"MemberExpression[property.value=/^(skip|fixme|only|todo|skipIf|runIf|fails|fail)$/]:matches([object.name=/^(test|it|describe|suite)$/], [object.property.name=/^(test|it|describe|suite)$/], [object.object.name=/^(test|it|describe|suite)$/], [object.object.property.name=/^(test|it|describe|suite)$/], [object.object.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"VariableDeclarator:matches([init.name=/^(test|it|describe|suite)$/], [init.object.name=/^(test|it|describe|suite)$/], [init.property.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"AssignmentExpression:matches([right.name=/^(test|it|describe|suite)$/], [right.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='test'][local.name!='test']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='it'][local.name!='it']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='describe'][local.name!='describe']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='suite'][local.name!='suite']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":":matches(IfStatement, SwitchStatement, ConditionalExpression, LogicalExpression) CallExpression:matches([callee.name=/^(test|it|describe|suite)$/], [callee.object.name=/^(test|it|describe|suite)$/], [callee.object.property.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure']:not([arguments.0.type='ObjectExpression'])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > Property[key.name!='mode']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > Property[computed=true]"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > SpreadElement"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"MemberExpression[property.name='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"MemberExpression[property.value='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"ObjectPattern > Property[key.name='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Identifier[name='setTimeout']:not(MemberExpression[object.name=/^(test|testInfo)$/] > Identifier.property)"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Identifier[name=/^(setInterval|setImmediate)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Literal[value=/^(setTimeout|setInterval|setImmediate|waitForTimeout)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"TemplateLiteral[quasis.length=1][quasis.0.value.cooked=/^(setTimeout|setInterval|setImmediate|waitForTimeout)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Literal[value='networkidle']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"ImportExpression"}]
+      }
+    },
+    "tests/unit": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.node.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"},
+        "vitest": {"name":"vitest","rulesHash":"19a70b75de8b48e1"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"timers"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"node:timers"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"timers/promises"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"node:timers/promises"}],"patterns":[{"group":["timers/*","node:timers/*"],"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction."}]}],
+        "no-restricted-properties": ["error",{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","property":"waitForTimeout"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","property":"setInterval"}],
+        "no-restricted-syntax": ["error",{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"MemberExpression[property.name=/^(skip|fixme|only|todo|skipIf|runIf|fails|fail)$/]:matches([object.name=/^(test|it|describe|suite)$/], [object.property.name=/^(test|it|describe|suite)$/], [object.object.name=/^(test|it|describe|suite)$/], [object.object.property.name=/^(test|it|describe|suite)$/], [object.object.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"MemberExpression[property.value=/^(skip|fixme|only|todo|skipIf|runIf|fails|fail)$/]:matches([object.name=/^(test|it|describe|suite)$/], [object.property.name=/^(test|it|describe|suite)$/], [object.object.name=/^(test|it|describe|suite)$/], [object.object.property.name=/^(test|it|describe|suite)$/], [object.object.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"VariableDeclarator:matches([init.name=/^(test|it|describe|suite)$/], [init.object.name=/^(test|it|describe|suite)$/], [init.property.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"AssignmentExpression:matches([right.name=/^(test|it|describe|suite)$/], [right.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='test'][local.name!='test']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='it'][local.name!='it']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='describe'][local.name!='describe']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='suite'][local.name!='suite']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":":matches(IfStatement, SwitchStatement, ConditionalExpression, LogicalExpression) CallExpression:matches([callee.name=/^(test|it|describe|suite)$/], [callee.object.name=/^(test|it|describe|suite)$/], [callee.object.property.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure']:not([arguments.0.type='ObjectExpression'])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > Property[key.name!='mode']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > Property[computed=true]"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > SpreadElement"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"MemberExpression[property.name='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"MemberExpression[property.value='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"ObjectPattern > Property[key.name='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Identifier[name='setTimeout']:not(MemberExpression[object.name=/^(test|testInfo)$/] > Identifier.property)"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Identifier[name=/^(setInterval|setImmediate)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Literal[value=/^(setTimeout|setInterval|setImmediate|waitForTimeout)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"TemplateLiteral[quasis.length=1][quasis.0.value.cooked=/^(setTimeout|setInterval|setImmediate|waitForTimeout)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Literal[value='networkidle']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"ImportExpression"}],
+        "vitest/expect-expect": ["error",{"additionalTestBlockFunctions":[],"assertFunctionNames":["expect","assert"]}],
+        "vitest/no-commented-out-tests": ["error"],
+        "vitest/no-conditional-expect": ["error",{"expectAssertions":false}],
+        "vitest/no-disabled-tests": ["error"],
+        "vitest/no-focused-tests": ["error",{"fixable":true}],
+        "vitest/no-identical-title": ["error"],
+        "vitest/no-import-node-test": ["error"],
+        "vitest/no-interpolation-in-snapshots": ["error"],
+        "vitest/no-mocks-import": ["error"],
+        "vitest/no-standalone-expect": ["error",{"additionalTestBlockFunctions":[]}],
+        "vitest/no-unneeded-async-expect-function": ["error"],
+        "vitest/prefer-called-exactly-once-with": ["error"],
+        "vitest/require-local-test-context-for-concurrent-snapshots": ["error"],
+        "vitest/valid-describe-callback": ["error"],
+        "vitest/valid-expect": ["error",{"alwaysAwait":false,"asyncMatchers":["toReject","toResolve"],"maxArgs":2,"minArgs":1}],
+        "vitest/valid-expect-in-promise": ["error"],
+        "vitest/valid-title": ["error",{"allowArguments":false,"disallowedWords":[],"ignoreTypeOfDescribeName":false}]
+      }
+    },
+    "tests/unit/helpers": {
+      "languageOptions": {
+        "ecmaVersion": 2026,
+        "parser": {
+          "name": "typescript-eslint/parser"
+        },
+        "parserOptions": {
+          "project": "./tsconfig.node.json",
+          "tsconfigRootDir": "<root>"
+        },
+        "sourceType": "module"
+      },
+      "linterOptions": {
+        "noInlineConfig": true,
+        "reportUnusedDisableDirectives": 2
+      },
+      "plugins": {
+        "@": {"name":null,"rulesHash":"4f53cda18c2baa0c"},
+        "@eslint-community/eslint-comments": {"name":"@eslint-community/eslint-plugin-eslint-comments","rulesHash":"b8dd7bebdcca03a2"},
+        "@typescript-eslint": {"name":"@typescript-eslint/eslint-plugin","rulesHash":"32b266e1c4335e6f"},
+        "vitest": {"name":"vitest","rulesHash":"19a70b75de8b48e1"}
+      },
+      "processor": null,
+      "ruleDifferences": {
+        "no-empty-pattern": ["error",{"allowObjectPatternsAsParameters":false}],
+        "no-restricted-imports": ["error",{"paths":[{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"timers"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"node:timers"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"timers/promises"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","name":"node:timers/promises"}],"patterns":[{"group":["timers/*","node:timers/*"],"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction."}]}],
+        "no-restricted-properties": ["error",{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","property":"waitForTimeout"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","property":"setInterval"}],
+        "no-restricted-syntax": ["error",{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"MemberExpression[property.name=/^(skip|fixme|only|todo|skipIf|runIf|fails|fail)$/]:matches([object.name=/^(test|it|describe|suite)$/], [object.property.name=/^(test|it|describe|suite)$/], [object.object.name=/^(test|it|describe|suite)$/], [object.object.property.name=/^(test|it|describe|suite)$/], [object.object.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"MemberExpression[property.value=/^(skip|fixme|only|todo|skipIf|runIf|fails|fail)$/]:matches([object.name=/^(test|it|describe|suite)$/], [object.property.name=/^(test|it|describe|suite)$/], [object.object.name=/^(test|it|describe|suite)$/], [object.object.property.name=/^(test|it|describe|suite)$/], [object.object.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"VariableDeclarator:matches([init.name=/^(test|it|describe|suite)$/], [init.object.name=/^(test|it|describe|suite)$/], [init.property.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"AssignmentExpression:matches([right.name=/^(test|it|describe|suite)$/], [right.object.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='test'][local.name!='test']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='it'][local.name!='it']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='describe'][local.name!='describe']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"ImportSpecifier[imported.name='suite'][local.name!='suite']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":":matches(IfStatement, SwitchStatement, ConditionalExpression, LogicalExpression) CallExpression:matches([callee.name=/^(test|it|describe|suite)$/], [callee.object.name=/^(test|it|describe|suite)$/], [callee.object.property.name=/^(test|it|describe|suite)$/])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure']:not([arguments.0.type='ObjectExpression'])"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > Property[key.name!='mode']"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > Property[computed=true]"},{"message":"Tests may not be skipped, focused, todo, expected to fail, aliased, registered conditionally or reconfigured (configure may only set mode).","selector":"CallExpression[callee.property.name='configure'] > ObjectExpression > SpreadElement"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"MemberExpression[property.name='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"MemberExpression[property.value='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"ObjectPattern > Property[key.name='waitForTimeout']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Identifier[name='setTimeout']:not(MemberExpression[object.name=/^(test|testInfo)$/] > Identifier.property)"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Identifier[name=/^(setInterval|setImmediate)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Literal[value=/^(setTimeout|setInterval|setImmediate|waitForTimeout)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"TemplateLiteral[quasis.length=1][quasis.0.value.cooked=/^(setTimeout|setInterval|setImmediate|waitForTimeout)$/]"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"Literal[value='networkidle']"},{"message":"No sleeping in tests (waitForTimeout, timers, networkidle) and no dynamic import(). Use web-first assertions, expect.poll or waitForFunction.","selector":"ImportExpression"}],
+        "vitest/expect-expect": ["error",{"additionalTestBlockFunctions":[],"assertFunctionNames":["expect","assert"]}],
+        "vitest/no-commented-out-tests": ["error"],
+        "vitest/no-conditional-expect": ["error",{"expectAssertions":false}],
+        "vitest/no-disabled-tests": ["error"],
+        "vitest/no-focused-tests": ["error",{"fixable":true}],
+        "vitest/no-identical-title": ["error"],
+        "vitest/no-import-node-test": ["error"],
+        "vitest/no-interpolation-in-snapshots": ["error"],
+        "vitest/no-mocks-import": ["error"],
+        "vitest/no-standalone-expect": ["error",{"additionalTestBlockFunctions":[]}],
+        "vitest/no-unneeded-async-expect-function": ["error"],
+        "vitest/prefer-called-exactly-once-with": ["error"],
+        "vitest/require-local-test-context-for-concurrent-snapshots": ["error"],
+        "vitest/valid-describe-callback": ["error"],
+        "vitest/valid-expect": ["error",{"alwaysAwait":false,"asyncMatchers":["toReject","toResolve"],"maxArgs":2,"minArgs":1}],
+        "vitest/valid-expect-in-promise": ["error"],
+        "vitest/valid-title": ["error",{"allowArguments":false,"disallowedWords":[],"ignoreTypeOfDescribeName":false}]
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "engines": {
+    "node": ">=22.13"
+  },
+  "private": true,
+  "scripts": {
+    "build": "vite build --configLoader bundle -c vite.config.ts && vite build --configLoader bundle -c vite.content.config.ts && tsx scripts/verify-dist.ts",
+    "build:e2e": "vite build --configLoader bundle -c vite.config.ts --mode e2e && vite build --configLoader bundle -c vite.content.config.ts --mode e2e && tsx scripts/verify-dist.ts --e2e",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run check:locales && npm run build && npm run check:version && npm run test:e2e:auto",
+    "check:locales": "tsx scripts/check-locales.ts",
+    "check:version": "tsx scripts/check-version.ts",
+    "dev": "tsx scripts/dev.ts",
+    "eval:js": "tsx scripts/eval/eval-js.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "guards:update": "tsx scripts/guards-update.ts",
+    "lint": "eslint . --max-warnings=0",
+    "test": "vitest run --coverage && tsx scripts/check-reports.ts vitest",
+    "test:e2e": "npm run build:e2e && playwright test && tsx scripts/check-reports.ts playwright",
+    "test:e2e:auto": "tsx scripts/e2e.ts",
+    "test:e2e:xvfb": "xvfb-run -a -e xvfb.log --server-args=\"-screen 0 1280x1024x24 -noreset\" npm run test:e2e",
+    "test:regression": "tsx --test tests/regression/realset3.test.ts",
+    "typecheck": "tsc -p tsconfig.src.json && tsc -p tsconfig.node.json",
+    "zip": "tsx scripts/zip.ts"
+  },
+  "type": "module"
+}

@@ -1,0 +1,461 @@
+{
+  ".github/actions/lfs-pull/action.yml": {
+    "description": "Fetches only the Git LFS files a job needs (the repository has a small LFS bandwidth quota), through a cache of .git/lfs keyed by the object ids. Checkout runs with persist-credentials: false, so the token is given to git for the duration of the pull only.",
+    "inputs": {
+      "include": {
+        "description": "Comma-separated path patterns to fetch, for example model/model_fp16.onnx,data/realset3/images/**",
+        "required": true
+      },
+      "token": {
+        "description": "Token that may read the repository (github.token)",
+        "required": true
+      }
+    },
+    "name": "Pull Git LFS objects",
+    "runs": {
+      "steps": [
+        {
+          "env": {
+            "INCLUDE": "${{ inputs.include }}"
+          },
+          "name": "LFS cache key",
+          "run": "git lfs ls-files --long --include=\"$INCLUDE\" | cut -d ' ' -f1 | sort > .lfs-assets-id",
+          "shell": "bash"
+        },
+        {
+          "name": "Cache LFS objects",
+          "uses": "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+          "with": {
+            "key": "lfs-${{ hashFiles('.lfs-assets-id') }}",
+            "path": ".git/lfs"
+          }
+        },
+        {
+          "env": {
+            "GIT_TOKEN": "${{ inputs.token }}",
+            "INCLUDE": "${{ inputs.include }}"
+          },
+          "name": "Pull LFS objects",
+          "run": "git config --local http.https://github.com/.extraheader \"AUTHORIZATION: basic $(printf 'x-access-token:%s' \"$GIT_TOKEN\" | base64 -w0)\"\ngit lfs pull --include=\"$INCLUDE\"\ngit config --local --unset-all http.https://github.com/.extraheader\n",
+          "shell": "bash"
+        }
+      ],
+      "using": "composite"
+    }
+  },
+  ".github/dependabot.yml": {
+    "updates": [
+      {
+        "directory": "/",
+        "groups": {
+          "dev-dependencies": {
+            "dependency-type": "development",
+            "update-types": ["minor","patch"]
+          }
+        },
+        "open-pull-requests-limit": 5,
+        "package-ecosystem": "npm",
+        "schedule": {
+          "interval": "weekly"
+        }
+      },
+      {
+        "directory": "/",
+        "groups": {
+          "actions": {
+            "patterns": ["*"]
+          }
+        },
+        "package-ecosystem": "github-actions",
+        "schedule": {
+          "interval": "weekly"
+        }
+      }
+    ],
+    "version": 2
+  },
+  ".github/workflows/ci.yml": {
+    "concurrency": {
+      "cancel-in-progress": "${{ github.event_name == 'pull_request' }}",
+      "group": "ci-${{ github.workflow }}-${{ github.ref }}"
+    },
+    "jobs": {
+      "attest": {
+        "if": "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && (github.event.repository.visibility == 'public' || vars.ENABLE_ATTESTATIONS == 'true')",
+        "name": "Attest build provenance",
+        "needs": ["build","verify-tag"],
+        "permissions": {
+          "attestations": "write",
+          "contents": "read",
+          "id-token": "write"
+        },
+        "runs-on": "ubuntu-latest",
+        "steps": [
+          {
+            "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+            "with": {
+              "name": "extension-zip",
+              "path": "release"
+            }
+          },
+          {
+            "name": "Verify the checksum of the downloaded zip",
+            "run": "sha256sum -c ./*.zip.sha256",
+            "working-directory": "release"
+          },
+          {
+            "uses": "actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8",
+            "with": {
+              "subject-path": "release/*.zip"
+            }
+          }
+        ],
+        "timeout-minutes": 10
+      },
+      "build": {
+        "name": "Build and zip",
+        "needs": ["checks","e2e","reference"],
+        "runs-on": "ubuntu-latest",
+        "steps": [
+          {
+            "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "with": {
+              "persist-credentials": false
+            }
+          },
+          {
+            "name": "No project .npmrc",
+            "run": "test ! -e .npmrc"
+          },
+          {
+            "uses": "./.github/actions/lfs-pull",
+            "with": {
+              "include": "model/model_fp16.onnx",
+              "token": "${{ github.token }}"
+            }
+          },
+          {
+            "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+            "with": {
+              "cache": "npm",
+              "node-version-file": ".nvmrc"
+            }
+          },
+          {
+            "run": "npm ci"
+          },
+          {
+            "run": "npm run build"
+          },
+          {
+            "run": "npm run check:version"
+          },
+          {
+            "run": "npm run zip"
+          },
+          {
+            "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+            "with": {
+              "if-no-files-found": "error",
+              "name": "extension-zip",
+              "path": "release/*.zip\nrelease/*.zip.sha256\n",
+              "retention-days": 30
+            }
+          }
+        ],
+        "timeout-minutes": 10
+      },
+      "checks": {
+        "name": "Lint, types, unit tests",
+        "runs-on": "ubuntu-latest",
+        "steps": [
+          {
+            "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "with": {
+              "persist-credentials": false
+            }
+          },
+          {
+            "name": "No project .npmrc",
+            "run": "test ! -e .npmrc"
+          },
+          {
+            "uses": "./.github/actions/lfs-pull",
+            "with": {
+              "include": "data/realset3/images/**",
+              "token": "${{ github.token }}"
+            }
+          },
+          {
+            "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+            "with": {
+              "cache": "npm",
+              "node-version-file": ".nvmrc"
+            }
+          },
+          {
+            "run": "npm ci"
+          },
+          {
+            "run": "npm run lint"
+          },
+          {
+            "run": "npm run format:check"
+          },
+          {
+            "run": "npm run typecheck"
+          },
+          {
+            "run": "npm test"
+          },
+          {
+            "run": "npm run check:locales"
+          },
+          {
+            "run": "npm run check:version"
+          }
+        ],
+        "timeout-minutes": 10
+      },
+      "e2e": {
+        "name": "E2E (Chromium, headed under xvfb)",
+        "runs-on": "ubuntu-latest",
+        "steps": [
+          {
+            "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "with": {
+              "persist-credentials": false
+            }
+          },
+          {
+            "name": "No project .npmrc",
+            "run": "test ! -e .npmrc"
+          },
+          {
+            "uses": "./.github/actions/lfs-pull",
+            "with": {
+              "include": "model/model_fp16.onnx,data/realset3/images/**",
+              "token": "${{ github.token }}"
+            }
+          },
+          {
+            "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+            "with": {
+              "cache": "npm",
+              "node-version-file": ".nvmrc"
+            }
+          },
+          {
+            "run": "npm ci"
+          },
+          {
+            "id": "playwright",
+            "name": "Read Playwright version from the lockfile",
+            "run": "echo \"version=$(node -p \"require('./package-lock.json').packages['node_modules/@playwright/test'].version\")\" >> \"$GITHUB_OUTPUT\""
+          },
+          {
+            "id": "browsers",
+            "name": "Cache Chromium",
+            "uses": "actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9",
+            "with": {
+              "key": "playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}",
+              "path": "~/.cache/ms-playwright"
+            }
+          },
+          {
+            "if": "steps.browsers.outputs.cache-hit != 'true'",
+            "name": "Install Chromium and system dependencies",
+            "run": "npx playwright install --with-deps chromium"
+          },
+          {
+            "if": "steps.browsers.outputs.cache-hit == 'true'",
+            "name": "Install system dependencies only (browser restored from cache)",
+            "run": "npx playwright install-deps chromium"
+          },
+          {
+            "run": "npm run test:e2e:xvfb"
+          },
+          {
+            "if": "failure()",
+            "name": "Show Xvfb log",
+            "run": "cat xvfb.log || true"
+          },
+          {
+            "if": "failure()",
+            "name": "Upload Playwright report",
+            "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+            "with": {
+              "if-no-files-found": "ignore",
+              "name": "playwright-report",
+              "path": "playwright-report\ntest-results\nxvfb.log\n",
+              "retention-days": 7
+            }
+          }
+        ],
+        "timeout-minutes": 15
+      },
+      "reference": {
+        "name": "Python reference, model regression and parity",
+        "runs-on": "ubuntu-latest",
+        "steps": [
+          {
+            "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "with": {
+              "persist-credentials": false
+            }
+          },
+          {
+            "name": "No project .npmrc",
+            "run": "test ! -e .npmrc"
+          },
+          {
+            "uses": "./.github/actions/lfs-pull",
+            "with": {
+              "include": "model/model_fp16.onnx,data/realset3/images/**",
+              "token": "${{ github.token }}"
+            }
+          },
+          {
+            "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+            "with": {
+              "cache": "npm",
+              "node-version-file": ".nvmrc"
+            }
+          },
+          {
+            "uses": "actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97",
+            "with": {
+              "cache": "pip",
+              "cache-dependency-path": "python/requirements.txt",
+              "python-version": "3.12"
+            }
+          },
+          {
+            "run": "npm ci"
+          },
+          {
+            "run": "pip install -r python/requirements.txt"
+          },
+          {
+            "name": "Lint Python (ruff)",
+            "run": "ruff check . && ruff format --check python tests"
+          },
+          {
+            "name": "Unit tests (Python, pytest)",
+            "run": "python -m pytest -q"
+          },
+          {
+            "name": "Python reference eval on realset3",
+            "run": "python -m fontsnap_ref.evaluate --out ../out/py_realset3.json",
+            "working-directory": "python"
+          },
+          {
+            "env": {
+              "FONTSNAP_MIN_BARE_TOP1": "${{ vars.FONTSNAP_MIN_BARE_TOP1 }}",
+              "FONTSNAP_MIN_BARE_TOP5": "${{ vars.FONTSNAP_MIN_BARE_TOP5 }}",
+              "FONTSNAP_MIN_BEST_TOP1": "${{ vars.FONTSNAP_MIN_BEST_TOP1 }}",
+              "FONTSNAP_MIN_BEST_TOP5": "${{ vars.FONTSNAP_MIN_BEST_TOP5 }}",
+              "FONTSNAP_MIN_PARITY": "${{ vars.FONTSNAP_MIN_PARITY }}"
+            },
+            "name": "Model regression and JS/Python parity (realset3)",
+            "run": "npm run test:regression"
+          },
+          {
+            "if": "always()",
+            "name": "Upload evaluation results",
+            "uses": "actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+            "with": {
+              "if-no-files-found": "ignore",
+              "name": "fontsnap-results",
+              "path": "out/*.json",
+              "retention-days": 7
+            }
+          }
+        ],
+        "timeout-minutes": 30
+      },
+      "release": {
+        "if": "${{ !cancelled() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && needs.build.result == 'success' && needs.verify-tag.result == 'success' && contains(fromJSON('[\"success\",\"skipped\"]'), needs.attest.result) }}",
+        "name": "Publish GitHub release",
+        "needs": ["build","verify-tag","attest"],
+        "permissions": {
+          "contents": "write"
+        },
+        "runs-on": "ubuntu-latest",
+        "steps": [
+          {
+            "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+            "with": {
+              "name": "extension-zip",
+              "path": "release"
+            }
+          },
+          {
+            "name": "Verify the checksum of the downloaded zip",
+            "run": "sha256sum -c ./*.zip.sha256",
+            "working-directory": "release"
+          },
+          {
+            "env": {
+              "GH_TOKEN": "${{ github.token }}"
+            },
+            "name": "Publish the zip and its checksum as release assets",
+            "run": "gh release create \"$GITHUB_REF_NAME\" release/*.zip release/*.zip.sha256 --repo \"$GITHUB_REPOSITORY\" --title \"$GITHUB_REF_NAME\" --generate-notes --verify-tag"
+          }
+        ],
+        "timeout-minutes": 10
+      },
+      "verify-tag": {
+        "if": "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')",
+        "name": "Verify tag matches the version",
+        "needs": "build",
+        "runs-on": "ubuntu-latest",
+        "steps": [
+          {
+            "uses": "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+            "with": {
+              "persist-credentials": false
+            }
+          },
+          {
+            "name": "No project .npmrc",
+            "run": "test ! -e .npmrc"
+          },
+          {
+            "uses": "actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1",
+            "with": {
+              "cache": "npm",
+              "node-version-file": ".nvmrc"
+            }
+          },
+          {
+            "run": "npm ci --ignore-scripts"
+          },
+          {
+            "uses": "actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333",
+            "with": {
+              "name": "extension-zip",
+              "path": "release"
+            }
+          },
+          {
+            "run": "npx tsx scripts/check-tag.ts \"$GITHUB_REF_NAME\" release"
+          }
+        ],
+        "timeout-minutes": 10
+      }
+    },
+    "name": "CI",
+    "on": {
+      "pull_request": null,
+      "push": {
+        "branches": ["main"],
+        "tags": ["v*"]
+      },
+      "workflow_dispatch": null
+    },
+    "permissions": {
+      "contents": "read"
+    }
+  }
+}
