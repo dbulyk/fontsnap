@@ -771,6 +771,97 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     expect(verifyDist(dir, release).join('\n')).toContain(`${file}: not an allowed file`);
   });
 
+  // WebAssembly smuggled into a built script, or onnxruntime-web pointed at other code (review of PR #6): the build
+  // must refuse it whatever the spelling; the pinned vendor files are exempt by exact path and sha256 only.
+  describe('WebAssembly bytes and runtime settings in built scripts', () => {
+    const LEGIT =
+      'async function I(){o.env.wasm.wasmPaths=chrome.runtime.getURL("ort/"),o.env.wasm.numThreads=1}';
+    const RESULT = 'assets/result-abc.js';
+    const problemsOf = (files: Record<string, string>) =>
+      verifyDist(
+        makeDist({ files }),
+        withMain(Object.fromEntries(Object.keys(files).map((file) => [file, 'chunk' as const]))),
+      ).join('\n');
+
+    it('accepts the legitimate result chunk (wasmPaths set once from a call)', () => {
+      expect(problemsOf({ [RESULT]: LEGIT })).toBe('');
+    });
+
+    it.each([
+      ['a decimal byte list', 'new Uint8Array([0,97,115,109,1,0,0,0])'],
+      ['base64', 'const w="AGFzbQEAAAA=";'],
+      ['an escape', 'const w="\\0asm";'],
+      ['a \\x00 escape', 'const w="\\x00asm";'],
+      ['a hex string', 'const w="0061736d01000000";'],
+      ['a reference to another .wasm', 'fetch("https://cdn.example.com/x.wasm")'],
+    ])('rejects %s in a chunk, the service worker and the injected script', (_name, code) => {
+      for (const file of [RESULT, 'assets/x-abc.js', 'background.js', 'select.js']) {
+        expect(problemsOf({ [file]: code }), `${file}: ${code}`).toContain('WebAssembly module');
+      }
+    });
+
+    it.each([
+      ['a string URL', 'o.env.wasm.wasmPaths="https://cdn.example.com/ort/"'],
+      ['an object', 'o.env.wasm.wasmPaths={wasm:"https://cdn.example.com/x.wasm",mjs:u}'],
+      ['a second setting', `${LEGIT};${LEGIT}`],
+    ])('rejects wasmPaths set from %s', (_name, code) => {
+      expect(problemsOf({ [RESULT]: code })).toContain('wasmPaths');
+    });
+
+    it('rejects wasmPaths outside the result chunk, and wasmBinary anywhere', () => {
+      expect(problemsOf({ 'assets/welcome-abc.js': LEGIT })).toContain('wasmPaths');
+      expect(problemsOf({ 'background.js': LEGIT })).toContain('wasmPaths');
+      expect(
+        problemsOf({ [RESULT]: 'o.env.wasm.wasmBinary=await(await fetch(u)).arrayBuffer()' }),
+      ).toContain('wasmBinary');
+      expect(problemsOf({ 'select.js': 'x.wasmBinary=b' })).toContain('wasmBinary');
+    });
+
+    describe('the vendor files are exempt by exact path and sha256, not by prefix', () => {
+      const WITH_HEADER =
+        'new Uint8Array([0,97,115,109]);o.env.wasm.wasmPaths="x";o.env.wasm.wasmBinary=b';
+
+      function vendorWith(path: string, text: string) {
+        const bytes = Buffer.from(text);
+        const vendor = new Map(FAKE_VENDOR);
+        vendor.set(path, {
+          source: 'unused',
+          sha256: createHash('sha256').update(bytes).digest('hex'),
+          size: bytes.length,
+        });
+        return { vendor, bytes };
+      }
+
+      it('does not scan ort/ort.wasm.min.mjs when it is the pinned file (the real one has such code)', () => {
+        const { vendor, bytes } = vendorWith('ort/ort.wasm.min.mjs', WITH_HEADER);
+        const dir = makeDist({ files: { 'ort/ort.wasm.min.mjs': bytes } });
+        expect(verifyDist(dir, { ...release, vendor })).toEqual([]);
+      });
+
+      it('scans it when its bytes are not the pinned ones', () => {
+        const dir = makeDist({ files: { 'ort/ort.wasm.min.mjs': WITH_HEADER } });
+        const problems = verifyDist(dir, release).join('\n');
+        expect(problems).toContain('ort/ort.wasm.min.mjs has size');
+        expect(problems).toContain('ort/ort.wasm.min.mjs: carries a WebAssembly module');
+        expect(problems).toContain('wasmBinary');
+      });
+
+      it.each([
+        'ort/other.mjs',
+        'ort/other.js',
+        'assets/ort/ort.wasm.min.mjs',
+        'ort/sub/ort.wasm.min.mjs',
+        'model/x.js',
+        'ORT/ort.wasm.min.mjs',
+      ])('gives %s no exemption', (file) => {
+        const dir = makeDist({ files: { [file]: WITH_HEADER } });
+        const bundles = withMain({ [file]: 'asset' });
+        const problems = verifyDist(dir, bundles).join('\n');
+        expect(problems).toContain(`${file}: carries a WebAssembly module`);
+      });
+    });
+  });
+
   describe('imports between the built scripts', () => {
     const ORT_IMPORT = 'import*as o from"../ort/ort.wasm.min.mjs";export{o};';
 

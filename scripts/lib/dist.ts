@@ -6,7 +6,8 @@ import type { BundleKind } from '../../vite.shared';
 import { WASM_MESSAGE } from './src-only';
 import { hasAllowedMediaExtension, isAllowedDistMedia, isStaticAsset } from './static-assets';
 import { expectedManifest } from './expected-manifest';
-import { VENDOR_FILES, vendorDistProblems, type VendorFile } from './vendor';
+import { VENDOR_FILES, vendorDistProblems, vendorFileProblem, type VendorFile } from './vendor';
+import { scriptProblems } from './wasm-scan';
 
 /** True when the source uses ES module syntax (import/export statements, import.meta). */
 export function findEsmSyntax(source: string): boolean {
@@ -165,6 +166,22 @@ function unresolvedImports(dir: string): string[] {
     });
 }
 
+/**
+ * WebAssembly bytes or settings that name other code in a built script (scripts/lib/wasm-scan.ts). The pinned vendor
+ * files are the only exception, by exact path and only while their bytes are the pinned ones (otherwise they are scanned
+ * like any other script, besides being reported by vendorDistProblems).
+ */
+function scriptContentProblems(dir: string, vendor: ReadonlyMap<string, VendorFile>): string[] {
+  return filesBelow(dir)
+    .filter((file) => /\.m?js$/.test(file))
+    .flatMap((file) => {
+      const bytes = readFileSync(join(dir, file));
+      const pinned = vendor.get(file);
+      if (pinned !== undefined && vendorFileProblem(file, bytes, pinned) === undefined) return [];
+      return scriptProblems(file, bytes.toString('latin1'));
+    });
+}
+
 /** <script> tags in built pages that are inline, external or do not point at a chunk the bundler emitted. */
 function strayScripts(dir: string, chunks: ReadonlySet<string>): string[] {
   return filesBelow(dir)
@@ -284,6 +301,7 @@ export function verifyDist(
     ...dataUrls(dir),
     ...strayScripts(dir, chunks),
     ...unresolvedImports(dir),
+    ...scriptContentProblems(dir, vendor),
   );
 
   const files = [
