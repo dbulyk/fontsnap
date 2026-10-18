@@ -2,7 +2,8 @@ import { CONTENT_SCRIPT_FILE, EXTENSION_PAGES, MENU_IMAGE } from '../shared/cons
 import { errorMessage } from '../shared/errors';
 import { t } from '../shared/i18n';
 import { onMessage } from '../shared/messaging';
-import { handleRect, imageToDataUrl, openResult, resultUrl } from './shot';
+import { clickedImage } from './clicked';
+import { handleRect, openResult, resultUrl } from './shot';
 
 // Pages a content script cannot run on (and the Web Store, where scripting is forbidden): FontSnap opens
 // its result page in upload mode there instead.
@@ -72,9 +73,12 @@ export function registerBackground(): void {
   chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === MENU_SELECT) void startSelect(tab);
     else if (info.menuItemId === MENU_IMAGE && info.srcUrl) {
-      // Keep the SW alive across fetch/crop/storage by chaining the whole async path.
-      void imageToDataUrl(info.srcUrl, tab)
-        .then((dataUrl) => openResult({ dataUrl, text: '' }, tab))
+      // Keep the SW alive across the page scripts/crop/storage by chaining the whole async path.
+      void clickedImage(
+        { srcUrl: info.srcUrl, frameId: info.frameId, frameUrl: info.frameUrl },
+        tab,
+      )
+        .then((entry) => openResult(entry, tab))
         .catch((e: unknown) => openResult({ error: errorMessage(e) }, tab));
     }
   });

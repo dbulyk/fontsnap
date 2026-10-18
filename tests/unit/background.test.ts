@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerBackground } from '../../src/background/handlers';
-import { MAX_DATA_URL_CHARS, MAX_IMAGE_BYTES } from '../../src/shared/capture';
+import { MAX_DATA_URL_CHARS } from '../../src/shared/capture';
 import { MENU_IMAGE } from '../../src/shared/constants';
 import {
   CONTENT_SCRIPT_SENDER,
@@ -348,10 +348,15 @@ describe('right-click on an image', () => {
   const png = () => dataUrl('image/png', new Uint8Array(1000).fill(7));
   const click = (srcUrl = 'https://cdn.example/photo.png') =>
     stub.fireMenuClicked({ menuItemId: MENU_IMAGE, srcUrl }, tab);
-  const measured = (w = 100, h = 50) =>
-    stub.chrome.scripting.executeScript.mockResolvedValueOnce([
-      { result: { rect: { x: 30, y: 40, w, h }, dpr: 2 } },
-    ]);
+  const measured = (w = 100, h = 50) => ({
+    result: {
+      rect: { x: 30, y: 40, w, h },
+      dpr: 2,
+      saved: [],
+      box: { x: 0, y: 0, w: 400, h: 300 },
+    },
+  });
+  const PIXELS = 'data:image/png;base64,UElYRUxT';
 
   it('decodes a data: URL image itself and hands it over: no request, no screenshot', async () => {
     setup();
@@ -366,85 +371,66 @@ describe('right-click on an image', () => {
     expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
   });
 
-  it('reads an image of another origin from a screenshot at once: the CSP refuses a download, so none is tried', async () => {
+  it('reads an image of another origin where the click happened: no download, no screenshot', async () => {
     setup();
-    measured();
-    await click('https://cdn.example/photo.png');
+    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: PIXELS }]);
+    await stub.fireMenuClicked(
+      { menuItemId: MENU_IMAGE, srcUrl: 'https://cdn.example/photo.png', frameId: 7 },
+      tab,
+    );
     const { entry } = await openedResult();
-    // not even an attempt: a refused request would be a CSP violation in the console of the worker on every right click
+    // not a request of the worker: the CSP refuses it, so none is tried
     expect(images.fetch).not.toHaveBeenCalled();
     expect(stub.chrome.scripting.executeScript).toHaveBeenCalledWith(
       expect.objectContaining({
-        target: { tabId: 5 },
-        args: ['https://cdn.example/photo.png', 'image', null],
+        target: { tabId: 5, frameIds: [7] },
+        args: ['https://cdn.example/photo.png'],
       }),
     );
+    expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
+    expect(entry?.['dataUrl']).toMatch(/^data:image\/png;base64,/);
+    expect(entry?.['text']).toBe('');
+    expect(entry?.['note']).toBeUndefined();
+  });
+
+  it('crops a screenshot when the page cannot hand the pixels over', async () => {
+    setup();
+    stub.chrome.scripting.executeScript
+      .mockResolvedValueOnce([{ result: null }])
+      .mockResolvedValueOnce([measured()])
+      .mockResolvedValue([{ result: null }]);
+    await click('https://cdn.example/photo.png');
+    const { entry } = await openedResult();
     expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledWith(9, { format: 'png' });
     expect(images.draws).toEqual([[60, 80, 200, 100, 0, 0, 200, 100]]);
-    expect(entry?.['dataUrl']).toMatch(/^data:image\/png;base64,/);
+    expect(entry?.['note']).toBeUndefined();
   });
 
-  it.each([
-    ['an SVG', () => dataUrl('image/svg+xml', new TextEncoder().encode('<svg/>'))],
-    ['not an image', () => dataUrl('text/html', new TextEncoder().encode('x'))],
-    ['too large', () => dataUrl('image/png', new Uint8Array(MAX_IMAGE_BYTES))],
-    ['malformed', () => 'data:image/png;base64,@@@@'],
-    ['without a comma', () => 'data:image/png'],
-  ])('screenshots the image when the data: URL is %s', async (_what, url) => {
+  it('hands over the whole visible area with a hint when the image cannot be isolated', async () => {
     setup();
-    measured();
-    await click(url());
+    stub.chrome.scripting.executeScript.mockResolvedValue([{ result: null }]);
+    await click();
+    const { entry } = await openedResult();
+    expect(entry?.['dataUrl']).toMatch(/^data:image\/png;base64,/);
+    expect(entry?.['text']).toBe('');
+    expect(entry?.['note']).toBe('whole-view');
+  });
+
+  it('shows the error of the screenshot when even the whole view cannot be taken', async () => {
+    setup();
+    stub.chrome.scripting.executeScript.mockRejectedValue(new Error('Cannot access contents'));
+    stub.chrome.tabs.captureVisibleTab.mockRejectedValue(new Error('The tab is not active'));
+    await click();
+    expect((await openedResult()).entry).toEqual({ error: 'The tab is not active' });
+  });
+
+  it('goes on to the page when a data: URL is not a picture it can use (the ladder itself: clicked.test.ts)', async () => {
+    setup();
+    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: PIXELS }]);
+    await click(dataUrl('image/svg+xml', new TextEncoder().encode('<svg/>')));
     const { entry } = await openedResult();
     expect(images.fetch).not.toHaveBeenCalled();
-    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledWith(9, { format: 'png' });
+    expect(stub.chrome.scripting.executeScript).toHaveBeenCalledTimes(1);
     expect(entry?.['dataUrl']).toMatch(/^data:image\/png;base64,/);
-  });
-
-  it('screenshots the image when a data: URL cannot be decoded as a picture', async () => {
-    setup({ undecodableType: 'image/png' });
-    measured(50, 50);
-    await click(png());
-    await openedResult();
-    expect(images.fetch).not.toHaveBeenCalled();
-    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(1);
-  });
-
-  it('crops the screenshot (a data: URL) without a request', async () => {
-    setup();
-    measured();
-    await click('https://cdn.example/photo.png');
-    await openedResult();
-    expect(images.fetch).not.toHaveBeenCalled();
-  });
-
-  it('shows an error when the page has no such image or its box is empty', async () => {
-    setup();
-    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: null }]);
-    await click();
-    expect((await openedResult()).entry).toEqual({ error: 'Could not access this image' });
-  });
-
-  it('shows an error for an empty box', async () => {
-    setup();
-    stub.chrome.scripting.executeScript.mockResolvedValueOnce([
-      { result: { rect: { x: 0, y: 0, w: 0, h: 0 }, dpr: 1 } },
-    ]);
-    await click();
-    expect((await openedResult()).entry).toEqual({ error: 'Could not access this image' });
-  });
-
-  it('shows an error when the page cannot be scripted', async () => {
-    setup();
-    stub.chrome.scripting.executeScript.mockRejectedValueOnce(new Error('Cannot access contents'));
-    await click();
-    expect((await openedResult()).entry).toEqual({ error: 'Cannot access contents' });
-  });
-
-  it('tells the page script to wait for layout before measuring the image', async () => {
-    setup();
-    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: null }]);
-    await click();
-    const injection = stub.chrome.scripting.executeScript.mock.calls[0]?.[0] as { func: unknown };
-    expect(typeof injection.func).toBe('function');
   });
 });
