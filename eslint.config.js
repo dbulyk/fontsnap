@@ -170,6 +170,8 @@ const globalTampering = [
   `AssignmentExpression > .left Identifier[name=${HOST_OBJECTS}]`,
   `UpdateExpression > .argument Identifier[name=${HOST_OBJECTS}]`,
   `UnaryExpression[operator='delete'] Identifier[name=${HOST_OBJECTS}]`,
+  // Object.assign(<host object or a member of it>, ...) is a write to it (the first argument is the target)
+  `CallExpression[callee.object.name='Object'][callee.property.name='assign']:matches([arguments.0.name=${HOST_OBJECTS}], [arguments.0.object.name=${HOST_OBJECTS}], [arguments.0.object.object.name=${HOST_OBJECTS}], [arguments.0.object.object.object.name=${HOST_OBJECTS}])`,
   // the primitives, by name, as identifiers, strings and templates
   `Identifier[name=${TAMPER_NAMES}]`,
   `Literal[value=${TAMPER_NAMES}]`,

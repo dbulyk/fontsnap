@@ -428,6 +428,15 @@ describe('extension code does not tamper with globals, host objects or prototype
     ['a write to a native static', 'JSON.parse = patched;'],
     ['a write to Math', 'Math.min = patched;'],
     ['a write to URL', 'URL.createObjectURL = patched;'],
+    [
+      'Object.assign on chrome.runtime',
+      "Object.assign(chrome.runtime, { getURL: () => 'https://evil.example/' });",
+    ],
+    ['Object.assign on a deeper host member', 'Object.assign(chrome.runtime.onMessage, patch);'],
+    ['Object.assign on navigator', 'Object.assign(navigator, { hardwareConcurrency: 1 });'],
+    ['Object.assign on a native', 'Object.assign(Response, patch);'],
+    ['Object.assign on performance', 'Object.assign(performance, { getEntriesByType: () => [] });'],
+    ['Object.assign on fetch', 'Object.assign(fetch, patch);'],
   ])('rejects %s', async (_name, code) => {
     for (const file of FILES) expect(await flagged(file, code), `${file}: ${code}`).not.toEqual([]);
   });
