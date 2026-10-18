@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title data-i18n="resTitle">FontSnap — results</title>
+    <link rel="stylesheet" href="./result.css" />
+  </head>
+  <body>
+    <header>
+      <img src="/icons/icon-48.png" alt="" />
+      <h1>FontSnap</h1>
+      <span class="sub" data-i18n="tagline">AI font identifier · runs on your device</span>
+    </header>
+    <main>
+      <section class="left">
+        <div id="drop" class="drop">
+          <canvas id="shot"></canvas>
+          <p id="dropHint">
+            <span data-i18n="dropHint"
+              >Paste (Ctrl+V) or drop an image with text, or choose a file.</span
+            ><br />
+            <label class="btn"
+              ><span data-i18n="chooseImage">Choose image</span
+              ><input type="file" id="file" accept="image/*" hidden /></label
+            ><br />
+            <span class="tip" data-i18n="dropTip"
+              >Tip: click the FontSnap icon and drag over text in the visible viewport (scrolled-off
+              content is not captured).</span
+            >
+          </p>
+        </div>
+        <details>
+          <summary data-i18n="modelSees">What the model sees</summary>
+          <canvas id="seen"></canvas>
+        </details>
+      </section>
+      <section class="right">
+        <div id="status" class="status" data-i18n="loading">Loading model…</div>
+        <label class="pv"
+          ><span data-i18n="previewLabel">Preview text</span>
+          <input
+            id="pvText"
+            data-i18n-ph="previewPh"
+            placeholder="Type your own text (default: The quick brown fox…)"
+            maxlength="80"
+          />
+        </label>
+        <ol id="results"></ol>
+        <p class="note" data-i18n="note">
+          Matches Google Fonts families. Latin, Cyrillic, Arabic work best; Chinese/Japanese are
+          still weak. Images never leave your computer; font previews are loaded from Google Fonts.
+        </p>
+      </section>
+    </main>
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>
