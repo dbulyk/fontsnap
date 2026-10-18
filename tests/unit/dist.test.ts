@@ -824,6 +824,19 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       expect(problemsOf({ [RESULT]: code })).toMatch(/decodes to|uses /);
     });
 
+    it.each([
+      ['select.js', 'void window.fetch("https://example.invalid/m");'],
+      ['select.js', 'new Request("https://example.invalid/m");'],
+      ['assets/welcome-abc.js', 'fetch(u);'],
+      ['assets/other-abc.js', 'fetch(u);'],
+    ])('rejects fetch and Request in %s: outside the CSP or not needed there', (file, code) => {
+      const problems = verifyDist(
+        makeDist({ files: { [file]: code } }),
+        withMain({ [file]: 'chunk' }),
+      ).join('\n');
+      expect(problems).toMatch(/uses (fetch|Request)/);
+    });
+
     it('lets the service worker encode the screenshot, and nobody else', () => {
       const encode = 'const e=btoa(String.fromCharCode(...b));';
       expect(

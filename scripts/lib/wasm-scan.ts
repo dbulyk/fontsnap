@@ -175,22 +175,24 @@ export function tamperingPrimitives(text: string): string[] {
  * is what was built, dependencies included. Allowed by file where the source needs it: btoa and fromCharCode encode the
  * screenshot in the service worker.
  */
-const FORBIDDEN_NAMES = [
+const FORBIDDEN_NAMES: readonly { pattern: RegExp; allowedIn?: RegExp }[] = [
   {
     pattern:
       /\b(?:XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|SharedWorker|Worker|WorkerGlobalScope|BroadcastChannel|MessageChannel|postMessage|TextDecoder|atob|unescape|decodeURI|fromCodePoint|webdriver|setResourceTimingBufferSize|clearResourceTimings|WebAssembly|instantiateStreaming|compileStreaming|contentWindow|getBackgroundPage|getViews|relatedTarget|srcElement|composedPath|parentWindow|currentTarget)\b/,
-    except: undefined,
   },
-  { pattern: /\b(?:btoa|fromCharCode)\b/, except: 'background.js' },
-  { pattern: /\bimport\s*\(/, except: undefined },
-  { pattern: /\b(?:eval|Function)\b/, except: undefined },
+  { pattern: /\b(?:btoa|fromCharCode)\b/, allowedIn: /^background\.js$/ },
+  // fetch and Request only where the CSP of the extension applies (connect-src 'self') and the code needs them: the result page
+  // reads meta.json and the model, nothing else does. The content script (select.js) runs in the web page's process, outside that CSP.
+  { pattern: /\b(?:fetch|Request)\b/, allowedIn: /^(?:background\.js|assets\/result-[\w-]+\.js)$/ },
+  { pattern: /\bimport\s*\(/ },
+  { pattern: /\b(?:eval|Function)\b/ },
 ];
 
 /** The forbidden names a built script uses, without duplicates. */
 export function forbiddenNames(file: string, text: string): string[] {
   const names = new Set<string>();
-  for (const { pattern, except } of FORBIDDEN_NAMES) {
-    if (file === except) continue;
+  for (const { pattern, allowedIn } of FORBIDDEN_NAMES) {
+    if (allowedIn?.test(file) === true) continue;
     const match = new RegExp(pattern.source, 'g');
     for (const found of text.matchAll(match)) names.add(found[0].replace(/\s+/g, ''));
   }

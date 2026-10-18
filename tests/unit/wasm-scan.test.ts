@@ -490,6 +490,34 @@ describe('forbiddenNames: what no script of the build uses', () => {
     expect(forbiddenNames('assets/result-abc.js', code), code).not.toEqual([]);
   });
 
+  it.each([
+    ['select.js', 'void window.fetch("https://example.invalid/m")'],
+    ['select.js', 'new Request("https://example.invalid/m")'],
+    ['select.js', 'const f=window["fetch"];'],
+    ['assets/welcome-abc.js', 'fetch(u)'],
+    ['assets/errors-abc.js', 'fetch(u)'],
+    ['assets/other-abc.js', 'new Request(u)'],
+    ['assets/result-abc.mjs', 'fetch(u)'],
+    ['assets/x/result-abc.js', 'fetch(u)'],
+    ['result.js', 'fetch(u)'],
+    ['dist/background.js.map', 'fetch(u)'],
+    ['assets/background-abc.js', 'fetch(u)'],
+  ])(
+    'refuses fetch and Request outside background.js and the result chunk: %s: %s',
+    (file, code) => {
+      expect(forbiddenNames(file, code), `${file}: ${code}`).not.toEqual([]);
+      expect(scriptProblems(file, code).join('\n')).toMatch(/uses (fetch|Request)/);
+    },
+  );
+
+  it.each(['background.js', 'assets/result-4HZRFhwR.js', 'assets/result-a_b-C.js'])(
+    'allows fetch and Request in %s (allowed, not required)',
+    (file) => {
+      expect(forbiddenNames(file, 'fetch(u); new Request(u)')).toEqual([]);
+      expect(forbiddenNames(file, 'const a=1')).toEqual([]);
+    },
+  );
+
   it('lets only the service worker encode the screenshot with btoa and fromCharCode', () => {
     expect(forbiddenNames('background.js', 'btoa(String.fromCharCode(...b))')).toEqual([]);
     expect(forbiddenNames('assets/result-abc.js', 'btoa(String.fromCharCode(...b))')).toEqual([
