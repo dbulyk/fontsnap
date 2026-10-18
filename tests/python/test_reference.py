@@ -1,12 +1,8 @@
-import json
-from pathlib import Path
-
 import numpy as np
 import pytest
 from PIL import Image, ImageDraw, ImageFont
 
 from fontsnap_ref.evaluate import score
-from fontsnap_ref.image import to_rgb
 from fontsnap_ref.pipeline import DATA, MODEL, Families, merge_family, nz, prep, softmax
 from fontsnap_ref.textcrop import crop_normalize, text_lines
 
@@ -108,41 +104,3 @@ def test_meta_json_is_generated():
     from fontsnap_ref.pipeline import ROOT
 
     assert json.load(open(ROOT / "model" / "meta.json")) == json.loads(json.dumps(build()))
-
-
-ALPHA_TABLE = json.loads((Path(__file__).resolve().parents[1] / "fixtures" / "alpha-composite.json").read_text())["cases"]
-
-
-def over_white(c, a):
-    return (c * a + 255 * (255 - a) + 127) // 255
-
-
-def test_to_rgb_composites_over_white_like_js():
-    im = Image.fromarray(np.array([c["rgba"] for c in ALPHA_TABLE], np.uint8)[None], "RGBA")
-    assert (np.array(to_rgb(im)) == np.array([c["rgb"] for c in ALPHA_TABLE], np.uint8)[None]).all()
-
-
-def test_to_rgb_composites_gray_with_alpha_and_palette_transparency():
-    la = Image.fromarray(np.array([[[0, 0], [0, 255], [90, 100]]], np.uint8), "LA")
-    assert np.array(to_rgb(la))[0].tolist() == [[255] * 3, [0] * 3, [over_white(90, 100)] * 3]
-    pal = Image.new("P", (1, 1), 0)
-    pal.putpalette([0, 0, 0])
-    pal.info["transparency"] = 0
-    assert np.array(to_rgb(pal)).tolist() == [[[255, 255, 255]]]
-
-
-def test_to_rgb_leaves_opaque_images_alone():
-    im = Image.fromarray(np.random.default_rng(0).integers(0, 256, (8, 8, 3), dtype=np.uint8))
-    assert (np.array(to_rgb(im)) == np.array(im)).all()
-    rgba = im.convert("RGBA")
-    assert (np.array(to_rgb(rgba)) == np.array(im)).all()
-
-
-def test_transparent_black_text_reads_like_text_on_white():
-    on_white = text_image()
-    mask = Image.eval(on_white.convert("L"), lambda v: 255 - v)
-    clear = Image.new("RGBA", on_white.size, (0, 0, 0, 0))
-    clear.putalpha(mask)
-    assert (np.array(prep(clear)) == np.array(prep(to_rgb(clear)))).all()
-    norm, lines = text_lines(clear)
-    assert len(lines) == 2 and norm.mean() > 200

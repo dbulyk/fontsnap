@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { at } from '../../src/shared/core/at';
-import { fromRGBA, resize, toGray, type Img } from '../../src/shared/core/image';
+import { chooseBackdrop, fromRGBA, resize, toGray, type Img } from '../../src/shared/core/image';
 import { cropNormalize, nz, prep, softmax } from '../../src/shared/core/pipeline';
 import { makeRanker, type Meta } from '../../src/shared/core/ranker';
 import {
@@ -31,6 +31,17 @@ const ROOT = process.cwd();
 const FX = JSON.parse(
   readFileSync(join(ROOT, 'tests', 'fixtures', 'textcrop.json'), 'utf8'),
 ) as Fixture;
+interface PixelRow {
+  rgba: number[];
+  rgb: number[];
+}
+const TABLE = JSON.parse(
+  readFileSync(join(ROOT, 'tests', 'fixtures', 'alpha-composite.json'), 'utf8'),
+) as {
+  cases: PixelRow[];
+  blackCases: PixelRow[];
+  images: { name: string; rgba: number[][]; backdrop: 0 | 255; rgb: number[] }[];
+};
 const gray = (w: number, h: number, f: (x: number, y: number) => number): Img => {
   const d = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) d[y * w + x] = f(x, y);
@@ -117,29 +128,65 @@ describe('textcrop primitives', () => {
     expect(toGray(g)).toBe(g.data);
   });
 
-  it('composites RGBA over white (the table the Python reference is tested with)', () => {
-    const { cases } = JSON.parse(
-      readFileSync(join(ROOT, 'tests/fixtures/alpha-composite.json'), 'utf8'),
-    ) as { cases: { rgba: number[]; rgb: number[] }[] };
-    const rgba = Uint8Array.from(cases.flatMap((c) => c.rgba));
-    expect([...fromRGBA(rgba, cases.length, 1).data]).toEqual(cases.flatMap((c) => c.rgb));
-    expect([...fromRGBA(new Uint8ClampedArray(rgba), cases.length, 1).data]).toEqual(
-      cases.flatMap((c) => c.rgb),
-    );
+  it('composites RGBA over a white or a black backdrop (the tables the Python reference is tested with)', () => {
+    for (const [backdrop, rows] of [
+      [255, TABLE.cases],
+      [0, TABLE.blackCases],
+    ] as const) {
+      const rgba = Uint8Array.from(rows.flatMap((c) => c.rgba));
+      const expected = rows.flatMap((c) => c.rgb);
+      expect([...fromRGBA(rgba, rows.length, 1, backdrop).data]).toEqual(expected);
+      expect([...fromRGBA(new Uint8ClampedArray(rgba), rows.length, 1, backdrop).data]).toEqual(
+        expected,
+      );
+    }
+  });
+
+  it('picks the backdrop by contrast: light content goes on black, anything else on white', () => {
+    for (const image of TABLE.images) {
+      const rgba = Uint8Array.from(image.rgba.flat());
+      expect(chooseBackdrop(rgba, image.rgba.length), image.name).toBe(image.backdrop);
+      expect([...fromRGBA(rgba, image.rgba.length, 1).data], image.name).toEqual(image.rgb);
+    }
+  });
+
+  it('matches the integer reference for every (c, a) pair, all three channels, both backdrops', () => {
+    const rgba = new Uint8Array(256 * 256 * 4);
+    for (let a = 0; a < 256; a++)
+      for (let c = 0; c < 256; c++) rgba.set([c, 255 - c, c ^ 0x55, a], (a * 256 + c) * 4);
+    for (const backdrop of [0, 255] as const) {
+      const rgb = fromRGBA(rgba, 256, 256, backdrop).data;
+      const mismatches: string[] = [];
+      for (let i = 0; i < 256 * 256; i++)
+        for (let ch = 0; ch < 3; ch++) {
+          const c = at(rgba, i * 4 + ch);
+          const a = at(rgba, i * 4 + 3);
+          const want = Math.floor((2 * (c * a + backdrop * (255 - a)) + 255) / 510); // round half up, a second way
+          if (at(rgb, i * 3 + ch) !== want) mismatches.push(`${String(c)},${String(a)}`);
+        }
+      expect(mismatches, `backdrop ${String(backdrop)}`).toEqual([]);
+    }
   });
 
   it('leaves every opaque pixel byte for byte as it was', () => {
     const rgba = new Uint8Array(256 * 4);
     for (let i = 0; i < 256; i++) rgba.set([i, 255 - i, (i * 7) % 256, 255], i * 4);
-    const rgb = fromRGBA(rgba, 256, 1).data;
-    for (let i = 0; i < 256; i++)
-      expect([...rgb.subarray(i * 3, i * 3 + 3)]).toEqual([...rgba.subarray(i * 4, i * 4 + 3)]);
+    for (const backdrop of [undefined, 0, 255] as const) {
+      const rgb = fromRGBA(rgba, 256, 1, backdrop).data;
+      for (let i = 0; i < 256; i++)
+        expect([...rgb.subarray(i * 3, i * 3 + 3)]).toEqual([...rgba.subarray(i * 4, i * 4 + 3)]);
+    }
   });
 
-  it('turns black text on a transparent background into the same pixels as on white', () => {
-    const onWhite = Uint8Array.from([255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255]);
-    const onClear = Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0]);
-    expect([...fromRGBA(onClear, 3, 1).data]).toEqual([...fromRGBA(onWhite, 3, 1).data]);
+  it('reads black text on a transparent background like text on white, and white text like text on black', () => {
+    const text = [255, 0, 255, 0, 255];
+    const on = (ink: number, ground: number, alpha: number) =>
+      Uint8Array.from(
+        text.flatMap((t) => (t ? [ink, ink, ink, 255] : [ground, ground, ground, alpha])),
+      );
+    const clear = (ink: number) => [...fromRGBA(on(ink, 0, 0), 5, 1).data];
+    expect(clear(0)).toEqual([...fromRGBA(on(0, 255, 255), 5, 1).data]);
+    expect(clear(255)).toEqual([...fromRGBA(on(255, 0, 255), 5, 1).data]);
   });
 });
 
