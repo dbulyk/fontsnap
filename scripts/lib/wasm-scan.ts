@@ -178,7 +178,7 @@ export function tamperingPrimitives(text: string): string[] {
 const FORBIDDEN_NAMES = [
   {
     pattern:
-      /\b(?:XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|SharedWorker|Worker|WorkerGlobalScope|BroadcastChannel|MessageChannel|postMessage|TextDecoder|atob|unescape|decodeURI|fromCodePoint|webdriver|setResourceTimingBufferSize|clearResourceTimings|WebAssembly|instantiateStreaming|compileStreaming)\b/,
+      /\b(?:XMLHttpRequest|WebSocket|EventSource|sendBeacon|importScripts|SharedWorker|Worker|WorkerGlobalScope|BroadcastChannel|MessageChannel|postMessage|TextDecoder|atob|unescape|decodeURI|fromCodePoint|webdriver|setResourceTimingBufferSize|clearResourceTimings|WebAssembly|instantiateStreaming|compileStreaming|contentWindow|getBackgroundPage|getViews|relatedTarget|srcElement|composedPath|parentWindow|currentTarget)\b/,
     except: undefined,
   },
   { pattern: /\b(?:btoa|fromCharCode)\b/, except: 'background.js' },
@@ -194,6 +194,22 @@ export function forbiddenNames(file: string, text: string): string[] {
     for (const found of text.matchAll(match)) names.add(found[0].replace(/\s+/g, ''));
   }
   return [...names].sort();
+}
+
+/**
+ * `defaultView` hands over the Window of a document. The page scripts of the result and welcome pages hold it once, in
+ * `const win = doc.defaultView; if (!win) return;` (hashchange, pagehide, location); anywhere else in the build it is an
+ * object that can be passed to Object.assign or Reflect (round 3 of the review of PR #6). Empty if the use is that one.
+ */
+export function windowReaches(file: string, text: string): string[] {
+  const allowed =
+    /\b(?:const|let|var)\s+[\w$]+\s*=\s*[\w$]+\.defaultView\s*;\s*if\s*\(\s*!\s*[\w$]+\s*\)\s*return\b/g;
+  const pageScript = /^assets\/(?:result|welcome)-[\w-]+\.js$/.test(file);
+  const kept = pageScript ? text.replace(allowed, '') : text;
+  const alone = pageScript ? (text.match(allowed)?.length ?? 0) <= 1 : true;
+  return /\bdefaultView\b/.test(kept) || !alone
+    ? [`${file}: reaches the Window of a document (defaultView)`]
+    : [];
 }
 
 /** The chunk that imports the vendored runtime is the one that configures it (src/result/model.ts is bundled into it). */
@@ -320,6 +336,7 @@ export function scriptProblems(file: string, text: string): string[] {
     ...tampering,
     ...hidden,
     ...names,
+    ...windowReaches(file, text),
     ...runtimeSettingProblems(file, text),
   ];
 }

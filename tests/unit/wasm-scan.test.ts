@@ -4,6 +4,7 @@ import {
   ALLOWED_ORIGINS,
   forbiddenNames,
   hiddenTexts,
+  windowReaches,
   importsRuntime,
   scriptProblems,
   tamperingPrimitives,
@@ -452,5 +453,48 @@ describe('forbiddenNames: what no script of the build uses', () => {
     expect(scriptProblems('assets/result-abc.js', 'new Worker(u)').join('\n')).toContain(
       'assets/result-abc.js: uses Worker',
     );
+  });
+});
+
+describe('windowReaches: the Window of a document is held in the page scripts, once, and nowhere else', () => {
+  const PAGE = 'assets/result-abc.js';
+  const LEGIT = 'x();const a=o.defaultView;if(!a)return;a.addEventListener("hashchange",r);';
+
+  it('accepts the one form of the result and welcome pages', () => {
+    expect(windowReaches(PAGE, LEGIT)).toEqual([]);
+    expect(windowReaches('assets/welcome-Xy_9.js', LEGIT)).toEqual([]);
+  });
+
+  it.each([
+    ['assigned to', 'Object.assign(document.defaultView,{fetch:f});'],
+    ['passed on', 'use(o.defaultView);'],
+    ['aliased', 'const w=o.defaultView;w.fetch=f;'],
+    ['read twice', `${LEGIT}${LEGIT}`],
+    ['a computed name', 'o["defaultView"]'],
+    ['destructured', 'const{defaultView:w}=o;'],
+  ])('refuses defaultView %s', (_what, code) => {
+    expect(windowReaches(PAGE, code), code).not.toEqual([]);
+  });
+
+  it.each([
+    'background.js',
+    'select.js',
+    'assets/errors-abc.js',
+    'assets/other-abc.js',
+    'assets/result-abc.mjs',
+  ])('refuses even the legitimate form in %s', (file) => {
+    expect(windowReaches(file, LEGIT)).not.toEqual([]);
+  });
+
+  it.each([
+    'contentWindow',
+    'getBackgroundPage',
+    'getViews',
+    'currentTarget',
+    'composedPath',
+    'relatedTarget',
+    'srcElement',
+  ])('refuses %s anywhere in the build', (name) => {
+    expect(forbiddenNames(PAGE, `a.${name}`)).toContain(name);
   });
 });
