@@ -40,7 +40,7 @@ Setup: `git lfs pull` (model and test images), `npm ci`, then once `npx playwrig
 - **WebAssembly is unsupported, with ONE narrow exception: `VENDOR_FILES` in `scripts/lib/vendor.ts`.** FontSnap
   runs its model with onnxruntime-web, so five files are allowed, byte for byte (sha256 and size): the three
   onnxruntime-web 1.30.0 runtime files, `model/model_fp16.onnx` and `model/meta.json`; and the CSP is the exact
-  string `script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'` (never `'unsafe-eval'`; do not add a
+  string `default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; object-src 'none'; base-uri 'none'` (never `'unsafe-eval'`; do not add a
   source to `connect-src`: it is what keeps every request inside the extension, `fetch` of a `data:` URL included - use `src/shared/data-url.ts`). Any other `.wasm`/`.onnx`, other bytes under these
   names, another CSP source or a missing COEP/COOP fails `verify-dist` and the tests. Changing the runtime or the
   model means editing the table AND its second copy in `tests/unit/vendor.test.ts` in the same commit, with a reason.
