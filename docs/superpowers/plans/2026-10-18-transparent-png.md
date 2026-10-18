@@ -31,13 +31,14 @@
 ### Task 1: `fromRGBA` composites over white
 
 **Files:**
+
 - Modify: `src/shared/core/image.ts:13-21`
 - Test: `tests/unit/core.test.ts` (next to the existing `fromRGBA` test, line ~115)
 
 **Interfaces:** Produces `fromRGBA(rgba: Uint8Array | Uint8ClampedArray, w: number, h: number): Img` (signature unchanged).
 
 - [ ] **Step 1: Write failing tests** in `core.test.ts`, describe `fromRGBA alpha`:
-  `(0,0,0,0)→[255,255,255]`; `(0,0,0,255)→[0,0,0]`; `(10,20,30,255)→[10,20,30]`; `(0,0,0,128)→[127,127,127]`; `(255,0,0,64)→[255,191,191]`; a loop over all c in 0..255 and a in 0..255 asserting equality with `Math.round((c*a + 255*(255-a))/255)`.
+      `(0,0,0,0)→[255,255,255]`; `(0,0,0,255)→[0,0,0]`; `(10,20,30,255)→[10,20,30]`; `(0,0,0,128)→[127,127,127]`; `(255,0,0,64)→[255,191,191]`; a loop over all c in 0..255 and a in 0..255 asserting equality with `Math.round((c*a + 255*(255-a))/255)`.
 - [ ] **Step 2:** `npx vitest run tests/unit/core.test.ts` → the new tests FAIL.
 - [ ] **Step 3:** In `fromRGBA`, read alpha at `j+3`; when 255 copy as before, otherwise apply the integer rule per channel (`Math.floor((c*a + 255*(255-a) + 127)/255)`). Keep `atU8` accessors.
 - [ ] **Step 4:** same command → PASS. Also `npx vitest run tests/unit/regression.test.ts`.
@@ -46,6 +47,7 @@
 ### Task 2: White fill at the capture sites
 
 **Files:**
+
 - Modify: `src/result/app.ts` (`fromBlob`, ~line 98), `src/background/shot.ts` (`cropToDataUrl`, ~line 38)
 - Test: `tests/unit/result-app.test.ts` (canvas stub at ~line 87), `tests/unit/background.test.ts` + `tests/unit/helpers/image-apis.ts` (`FakeOffscreenCanvas.getContext`)
 
@@ -60,6 +62,7 @@
 ### Task 3: Python `to_rgb`
 
 **Files:**
+
 - Modify: `python/fontsnap_ref/pipeline.py` (new `to_rgb`, used in `prep` line 88), `python/fontsnap_ref/textcrop.py` (lines 38 `text_lines`), `python/fontsnap_ref/evaluate.py:47`, `tests/make_fixtures.py:22`
 - Test: `tests/python/test_reference.py`
 
@@ -74,6 +77,7 @@
 ### Task 4: E2E and full verification
 
 **Files:**
+
 - Create: `tests/e2e/transparent.spec.ts`
 - Modify: `README.md` (one line in the Tests section: transparent PNGs are composited over white; list the new spec)
 

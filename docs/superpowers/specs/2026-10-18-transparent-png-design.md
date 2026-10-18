@@ -1,12 +1,14 @@
 # Transparent PNGs: composite over white
 
 ## Problem
+
 `fromRGBA` (`src/shared/core/image.ts`) copies R, G, B and drops alpha. Canvases in `src/result/app.ts` (file, paste, drop,
 context-menu image) and `src/background/shot.ts` (crop) are not filled before `drawImage`, so transparent pixels are
 (0,0,0,0) and become black. Black text on a transparent background turns into a solid black image: no text lines, a wrong top-1.
 The Python reference does `convert("RGB")`, which also drops alpha (RGBA → RGB keeps the stored RGB of transparent pixels).
 
 ## Intent and success criteria (from the ТЗ)
+
 1. Unit: (0,0,0,0) → (255,255,255); (0,0,0,255) → (0,0,0); semi-transparent → blended.
 2. E2E: a PNG with black text on a transparent background (file upload and the context-menu handoff) yields text lines and
    the same top-1 as the same picture on white.
@@ -14,6 +16,7 @@ The Python reference does `convert("RGB")`, which also drops alpha (RGBA → RGB
 4. CI green; no tag/release. Model, pipeline arithmetic, permissions, locales, `store/` untouched.
 
 ## Design
+
 - **Compositing rule** (non-premultiplied input, as `getImageData` and pngjs return): `c' = round((c·a + 255·(255−a)) / 255)`,
   computed in integers as `floor((c·a + 255·(255−a) + 127) / 255)`. 255 is odd, so the quotient never has a fractional part of
   exactly .5: the rounding is unambiguous and identical in JS and numpy. For a = 255 it is `c` exactly (bytes unchanged);
@@ -28,6 +31,7 @@ The Python reference does `convert("RGB")`, which also drops alpha (RGBA → RGB
   on the result page where the image is drawn.
 
 ## Testing
+
 - Unit (vitest): `fromRGBA` cases above, exact formula against a brute-force table over all (c, a), opaque identity;
   `result-app` test: canvas is filled white before the draw; `background` test: same for the crop canvas.
 - Python (pytest): `to_rgb` same cases, equals the JS table values for a sample, opaque identity vs `convert("RGB")`,
@@ -38,4 +42,5 @@ The Python reference does `convert("RGB")`, which also drops alpha (RGBA → RGB
 - Regression: `npm run test:regression` against fresh Python results; `identify.spec.ts` (24 images, minified build) unchanged.
 
 ## Out of scope
+
 Colour management, premultiplied handling beyond the formula, SVG, animated formats, any change to the model or recognition arithmetic.
