@@ -35,7 +35,12 @@ export async function cropToDataUrl(dataUrl: string, rect: Rect, dpr: number): P
   const { x, y, w, h } = clipCropRect(rect, dpr, bmp.width, bmp.height);
   const sized = scaleToMaxSide(w, h, MAX_CROP_SIDE);
   const cv = new OffscreenCanvas(sized.width, sized.height);
-  cv.getContext('2d')?.drawImage(bmp, x, y, w, h, 0, 0, sized.width, sized.height);
+  const ctx = cv.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#fff'; // a transparent pixel would be black in the JPEG fallback and the model
+    ctx.fillRect(0, 0, sized.width, sized.height);
+    ctx.drawImage(bmp, x, y, w, h, 0, 0, sized.width, sized.height);
+  }
   bmp.close();
   // Prefer PNG; if it still exceeds session quota after the 2400px side cap, re-encode as JPEG.
   return encodeWithinSessionQuota(async ({ type, quality }) => {
