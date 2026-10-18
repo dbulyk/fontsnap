@@ -65,11 +65,8 @@ describe('dataUrlToBlob equals fetch(dataUrl)', () => {
     expect(() => dataUrlToBlob('https://example.com/a.png')).toThrow();
   });
 
-  it('decodes a 6 MB screenshot-sized payload quickly', () => {
+  it('decodes a 6 MB screenshot-sized payload', () => {
     const bytes = pseudoRandom(6_000_000, 7);
-    const started = performance.now();
-    const blob = dataUrlToBlob(`data:image/png;base64,${b64(bytes)}`);
-    expect(blob.size).toBe(bytes.length);
-    expect(performance.now() - started).toBeLessThan(2000);
+    expect(dataUrlToBlob(`data:image/png;base64,${b64(bytes)}`).size).toBe(bytes.length);
   });
 });

@@ -60,36 +60,7 @@ test('a page of the extension can read its own files and nothing else', async ({
   expect(result).toEqual({ own: 'ok 200', site: 'refused', data: 'refused', blob: 'ok 200' });
 });
 
-test('only connect-src is tightened: stylesheets, fonts and images of other origins still load (the font previews)', async ({
-  context,
-  extensionId,
-  siteUrl,
-}) => {
-  const page = await openResultPage(context, extensionId);
-  const violations = await page.evaluate(async (site) => {
-    const seen: string[] = [];
-    document.addEventListener('securitypolicyviolation', (event) => {
-      seen.push(event.effectiveDirective);
-    });
-    // a <link rel=stylesheet> (how the page loads Google Fonts) and an <img> from another origin
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = `${site}fonts.css`;
-    document.head.append(link);
-    const image = new Image();
-    image.src = `${site}pixel.png`;
-    await new Promise((done) => {
-      link.onload = done;
-      link.onerror = done;
-    });
-    await new Promise((done) => {
-      image.onload = done;
-      image.onerror = done;
-    });
-    return seen;
-  }, siteUrl);
-  expect(violations, 'no style-src, img-src or font-src violation').toEqual([]);
-});
+// (that stylesheets and fonts of other origins - the Google Fonts previews - are not touched is font-preview.spec.ts)
 
 test('the manifest carries exactly the CSP that is pinned', async ({ serviceWorker }) => {
   const csp = await serviceWorker.evaluate(
