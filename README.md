@@ -100,10 +100,16 @@ card (name and percent) with `tests/fixtures/chrome-top5.json`, a slice of the f
 to TypeScript and terser. The whole set can be compared the same way in a browser; any difference between the minified build and
 the Python/Node pipelines shows up there.
 
-Transparency: a PNG is composited over white before it reaches the pipeline (`fromRGBA` in `src/shared/core/image.ts`,
-`to_rgb` in `python/fontsnap_ref/image.py`, the same integer sum; the canvases of the result page and of the crop are also
-painted white first). `tests/fixtures/alpha-composite.json` is the table both sides are tested with, and
-`tests/e2e/transparent.spec.ts` checks a transparent PNG against the same one on white, by upload and by the context menu.
+Transparency: an image with an alpha channel (PNG, WebP, GIF, AVIF) is composited before it reaches the pipeline. The backdrop
+is chosen by contrast, so that text stays against its ground: when the alpha-weighted mean luminance of the content (the `toGray`
+formula, integers) is above 127.5 the image goes on black, otherwise on white; the tie and an image without content go to white. A
+fully opaque image is not changed. `chooseBackdrop` and `fromRGBA` in `src/shared/core/image.ts` and `choose_backdrop` and `to_rgb`
+in `python/fontsnap_ref/image.py` apply the same integer sum, and the result page does not paint its canvas, so the alpha reaches
+`fromRGBA`. A screenshot (region selection, right click on an image of another site) is opaque: transparency there is already
+composited on the background of the page. `tests/fixtures/alpha-composite.json` is the table both sides are tested with, and
+`tests/e2e/transparent.spec.ts` checks black text on transparent against black on white and white text on transparent against
+white on black, by upload and by the context menu on a data: image, and that the pixels of a transparent image survive the
+premultiplied canvas of Chromium. Python loaders call `to_rgb` (a test refuses a bare `convert("RGB")`).
 
 ## Exceptions to the template (WebAssembly, the model, the CSP)
 
