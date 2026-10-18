@@ -71,7 +71,11 @@ const AROUND = (text: string): string =>
 const SPACER = (px: number): string => `<div style="height:${String(px)}px"></div>`;
 const CORS = { 'access-control-allow-origin': '*' };
 
-/** Opens the page, gives the tab the activeTab grant of a toolbar click and takes the overlay down again. */
+/**
+ * Opens the page, gives the tab the activeTab grant of a toolbar click and takes the overlay down again. The click only starts the
+ * injection: Escape is sent once the overlay is in the page, and the content script adds its key handler in the same turn as it
+ * adds the overlay, so there is no moment where the overlay is up and Escape is lost.
+ */
 async function openSite(
   context: BrowserContext,
   extensionId: string,
@@ -81,8 +85,10 @@ async function openSite(
   const site = await context.newPage();
   await site.goto(url);
   await clickToolbarIcon(context, extensionId, site);
+  const overlay = site.locator('div[style*="crosshair"]');
+  await expect(overlay).toBeVisible();
   await site.keyboard.press('Escape');
-  await expect(site.locator('div[style*="crosshair"]')).toHaveCount(0);
+  await expect(overlay).toHaveCount(0);
   await site.evaluate((y) => {
     window.scrollTo(0, y);
   }, scrollTo);
