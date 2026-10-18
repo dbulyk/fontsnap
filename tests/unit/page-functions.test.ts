@@ -72,6 +72,7 @@ describe('measureImage', () => {
       dpr: 2,
       saved: [0],
       box: { x: 0, y: 0, w: 800, h: 600 },
+      outer: { x: 0, y: 0, w: 800, h: 600 },
     });
     expect(img.scrollIntoView).toHaveBeenCalledWith({
       block: 'nearest',
@@ -163,7 +164,7 @@ describe('measureImage', () => {
     await expect(measureImage(SRC, 'image', null)).resolves.toMatchObject({ saved: [1] });
   });
 
-  it('measures the one iframe with that src, without scrolling, with its client box', async () => {
+  it('measures the one iframe with that src, without scrolling, with its client box and its whole border box', async () => {
     const frame = element({
       currentSrc: undefined,
       src: 'https://frame.example/',
@@ -171,6 +172,8 @@ describe('measureImage', () => {
       clientTop: 3,
       clientWidth: 300,
       clientHeight: 200,
+      offsetWidth: 309,
+      offsetHeight: 214,
     });
     page({ frames: [element({ src: 'https://other/' }), frame] });
     await expect(measureImage('https://frame.example/', 'frame', null)).resolves.toEqual({
@@ -178,6 +181,7 @@ describe('measureImage', () => {
       dpr: 1,
       saved: [0],
       box: { x: 2, y: 3, w: 300, h: 200 },
+      outer: { x: 0, y: 0, w: 309, h: 214 },
     });
     expect(frame.scrollIntoView).not.toHaveBeenCalled();
   });

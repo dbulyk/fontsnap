@@ -182,9 +182,9 @@ async function uploaded(
 }
 
 /** A page at `origin` with an iframe (from `frameOrigin`) far below the fold. */
-const pageWithFrame = (frameUrl: string): Route =>
+const pageWithFrame = (frameUrl: string, style = 'border:0'): Route =>
   html(
-    `${AROUND('Above the frame')}${SPACER(1800)}<iframe src="${frameUrl}" width="900" height="500" style="display:block;border:0;margin:0 30px"></iframe>${SPACER(1500)}`,
+    `${AROUND('Above the frame')}${SPACER(1800)}<iframe src="${frameUrl}" width="900" height="500" style="display:block;margin:0 30px;${style}"></iframe>${SPACER(1500)}`,
   );
 const frameDoc = (src: string): Route =>
   html(
@@ -196,18 +196,21 @@ async function frameSetup(
   serve: (routes: ReadonlyMap<string, Route>) => Promise<string>,
   sameOrigin: boolean,
   frame: Route,
+  frameStyle?: string,
 ): Promise<{ origin: string; frames: string }> {
   if (sameOrigin) {
     const origin = await serve(
       new Map([
         ['/frame.html', frame],
-        ['/page.html', pageWithFrame('/frame.html')],
+        ['/page.html', pageWithFrame('/frame.html', frameStyle)],
       ]),
     );
     return { origin, frames: origin };
   }
   const frames = await serve(new Map([['/frame.html', frame]]));
-  const origin = await serve(new Map([['/page.html', pageWithFrame(`${frames}/frame.html`)]]));
+  const origin = await serve(
+    new Map([['/page.html', pageWithFrame(`${frames}/frame.html`, frameStyle)]]),
+  );
   return { origin, frames };
 }
 
@@ -555,6 +558,39 @@ test.describe('an image inside an iframe', () => {
           expect(got.names[0]).toBe((await uploaded(context, extensionId, file)).names[0]);
         });
       }
+
+      test('an iframe with a border of a different width on every side: the crop is still the image', async ({
+        context,
+        extensionId,
+        serviceWorker,
+        serve,
+      }) => {
+        test.setTimeout(120_000);
+        const file = await renderPng(context, extensionId);
+        const third = await serve(new Map([['/img.png', png(file)]]));
+        const { origin, frames } = await frameSetup(
+          serve,
+          false,
+          frameDoc(`${third}/img.png`),
+          'border:solid #888;border-width:3px 2px 11px 7px',
+        );
+        const site = await openSite(context, extensionId, `${origin}/page.html`, 100);
+        const tabId = await siteTabId(serviceWorker);
+        const frameId = await frameIdOf(serviceWorker, tabId, `${frames}/frame.html`);
+        const got = await shown(
+          await clickImage(context, serviceWorker, {
+            tabId,
+            srcUrl: `${third}/img.png`,
+            frameId,
+            frameUrl: `${frames}/frame.html`,
+          }),
+        );
+        expect([got.width, got.height]).toEqual([WIDTH * ratio, HEIGHT * ratio]);
+        expect(got.wholeNote).toBe(false);
+        expect(await scrollY(site)).toBe(100);
+        // a crop shifted by a few pixels would read the neighbouring text as well: the same family as the file itself
+        expect(got.names[0]).toBe((await uploaded(context, extensionId, file)).names[0]);
+      });
     });
   }
 });
@@ -622,5 +658,38 @@ test.describe('the whole visible area, with a hint (step 3)', () => {
     );
     expect(got.wholeNote).toBe(true);
     expect([got.width, got.height]).toEqual(viewport);
+  });
+
+  test('an iframe with padding falls back too: which side the padding is on cannot be read', async ({
+    context,
+    extensionId,
+    serviceWorker,
+    serve,
+  }) => {
+    test.setTimeout(120_000);
+    const file = await renderPng(context, extensionId);
+    const third = await serve(new Map([['/img.png', png(file)]]));
+    const { origin, frames } = await frameSetup(
+      serve,
+      false,
+      frameDoc(`${third}/img.png`),
+      'border:solid #888;border-width:3px 2px 11px 7px;padding:10px 4px 6px 12px',
+    );
+    const site = await openSite(context, extensionId, `${origin}/page.html`, 100);
+    const tabId = await siteTabId(serviceWorker);
+    const frameId = await frameIdOf(serviceWorker, tabId, `${frames}/frame.html`);
+    const viewport = await site.evaluate(() => [innerWidth, innerHeight]);
+    const got = await shown(
+      await clickImage(context, serviceWorker, {
+        tabId,
+        srcUrl: `${third}/img.png`,
+        frameId,
+        frameUrl: `${frames}/frame.html`,
+      }),
+      false,
+    );
+    expect(got.wholeNote).toBe(true);
+    expect([got.width, got.height]).toEqual(viewport);
+    expect(await scrollY(site), 'the page is where it was').toBe(100);
   });
 });

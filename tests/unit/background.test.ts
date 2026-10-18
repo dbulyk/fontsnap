@@ -354,6 +354,7 @@ describe('right-click on an image', () => {
       dpr: 2,
       saved: [],
       box: { x: 0, y: 0, w: 400, h: 300 },
+      outer: { x: 0, y: 0, w: 400, h: 300 },
     },
   });
   const PIXELS = 'UElYRUxT';

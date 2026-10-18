@@ -287,6 +287,8 @@ const DOM_MEMBERS = [
       clientTop: 'r',
       clientWidth: 'r',
       clientHeight: 'r',
+      offsetWidth: 'r',
+      offsetHeight: 'r',
       getElementsByTagName: 'c',
       scrollIntoView: 'c',
       getBoundingClientRect: 'c',
@@ -895,7 +897,7 @@ const PAGE_TYPES = [
   {
     match: MEASURE_FILE,
     augmented: [],
-    interfaces: { MeasuredImage: ['rect', 'dpr', 'saved', 'box'] },
+    interfaces: { MeasuredImage: ['rect', 'dpr', 'saved', 'box', 'outer'] },
     imports: { Rect: 'src/shared/capture.ts' },
   },
   { match: LOAD_IMAGE_FILE, augmented: [], interfaces: {}, imports: {} },

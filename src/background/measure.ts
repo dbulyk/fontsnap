@@ -16,8 +16,16 @@ export interface MeasuredImage {
    * nearest first, as they were before the element was scrolled into view.
    */
   saved: number[];
-  /** `kind 'image'`: the viewport of the frame (0, 0, innerWidth, innerHeight); `kind 'frame'`: the client box of the iframe. */
+  /**
+   * `kind 'image'`: the viewport of the frame (0, 0, innerWidth, innerHeight); `kind 'frame'`: the client box of the iframe - the
+   * border on its left and top (clientLeft, clientTop) and the size inside the border, padding included (clientWidth, clientHeight).
+   */
   box: Rect;
+  /**
+   * `kind 'frame'`: the size of the whole border box of the iframe before any CSS scale (offsetWidth, offsetHeight), which with the
+   * client box gives the border on the right and at the bottom too; `kind 'image'`: the same as `box`.
+   */
+  outer: Rect;
 }
 
 /**
@@ -89,10 +97,13 @@ export async function measureImage(
     kind === 'image'
       ? { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight }
       : { x: el.clientLeft, y: el.clientTop, w: el.clientWidth, h: el.clientHeight };
+  const outer: Rect =
+    kind === 'image' ? box : { x: 0, y: 0, w: el.offsetWidth, h: el.offsetHeight };
   return {
     rect: { x: b.left, y: b.top, w: b.width, h: b.height },
     dpr: window.devicePixelRatio || 1,
     saved: before,
     box,
+    outer,
   };
 }

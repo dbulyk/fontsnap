@@ -64,6 +64,7 @@ const measured = (extra: Partial<MeasuredImage> = {}): MeasuredImage => ({
   dpr: 2,
   saved: [1, 2],
   box: { x: 0, y: 0, w: 800, h: 600 },
+  outer: { x: 0, y: 0, w: 800, h: 600 },
   ...extra,
 });
 
@@ -208,6 +209,7 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
           dpr: 1,
           saved: [0, 50],
           box: { x: 1, y: 1, w: 298, h: 198 },
+          outer: { x: 0, y: 0, w: 300, h: 200 },
         });
       }
       return frame === 3 && target === SRC
@@ -264,12 +266,64 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
                 dpr: 1,
                 saved: [0],
                 box: { x: 1, y: 1, w: 500, h: 400 },
+                outer: { x: 0, y: 0, w: 520, h: 420 },
               })
             : measure(target, kind, saved, frame),
       });
       const entry = await clickedImage(click, tab);
       expect(entry.note).toBe('whole-view');
       expect(images.draws).toEqual([[0, 0, 400, 300, 0, 0, 400, 300]]);
+    });
+
+    it('follows a border of its own on every side of the iframe', async () => {
+      // border 7 | 2 and 3 | 11: the document inside is 291 x 186 and starts 7 and 3 pixels in
+      script({
+        measure: (target, kind, _saved, frame) =>
+          kind === 'frame'
+            ? measured({
+                rect: { x: 10, y: 20, w: 300, h: 200 },
+                dpr: 1,
+                saved: [0, 50],
+                box: { x: 7, y: 3, w: 291, h: 186 },
+                outer: { x: 0, y: 0, w: 300, h: 200 },
+              })
+            : frame === 3 && target === SRC
+              ? measured({
+                  rect: { x: 10, y: 20, w: 40, h: 30 },
+                  dpr: 1,
+                  saved: [0, 0],
+                  box: { x: 0, y: 0, w: 291, h: 186 },
+                })
+              : null,
+      });
+      const entry = await clickedImage(click, tab);
+      expect(entry.note).toBeUndefined();
+      expect(images.draws).toEqual([[27, 43, 40, 30, 0, 0, 40, 30]]);
+    });
+
+    it('goes to step 3 when the iframe has padding (which side it is on cannot be read), and puts the scroll back', async () => {
+      script({
+        measure: (target, kind, _saved, frame) =>
+          kind === 'frame'
+            ? measured({
+                rect: { x: 10, y: 20, w: 300, h: 200 },
+                dpr: 1,
+                saved: [0, 50],
+                box: { x: 1, y: 1, w: 298, h: 198 },
+                outer: { x: 0, y: 0, w: 300, h: 200 },
+              })
+            : frame === 3 && target === SRC
+              ? measured({
+                  rect: { x: 10, y: 20, w: 40, h: 30 },
+                  dpr: 1,
+                  saved: [0, 0],
+                  box: { x: 0, y: 0, w: 284, h: 192 },
+                })
+              : null,
+      });
+      const entry = await clickedImage(click, tab);
+      expect(entry.note).toBe('whole-view');
+      expect(calls.filter((c) => c.fn === 'measure' && c.args[2] !== null).length).toBe(2);
     });
 
     it('goes to step 3 without measuring when the click does not say which frame URL it came from', async () => {

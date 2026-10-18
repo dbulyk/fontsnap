@@ -107,11 +107,9 @@ async function croppedFromScreenshot(
       // the frame may have moved with the scroll that brought the image into view
       const moved = await measure(tabId, 0, info.frameUrl, 'frame', null);
       if (!moved) throw new Error('The frame of the image was not found');
-      // the frame found by its URL must be the frame of the click: the same address can be a nested frame of another frame
-      if (Math.abs(image.box.w - moved.box.w) > 1 || Math.abs(image.box.h - moved.box.h) > 1) {
-        throw new Error('The frame of the image is not the frame that was found');
-      }
-      rect = frameRect(image.rect, image.box, moved.rect, moved.box);
+      // throws when the frame found by its URL is not the frame of the click (the same address can be a nested frame of another
+      // frame) and when the frame has padding
+      rect = frameRect(image.rect, image.box, moved.rect, moved.box, moved.outer);
     }
     if (!validRect(rect)) throw new Error('Could not access this image');
     const shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
