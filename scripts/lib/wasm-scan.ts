@@ -1,3 +1,5 @@
+import ts from 'typescript';
+
 /**
  * WebAssembly other than the pinned vendor files could reach the extension inside a built script, past every check
  * of the build: as the bytes of a module (a literal, base64, hex, an escape, a list of numbers) or through the
@@ -325,6 +327,92 @@ function runtimeSettingProblems(file: string, text: string): string[] {
 }
 
 /**
+ * The SECOND layer for the code that runs in the web page's process, where the CSP of the extension does not apply (round 6 of
+ * the review of PR #6; the first layer is lint plus the module graph of select.js, which also hold names built at run time):
+ * no network API, no way to load or navigate, spelled with a literal name. `select.js` is that code as a whole; of
+ * `background.js` it is the function handed to `chrome.scripting.executeScript({ func })` (measureImage), found in the AST.
+ */
+const PAGE_CODE_FORBIDDEN: readonly { pattern: RegExp; what: string }[] = [
+  {
+    pattern:
+      /\b(?:fetch|Request|XMLHttpRequest|WebSocket|EventSource|WebTransport\w*|sendBeacon|importScripts|SharedWorker|Worker|Image|Audio|Option|DOMParser|FontFace|(?:webkit|moz)?RTC[A-Z]\w*)\b/,
+    what: 'a network API (fetch, XMLHttpRequest, WebSocket, EventSource, Image, Audio, Worker, RTC*, ...)',
+  },
+  { pattern: /\bimport\s*\(/, what: 'a dynamic import()' },
+  {
+    pattern:
+      /\.\s*(?:src|srcset|srcdoc|href|action|formAction|poster|ping|innerHTML|outerHTML)\s*=(?!=)/,
+    what: 'an assignment to src/href/srcset/action/innerHTML/...',
+  },
+  {
+    pattern:
+      /\b(?:setAttribute|setAttributeNS|setAttributeNode|insertAdjacentHTML|insertAdjacentElement|createContextualFragment|insertRule|replaceSync)\b/,
+    what: 'setAttribute / insertAdjacentHTML / insertRule',
+  },
+  { pattern: /\bopen\s*\(/, what: 'open(...) (window.open, XMLHttpRequest.open)' },
+  { pattern: /\blocation\b/, what: 'location' },
+  { pattern: /url\s*\(|image-set|@import/i, what: 'url(...) / image-set / @import in a string' },
+];
+
+/** What of the page-process rules a text breaks; empty if nothing. */
+export function pagePlatformProblems(text: string): string[] {
+  return PAGE_CODE_FORBIDDEN.filter(({ pattern }) => pattern.test(text)).map(({ what }) => what);
+}
+
+/**
+ * The text of every function that a script hands to `executeScript({ func })`: a named function or a variable of this file, or a
+ * function written in place. `undefined` entries stand for a `func` that is none of those (it could not be read, so it fails).
+ */
+export function injectedFunctions(file: string, text: string): (string | undefined)[] {
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  const named = new Map<string, ts.Node>();
+  const collect = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name !== undefined) named.set(node.name.text, node);
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer !== undefined &&
+      (ts.isFunctionExpression(node.initializer) || ts.isArrowFunction(node.initializer))
+    ) {
+      named.set(node.name.text, node.initializer);
+    }
+    ts.forEachChild(node, collect);
+  };
+  collect(source);
+  const found: (string | undefined)[] = [];
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.name.text === 'executeScript'
+    ) {
+      const options = node.arguments[0];
+      const func =
+        options !== undefined && ts.isObjectLiteralExpression(options)
+          ? options.properties.find(
+              (property): property is ts.PropertyAssignment =>
+                ts.isPropertyAssignment(property) &&
+                (ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)) &&
+                property.name.text === 'func',
+            )
+          : undefined;
+      if (func !== undefined) {
+        const value = func.initializer;
+        const target = ts.isIdentifier(value)
+          ? named.get(value.text)
+          : ts.isFunctionExpression(value) || ts.isArrowFunction(value)
+            ? value
+            : undefined;
+        found.push(target?.getText(source));
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return found;
+}
+
+/**
  * Problems of one built script (`file` relative to the build, `text` its contents): a WebAssembly module in it, or settings
  * that would make onnxruntime-web load other code or bytes.
  */
@@ -354,10 +442,24 @@ export function scriptProblems(file: string, text: string): string[] {
     (name) =>
       `${file}: uses ${name}, which no script of the build uses (the sources are held to an allowlist of globals, see eslint.config.js)`,
   );
+  const page = [
+    ...(file === 'select.js' ? pagePlatformProblems(text) : []),
+    ...(file === 'background.js'
+      ? injectedFunctions(file, text).flatMap((body) =>
+          body === undefined
+            ? ['func of executeScript is not a function of this file (it could not be read)']
+            : pagePlatformProblems(body),
+        )
+      : []),
+  ].map(
+    (what) =>
+      `${file}: code that runs in the web page's process (outside the CSP of the extension) has ${what}`,
+  );
   return [
     ...problems,
     ...origins,
     ...tampering,
+    ...page,
     ...ice,
     ...hidden,
     ...names,

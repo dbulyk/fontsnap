@@ -894,6 +894,28 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
       expect(problems).toMatch(/uses (fetch|Request)/);
     });
 
+    it.each([
+      ['select.js', 'new Image().src="https://example.invalid/p.png";'],
+      ['select.js', 'e.setAttribute("src","https://example.invalid/p.png");'],
+      ['select.js', 'document.body.style.background="url(https://example.invalid/p.png)";'],
+      ['select.js', 'window.open("https://example.invalid/");'],
+      [
+        'background.js',
+        'async function m(t){return new Image()}chrome.scripting.executeScript({target:{tabId:1},args:[u],func:m});',
+      ],
+      [
+        'background.js',
+        'async function m(t){document.body.setAttribute("src",t)}chrome.scripting.executeScript({target:{tabId:1},func:m});',
+      ],
+      ['background.js', 'chrome.scripting.executeScript({target:{tabId:1},func:gone});'],
+    ])('rejects a way to load or navigate in the code of the web page: %s: %s', (file, code) => {
+      const problems = verifyDist(
+        makeDist({ files: { [file]: code } }),
+        withMain({ [file]: 'chunk' }),
+      ).join('\n');
+      expect(problems).toMatch(/runs in the web page|could not be read/);
+    });
+
     it('lets the service worker encode the screenshot, and nobody else', () => {
       const encode = 'const e=btoa(String.fromCharCode(...b));';
       expect(

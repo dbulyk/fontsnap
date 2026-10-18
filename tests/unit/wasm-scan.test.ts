@@ -7,6 +7,8 @@ import {
   forbiddenNames,
   hiddenTexts,
   iceServerSchemes,
+  injectedFunctions,
+  pagePlatformProblems,
   windowReaches,
   importsRuntime,
   scriptProblems,
@@ -646,5 +648,152 @@ describe('WebRTC: servers and names that no script of the build uses', () => {
     ).join('\n');
     expect(problems).toContain('assets/result-abc.js: uses RTCPeerConnection');
     expect(problems).toContain('assets/result-abc.js: names a WebRTC server (stun:)');
+  });
+});
+
+// The second layer for the code that runs in the web page's process (select.js, and the function handed to executeScript):
+// no network API and no way to load or navigate, spelled with a literal name. Names built at run time are for lint and the
+// module graph of select.js, which this layer does not see.
+describe('the code of the web page: no network API, no way to load or navigate', () => {
+  it.each([
+    ['fetch', 'void window.fetch("https://example.invalid/m")'],
+    ['a bare fetch', 'fetch(u)'],
+    ['Request', 'new Request(u)'],
+    ['XMLHttpRequest', 'new XMLHttpRequest()'],
+    ['WebSocket', 'new WebSocket("wss://example.invalid/")'],
+    ['EventSource', 'new EventSource(u)'],
+    ['sendBeacon', 'navigator.sendBeacon(u, d)'],
+    ['Image', 'new Image()'],
+    ['Audio', 'new Audio(u)'],
+    ['Worker', 'new Worker(u)'],
+    ['FontFace', 'new FontFace("x", u)'],
+    ['RTCPeerConnection', 'new RTCPeerConnection({})'],
+    ['webkitRTCPeerConnection', 'new webkitRTCPeerConnection({})'],
+    ['WebTransport', 'new WebTransport(u)'],
+    ['a dynamic import', 'import(u)'],
+    ['an img src', 'const i = document.createElement("img"); i.src = u;'],
+    ['a src with spaces', 'i . src  =  u'],
+    ['an href', 'a.href = u'],
+    ['srcset', 'i.srcset = u'],
+    ['srcdoc', 'f.srcdoc = "<img>"'],
+    ['action', 'f.action = u'],
+    ['innerHTML', 'e.innerHTML = "<img src=x>"'],
+    ['outerHTML', 'e.outerHTML = "x"'],
+    ['setAttribute', 'e.setAttribute("src", u)'],
+    ['setAttribute with a variable', 'e.setAttribute(n, u)'],
+    ['insertAdjacentHTML', 'e.insertAdjacentHTML("beforeend", h)'],
+    ['insertRule', 's.insertRule(r)'],
+    ['window.open', 'window.open(u)'],
+    ['open', 'x.open("GET", u)'],
+    ['location', 'location.href = u'],
+    ['document.location', 'document.location = u'],
+    ['url() in a string', 'e.style.background = "url(https://example.invalid/m)"'],
+    ['url () with a space', 'e.style.background = "URL (https://example.invalid/m)"'],
+    ['image-set', 'e.style.background = "image-set(x 1x)"'],
+    ['@import', 's.textContent = "@import x"'],
+  ])('refuses %s', (_what, code) => {
+    expect(pagePlatformProblems(code), code).not.toEqual([]);
+    expect(scriptProblems('select.js', code).join('\n'), code).toContain('runs in the web page');
+  });
+
+  it.each([
+    'Object.assign(e.style, { position: "fixed", inset: "0", background: "rgba(0,0,0,0.15)" })',
+    'const m = [...document.images].find((i) => i.currentSrc === s || i.src === s)',
+    'img.scrollIntoView({ block: "nearest" }); const b = img.getBoundingClientRect()',
+    'const bmp = ImageBitmap; Object.assign(e.style, { cursor: "crosshair" })',
+    'if (a.src == b) run(); if (a.href === b) run()',
+    'win.addEventListener("keydown", f, true); win.removeEventListener("keydown", f, true)',
+    'const opened = isOpen; const reopen = 1; const locations = 2',
+  ])('lets what the real code does through: %s', (code) => {
+    expect(pagePlatformProblems(code), code).toEqual([]);
+  });
+
+  it('applies to select.js as a whole, and not to the other scripts', () => {
+    expect(scriptProblems('select.js', 'new Image()').join('')).toContain('web page');
+    expect(scriptProblems('assets/result-abc.js', 'new Image()').join('')).not.toContain(
+      'web page',
+    );
+    expect(
+      scriptProblems('assets/welcome-abc.js', 'e.setAttribute("src", u)').join(''),
+    ).not.toContain('web page');
+  });
+
+  describe('the function handed to executeScript, found in the minified background.js', () => {
+    const MINIFIED = (
+      body: string,
+      call = 'chrome.scripting.executeScript({target:{tabId:r.id},args:[e],func:b})',
+    ) =>
+      `async function k(){const x=1;await ${call}}async function b(t){${body}}function other(){return fetch(u)}`;
+
+    it('finds a named function, a variable and a function written in place', () => {
+      expect(injectedFunctions('background.js', MINIFIED('return 1'))).toEqual([
+        'async function b(t){return 1}',
+      ]);
+      expect(
+        injectedFunctions(
+          'background.js',
+          'const m=async t=>{return 2};chrome.scripting.executeScript({target:{},func:m})',
+        ),
+      ).toEqual(['async t=>{return 2}']);
+      expect(
+        injectedFunctions(
+          'background.js',
+          'chrome.scripting.executeScript({target:{},"func":function(t){return 3}})',
+        ),
+      ).toEqual(['function(t){return 3}']);
+    });
+
+    it('finds nothing to check when no function is injected, and a func that cannot be read fails', () => {
+      expect(injectedFunctions('background.js', 'chrome.tabs.create({url:u})')).toEqual([]);
+      expect(
+        injectedFunctions(
+          'background.js',
+          'chrome.scripting.executeScript({target:{},files:["select.js"]})',
+        ),
+      ).toEqual([]);
+      expect(
+        injectedFunctions('background.js', 'chrome.scripting.executeScript({target:{},func:gone})'),
+      ).toEqual([undefined]);
+      expect(
+        injectedFunctions('background.js', 'chrome.scripting.executeScript({target:{},func:o.f})'),
+      ).toEqual([undefined]);
+      expect(
+        scriptProblems(
+          'background.js',
+          'chrome.scripting.executeScript({target:{},func:gone})',
+        ).join(''),
+      ).toContain('could not be read');
+    });
+
+    it.each([
+      ['new Image', 'return new Image()'],
+      ['fetch', 'return fetch("https://example.invalid/m")'],
+      ['an img src', 'const i=document.createElement("img");i.src=t;return i'],
+      ['setAttribute', 'document.body.setAttribute("src",t)'],
+      ['location', 'location.href=t'],
+      ['open', 'window.open(t)'],
+      ['url()', 'document.body.style.background="url(https://example.invalid/m)"'],
+      ['XMLHttpRequest', 'new XMLHttpRequest().open("GET",t)'],
+    ])('refuses %s inside that function', (_what, body) => {
+      expect(scriptProblems('background.js', MINIFIED(body)).join('\n'), body).toContain(
+        'runs in the web page',
+      );
+    });
+
+    it('does not mind the service worker code around it: fetch is allowed in background.js outside the injected function', () => {
+      const problems = scriptProblems('background.js', MINIFIED('return t'));
+      expect(problems.join('\n')).not.toContain('runs in the web page');
+    });
+
+    it('accepts the function as the build has it', () => {
+      expect(
+        scriptProblems(
+          'background.js',
+          MINIFIED(
+            'const e=[...document.images].find(e=>e.currentSrc===t||e.src===t);if(!e)return null;e.scrollIntoView({block:"nearest",inline:"nearest"});await new Promise(o=>{requestAnimationFrame(()=>{requestAnimationFrame(o)})});const n=e.getBoundingClientRect();return{rect:{x:n.left,y:n.top,w:n.width,h:n.height},dpr:window.devicePixelRatio||1}',
+          ),
+        ).join('\n'),
+      ).not.toContain('runs in the web page');
+    });
   });
 });
