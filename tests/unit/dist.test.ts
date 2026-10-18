@@ -693,24 +693,45 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     expect(verifyDist(makeDist({ patch }), release).join('\n')).toContain(`manifest.${key}`);
   });
 
-  const CSP = "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'";
+  const CSP =
+    "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'";
   it.each([
     [
       "'unsafe-eval' instead of 'wasm-unsafe-eval'",
-      "script-src 'self' 'unsafe-eval'; object-src 'self'",
+      CSP.replace("'wasm-unsafe-eval'", "'unsafe-eval'"),
     ],
-    ["'wasm-unsafe-eval' removed", "script-src 'self'; object-src 'self'"],
-    ['both eval flavours', "script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'; object-src 'self'"],
+    ["'wasm-unsafe-eval' removed", CSP.replace(" 'wasm-unsafe-eval'", '')],
+    ['both eval flavours', CSP.replace("'wasm-unsafe-eval'", "'wasm-unsafe-eval' 'unsafe-eval'")],
     [
       'an extra script source',
-      "script-src 'self' 'wasm-unsafe-eval' https://cdn.example.com; object-src 'self'",
+      CSP.replace("'wasm-unsafe-eval'", "'wasm-unsafe-eval' https://cdn.example.com"),
     ],
-    ["'unsafe-inline'", "script-src 'self' 'wasm-unsafe-eval' 'unsafe-inline'; object-src 'self'"],
+    ["'unsafe-inline'", CSP.replace("'wasm-unsafe-eval'", "'wasm-unsafe-eval' 'unsafe-inline'")],
     ['a default-src', `default-src 'self'; ${CSP}`],
-    ['a different object-src', "script-src 'self' 'wasm-unsafe-eval'; object-src 'none'"],
+    // the review of PR #6 asked for these three, and the wildcard: each one reopens a door
+    ['connect-src removed', CSP.replace(" connect-src 'self';", '')],
+    ["connect-src '*'", CSP.replace("connect-src 'self'", 'connect-src *')],
+    ['connect-src with https:', CSP.replace("connect-src 'self'", "connect-src 'self' https:")],
+    ['connect-src with data:', CSP.replace("connect-src 'self'", "connect-src 'self' data:")],
+    ['connect-src with blob:', CSP.replace("connect-src 'self'", "connect-src 'self' blob:")],
+    [
+      'connect-src with a host',
+      CSP.replace("connect-src 'self'", "connect-src 'self' https://cdn.example.com"),
+    ],
+    ['connect-src none', CSP.replace("connect-src 'self'", "connect-src 'none'")],
+    ["object-src 'self' (the old value)", CSP.replace("object-src 'none'", "object-src 'self'")],
+    ['object-src removed', CSP.replace(" object-src 'none';", '')],
+    ['base-uri removed', CSP.replace("; base-uri 'none'", '')],
+    ["base-uri 'self'", CSP.replace("base-uri 'none'", "base-uri 'self'")],
+    ['the old CSP', "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"],
+    [
+      'the directives in another order',
+      "connect-src 'self'; script-src 'self' 'wasm-unsafe-eval'; object-src 'none'; base-uri 'none'",
+    ],
     ['a trailing semicolon', `${CSP};`],
-    ['different spacing', "script-src  'self' 'wasm-unsafe-eval'; object-src 'self'"],
-    ['a connect-src', `${CSP}; connect-src *`],
+    ['different spacing', CSP.replace('script-src ', 'script-src  ')],
+    ['an extra directive', `${CSP}; form-action 'none'`],
+    ['an extra img-src', `${CSP}; img-src *`],
   ])('reports a CSP with %s (the string must be equal, not "contain")', (_what, csp) => {
     const patch = (m: Manifest) => ({ ...m, content_security_policy: { extension_pages: csp } });
     expect(verifyDist(makeDist({ patch }), release).join('\n')).toContain(

@@ -76,7 +76,9 @@ describe('buildManifest', () => {
   });
 
   it("has exactly the CSP FontSnap needs: 'wasm-unsafe-eval' for onnxruntime-web, nothing else", () => {
-    expect(EXTENSION_PAGES_CSP).toBe("script-src 'self' 'wasm-unsafe-eval'; object-src 'self'");
+    expect(EXTENSION_PAGES_CSP).toBe(
+      "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'",
+    );
     expect(manifest.content_security_policy).toEqual({
       extension_pages: EXTENSION_PAGES_CSP,
     });
@@ -84,6 +86,13 @@ describe('buildManifest', () => {
     // 'unsafe-eval' would allow eval() and new Function(); 'wasm-unsafe-eval' allows WebAssembly only.
     expect(csp.replace("'wasm-unsafe-eval'", '')).not.toContain('unsafe-eval');
     expect(csp).not.toMatch(/https?:|\*|unsafe-inline|data:|blob:/);
+    // connect-src 'self': no request leaves the extension (a page, the worker of the runtime, the service worker); object-src and
+    // base-uri 'none' close the plugin and the <base> doors. A directive that is absent allows everything for its kind.
+    const directives = csp.split('; ').map((directive) => directive.split(' ')[0]);
+    expect(directives).toEqual(['script-src', 'connect-src', 'object-src', 'base-uri']);
+    expect(csp).toContain("connect-src 'self';");
+    expect(csp).toContain("object-src 'none';");
+    expect(csp).toContain("base-uri 'none'");
   });
 
   it('is cross-origin isolated with credentialless COEP (Google Fonts previews keep loading)', () => {

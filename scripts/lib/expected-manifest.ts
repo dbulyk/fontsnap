@@ -35,7 +35,8 @@ export function expectedManifest(version: string) {
       _execute_action: { suggested_key: { default: 'Alt+Shift+F' } },
     },
     content_security_policy: {
-      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'",
+      extension_pages:
+        "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'",
     },
     cross_origin_embedder_policy: { value: 'credentialless' },
     cross_origin_opener_policy: { value: 'same-origin' },

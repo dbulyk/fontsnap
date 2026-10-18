@@ -105,47 +105,50 @@ the Python/Node pipelines shows up there.
 The template forbids WebAssembly. FontSnap runs its model with onnxruntime-web, so it has a short, explicit list of exceptions;
 each is declared once and held by tests that fail on any deviation.
 
-| What                                                                                                                                            | Where it is declared                                     | What holds it                                                                                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ort/ort.wasm.min.mjs`, `ort/ort-wasm-simd-threaded.mjs`, `ort/ort-wasm-simd-threaded.wasm` of onnxruntime-web **1.30.0**, byte for byte        | `VENDOR_FILES` in `scripts/lib/vendor.ts` (sha256, size) | `vendor.test.ts`, `dist.test.ts`, the build (`vendorPlugin`), `verify-dist`                                                                                                                               |
-| `model/model_fp16.onnx` and `model/meta.json`                                                                                                   | the same table                                           | the same                                                                                                                                                                                                  |
-| CSP `extension_pages` is exactly `script-src 'self' 'wasm-unsafe-eval'; object-src 'self'` (string equality; no `unsafe-eval`, no extra source) | `EXTENSION_PAGES_CSP` in `src/manifest.ts`               | `manifest.test.ts`, `dist.test.ts` (ten variants), `verify-dist`, e2e `manifest.spec.ts`                                                                                                                  |
-| `cross_origin_embedder_policy` credentialless, `cross_origin_opener_policy` same-origin (SharedArrayBuffer for multithreaded WASM)              | `src/manifest.ts`                                        | `manifest.test.ts`, `dist.test.ts`                                                                                                                                                                        |
-| The one external import of the build, `onnxruntime-web/wasm` → `ort/ort.wasm.min.mjs`                                                           | `ORT_SPECIFIER`, `ORT_EXTERNAL` in `vendor.ts`           | `src-only.test.ts` (that id passes, eleven look-alikes are refused), `vite-configs.test.ts` (`vendorPlugin` answers only that specifier), `dist.test.ts` (the import must resolve to a file of the build) |
+| What                                                                                                                                                                                                | Where it is declared                                     | What holds it                                                                                                                                                                                             |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ort/ort.wasm.min.mjs`, `ort/ort-wasm-simd-threaded.mjs`, `ort/ort-wasm-simd-threaded.wasm` of onnxruntime-web **1.30.0**, byte for byte                                                            | `VENDOR_FILES` in `scripts/lib/vendor.ts` (sha256, size) | `vendor.test.ts`, `dist.test.ts`, the build (`vendorPlugin`), `verify-dist`                                                                                                                               |
+| `model/model_fp16.onnx` and `model/meta.json`                                                                                                                                                       | the same table                                           | the same                                                                                                                                                                                                  |
+| CSP `extension_pages` is exactly `script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'` (string equality, the order too; no `unsafe-eval`, no extra source) | `EXTENSION_PAGES_CSP` in `src/manifest.ts`               | `manifest.test.ts`, `dist.test.ts` (24 variants), `verify-dist`, e2e `manifest.spec.ts` and `csp.spec.ts`                                                                                                 |
+| `cross_origin_embedder_policy` credentialless, `cross_origin_opener_policy` same-origin (SharedArrayBuffer for multithreaded WASM)                                                                  | `src/manifest.ts`                                        | `manifest.test.ts`, `dist.test.ts`                                                                                                                                                                        |
+| The one external import of the build, `onnxruntime-web/wasm` → `ort/ort.wasm.min.mjs`                                                                                                               | `ORT_SPECIFIER`, `ORT_EXTERNAL` in `vendor.ts`           | `src-only.test.ts` (that id passes, eleven look-alikes are refused), `vite-configs.test.ts` (`vendorPlugin` answers only that specifier), `dist.test.ts` (the import must resolve to a file of the build) |
 
-**The runtime cannot be pointed elsewhere.** onnxruntime-web has two settings that would run WebAssembly other than the
-pinned files with every check above green (`env.wasm.wasmPaths`: another URL or `.wasm`; `env.wasm.wasmBinary`: other bytes), and
-it fetches its `.wasm` through the global `fetch`, so replacing `fetch` (or a prototype, or `chrome.runtime.getURL`) loads other
-bytes without touching the runtime at all. The layers, outermost first:
+**The runtime cannot be pointed elsewhere, and the page cannot reach what loads it.** onnxruntime-web has two settings that would run
+WebAssembly other than the pinned files with every check above green (`env.wasm.wasmPaths`: another URL or `.wasm`; `env.wasm.wasmBinary`:
+other bytes), and it fetches its `.wasm` through `fetch`, so replacing `fetch` (or a prototype, `chrome.runtime.getURL`, the global object
+through `document.defaultView`, `top`, ...) would load other bytes without touching the runtime at all. Rounds of review found the ways to
+reach and replace those one after another, so the layers do not try to list the ways; the outermost ones remove the capability:
 
-1. **Lint** (every `src/` context except one rule set for `src/result/model.ts`): the identifiers `env`, `wasmPaths`, `wasmBinary` (also
-   as strings, templates and keys) and any `onnxruntime-*` import are refused outside `model.ts`; in ALL of `src/` (model.ts included) there is
-   no write to a global object (`globalThis`/`self`/`window` are only read as `globalThis.crossOriginIsolated|crypto|...`, never aliased,
-   passed on or accessed by a computed name), to a host object (`chrome`, `navigator`, `performance`, `Object`, `Response`, ...: assignment,
-   update, delete, destructuring, `Object.assign` onto it), and none of `defineProperty`, `defineProperties`, `setPrototypeOf`,
-   `getPrototypeOf`, `__proto__`, `prototype`, `Proxy`, `Reflect` is named.
-2. **Unit tests** pin `src/result/model.ts` as an allowlist: the exact text of the URL functions and of `configureRuntime` (`wasmPaths =
-runtimeUrl()`, a bare call; `runtimeUrl` is `chrome.runtime.getURL(RUNTIME_DIR)`, `RUNTIME_DIR` is `'ort/'`), and the complete lists of what
-   the file calls, which strings it contains, which properties it reads, which operators it uses.
-3. **At start-up** (`assertPinnedRuntime`, right before the session is created): `wasmPaths` is an own data property holding exactly the string
-   `chrome.runtime.getURL('ort/')`, and there is no `wasmBinary` (not own, not inherited, not a getter); afterwards (`assertNoOutsideLoads`) resource
-   timing must show no load from outside the extension. The value is checked, not only the way it is set, so it does not matter which line set it.
-4. **`verify-dist`** scans every built `.js`/`.mjs`: the module header in any spelling (raw, escapes, base64 at all alignments, hex, number lists,
-   a `.wasm` name in any string form); every absolute or protocol-relative URL in a string must be on `fonts.googleapis.com` or `fonts.google.com`
-   (escapes and %-escapes decoded, so `%68ttps://` is seen); the primitives of layer 1 and writes to globals/prototypes in the built code;
-   `wasmBinary` anywhere outside the known reads of the start-up check; and in the one chunk that imports the vendored runtime `wasmPaths`
-   is assigned exactly once, with exactly `chrome.runtime.getURL("ort/")`. The vendor files are exempt by exact path and sha256 only
-   (`scripts/lib/wasm-scan.ts`).
+1. **The CSP** (`connect-src 'self'`): no request of the extension (a page, the worker of the runtime, the service worker) leaves the
+   extension, whatever code runs and however the URL was built; `data:` URLs cannot be fetched either, which is why the screenshot and the
+   handed-over crop are decoded by `src/shared/data-url.ts`. The right-clicked image of another origin cannot be downloaded any more, so it
+   is always read from a screenshot of the visible area. `object-src 'none'` and `base-uri 'none'` close the plugin and `<base>` doors.
+2. **The runtime lives in a worker of its own** (`env.wasm.proxy = true`): it fetches and compiles its `.wasm` in a global scope that nothing in the
+   page can reach, so replacing `fetch`, a prototype or a method in the page changes nothing there (`tests/e2e/runtime.spec.ts` shows that
+   the page's `fetch` sees only `meta.json` and the model). At start-up `assertPinnedRuntime` requires `proxy` to be `true`, `wasmPaths` to be exactly
+   the string `chrome.runtime.getURL('ort/')` and no `wasmBinary` (not own, not inherited, not a getter); `assertNoOutsideLoads`
+   (resource timing) is only a detective for what the page loads.
+3. **Lint is an allowlist, not a list of forbidden spellings** (`GLOBAL_ACCESS` in `eslint.config.js`, the local rule `fontsnap/global-access`):
+   a global that is not on the list cannot be used in `src/` at all, a restricted one (`chrome`, `navigator`, `performance`, `Object`,
+   `String`, ...) only through the members named there, and never written, aliased, destructured, computed or passed on; the properties
+   that hand over a Window (`defaultView`, `contentWindow`, `view`, `source`, `currentTarget`, ...) are refused, the two page scripts that
+   listen to their window hold it in one exact form. Adding a line is a decision about what the extension may touch, like a permission.
+   The runtime's settings (`env`, `wasmPaths`, `wasmBinary`, the `onnxruntime-*` import) exist only in `src/result/model.ts`, which
+   `model.test.ts` pins as an allowlist of its calls, strings, properties and operators.
+4. **`verify-dist`** scans every built `.js`/`.mjs` (the vendor files are exempt by exact path and sha256 only; `scripts/lib/wasm-scan.ts`): a
+   module header or a `.wasm` name in any spelling, including base64 (at every alignment), hex and byte lists that DECODE to one or to a URL;
+   every URL in a string must be on `fonts.googleapis.com` or `fonts.google.com`; no `Worker`, `XMLHttpRequest`, `WebSocket`, `atob`, `eval`,
+   `Function`, dynamic `import()`, `postMessage`, `webdriver`, resource-timing resizing, `WebAssembly`; `defaultView` only in the one form
+   of the page scripts; and in the chunk that imports the runtime `wasmPaths` is assigned exactly once to `chrome.runtime.getURL("ort/")`,
+   `proxy` exactly once to `true`, and the start-up check is there.
 
-What this does not do, on purpose: names assembled at run time (`'ht' + 'tps'` is seen because the second literal is a URL; a URL decoded from
-base64 at run time is not), and a script that already runs in the page can defeat any check that runs in the same page. The strict closure for
-network access would be `connect-src` in the CSP, which FontSnap does not use (the service worker fetches the images users right-click).
+What this does not do: a script that already runs in the page can defeat any check that runs in the same page; layers 3 and 4 and the
+tests are what keep such a script out of the build, and layers 1 and 2 are what is left if one gets in.
 
 Everything else of the template stays: no `eval`/`new Function`/injected scripts, no remote code, no other `.wasm` or media, `public/`
 holds locales and icons only. The only network access of the extension is the Google Fonts preview: the result page links
-`https://fonts.googleapis.com/css2?family=<name>&display=swap` stylesheets (family names only, never page text) and
-`https://fonts.google.com/specimen/<name>` links; the service worker may `fetch` the image the user right-clicked (without
-credentials; a failure falls back to a screenshot).
+`https://fonts.googleapis.com/css2?family=<name>&display=swap` stylesheets (family names only, never page text; a `<link>` is not
+governed by `connect-src`) and `https://fonts.google.com/specimen/<name>` links. `fetch` is limited to the extension's own files by the CSP.
 
 Other deliberate adaptations of the guards (details in the pull request): Web Store limits of 75 characters for the name, the
 brand in the name and exactly the 55 locales; the fixed number of results ("5") in three messages; `data-i18n-ph` placeholders;

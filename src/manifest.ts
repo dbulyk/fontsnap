@@ -13,7 +13,8 @@ export interface ManifestOptions {
  * compiles its WASM runtime on the result page. It allows WebAssembly only, not eval()/new Function(), and
  * there is no remote source. Loosening this needs a reason (see "Exceptions" in README.md).
  */
-export const EXTENSION_PAGES_CSP = "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'";
+export const EXTENSION_PAGES_CSP =
+  "script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; object-src 'none'; base-uri 'none'";
 
 export function buildManifest({
   version,
