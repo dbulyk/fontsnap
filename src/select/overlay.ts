@@ -1,5 +1,4 @@
-import { sendMessage } from '../shared/messaging';
-import { t } from '../shared/i18n';
+import { nonEmpty, sendRect } from './chrome';
 import type { Rect } from '../shared/capture';
 
 /**
@@ -77,7 +76,7 @@ export function startSelection(win: Window): void {
     borderRadius: '6px',
     pointerEvents: 'none',
   });
-  hint.textContent = t('selectHint');
+  hint.textContent = nonEmpty(chrome.i18n.getMessage('selectHint'), 'selectHint');
   ov.append(box, hint);
   doc.documentElement.appendChild(ov);
   let sx = 0;
@@ -143,9 +142,7 @@ export function startSelection(win: Window): void {
     win.requestAnimationFrame(() => {
       win.requestAnimationFrame(() => {
         setTimeout(() => {
-          sendMessage({ type: 'fontsnap-rect', rect, dpr: win.devicePixelRatio || 1, text }).catch(
-            () => undefined,
-          );
+          void sendRect({ type: 'fontsnap-rect', rect, dpr: win.devicePixelRatio || 1, text });
         }, 30);
       });
     });
