@@ -116,6 +116,31 @@ describe('textcrop primitives', () => {
     const g = gray(2, 1, () => 9);
     expect(toGray(g)).toBe(g.data);
   });
+
+  it('composites RGBA over white (the table the Python reference is tested with)', () => {
+    const { cases } = JSON.parse(
+      readFileSync(join(ROOT, 'tests/fixtures/alpha-composite.json'), 'utf8'),
+    ) as { cases: { rgba: number[]; rgb: number[] }[] };
+    const rgba = Uint8Array.from(cases.flatMap((c) => c.rgba));
+    expect([...fromRGBA(rgba, cases.length, 1).data]).toEqual(cases.flatMap((c) => c.rgb));
+    expect([...fromRGBA(new Uint8ClampedArray(rgba), cases.length, 1).data]).toEqual(
+      cases.flatMap((c) => c.rgb),
+    );
+  });
+
+  it('leaves every opaque pixel byte for byte as it was', () => {
+    const rgba = new Uint8Array(256 * 4);
+    for (let i = 0; i < 256; i++) rgba.set([i, 255 - i, (i * 7) % 256, 255], i * 4);
+    const rgb = fromRGBA(rgba, 256, 1).data;
+    for (let i = 0; i < 256; i++)
+      expect([...rgb.subarray(i * 3, i * 3 + 3)]).toEqual([...rgba.subarray(i * 4, i * 4 + 3)]);
+  });
+
+  it('turns black text on a transparent background into the same pixels as on white', () => {
+    const onWhite = Uint8Array.from([255, 255, 255, 255, 0, 0, 0, 255, 255, 255, 255, 255]);
+    const onClear = Uint8Array.from([0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0]);
+    expect([...fromRGBA(onClear, 3, 1).data]).toEqual([...fromRGBA(onWhite, 3, 1).data]);
+  });
 });
 
 describe('resize', () => {
