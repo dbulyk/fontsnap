@@ -23,6 +23,10 @@ const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 // opening the result tab: the loader may take a while to download, a measurement is a few frames.
 const LOAD_TIMEOUT_MS = 20_000;
 const MEASURE_TIMEOUT_MS = 5_000;
+// The last step has nothing after it, and captureVisibleTab fails now and then for no reason of the page's ("Failed to capture tab:
+// image readback failed", the compositor has not painted the tab yet): it is tried a few times before the error reaches the user.
+const CAPTURE_ATTEMPTS = 3;
+const CAPTURE_RETRY_MS = 300;
 
 function within<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -36,6 +40,18 @@ function within<T>(promise: Promise<T>, ms: number): Promise<T> {
       })
       .catch(() => undefined);
   });
+}
+
+/** The screenshot of the visible area, taken again after a short pause when the browser fails to read it back. */
+async function captureWithRetry(windowId: number): Promise<string> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
+    } catch (e) {
+      if (attempt >= CAPTURE_ATTEMPTS) throw e;
+      await new Promise((ok) => setTimeout(ok, CAPTURE_RETRY_MS));
+    }
+  }
 }
 
 async function loadedPixels(
@@ -140,7 +156,7 @@ export async function clickedImage(
     // not found, not scriptable, outside the screenshot: the whole visible area is next
   }
   try {
-    const shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    const shot = await captureWithRetry(tab.windowId);
     return { dataUrl: await reencodeWithinQuota(shot), text: '', note: 'whole-view' };
   } catch (e) {
     return { error: errorMessage(e) };

@@ -345,12 +345,25 @@ describe('step 3: the whole visible area with a hint', () => {
     expect(images.draws).toEqual([[0, 0, 400, 300, 0, 0, 400, 300]]);
   });
 
+  it('takes the screenshot again when the browser fails to read it back once (image readback failed)', async () => {
+    script({ load: () => null, measure: () => null });
+    stub.chrome.tabs.captureVisibleTab.mockRejectedValueOnce(
+      new Error('Failed to capture tab: image readback failed'),
+    );
+    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(entry.dataUrl).toMatch(/^data:image\/png/);
+    expect(entry.note).toBe('whole-view');
+    expect(entry.error).toBeUndefined();
+    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(2);
+  });
+
   it('shows the error when even the screenshot cannot be taken', async () => {
     script({ load: () => null, measure: () => null });
     stub.chrome.tabs.captureVisibleTab.mockRejectedValue(new Error('The tab is not active'));
     await expect(clickedImage({ srcUrl: SRC, frameId: 0 }, tab)).resolves.toEqual({
       error: 'The tab is not active',
     });
+    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(3);
   });
 
   it('shows an error when there is no tab to script', async () => {
