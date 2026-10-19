@@ -5,6 +5,7 @@ import { measureImage } from '../../src/background/measure';
 // The two functions that chrome.scripting serializes into a web page, run here against stand-ins for the document they see.
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 interface Scroller {
@@ -80,6 +81,21 @@ describe('measureImage', () => {
       behavior: 'instant',
     });
     expect(frames).toHaveLength(2);
+  });
+
+  it('does not answer right after the two frames: the compositor needs a moment to show the new scroll position (a screenshot taken at once showed the old one, a blank crop)', async () => {
+    vi.useFakeTimers();
+    page({ images: [element()] });
+    let answered = false;
+    const measuring = measureImage(SRC, 'image', null).then((one) => {
+      answered = true;
+      return one;
+    });
+    await vi.advanceTimersByTimeAsync(150);
+    expect(answered).toBe(false);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(answered).toBe(true);
+    await expect(measuring).resolves.not.toBeNull();
   });
 
   it('also finds an image by its src, and falls back to a pixel ratio of 1', async () => {

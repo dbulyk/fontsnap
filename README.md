@@ -18,7 +18,7 @@ enforced by code and automated checks, not by review alone; see "What the checks
 - **Right-click on an image** analyses that image, in three steps (`src/background/clicked.ts`). (1) The pixels are loaded in the
   frame where the click happened (`chrome.scripting.executeScript` with `frameIds: [info.frameId]`, `loadImagePixels`): the element
   is drawn on a canvas, or, when the canvas is tainted, the clicked `srcUrl` is loaded once more with CORS; the PNG goes back to the
-  service worker and nowhere else (an image larger than 2400 px is scaled). (2) Otherwise the tab is scrolled to the image, screenshot
+  service worker and nowhere else (an image larger than 2400 px is scaled). (2) Otherwise the tab is scrolled to the image (and given two frames and 200 ms to show the new position, which a screenshot taken at once can miss), screenshot
   and cropped by `getBoundingClientRect() × devicePixelRatio` (a larger image: its visible part; an image in an iframe: moved by the
   position of the `<iframe>` in the top frame, direct children only, found by the frame URL; the border of each side is followed exactly, an iframe with padding goes to step 3 because the side of the padding cannot be read without the style) and the scroll positions of every scroller are put back in a
   `finally` (scrolls are `behavior: 'instant'`, so a page with `scroll-behavior: smooth` is neither measured nor left mid-animation; a page that does not answer within 20 s / 5 s is given up on). (3) Otherwise the whole visible area is analysed and the result page says so (`wholeNote`). A `data:` image is decoded

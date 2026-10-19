@@ -86,9 +86,13 @@ export async function measureImage(
   const before = [matches.indexOf(el), ...chain.flatMap((p) => [p.scrollLeft, p.scrollTop])];
   if (kind === 'image') {
     el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+    // two frames, then a moment more: the compositor shows the scroll once the tiles of the new position are drawn, which can take
+    // longer than two frames (software drawing, a busy machine), and a screenshot taken before that shows the old position
     await new Promise((ok) => {
       requestAnimationFrame(() => {
-        requestAnimationFrame(ok);
+        requestAnimationFrame(() => {
+          setTimeout(ok, 200);
+        });
       });
     });
   }
