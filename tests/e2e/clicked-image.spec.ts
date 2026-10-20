@@ -621,6 +621,24 @@ test.describe('the whole visible area, with a hint (step 3)', () => {
     expect([got.width, got.height]).toEqual(viewport);
     await expect(result.locator('#wholeNote')).toContainText('could not be isolated');
     await expect(result.locator('#status')).not.toHaveClass(/err/);
+    await expect(
+      result.getByRole('status').filter({ has: result.locator('#wholeNote') }),
+      'the hint is told to a screen reader',
+    ).toContainText('could not be isolated');
+    const contrast = await result.locator('#wholeNote').evaluate((note) => {
+      const channels = (css: string) => (css.match(/\d+/g) ?? []).slice(0, 3).map(Number);
+      const luminance = (css: string) => {
+        const [r = 0, g = 0, b = 0] = channels(css).map((v) => {
+          const c = v / 255;
+          return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      };
+      const text = luminance(getComputedStyle(note).color);
+      const back = luminance(getComputedStyle(document.body).backgroundColor);
+      return (Math.max(text, back) + 0.05) / (Math.min(text, back) + 0.05);
+    });
+    expect(contrast, 'WCAG AA for 13px text').toBeGreaterThanOrEqual(4.5);
   });
 
   test('an iframe the worker cannot place falls back too (no frame URL in the click)', async ({

@@ -461,6 +461,26 @@ describe('the screenshots of steps 2 and 3 stay within the quota of Chrome', () 
     expect(shots).toHaveLength(3);
     expect(withinQuota(shots)).toBe(true);
   });
+
+  it('clicks at the same time do not take their screenshots together', async () => {
+    script({ load: () => null, measure: () => null });
+    const all = Promise.all([1, 2, 3, 4].map(() => clickedImage({ srcUrl: SRC, frameId: 0 }, tab)));
+    await vi.advanceTimersByTimeAsync(10_000);
+    const entries = await all;
+    expect(entries.every((e) => e.note === 'whole-view')).toBe(true);
+    expect(shots).toHaveLength(4);
+    expect(withinQuota(shots)).toBe(true);
+  });
+
+  it('shows the read-back error, not the error of the retry, when the retry fails too', async () => {
+    script({ load: () => null, measure: () => null });
+    stub.chrome.tabs.captureVisibleTab
+      .mockRejectedValueOnce(new Error(READBACK))
+      .mockRejectedValueOnce(
+        new Error('This request exceeds the MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota.'),
+      );
+    await expect(clickOn({ srcUrl: SRC, frameId: 0 }, tab)).resolves.toEqual({ error: READBACK });
+  });
 });
 
 describe('a page that does not answer', () => {
