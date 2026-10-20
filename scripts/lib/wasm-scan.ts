@@ -609,8 +609,9 @@ export function injectedFunctionDetails(
   /**
    * The shape of the call that hands a function over, read from the options literal as the minifier leaves it: only target, func, args
    * and files; the target is { tabId: <name> or <name>.id, frameIds: [<one name or number>] } and nothing else (no allFrames, no
-   * documentIds, no second frame); the arguments of the loader are [<name>.srcUrl] - the srcUrl of the click, as it is read from the
-   * parameter of the function that got the click (lint says which parameter, in the source).
+   * documentIds, no second frame); measureImage may also run in `[<kind> === 'frame' ? 0 : <name>]`, where `<kind>` is its second
+   * argument (the top frame for the offset of an <iframe>); the arguments of the loader are [<name>.srcUrl] - the srcUrl of the
+   * click, as it is read from the parameter of the function that got the click (lint says which parameter, in the source).
    */
   const callProblems = (options: ts.ObjectLiteralExpression, loader: boolean): string[] => {
     const problems: string[] = [];
@@ -629,6 +630,28 @@ export function injectedFunctionDetails(
       named(e.expression) &&
       e.name.text === name;
     const own = new Map<string, ts.Expression | undefined>();
+    /** `<kind> === 'frame' ? 0 : <name>` (either side of ===), with `<kind>` the second of the args. */
+    const topForFrame = (e: ts.Expression): boolean => {
+      if (!ts.isConditionalExpression(e) || !ts.isBinaryExpression(e.condition)) return false;
+      const { left, right, operatorToken } = e.condition;
+      const kind = ts.isStringLiteral(left) ? right : left;
+      const frame = ts.isStringLiteral(left) ? left : right;
+      const args = own.get('args');
+      const second =
+        args !== undefined && ts.isArrayLiteralExpression(args) ? args.elements[1] : undefined;
+      return (
+        operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
+        ts.isStringLiteral(frame) &&
+        frame.text === 'frame' &&
+        ts.isIdentifier(kind) &&
+        second !== undefined &&
+        ts.isIdentifier(second) &&
+        second.text === kind.text &&
+        ts.isNumericLiteral(e.whenTrue) &&
+        e.whenTrue.text === '0' &&
+        named(e.whenFalse)
+      );
+    };
     for (const property of options.properties) {
       const key = keyOf(property);
       if (key === undefined || !['target', 'func', 'args', 'files'].includes(key)) {
@@ -648,7 +671,9 @@ export function injectedFunctionDetails(
         const one = list?.length === 1 ? list[0] : undefined;
         if (
           (key === 'tabId' && (named(value) || reads(value, 'id'))) ||
-          (key === 'frameIds' && one !== undefined && (named(one) || ts.isNumericLiteral(one)))
+          (key === 'frameIds' &&
+            one !== undefined &&
+            (named(one) || ts.isNumericLiteral(one) || (!loader && topForFrame(one))))
         ) {
           parts.set(key, value);
         } else {

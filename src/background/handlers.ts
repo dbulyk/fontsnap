@@ -70,18 +70,20 @@ export function registerBackground(): void {
     if (reason === 'install') void openWelcome();
   });
 
-  chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === MENU_SELECT) void startSelect(tab);
-    else if (info.menuItemId === MENU_IMAGE && info.srcUrl) {
-      // Keep the SW alive across the page scripts/crop/storage by chaining the whole async path.
-      void clickedImage(
-        { srcUrl: info.srcUrl, frameId: info.frameId, frameUrl: info.frameUrl },
-        tab,
-      )
-        .then((entry) => openResult(entry, tab))
-        .catch((e: unknown) => openResult({ error: errorMessage(e) }, tab));
-    }
-  });
+  chrome.contextMenus.onClicked.addListener(
+    (info: Readonly<chrome.contextMenus.OnClickData>, tab?: Readonly<chrome.tabs.Tab>) => {
+      if (info.menuItemId === MENU_SELECT) void startSelect(tab);
+      else if (info.menuItemId === MENU_IMAGE && info.srcUrl) {
+        // Keep the SW alive across the page scripts/crop/storage by chaining the whole async path.
+        void clickedImage(
+          { srcUrl: info.srcUrl, frameId: info.frameId, frameUrl: info.frameUrl },
+          tab,
+        )
+          .then((entry) => openResult(entry, tab))
+          .catch((e: unknown) => openResult({ error: errorMessage(e) }, tab));
+      }
+    },
+  );
 
   onMessage({
     // Only our own selection overlay (a content script in the top frame of a tab) reaches this handler.

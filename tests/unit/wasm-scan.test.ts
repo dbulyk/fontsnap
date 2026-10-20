@@ -1107,6 +1107,32 @@ describe('background.js hands two functions to executeScript: the measuring one 
     ])('refuses measureImage with %s', (_what, call) => {
       expect(wrong(`${call}${MEASURE_CALL}${LOAD}`)).not.toBe('');
     });
+    // round 2: measureImage runs in the top frame only for the offset of an <iframe>, as the minifier writes it
+    const FRAME_CALL =
+      'chrome.scripting.executeScript({target:{tabId:a,frameIds:["frame"===e?0:o]},args:[t,e,r],func:m});';
+    it('accepts the frame of measureImage chosen by its kind', () => {
+      expect(wrong(`${FRAME_CALL}${LOAD}`)).toBe('');
+      expect(wrong(`${FRAME_CALL.replace('"frame"===e', 'e==="frame"')}${LOAD}`)).toBe('');
+    });
+    it.each([
+      ['another kind', FRAME_CALL.replace('"frame"===e', '"image"===e')],
+      ['a test of a name that is not the kind', FRAME_CALL.replace('"frame"===e', '"frame"===x')],
+      ['a loose comparison', FRAME_CALL.replace('"frame"===e', '"frame"==e')],
+      ['another frame than the top one', FRAME_CALL.replace('?0:', '?1:')],
+      ['an expression in the other branch', FRAME_CALL.replace(':o]', ':o+1]')],
+    ])('refuses the frame of measureImage with %s', (_what, call) => {
+      expect(wrong(`${call}${LOAD}`)).not.toBe('');
+    });
+    it('refuses the frame chosen by a kind for the loader', () => {
+      const load = LOAD.replace('frameIds:[n]', 'frameIds:["frame"===e?0:n]').replace(
+        'args:[e.srcUrl]',
+        'args:[e.srcUrl,e]',
+      );
+      expect(wrong(`${MEASURE_CALL}${load}`)).not.toBe('');
+      expect(
+        wrong(`${MEASURE_CALL}${LOAD.replace('frameIds:[n]', 'frameIds:["frame"===e?0:n]')}`),
+      ).not.toBe('');
+    });
     it('accepts a tab id read from a name (tab.id) and a frame id that was inlined as a number', () => {
       expect(
         wrong(

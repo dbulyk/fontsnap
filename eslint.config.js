@@ -929,29 +929,37 @@ const PAGE_TYPES = [
 ];
 
 // --- the calls of chrome.scripting.executeScript: one tab, one frame, and the address of the click (review of PR #14, B1) --------------------
-// The name of `func` was all that was judged, so "only the frame of the click" and "only the srcUrl of the click" rested on how
-// clicked.ts happened to be written (allFrames, a second frame id, `info.srcUrl + '?leak=1'`, the frame URL instead of the srcUrl all
-// passed). So the shape of the call is closed: options are target, func, args and files; the target is `{ tabId, frameIds: [frameId] }`
-// (tabId and frameIds only; a call with a func has both; `tabId` is a name or `<name>.id`, frameIds one name); the loader's args are
-// `[<info>.srcUrl]` where `<info>` is the first parameter of clickedImage, which handlers.ts fills from the listener of the context menu
-// with the three fields of the click and nothing computed.
+// Round 1: only the name of `func` was judged, so the shape of the call is closed (options target, func, args, files; the target is
+// `{ tabId, frameIds: [<one>] }`). Round 2: the values in that shape were still free (a write into `info.srcUrl`, `tab.id + 1`,
+// `Math.min(info.frameId ?? 0, 0)` all passed). So the values are closed as well, by where they come from: the click that clickedImage
+// gets is read-only, and a call with a func may only use
+//   tabId:    `<tab>.id`, or a const whose initializer is exactly that;
+//   frameIds: `[<info>.frameId ?? 0]` (the frame of the click), or a const that is exactly that; for measureImage also
+//             `[<kind> === 'frame' ? 0 : <that>]` where `<kind>` is its second argument (the top frame only for the offset of an <iframe>);
+//   args of the loader: `[<info>.srcUrl]`;
+// where `<info>` and `<tab>` are the parameters of clickedImage(info, tab). Those two parameters are only read, member by member (no
+// write, no alias, no hand-over), and so are the parameters of the listener of the context menu, which hands clickedImage the three
+// fields of the click as they are and its own tab. A call with a func anywhere else has no such parameters and is refused.
 const EXECUTE_SCRIPT = {
   loader: LOAD_IMAGE_FUNCTION,
+  measurer: 'measureImage',
   receiver: 'clickedImage',
   field: 'srcUrl',
   fields: ['srcUrl', 'frameId', 'frameUrl'],
   listener: 'chrome.contextMenus.onClicked.addListener',
+  // what the listener may hand its tab to, whole
+  tabTakers: ['startSelect', 'clickedImage', 'openResult'],
 };
 
 /** Local rule: see EXECUTE_SCRIPT. Plain JavaScript; exported so that tests can run it. */
 export const executeScriptRule = {
   meta: { type: 'problem', schema: [{ type: 'object' }] },
   create(context) {
-    const { loader, receiver, field, fields, listener } = context.options[0];
+    const { loader, measurer, receiver, field, fields, listener, tabTakers } = context.options[0];
     const report = (node, what) => {
       context.report({
         node,
-        message: `${what} (EXECUTE_SCRIPT in eslint.config.js): executeScript gets { target: { tabId, frameIds: [frameId] }, func, args } or { target: { tabId }, files }, and the loader's only argument is <info>.srcUrl of clickedImage(info).`,
+        message: `${what} (EXECUTE_SCRIPT in eslint.config.js): executeScript gets { target: { tabId, frameIds: [frameId] }, func, args } or { target: { tabId }, files }; with a func, tabId is <tab>.id, the frame <info>.frameId ?? 0 and the loader's only argument <info>.srcUrl of clickedImage(info, tab), which are only read.`,
       });
     };
     const keyOf = (property) =>
@@ -961,40 +969,122 @@ export const executeScriptRule = {
       property.key.type === 'Identifier'
         ? property.key.name
         : undefined;
-    const isName = (node) => node.type === 'Identifier';
+    const isName = (node) => node?.type === 'Identifier';
     const member = (node, name) =>
       node?.type === 'MemberExpression' &&
       !node.computed &&
       !node.optional &&
       isName(node.object) &&
       node.property.name === name;
-    /** The function whose FIRST parameter `name` is, when the name is nothing else and is never written. */
-    const parameterOf = (name, from) => {
+    const variableOf = (name, from) => {
       let scope = context.sourceCode.getScope(from);
-      let variable;
-      while (scope && variable === undefined) {
-        variable = scope.set.get(name);
+      while (scope) {
+        const variable = scope.set.get(name);
+        if (variable) return variable;
         scope = scope.upper;
       }
+      return undefined;
+    };
+    /** The function whose parameter number `index` the name is, when it is that and nothing else and is never written. */
+    const parameterOf = (name, from, index = 0) => {
+      const variable = variableOf(name, from);
       const [definition] = variable?.defs ?? [];
       const fn = definition?.node;
       return variable?.defs.length === 1 &&
         definition.type === 'Parameter' &&
-        fn.params[0] === definition.name &&
+        fn.params[index] === definition.name &&
         !variable.references.some((reference) => reference.isWrite())
         ? fn
         : undefined;
     };
+    const ofReceiver = (fn) => fn?.type === 'FunctionDeclaration' && fn.id?.name === receiver;
+    /** `<p>.<name>` where p is parameter `index` of clickedImage. */
+    const readOf = (node, name, index) =>
+      member(node, name) && ofReceiver(parameterOf(node.object.name, node, index));
+    /** The expression itself, or the initializer of the const it names. */
+    const valueOf = (node) => {
+      if (!isName(node)) return node;
+      const [definition] = variableOf(node.name, node)?.defs ?? [];
+      return definition?.type === 'Variable' && definition.parent.kind === 'const'
+        ? definition.node.init
+        : undefined;
+    };
+    const isTabId = (node) => readOf(valueOf(node), 'id', 1);
+    const isClickFrame = (node) => {
+      const value = valueOf(node);
+      return (
+        value?.type === 'LogicalExpression' &&
+        value.operator === '??' &&
+        readOf(value.left, 'frameId', 0) &&
+        value.right.type === 'Literal' &&
+        value.right.value === 0
+      );
+    };
+    /** `<kind> === 'frame' ? 0 : <the frame of the click>`, with `<kind>` the second argument handed to measureImage. */
+    const isFrameOrClick = (node, kindArgument) =>
+      node.type === 'ConditionalExpression' &&
+      node.test.type === 'BinaryExpression' &&
+      node.test.operator === '===' &&
+      isName(node.test.left) &&
+      isName(kindArgument) &&
+      node.test.left.name === kindArgument.name &&
+      node.test.right.type === 'Literal' &&
+      node.test.right.value === 'frame' &&
+      node.consequent.type === 'Literal' &&
+      node.consequent.value === 0 &&
+      isClickFrame(node.alternate);
+    /** Every use of the parameter is a read of one of its members (or, with `takers`, the whole value handed to one of them). */
+    const onlyRead = (parameter, takers = []) => {
+      const variable = variableOf(parameter.name, parameter);
+      for (const reference of variable?.references ?? []) {
+        const node = reference.identifier;
+        const parent = node.parent;
+        const read =
+          parent.type === 'MemberExpression' &&
+          parent.object === node &&
+          !parent.computed &&
+          !(parent.parent.type === 'AssignmentExpression' && parent.parent.left === parent) &&
+          parent.parent.type !== 'UpdateExpression' &&
+          !(parent.parent.type === 'UnaryExpression' && parent.parent.operator === 'delete');
+        const handed =
+          parent.type === 'CallExpression' &&
+          parent.arguments.includes(node) &&
+          isName(parent.callee) &&
+          takers.includes(parent.callee.name);
+        if (!read && !handed) {
+          report(
+            node,
+            `The click (${parameter.name}) is used other than by reading a member of it`,
+          );
+        }
+      }
+    };
     return {
+      FunctionDeclaration(node) {
+        if (!ofReceiver(node)) return;
+        for (const parameter of node.params.slice(0, 2)) {
+          if (isName(parameter)) onlyRead(parameter);
+          else report(parameter, `A parameter of ${receiver} that is not a plain name`);
+        }
+      },
       CallExpression(node) {
         const callee = node.callee;
         if (callee.type === 'Identifier' && callee.name === receiver) {
-          // clickedImage({ srcUrl: info.srcUrl, frameId: info.frameId, frameUrl: info.frameUrl }) in the listener of the context menu
-          const [click] = node.arguments;
+          // clickedImage({ srcUrl: info.srcUrl, frameId: info.frameId, frameUrl: info.frameUrl }, tab) in the listener of the context menu
+          const [click, tab] = node.arguments;
           if (click?.type !== 'ObjectExpression') {
             report(node, `${receiver} is called with something other than an object literal`);
             return;
           }
+          const fromListener = (fn, at) => {
+            const call = fn?.parent;
+            return (
+              call?.type === 'CallExpression' &&
+              call.arguments[0] === fn &&
+              context.sourceCode.getText(call.callee) === listener &&
+              fn.params[at] !== undefined
+            );
+          };
           for (const property of click.properties) {
             const name = keyOf(property);
             const value = property.type === 'Property' ? property.value : undefined;
@@ -1002,18 +1092,26 @@ export const executeScriptRule = {
               name !== undefined && fields.includes(name) && member(value, name)
                 ? parameterOf(value.object.name, value)
                 : undefined;
-            const call = owner?.parent;
-            if (
-              call?.type !== 'CallExpression' ||
-              call.arguments[0] !== owner ||
-              context.sourceCode.getText(call.callee) !== listener
-            ) {
+            if (!fromListener(owner, 0)) {
               report(
                 property,
                 `${receiver} gets a field that is not read as-is from the listener of the context menu`,
               );
             }
           }
+          const owner = isName(tab) ? parameterOf(tab.name, tab, 1) : undefined;
+          if (!fromListener(owner, 1)) {
+            report(
+              node,
+              `${receiver} gets a tab that is not the one of the listener of the context menu`,
+            );
+            return;
+          }
+          if (isName(owner.params[0]) && isName(owner.params[1])) {
+            onlyRead(owner.params[0]);
+            onlyRead(owner.params[1], tabTakers);
+          } else
+            report(owner, 'The parameters of the listener of the context menu are not plain names');
           return;
         }
         if (
@@ -1036,43 +1134,44 @@ export const executeScriptRule = {
           report(node, 'The target is not an object literal');
           return;
         }
+        const func = keys.get('func');
+        const args = keys.get('args');
+        const kindArgument = args?.type === 'ArrayExpression' ? args.elements[1] : undefined;
         const found = new Map();
         for (const property of target.properties) {
           const name = keyOf(property);
           const value = property.value;
-          if (name === 'tabId' && (isName(value) || member(value, 'id'))) {
+          const only =
+            value?.type === 'ArrayExpression' && value.elements.length === 1
+              ? value.elements[0]
+              : undefined;
+          if (
+            name === 'tabId' &&
+            (func === undefined ? isName(value) || member(value, 'id') : isTabId(value))
+          ) {
             found.set(name, value);
           } else if (
             name === 'frameIds' &&
-            keys.has('func') &&
-            value.type === 'ArrayExpression' &&
-            value.elements.length === 1 &&
-            value.elements[0] !== null &&
-            isName(value.elements[0])
+            func !== undefined &&
+            only !== undefined &&
+            only !== null &&
+            (isClickFrame(only) ||
+              (isName(func) && func.name === measurer && isFrameOrClick(only, kindArgument)))
           ) {
             found.set(name, value);
           } else {
             report(
               property,
-              'A target other than { tabId, frameIds: [<one name>] } (frameIds only with func)',
+              'A target other than { tabId: <tab>.id, frameIds: [<info>.frameId ?? 0] } of the click (frameIds only with func)',
             );
           }
         }
-        if (!found.has('tabId') || (keys.has('func') && !found.has('frameIds'))) {
+        if (!found.has('tabId') || (func !== undefined && !found.has('frameIds'))) {
           report(target, 'A target without a tabId, or a func without the frame it runs in');
         }
-        const func = keys.get('func');
         if (func?.type === 'Identifier' && func.name === loader) {
-          const [argument, ...more] = keys.get('args')?.elements ?? [];
-          const info = argument !== undefined && argument !== null && member(argument, field);
-          const owner = info ? parameterOf(argument.object.name, argument) : undefined;
-          if (
-            keys.get('args')?.type !== 'ArrayExpression' ||
-            more.length > 0 ||
-            !info ||
-            owner?.type !== 'FunctionDeclaration' ||
-            owner.id?.name !== receiver
-          ) {
+          const [argument, ...more] = args?.elements ?? [];
+          if (args?.type !== 'ArrayExpression' || more.length > 0 || !readOf(argument, field, 0)) {
             report(
               node,
               `The arguments of ${loader} are not [<info>.${field}] of ${receiver}(info)`,
@@ -1337,9 +1436,6 @@ const injectionSelectors = [
   `${EXECUTE} > ObjectExpression > SpreadElement`,
   `${EXECUTE} > ObjectExpression > Property[computed=true]`,
   `${EXECUTE} > ObjectExpression > Property:matches([key.name='func'], [key.value='func']):not([value.type='Identifier'][value.name=/^(${INJECTED_FUNCTIONS.join('|')})$/])`,
-  // measure() runs measureImage in the frame it is given: the frame of the click (`frameId`), or the top frame (0) to find the offset of
-  // an <iframe> (kind 'frame', which looks at the <iframe> elements of that document and loads and reads nothing)
-  "CallExpression[callee.name='measure']:not([arguments.1.name='frameId']):not([arguments.3.type='Literal'][arguments.3.value='frame'])",
 ].map((selector) => ({ selector, message: INJECTION_MESSAGE }));
 
 const noInjectedCodeBase = [
@@ -1555,6 +1651,12 @@ export default tseslint.config(
       'fontsnap/global-access': ['error', GLOBAL_ACCESS],
       'fontsnap/execute-script': ['error', EXECUTE_SCRIPT],
     },
+  },
+  {
+    // The click of the context menu is not written on its way to executeScript (review of PR #14, B1; see EXECUTE_SCRIPT); the whole
+    // worker, so that it is one context of the guards.
+    files: ['src/background/**/*.ts'],
+    rules: { 'no-param-reassign': ['error', { props: true }] },
   },
   {
     // The members of every DOM object in the code of the web page: an allowlist by type, see DOM_MEMBERS.

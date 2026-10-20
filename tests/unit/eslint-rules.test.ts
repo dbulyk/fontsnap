@@ -15,6 +15,7 @@ const RULES = [
   'no-restricted-properties',
   'no-restricted-imports',
   'fontsnap/execute-script',
+  'no-param-reassign',
 ];
 
 /** Messages of the restriction rules, as configured for `file` in eslint.config.js, for `code`. */
@@ -1353,7 +1354,7 @@ describe('the code that runs in the web page cannot reach the Window or a global
         expect(await either(file, code), `${file}: ${code}`).not.toEqual([]);
     });
 
-    it('accepts measureImage and the content script file', async () => {
+    it('accepts the content script file; measureImage only in clickedImage (see below)', async () => {
       for (const file of FILES) {
         expect(
           await flagged(
@@ -1361,7 +1362,7 @@ describe('the code that runs in the web page cannot reach the Window or a global
             'await chrome.scripting.executeScript({ target: { tabId, frameIds: [frameId] }, args: [u], func: measureImage });',
           ),
           file,
-        ).toEqual([]);
+        ).not.toEqual([]);
         expect(
           await flagged(
             file,
@@ -1380,7 +1381,7 @@ describe('the code that runs in the web page cannot reach the Window or a global
     const CLICKED = 'src/background/clicked.ts';
     const HANDLERS = 'src/background/handlers.ts';
     const inClicked = (call: string, before = ''): string =>
-      `export async function clickedImage(info: ClickedImageInfo, tab: Tab): Promise<void> {\n  const tabId = 1;\n  const frameId = 0;\n  ${before}\n  await ${call};\n}`;
+      `export async function clickedImage(info: ClickedImageInfo, tab: Tab): Promise<void> {\n  const tabId = tab.id;\n  const frameId = info.frameId ?? 0;\n  ${before}\n  await ${call};\n}`;
     const run = (target: string, args: string, func: string): string =>
       `chrome.scripting.executeScript({ target: ${target}, args: ${args}, func: ${func} })`;
     const OK_TARGET = '{ tabId, frameIds: [frameId] }';
@@ -1556,27 +1557,89 @@ describe('the code that runs in the web page cannot reach the Window or a global
       const elsewhere = `export function register(): void {\n  chrome.runtime.onMessage.addListener((info, tab) => {\n    void clickedImage({ srcUrl: info.srcUrl }, tab);\n  });\n}`;
       expect(await flagged(HANDLERS, elsewhere)).not.toEqual([]);
     });
+  });
+});
 
-    // Q1 of the review: measureImage runs in the frame of the click; in another frame (the top one) only to find the offset of an <iframe>
-    it.each([
-      ['an image measured in the top frame', "measure(tabId, 0, info.srcUrl, 'image', null)"],
-      [
-        'an image measured in a frame given by a number',
-        "measure(tabId, other, info.srcUrl, 'image', null)",
-      ],
-      ['a kind that is not a literal', 'measure(tabId, 0, info.srcUrl, kind, null)'],
-    ])('refuses %s', async (_what, call) => {
-      expect(await flagged(CLICKED, inClicked(call)), call).not.toEqual([]);
-    });
-    it('accepts measure() in the frame of the click, and in the top frame for the offset of an <iframe>', async () => {
-      for (const call of [
-        "measure(tabId, frameId, info.srcUrl, 'image', null)",
-        "measure(tabId, 0, frameUrl, 'frame', null)",
-        "measure(tabId, 0, frameUrl, 'frame', baseline)",
-      ]) {
-        expect(await flagged(CLICKED, inClicked(call)), call).toEqual([]);
-      }
-    });
+// Round 2 of the review of PR #14 (B1): the shape of the call was closed, but the values in it were not: a write into a field of the
+// click, and a tab or frame id computed from it, passed lint and verify-dist. The click is now read-only, and every value of the target
+// and of the loader's arguments is a plain read of the click that clickedImage got (or one const that is that read and nothing else).
+describe('executeScript gets the click as the listener of the context menu gave it', () => {
+  const CLICKED = 'src/background/clicked.ts';
+  const HANDLERS = 'src/background/handlers.ts';
+  const LOAD =
+    'chrome.scripting.executeScript({ target: { tabId, frameIds: [frameId] }, args: [info.srcUrl], func: loadImagePixels })';
+  const MEASURE =
+    "chrome.scripting.executeScript({ target: { tabId, frameIds: [kind === 'frame' ? 0 : frameId] }, args: [target, kind, saved], func: measureImage })";
+  const clicked = (
+    body: string,
+    { tabId = 'tab.id', frameId = 'info.frameId ?? 0' } = {},
+  ): string =>
+    `export async function clickedImage(info: Readonly<ClickedImageInfo>, tab: Readonly<Tab> | undefined): Promise<void> {\n  if (tab?.id === undefined) return;\n  const tabId = ${tabId};\n  const frameId = ${frameId};\n  const measure = (target: string, kind: 'image' | 'frame', saved: null) => ${MEASURE};\n  ${body}\n  await measure(info.srcUrl, 'image', null);\n  await ${LOAD};\n}`;
+  const listener = (
+    body: string,
+    call = 'clickedImage({ srcUrl: info.srcUrl, frameId: info.frameId, frameUrl: info.frameUrl }, tab)',
+  ): string =>
+    `export function registerBackground(): void {\n  chrome.contextMenus.onClicked.addListener((info, tab) => {\n    ${body}\n    void ${call};\n  });\n}`;
+
+  it('accepts the real shape', async () => {
+    expect(await flagged(CLICKED, clicked(''))).toEqual([]);
+    expect(await flagged(HANDLERS, listener(''))).toEqual([]);
+  });
+
+  it.each([
+    [
+      'a write into the srcUrl of the click (the loader asked for the frame URL)',
+      'if (info.frameUrl) info.srcUrl = info.frameUrl;',
+    ],
+    ['a write through a cast', "(info as { srcUrl: string }).srcUrl = 'x';"],
+    ['Object.assign on the click', "Object.assign(info, { srcUrl: 'x' });"],
+    ['an alias of the click', 'const other = info;'],
+    ['the click handed on whole', 'use(info);'],
+    ['a write into the tab', 'tab.id = 3;'],
+    ['the tab handed on whole', 'use(tab);'],
+  ])('refuses %s in clickedImage', async (_what, body) => {
+    expect(await flagged(CLICKED, clicked(body)), body).not.toEqual([]);
+  });
+
+  it.each([
+    [
+      'a frame id computed from the click (always the top frame)',
+      { frameId: 'Math.min(info.frameId ?? 0, 0)' },
+    ],
+    ['another fallback frame', { frameId: 'info.frameId ?? 1' }],
+    ['a frame id of its own', { frameId: '0' }],
+    ['a tab id computed from the click (another tab)', { tabId: 'tab.id + 1' }],
+    ['a tab id of its own', { tabId: '7' }],
+  ])('refuses %s', async (_what, values) => {
+    expect(await flagged(CLICKED, clicked('', values)), JSON.stringify(values)).not.toEqual([]);
+  });
+
+  it('refuses the top frame for anything but the offset of an <iframe>', async () => {
+    const code = clicked('').replace(
+      "kind === 'frame' ? 0 : frameId",
+      "kind === 'image' ? 0 : frameId",
+    );
+    expect(await flagged(CLICKED, code)).not.toEqual([]);
+    const other = clicked('').replace(
+      'args: [target, kind, saved]',
+      "args: [target, 'frame', saved]",
+    );
+    expect(await flagged(CLICKED, other)).not.toEqual([]);
+  });
+
+  it.each([
+    ['a write into the srcUrl of the click', 'if (info.frameUrl) info.srcUrl = info.frameUrl;'],
+    ['Object.assign on the click', "Object.assign(info, { srcUrl: 'x' });"],
+    ['an alias of the click', 'const other = info;'],
+    ['a write into the tab', 'if (tab) tab.id = 3;'],
+  ])('refuses %s in the listener of the context menu', async (_what, body) => {
+    expect(await flagged(HANDLERS, listener(body)), body).not.toEqual([]);
+  });
+
+  it('refuses another tab handed to clickedImage', async () => {
+    const call =
+      'clickedImage({ srcUrl: info.srcUrl, frameId: info.frameId, frameUrl: info.frameUrl }, other)';
+    expect(await flagged(HANDLERS, listener('', call))).not.toEqual([]);
   });
 });
 
