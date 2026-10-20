@@ -7,6 +7,7 @@ import {
   SESSION_QUOTA_BYTES,
   assertFitsSessionQuota,
   clipCropRect,
+  frameRect,
   encodeWithinSessionQuota,
   errorResultHash,
   fitsSessionQuota,
@@ -336,5 +337,125 @@ describe('openResult error wrapping helpers', () => {
         id: 'x',
       }).entry.error,
     ).toBe('plain');
+  });
+});
+
+describe('frameRect: an image rect of an iframe in the viewport of the tab', () => {
+  const iframe = { x: 10, y: 20, w: 300, h: 200 };
+  const box = { x: 1, y: 1, w: 298, h: 198 };
+  const outer = { x: 0, y: 0, w: 300, h: 200 };
+  const view = { x: 0, y: 0, w: 298, h: 198 };
+
+  it('moves the rect by the frame position and its border', () => {
+    expect(frameRect({ x: 5, y: 6, w: 40, h: 30 }, view, iframe, box, outer)).toEqual({
+      x: 16,
+      y: 27,
+      w: 40,
+      h: 30,
+    });
+  });
+
+  it('follows a CSS scale of the frame', () => {
+    const half = { x: 10, y: 20, w: 150, h: 100 };
+    expect(frameRect({ x: 20, y: 40, w: 100, h: 60 }, view, half, box, outer)).toEqual({
+      x: 10 + (1 + 20) * 0.5,
+      y: 20 + (1 + 40) * 0.5,
+      w: 50,
+      h: 30,
+    });
+  });
+
+  it('keeps only the part the frame shows', () => {
+    expect(frameRect({ x: -10, y: -10, w: 50, h: 50 }, view, iframe, box, outer)).toEqual({
+      x: 11,
+      y: 21,
+      w: 40,
+      h: 40,
+    });
+    expect(frameRect({ x: 280, y: 190, w: 100, h: 100 }, view, iframe, box, outer)).toEqual({
+      x: 291,
+      y: 211,
+      w: 18,
+      h: 8,
+    });
+  });
+
+  it('throws when nothing of the image is inside the frame', () => {
+    expect(() => frameRect({ x: 400, y: 0, w: 10, h: 10 }, view, iframe, box, outer)).toThrow(
+      'Selection is outside the visible area',
+    );
+  });
+
+  it.each([1, 2])('lands on the same screenshot pixels at DPR %i', (dpr) => {
+    const rect = frameRect({ x: 5, y: 6, w: 40, h: 30 }, view, iframe, box, outer);
+    expect(clipCropRect(rect, dpr, 1000, 1000)).toEqual({
+      x: 16 * dpr,
+      y: 27 * dpr,
+      w: 40 * dpr,
+      h: 30 * dpr,
+    });
+  });
+
+  describe('a border of its own on every side', () => {
+    // border 7 | 2 on the left and the right, 3 | 11 at the top and the bottom; the document inside is 291 x 186
+    const uneven = {
+      iframe: { x: 100, y: 50, w: 300, h: 200 },
+      box: { x: 7, y: 3, w: 291, h: 186 },
+      outer: { x: 0, y: 0, w: 300, h: 200 },
+      view: { x: 0, y: 0, w: 291, h: 186 },
+    };
+
+    it('puts the image after the border on the left and at the top, whatever the border on the other sides is', () => {
+      expect(
+        frameRect(
+          { x: 5, y: 6, w: 40, h: 30 },
+          uneven.view,
+          uneven.iframe,
+          uneven.box,
+          uneven.outer,
+        ),
+      ).toEqual({ x: 112, y: 59, w: 40, h: 30 });
+    });
+
+    it('takes the scale from the whole border box, so that borders of different widths do not shift it', () => {
+      const half = { x: 100, y: 50, w: 150, h: 100 };
+      expect(
+        frameRect({ x: 20, y: 40, w: 100, h: 60 }, uneven.view, half, uneven.box, uneven.outer),
+      ).toEqual({ x: 100 + (7 + 20) * 0.5, y: 50 + (3 + 40) * 0.5, w: 50, h: 30 });
+      // the old reading (a border as wide on the right as on the left) would have scaled by 300 / (291 + 14) and moved it
+      expect(100 + (7 + 20) * (150 / (291 + 14))).not.toBe(100 + (7 + 20) * 0.5);
+    });
+  });
+
+  describe('padding is refused, not guessed', () => {
+    // padding 10 on the left, 4 on the right, 6 at the top, 0 at the bottom, border 1: the client box is 14 / 6 larger than the document
+    const padded = {
+      box: { x: 1, y: 1, w: 298, h: 198 },
+      view: { x: 0, y: 0, w: 284, h: 192 },
+    };
+
+    it('throws when the client box is larger than the viewport of the frame', () => {
+      expect(() =>
+        frameRect({ x: 5, y: 6, w: 40, h: 30 }, padded.view, iframe, padded.box, outer),
+      ).toThrow('padding');
+    });
+
+    it('also throws when the frame is smaller (it is another frame than the one measured)', () => {
+      expect(() =>
+        frameRect({ x: 5, y: 6, w: 40, h: 30 }, { x: 0, y: 0, w: 200, h: 198 }, iframe, box, outer),
+      ).toThrow();
+    });
+
+    it('lets a difference of one pixel through: the two sizes are rounded', () => {
+      expect(() =>
+        frameRect({ x: 5, y: 6, w: 40, h: 30 }, { x: 0, y: 0, w: 297, h: 199 }, iframe, box, outer),
+      ).not.toThrow();
+    });
+  });
+
+  it('throws when the border box has no size', () => {
+    expect(() =>
+      frameRect({ x: 5, y: 6, w: 40, h: 30 }, view, iframe, box, { x: 0, y: 0, w: 0, h: 0 }),
+    ).toThrow('no size');
   });
 });

@@ -722,13 +722,14 @@ describe('the code of the web page: no network API, no way to load or navigate',
   describe('the function handed to executeScript, found in the minified background.js', () => {
     const MINIFIED = (
       body: string,
-      call = 'chrome.scripting.executeScript({target:{tabId:r.id},args:[e],func:b})',
+      call = 'chrome.scripting.executeScript({target:{tabId:r.id,frameIds:[n]},args:[e,"image",null],func:b})',
     ) =>
-      `async function k(){const x=1;await ${call}}async function b(t){${body}}function other(){return fetch(u)}`;
+      `async function k(){const x=1;await ${call};await chrome.scripting.executeScript({target:{tabId:r.id,frameIds:[n]},args:[e],func:q})}async function b(t){${body}}async function q(t){const i=new Image;i.crossOrigin="anonymous";i.src=t;return i}function other(){return fetch(u)}`;
 
     it('finds a named function, a variable and a function written in place', () => {
       expect(injectedFunctions('background.js', MINIFIED('return 1'))).toEqual([
         'async function b(t){return 1}',
+        'async function q(t){const i=new Image;i.crossOrigin="anonymous";i.src=t;return i}',
       ]);
       expect(
         injectedFunctions(
@@ -988,26 +989,26 @@ describe('injectedFunctions: the func of executeScript is followed by scope, and
   ])('fails on %s', (_what, text) => {
     expect(read(text), text).toContain(undefined);
     expect(scriptProblems('background.js', text).join('\n'), text).toMatch(
-      /could not be read|exactly one function/,
+      /could not be read|exactly two functions/,
     );
   });
 
-  it('background.js must hand over exactly one function: zero fails too', () => {
+  it('background.js must hand over exactly two distinct functions: none or one fails', () => {
     expect(scriptProblems('background.js', 'chrome.tabs.create({url:u})').join('\n')).toContain(
-      'exactly one function must be handed',
+      'exactly two functions must be handed',
     );
     expect(
       scriptProblems(
         'background.js',
         'chrome.scripting.executeScript({target:{},files:["select.js"]})',
       ).join('\n'),
-    ).toContain('exactly one function must be handed');
+    ).toContain('exactly two functions must be handed');
     expect(
       scriptProblems(
         'background.js',
         'chrome.scripting.executeScript({target:{},func:m});const m=t=>t',
       ).join('\n'),
-    ).not.toContain('exactly one');
+    ).toContain('exactly two functions must be handed to executeScript (found 1)');
   });
 
   it('resolves a reused short name by scope, not by the last declaration in the file', () => {
@@ -1024,11 +1025,11 @@ describe('injectedFunctions: the func of executeScript is followed by scope, and
     expect(read(text)).toEqual(['function b(){return 3}']);
   });
 
-  it('exactly one function may be handed over, and executeScript belongs to background.js', () => {
-    const two =
-      'chrome.scripting.executeScript({target:{},func:a});chrome.scripting.executeScript({target:{},func:c});function a(){}function c(){}';
-    expect(scriptProblems('background.js', two).join('\n')).toContain(
-      'exactly one function must be handed',
+  it('three distinct functions may not be handed over, and executeScript belongs to background.js', () => {
+    const three =
+      'chrome.scripting.executeScript({target:{},func:a});chrome.scripting.executeScript({target:{},func:c});chrome.scripting.executeScript({target:{},func:d});function a(){}function c(){}function d(){}';
+    expect(scriptProblems('background.js', three).join('\n')).toContain(
+      'exactly two functions must be handed to executeScript (found 3)',
     );
     expect(scriptProblems('assets/result-abc.js', CALL).join('\n')).toContain(
       'executeScript outside background.js',
@@ -1036,5 +1037,281 @@ describe('injectedFunctions: the func of executeScript is followed by scope, and
     expect(scriptProblems('select.js', CALL).join('\n')).toContain(
       'executeScript outside background.js',
     );
+  });
+});
+
+// Step 1 of reading a clicked image loads an address in the page, so background.js hands over TWO functions: the measuring one and
+// the loader. The loader alone may contain `new Image`, `.crossOrigin = "anonymous"` and `.src = <its first parameter>`, once each; every
+// other pattern of PAGE_CODE_FORBIDDEN still applies to both.
+describe('background.js hands two functions to executeScript: the measuring one and the loader', () => {
+  const MEASURE = 'async function m(t,k,s){return[document.images,t,k,s]}';
+  const LOADER =
+    'async function l(t){const e=new Image;e.crossOrigin="anonymous",e.src=t;try{await e.decode()}catch{return null}return btoa(String(e.naturalWidth))}';
+  const CALLS =
+    'chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[u,"image",null],func:m});chrome.scripting.executeScript({target:{tabId:t,frameIds:[0]},args:[u,"frame",null],func:m});chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[e],func:l});';
+  const problems = (text: string) => scriptProblems('background.js', text).join('\n');
+
+  it('accepts the real shape: three call sites, two distinct functions', () => {
+    expect(problems(`${CALLS}${MEASURE}${LOADER}`)).toBe('');
+  });
+
+  // Round 1 of the review of PR #14 (B1): only `func` was read. The target of every call is one tab and one frame, and the loader gets
+  // the srcUrl that clickedImage got as `<name>` and nothing else (lint says the same of the source, with the provenance of the name).
+  // Round 4: the top frame goes only with the literal kind "frame" (measureFrameInTop), the frame of the click with the loader or the
+  // literal "image" (measureInClickFrame); there is no kind chosen at run time left to read.
+  describe('the target and the arguments of the calls are as fixed as the functions (B1)', () => {
+    const LOAD = 'chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[e],func:l});';
+    const MEASURE_CALL =
+      'chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[u,"image",null],func:m});';
+    const TOP_CALL =
+      'chrome.scripting.executeScript({target:{tabId:t,frameIds:[0]},args:[u,"frame",null],func:m});';
+    const wrong = (text: string) => problems(`${text}${MEASURE}${LOADER}`);
+    it.each([
+      ['allFrames on the loader', LOAD.replace('frameIds:[n]', 'allFrames:!0')],
+      [
+        'allFrames on the loader next to frameIds',
+        LOAD.replace('frameIds:[n]', 'frameIds:[n],allFrames:!0'),
+      ],
+      ['a second frame id for the loader', LOAD.replace('[n]', '[n,0]')],
+      ['documentIds on the loader', LOAD.replace('frameIds:[n]', 'documentIds:["x"]')],
+      ['no frameIds for the loader', LOAD.replace(',frameIds:[n]', '')],
+      ['an expression as the frame id', LOAD.replace('[n]', '[n+1]')],
+      ['the top frame for the loader', LOAD.replace('[n]', '[0]')],
+      ['a frame chosen by a kind for the loader', LOAD.replace('[n]', '["frame"===k?0:n]')],
+      ['a literal tab id', LOAD.replace('tabId:t', 'tabId:1')],
+      ['a spread in the target', LOAD.replace('frameIds:[n]', 'frameIds:[n],...o')],
+      ['a target in a variable', LOAD.replace('{tabId:t,frameIds:[n]}', 'o')],
+      [
+        'a computed key in the target',
+        LOAD.replace('frameIds:[n]', 'frameIds:[n],["all"+"Frames"]:!0'),
+      ],
+      ['a string key in the target', LOAD.replace('frameIds:[n]', 'frameIds:[n],"allFrames":!0')],
+      ['an option that is not listed', LOAD.replace('args:', 'injectImmediately:!0,args:')],
+      ['the srcUrl plus a suffix', LOAD.replace('[e]', '[e+"?leak=1"]')],
+      ['another name as a fallback', LOAD.replace('[e]', '[o??e]')],
+      ['a member of an object', LOAD.replace('[e]', '[e.frameUrl]')],
+      ['an address', LOAD.replace('[e]', '["https://example.invalid/x"]')],
+      ['a second argument', LOAD.replace('[e]', '[e,1]')],
+      ['no arguments', LOAD.replace('[e]', '[]')],
+      ['no args', LOAD.replace('args:[e],', '')],
+      ['args in a variable', LOAD.replace('[e]', 'o')],
+      ['a spread in args', LOAD.replace('[e]', '[...o]')],
+      ['a computed member', LOAD.replace('[e]', '[e["srcUrl"]]')],
+      ['an optional chain', LOAD.replace('[e]', '[e?.srcUrl]')],
+      ['a call as the srcUrl', LOAD.replace('[e]', '[o(e)]')],
+    ])('refuses the loader with %s', (_what, load) => {
+      expect(wrong(`${MEASURE_CALL}${TOP_CALL}${load}`)).toContain('executeScript');
+    });
+    it.each([
+      ['allFrames', MEASURE_CALL.replace('frameIds:[n]', 'allFrames:!0')],
+      ['a second frame id', MEASURE_CALL.replace('[n]', '[n,0]')],
+      ['documentIds', MEASURE_CALL.replace('frameIds:[n]', 'documentIds:["x"]')],
+      ['no frameIds', MEASURE_CALL.replace(',frameIds:[n]', '')],
+      ['the top frame with the kind "image"', MEASURE_CALL.replace('[n]', '[0]')],
+      ['the frame of the click with the kind "frame"', TOP_CALL.replace('[0]', '[n]')],
+      ['the kind "frame" in another frame than the top one', TOP_CALL.replace('[0]', '[1]')],
+      ['a kind that is a name (the frame of the click)', MEASURE_CALL.replace('"image"', 'k')],
+      ['a kind that is a name (the top frame)', TOP_CALL.replace('"frame"', 'k')],
+      ['another kind', MEASURE_CALL.replace('"image"', '"other"')],
+      ['no kind', MEASURE_CALL.replace('args:[u,"image",null],', '')],
+      // the shape of round 3, where one function chose the frame by its kind at run time
+      [
+        'the frame chosen by the kind at run time',
+        'chrome.scripting.executeScript({target:{tabId:a,frameIds:["frame"===e?0:o]},args:[t,e,r],func:m});',
+      ],
+    ])('refuses measureImage with %s', (_what, call) => {
+      expect(wrong(`${call}${TOP_CALL}${LOAD}`)).not.toBe('');
+    });
+    it('accepts a tab id read from a name (tab.id)', () => {
+      expect(wrong(`${MEASURE_CALL.replace('tabId:t', 'tabId:t.id')}${TOP_CALL}${LOAD}`)).toBe('');
+    });
+  });
+
+  it('a loader reads src of other images and compares, only writing is the exception', () => {
+    const loader = LOADER.replace(
+      'return btoa',
+      'if(document.images.length&&e.src===t){}return btoa',
+    );
+    expect(problems(`${CALLS}${MEASURE}${loader}`)).toBe('');
+  });
+
+  it.each([
+    ['a second write of src', LOADER.replace('try{', 'e.src=t;try{')],
+    ['src set to another value', LOADER.replace('e.src=t', 'e.src=u')],
+    ['src set to the parameter plus a suffix', LOADER.replace('e.src=t', 'e.src=t+"#"')],
+    [
+      'src set to a literal address',
+      LOADER.replace('e.src=t', 'e.src="https://example.invalid/x"'),
+    ],
+    ['a second Image', LOADER.replace('try{', 'const f=new Image;try{')],
+    ['an Image with an argument', LOADER.replace('new Image', 'new Image(5)')],
+    ['crossOrigin use-credentials', LOADER.replace('"anonymous"', '"use-credentials"')],
+    ['a second crossOrigin', LOADER.replace('try{', 'e.crossOrigin="anonymous";try{')],
+    ['fetch', LOADER.replace('try{', 'fetch(t);try{')],
+    ['setAttribute', LOADER.replace('try{', 'e.setAttribute("src",t);try{')],
+    ['location', LOADER.replace('try{', 'location.href=t;try{')],
+    ['a href write', LOADER.replace('try{', 'e.href=t;try{')],
+    ['open', LOADER.replace('try{', 'open(t);try{')],
+    ['a network API next to it', LOADER.replace('try{', 'new Worker(t);try{')],
+  ])('refuses a loader with %s', (_what, loader) => {
+    expect(problems(`${CALLS}${MEASURE}${loader}`)).toMatch(
+      /runs in the web page|web page's process/,
+    );
+  });
+
+  it('refuses the exception in the measuring function', () => {
+    const measure = 'async function m(t,k,s){const e=new Image;e.src=t;return e}';
+    expect(problems(`${CALLS}${measure}${LOADER}`)).toMatch(/web page/);
+  });
+
+  it('refuses two loaders, no loader, and a loader that is not readable', () => {
+    const other = 'async function o(t){const e=new Image;e.src=t;return e}';
+    const two =
+      'chrome.scripting.executeScript({target:{},func:l});chrome.scripting.executeScript({target:{},func:o});';
+    expect(problems(`${two}${LOADER}${other}`)).toContain('exactly one of the functions');
+    const none =
+      'chrome.scripting.executeScript({target:{},func:m});chrome.scripting.executeScript({target:{},func:n});';
+    expect(problems(`${none}${MEASURE}async function n(t){return t}`)).toContain(
+      'exactly one of the functions',
+    );
+    expect(problems(`${CALLS}${MEASURE}`.replace('func:l', 'func:gone'))).toContain(
+      'could not be read',
+    );
+  });
+
+  it('the first parameter is read by position, whatever it is called', () => {
+    const loader =
+      'async function l(x){const y=new Image;y.crossOrigin="anonymous";y.src=x;return y}';
+    expect(problems(`${CALLS}${MEASURE}${loader}`)).toBe('');
+    const bad =
+      'async function l(x,z){const y=new Image;y.crossOrigin="anonymous";y.src=z;return y}';
+    expect(problems(`${CALLS}${MEASURE}${bad}`)).toMatch(/web page/);
+  });
+
+  describe('the loader is bound to its first parameter by scope (review of the branch)', () => {
+    const within = (loader: string) => problems(`${CALLS}${MEASURE}${loader}`);
+
+    it('accepts a loader whose inner variable has the name of the loader itself', () => {
+      const loader =
+        'async function l(t){const n=async l=>{return l.naturalWidth};const e=new Image;e.crossOrigin="anonymous",e.src=t;try{await e.decode()}catch{return null}return n(e)}';
+      expect(within(loader)).toBe('');
+    });
+
+    it.each([
+      [
+        'a call of itself with another address',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;if(t)return l("https://example.invalid/"+t);return null}',
+      ],
+      [
+        'itself taken as a value',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;const f=l;return f}',
+      ],
+      [
+        'the parameter reassigned before the write',
+        'async function l(t){t=document.title;const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'the parameter reassigned by a destructuring',
+        'async function l(t){[t]=[document.title];const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'the write made in an inner function with a parameter of its own',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";((t)=>{e.src=t})(document.title);return e}',
+      ],
+      [
+        'the write from a local variable',
+        'async function l(t){const u=document.title;const e=new Image;e.crossOrigin="anonymous";e.src=u;return e}',
+      ],
+    ])('refuses a loader with %s', (_what, loader) => {
+      expect(within(loader)).toMatch(/web page's process/);
+    });
+  });
+
+  // The write of src is the loader's only because the object is the one `new Image` made, and `crossOrigin = "anonymous"` is written
+  // on it before src (a request made first is made with the credentials of the page). Read from the syntax tree, not from the text.
+  describe("the Image is the loader's own, and its crossOrigin comes before its src", () => {
+    const within = (loader: string) => problems(`${CALLS}${MEASURE}${loader}`);
+
+    it.each([
+      [
+        'the sequence of statements the minifier writes',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous",e.src=t;return e}',
+      ],
+      [
+        'separate statements',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'other declarations next to the Image',
+        'async function l(t){const n=1,e=new Image,m=2;e.crossOrigin="anonymous";e.src=t;return[n,m,e]}',
+      ],
+    ])('accepts %s', (_what, loader) => {
+      expect(within(loader)).toBe('');
+    });
+
+    it.each([
+      [
+        'src written on an element of the page (the Image only gets crossOrigin)',
+        'async function l(t){const k=document.images[0];const e=new Image;e.crossOrigin="anonymous";k.src=t;return e}',
+      ],
+      [
+        'src written on an element of the page found in the document, no src on the Image',
+        'async function l(t){const k=[...document.images].find(i=>i.complete);const e=new Image;e.crossOrigin="anonymous";if(k)k.src=t;return e}',
+      ],
+      [
+        'src written on the element of the page and on the Image',
+        'async function l(t){const k=document.images[0];const e=new Image;e.crossOrigin="anonymous";k.src=t;e.src=t;return e}',
+      ],
+      [
+        'crossOrigin written after src',
+        'async function l(t){const e=new Image;e.src=t;e.crossOrigin="anonymous";return e}',
+      ],
+      [
+        'crossOrigin written after src in one sequence',
+        'async function l(t){const e=new Image;e.src=t,e.crossOrigin="anonymous";return e}',
+      ],
+      ['no crossOrigin at all', 'async function l(t){const e=new Image;e.src=t;return e}'],
+      [
+        'crossOrigin written on another object',
+        'async function l(t){const k=document.images[0];const e=new Image;k.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'crossOrigin in a branch',
+        'async function l(t){const e=new Image;if(t)e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'src in a branch',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";if(t)e.src=t;return e}',
+      ],
+      [
+        'the Image made in an inner function',
+        'async function l(t){const e=(()=>new Image)();e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'the Image in a let',
+        'async function l(t){let e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      ],
+      [
+        'the Image not held by a variable',
+        'async function l(t){return Object.assign(new Image,{src:t})}',
+      ],
+      [
+        'the Image kept in an object',
+        'async function l(t){const o={i:new Image};o.i.crossOrigin="anonymous";o.i.src=t;return o}',
+      ],
+      [
+        'crossOrigin with the other spelling written again',
+        'async function l(t){const e=new Image;e.crossOrigin="anonymous";e["crossOrigin"]="use-credentials";e.src=t;return e}',
+      ],
+    ])('refuses %s', (_what, loader) => {
+      expect(within(loader)).toMatch(/web page's process/);
+    });
+
+    it('takes the loader from the tree: a string that says "new Image" does not make a function the loader', () => {
+      const measure = 'async function m(t,k,s){return"new Image"+t+k+s}';
+      const text = `${CALLS}${measure}${LOADER}`;
+      expect(problems(text)).toMatch(/network API/);
+      expect(problems(text)).not.toContain('exactly one of the functions');
+    });
   });
 });

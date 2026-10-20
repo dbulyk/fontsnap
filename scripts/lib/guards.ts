@@ -211,6 +211,7 @@ export const PAGE_WINDOW_FILES: readonly string[] = ['src/result/app.ts', 'src/w
 /** The folder and the file that run in the web page's process; the same as PAGE_PROCESS_GLOBS in eslint.config.js (a guard test fails if they differ). */
 export const PAGE_PROCESS_DIR = 'src/select/';
 export const PAGE_PROCESS_MEASURE = 'src/background/measure.ts';
+export const PAGE_PROCESS_LOAD = 'src/background/load-image.ts';
 
 /** The guard context of a file: files in one context must have the same effective ESLint config. */
 export function contextOf(file: string): string {
@@ -222,9 +223,10 @@ export function contextOf(file: string): string {
     // the one file that configures onnxruntime-web has its own rule set (see eslint.config.js)
     if (file === ORT_CONFIG_FILE) return 'src-ort-model';
     // the two page scripts that hold the Window of their page have their own rule set (PAGE_WINDOW_FILES in eslint.config.js)
-    // the code that runs in the web page's process has its own rule sets (PAGE_PROCESS_GLOBS): all of src/select, and measure.ts
+    // the code that runs in the web page's process has its own rule sets (PAGE_PROCESS_GLOBS): all of src/select, measure.ts and load-image.ts
     if (file.startsWith(PAGE_PROCESS_DIR)) return 'src-page-process/select';
     if (file === PAGE_PROCESS_MEASURE) return 'src-page-process/background-measure.ts';
+    if (file === PAGE_PROCESS_LOAD) return 'src-page-process/background-load-image.ts';
     if (PAGE_WINDOW_FILES.includes(file)) return `src-page-window/${String(second)}`;
     if (file.endsWith('.d.ts')) return 'src-dts';
     return parts.length === 2 ? 'src-root' : `src/${String(second)}`;

@@ -138,5 +138,14 @@
   },
   "wPrivacy": {
     "message": "Tout fonctionne sur votre appareil. Les images ne sont jamais envoyées."
+  },
+  "wholeNote": {
+    "message": "L'image sur laquelle vous avez cliqué n'a pas pu être isolée ; toute la zone visible a donc été analysée. Pour un meilleur résultat, cliquez sur l'icône FontSnap et faites glisser la souris sur le texte."
+  },
+  "tabNotInFront": {
+    "message": "L’onglet de l’image n’est plus au premier plan : revenez-y et cliquez de nouveau sur l’image"
+  },
+  "tabClosed": {
+    "message": "L’onglet de l’image a été fermé avant de pouvoir être capturé"
   }
 }

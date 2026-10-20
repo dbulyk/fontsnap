@@ -39,3 +39,6 @@ Primiți cele mai apropiate 5 fonturi Google, comparați previzualizările și c
 Încearcă acum
 Cum fixați FontSnap
 Totul rulează pe dispozitivul dvs. Imaginile nu sunt încărcate niciodată.
+Imaginea pe care ați făcut clic nu a putut fi izolată, așa că a fost analizată întreaga zonă vizibilă. Pentru un rezultat mai bun, faceți clic pe pictograma FontSnap și trageți peste text.
+Fila imaginii nu mai este în prim-plan: reveniți la ea și dați din nou clic pe imagine
+Fila imaginii a fost închisă înainte de a putea fi capturată

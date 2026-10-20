@@ -78,17 +78,20 @@ describe('the content script bundle (select.js) holds modules of src/select only
     expect(offenders).toEqual([]);
   });
 
-  it('the function injected by chrome.scripting (measure.ts) imports no value at all', () => {
-    const text = readFileSync(join(ROOT, 'src', 'background', 'measure.ts'), 'utf8');
-    const source = ts.createSourceFile('measure.ts', text, ts.ScriptTarget.Latest, true);
-    const values = source.statements.filter(
-      (statement) =>
-        (ts.isImportDeclaration(statement) &&
-          statement.importClause?.phaseModifier !== ts.SyntaxKind.TypeKeyword) ||
-        (ts.isExportDeclaration(statement) &&
-          statement.moduleSpecifier !== undefined &&
-          !statement.isTypeOnly),
-    );
-    expect(values.map((statement) => statement.getText(source))).toEqual([]);
-  });
+  it.each(['measure.ts', 'load-image.ts'])(
+    'the function injected by chrome.scripting (%s) imports no value at all',
+    (name) => {
+      const text = readFileSync(join(ROOT, 'src', 'background', name), 'utf8');
+      const source = ts.createSourceFile(name, text, ts.ScriptTarget.Latest, true);
+      const values = source.statements.filter(
+        (statement) =>
+          (ts.isImportDeclaration(statement) &&
+            statement.importClause?.phaseModifier !== ts.SyntaxKind.TypeKeyword) ||
+          (ts.isExportDeclaration(statement) &&
+            statement.moduleSpecifier !== undefined &&
+            !statement.isTypeOnly),
+      );
+      expect(values.map((statement) => statement.getText(source))).toEqual([]);
+    },
+  );
 });

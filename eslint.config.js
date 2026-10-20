@@ -155,7 +155,7 @@ const HOST_OBJECTS =
   '/^(globalThis|self|window|chrome|navigator|performance|crypto|fetch|Object|Reflect|JSON|Math|Promise|Array|Function|Response|Request|Headers|URL|Blob|XMLHttpRequest|WebSocket|EventSource)$/';
 // the only properties of the global object that src/ reads
 const READABLE_GLOBALS =
-  '/^(crossOriginIsolated|crypto|devicePixelRatio|setTimeout|clearTimeout|setInterval|clearInterval|requestAnimationFrame)$/';
+  '/^(crossOriginIsolated|crypto|devicePixelRatio|innerWidth|innerHeight|setTimeout|clearTimeout|setInterval|clearInterval|requestAnimationFrame)$/';
 // the primitives that change properties, prototypes or what an object is
 const TAMPER_NAMES =
   '/^(defineProperty|defineProperties|setPrototypeOf|getPrototypeOf|getOwnPropertyDescriptors|__proto__|__defineGetter__|__defineSetter__|__lookupGetter__|__lookupSetter__|prototype|Proxy|Reflect)$/';
@@ -214,8 +214,15 @@ const OVERLAY_WINDOW_WRITTEN = ['__fontsnapActive'];
 // `doc` or an event by the overlay and reached the Window with a cast and a key built at run time): everything in src/select is
 // held to these rules, a new file there too, and the code of src/select imports no value from anywhere else (selectImportSelectors),
 // so nothing outside the folder gets into select.js. tests/unit/select-bundle.test.ts reads the real bundle to prove it.
-const PAGE_PROCESS_GLOBS = ['src/select/**/*.ts', 'src/background/measure.ts'];
+const PAGE_PROCESS_GLOBS = [
+  'src/select/**/*.ts',
+  'src/background/measure.ts',
+  'src/background/load-image.ts',
+];
 const MEASURE_FILE = 'src/background/measure.ts';
+// The function that loads the clicked image in its own frame: the one file with an exception to "nothing that loads" (see below).
+const LOAD_IMAGE_FILE = 'src/background/load-image.ts';
+const LOAD_IMAGE_FUNCTION = 'loadImagePixels';
 
 // --- every member of every DOM object the page code touches: an ALLOWLIST by type (review round 8 of PR #6) -------------------------
 // Rounds 6, 7 and 8 each found a new way for the code of the page to reach the network through a DOM object (a style written
@@ -272,13 +279,47 @@ const DOM_MEMBERS = [
       top: 'r',
       width: 'r',
       height: 'r',
+      parentElement: 'r',
+      scrollLeft: 'r',
+      scrollTop: 'r',
+      scrollTo: 'c',
+      clientLeft: 'r',
+      clientTop: 'r',
+      clientWidth: 'r',
+      clientHeight: 'r',
+      offsetWidth: 'r',
+      offsetHeight: 'r',
+      getElementsByTagName: 'c',
       scrollIntoView: 'c',
       getBoundingClientRect: 'c',
     },
   },
+  {
+    // the function that loads the clicked image: the images of the document, one image and one canvas, the bytes of a blob. `src` is
+    // written by `fromParameter` only (once, from the first parameter of loadImagePixels); `new Image()` is constructed once.
+    match: LOAD_IMAGE_FILE,
+    fromParameter: [{ member: 'src', fn: LOAD_IMAGE_FUNCTION }],
+    once: ['Image'],
+    members: {
+      images: 'r',
+      currentSrc: 'r',
+      src: 'r',
+      complete: 'r',
+      naturalWidth: 'r',
+      naturalHeight: 'r',
+      width: 'r',
+      height: 'r',
+      crossOrigin: 'w',
+      decode: 'c',
+      getContext: 'c',
+      drawImage: 'c',
+      convertToBlob: 'c',
+      arrayBuffer: 'c',
+    },
+  },
 ];
-/** The one function FontSnap hands to chrome.scripting.executeScript({ func }) (src/background/measure.ts). */
-const INJECTED_FUNCTION = 'measureImage';
+/** The two functions FontSnap hands to chrome.scripting.executeScript({ func }) (src/background/measure.ts, src/background/load-image.ts). */
+const INJECTED_FUNCTIONS = ['measureImage', 'loadImagePixels'];
 
 const GLOBAL_ACCESS = {
   globals: {
@@ -337,11 +378,21 @@ const GLOBAL_ACCESS = {
     'src/select/index.ts': { window: [''] },
     'src/select/overlay.ts': { Object: ['assign'] },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
+    // the timeout of a page script that does not answer
+    // the tab of the click is asked whether it is still in front before its screenshot
+    'src/background/clicked.ts': { clearTimeout: true, chrome: ['tabs.get'] },
     // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_GLOBS): the images of the page, its pixel ratio
     'src/background/measure.ts': {
-      document: ['images'],
+      document: ['images', 'getElementsByTagName'],
       requestAnimationFrame: true,
-      window: ['devicePixelRatio'],
+      window: ['devicePixelRatio', 'innerWidth', 'innerHeight'],
+    },
+    // the function that loads the clicked image (see LOAD_IMAGE_FILE): one Image, a canvas, the bytes of the PNG as text
+    'src/background/load-image.ts': {
+      document: ['images'],
+      Image: true,
+      btoa: true,
+      String: ['fromCharCode'],
     },
     // the entry scripts of the extension pages hand their document to the page script, and do nothing else with it
     'src/result/index.ts': { document: [''] },
@@ -584,7 +635,7 @@ export const globalAccessRule = {
  * symbol is declared in lib.dom.d.ts; Window is left to GLOBAL_ACCESS (windowParams, `window`).
  */
 export const domMembersRule = {
-  meta: { type: 'problem', schema: [{ type: 'array' }] },
+  meta: { type: 'problem', schema: [{ type: 'array' }, { type: 'array' }] },
   create(context) {
     const relative = context.filename
       .slice(context.cwd.length + 1)
@@ -608,6 +659,26 @@ export const domMembersRule = {
       type.isUnionOrIntersection() ? type.types.flatMap(constituents) : [type];
     const isDomType = (type) =>
       constituents(type).some((one) => (one.symbol?.declarations ?? []).some(inDom));
+    // a member declared outside lib.dom: in a library that is no DOM (Array, Promise, Math...), or a property of an interface that
+    // PAGE_TYPES lists for this file (the names in `interfaces`) or of a type it imports from the file it names
+    const page = context.options[1].find((candidate) => candidate.match === entry.match);
+    const fileOf = (declaration) => declaration.getSourceFile().fileName.split('\\').join('/');
+    const allowedElsewhere = (declaration) => {
+      if (declaration === undefined) return false;
+      if (services.program.isSourceFileDefaultLibrary(declaration.getSourceFile()))
+        return !inDom(declaration);
+      if (page.ambient.some((path) => fileOf(declaration).includes(`/${path}`))) return true;
+      const owner = declaration.parent;
+      const type = owner !== undefined && ts.isInterfaceDeclaration(owner) ? owner.name.text : '';
+      const properties = Object.hasOwn(page.interfaces, type) ? page.interfaces[type] : undefined;
+      const imported = Object.hasOwn(page.imports, type) ? page.imports[type] : undefined;
+      return (
+        (properties !== undefined &&
+          fileOf(declaration).endsWith(`/${relative}`) &&
+          properties.includes(declaration.name?.getText())) ||
+        (imported !== undefined && fileOf(declaration).endsWith(`/${imported}`))
+      );
+    };
     const isWindow = (type) => {
       const text = checker.typeToString(type);
       return (
@@ -648,7 +719,106 @@ export const domMembersRule = {
     const report = (node, text) => {
       context.report({ node, message: text });
     };
+    // `x.<member> = <first parameter of fn>` as a statement of its own, in that function itself, once, and the parameter never
+    // reassigned: the one way a page function may be given an address to load (entry.fromParameter). `x` is the object that
+    // `const x = new Image()` made in that same function (not an element of the page: `known.src = src` is refused), and
+    // `x.crossOrigin = 'anonymous'` is the statement before, in the same block, the only write of crossOrigin on `x`
+    const fromParameter = entry.fromParameter ?? [];
+    let parameterWrites = 0;
+    const variableOf = (name, from) => {
+      let scope = context.sourceCode.getScope(from);
+      let variable;
+      while (scope && variable === undefined) {
+        variable = scope.set.get(name);
+        scope = scope.upper;
+      }
+      return variable;
+    };
+    const isParameterWrite = (node, fn) => {
+      const assignment = node.parent;
+      if (
+        assignment?.type !== 'AssignmentExpression' ||
+        assignment.operator !== '=' ||
+        assignment.left !== node ||
+        assignment.parent.type !== 'ExpressionStatement' ||
+        assignment.right.type !== 'Identifier'
+      ) {
+        return false;
+      }
+      const variable = variableOf(assignment.right.name, assignment);
+      const definition = variable?.defs[0];
+      const declaration = definition?.node;
+      if (
+        definition?.type !== 'Parameter' ||
+        declaration?.type !== 'FunctionDeclaration' ||
+        declaration.id?.name !== fn ||
+        declaration.params[0] !== definition.name ||
+        !['Program', 'ExportNamedDeclaration'].includes(declaration.parent.type) ||
+        variable.references.some((reference) => reference.isWrite() && reference.init !== true)
+      ) {
+        return false;
+      }
+      const enclosing = (inner) => {
+        let outer = inner.parent;
+        while (outer && !/Function/.test(outer.type)) outer = outer.parent;
+        return outer;
+      };
+      if (enclosing(assignment) !== declaration) return false;
+      // the object: a `const` of this function whose value is `new Image()` (the global Image, no arguments)
+      if (node.computed || node.object.type !== 'Identifier') return false;
+      const image = variableOf(node.object.name, node);
+      const made = image?.defs[0];
+      const maker = made?.node;
+      if (
+        made?.type !== 'Variable' ||
+        maker?.type !== 'VariableDeclarator' ||
+        maker.id !== made.name ||
+        maker.parent.kind !== 'const' ||
+        maker.init?.type !== 'NewExpression' ||
+        maker.init.callee.type !== 'Identifier' ||
+        maker.init.callee.name !== 'Image' ||
+        maker.init.arguments.length !== 0 ||
+        (variableOf('Image', maker)?.defs.length ?? 0) > 0 ||
+        enclosing(maker) !== declaration
+      ) {
+        return false;
+      }
+      // crossOrigin comes first: written once on this object, as a statement of the same block before the write of the address
+      const crossWrites = image.references.filter((reference) => {
+        const access = reference.identifier.parent;
+        return (
+          access.type === 'MemberExpression' &&
+          access.object === reference.identifier &&
+          !access.computed &&
+          access.property.name === 'crossOrigin'
+        );
+      });
+      const block = assignment.parent.parent;
+      if (crossWrites.length !== 1 || block.type !== 'BlockStatement') return false;
+      const before = block.body.slice(0, block.body.indexOf(assignment.parent));
+      return before.some(
+        (statement) =>
+          statement.type === 'ExpressionStatement' &&
+          statement.expression.type === 'AssignmentExpression' &&
+          statement.expression.operator === '=' &&
+          statement.expression.left === crossWrites[0].identifier.parent &&
+          statement.expression.right.type === 'Literal' &&
+          statement.expression.right.value === 'anonymous',
+      );
+    };
+    const constructed = new Map();
     return {
+      NewExpression(node) {
+        if (node.callee.type !== 'Identifier' || !(entry.once ?? []).includes(node.callee.name))
+          return;
+        const count = (constructed.get(node.callee.name) ?? 0) + 1;
+        constructed.set(node.callee.name, count);
+        if (count > 1)
+          report(
+            node,
+            `new ${node.callee.name}() more than once in ${relative} (DOM_MEMBERS.once in eslint.config.js)`,
+          );
+      },
       MemberExpression(node) {
         const receiver = checker.getTypeAtLocation(tsOf(node.object));
         if (receiver.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown)) {
@@ -669,12 +839,32 @@ export const domMembersRule = {
           return;
         }
         const name = node.property.name;
-        const symbol = checker.getSymbolAtLocation(tsOf(node.property));
-        const dom =
-          symbol === undefined ? isDomType(receiver) : (symbol.declarations ?? []).some(inDom);
-        if (!dom) return;
+        const declarations = checker.getSymbolAtLocation(tsOf(node.property))?.declarations ?? [];
+        // fail-closed: a member is judged by where ALL of its declarations are. In lib.dom: it is on the list below. In the other
+        // libraries (Array, Promise, Math...) or in a type of PAGE_TYPES: not a DOM member. Anywhere else, or nowhere (the symbol that
+        // `'click' in u` makes up): not allowed - the type checker cannot say what it is
+        if (declarations.length === 0 || !declarations.every(inDom)) {
+          if (declarations.length === 0 || !declarations.every(allowedElsewhere)) {
+            report(
+              node,
+              `The member ${name} has no declaration, or one that is neither in lib.dom (DOM_MEMBERS), another library nor a type of PAGE_TYPES in eslint.config.js: the code of the web page may use only members whose declaration is known.`,
+            );
+          }
+          return;
+        }
         const kind = kindOf(node);
         const allowed = Object.hasOwn(entry.members, name) ? entry.members[name] : '';
+        const grant = kind === 'w' ? fromParameter.find((one) => one.member === name) : undefined;
+        if (grant !== undefined && isParameterWrite(node, grant.fn)) {
+          parameterWrites += 1;
+          if (parameterWrites > 1) {
+            report(
+              node,
+              `A second write of ${name} from the parameter of ${grant.fn}: one address is loaded, once (DOM_MEMBERS.fromParameter in eslint.config.js).`,
+            );
+          }
+          return;
+        }
         if (!allowed.includes(kind)) {
           report(
             node,
@@ -712,8 +902,205 @@ export const domMembersRule = {
     };
   },
 };
+// --- the types whose members the code of the page may use besides the DOM and the libraries (review of PR #14, B2) ------------------------
+// `dom-members` allows a member only when ALL of its declarations are known: in lib.dom (and on DOM_MEMBERS), in a library that is no DOM
+// (Array, Promise, Math...), in the API of the extension (`ambient`, judged further by GLOBAL_ACCESS), or in this table: the properties of
+// the interfaces the file may declare (`interfaces`) and the types it may import (`imports`: name -> the file it must come from). A DOM value
+// handed to a type of the code's own therefore gains nothing: the members of that type are an error unless they are listed here, and a
+// member that has no declaration at all (what `'click' in u` makes up) is an error too. Writing a type of its own is a deliberate edit of
+// this table, like a permission.
+const PAGE_TYPES = [
+  {
+    match: 'src/select/',
+    ambient: ['node_modules/@types/chrome/'],
+    interfaces: {},
+    imports: {
+      Rect: 'src/shared/capture.ts',
+      RequestOf: 'src/shared/messages.ts',
+      MessageKey: 'src/shared/i18n.ts',
+    },
+  },
+  {
+    match: MEASURE_FILE,
+    ambient: [],
+    interfaces: { MeasuredImage: ['rect', 'dpr', 'saved', 'box', 'outer'] },
+    imports: { Rect: 'src/shared/capture.ts' },
+  },
+  { match: LOAD_IMAGE_FILE, ambient: [], interfaces: {}, imports: {} },
+];
+
+// --- the calls of chrome.scripting.executeScript: one tab, one frame, and the address of the click (review of PR #14, B1) --------------------
+// Rounds 1-3 judged the shape of the call, then its values, then the path of the objects of the click (info, tab) to it, and each time
+// a step on that path (a write, an alias, a function that got the object) went round the rule. So there is no object on the path: the
+// listener of the context menu takes the click and its tab apart in its parameters, and clickedImage gets five primitives that no one
+// can write into. What is left to check is short:
+//   - clickedImage(srcUrl, frameId, frameUrl, tabId, windowId) is called once, in that listener, with its parameters `srcUrl`,
+//     `frameId`, `frameUrl` (of the click) and `id`, `windowId` (of the tab), in this order;
+//   - a call with a func is made in clickedImage, with tabId its parameter `tabId`; the loader runs in `[frameId]` with
+//     `[srcUrl]`, measureImage in `[frameId]` with the literal kind 'image' or in `[0]` with the literal 'frame';
+//   - a parameter of clickedImage or of that listener is never written (no-param-reassign), and a name used in a target or args is
+//     that parameter itself or a const whose initializer is it.
+// clickedImage is trusted by its name: it may not be imported under another name, aliased, or used other than by a call
+// (no-restricted-syntax, CLICKED_IMAGE_REFERENCES).
+const EXECUTE_SCRIPT = {
+  loader: LOAD_IMAGE_FUNCTION,
+  measurer: 'measureImage',
+  receiver: 'clickedImage',
+  file: 'src/background/clicked.ts',
+  // the parameters of clickedImage, and which property of the listener's (click, tab) each one is
+  parameters: ['srcUrl', 'frameId', 'frameUrl', 'tabId', 'windowId'],
+  from: [
+    [0, 'srcUrl'],
+    [0, 'frameId'],
+    [0, 'frameUrl'],
+    [1, 'id'],
+    [1, 'windowId'],
+  ],
+  listener: 'chrome.contextMenus.onClicked.addListener',
+};
+
+/** Local rule: see EXECUTE_SCRIPT. Plain JavaScript; exported so that tests can run it. */
+export const executeScriptRule = {
+  meta: { type: 'problem', schema: [{ type: 'object' }] },
+  create(context) {
+    const { loader, measurer, receiver, file, parameters, from, listener } = context.options[0];
+    const report = (node, what) => {
+      context.report({
+        node,
+        message: `${what} (EXECUTE_SCRIPT in eslint.config.js): executeScript with a func is called in ${receiver}(${parameters.join(', ')}) with target { tabId, frameIds: [frameId] } (measureImage of 'frame': [0]) and the loader's args [srcUrl], all of them its own parameters; ${receiver} is called by the listener of the context menu with the parameters it took the click apart into.`,
+      });
+    };
+    const keyOf = (property) =>
+      property.type === 'Property' &&
+      !property.computed &&
+      property.kind === 'init' &&
+      property.key.type === 'Identifier'
+        ? property.key.name
+        : undefined;
+    const definitionOf = (node) => {
+      if (node?.type !== 'Identifier') return undefined;
+      for (let scope = context.sourceCode.getScope(node); scope; scope = scope.upper) {
+        const variable = scope.set.get(node.name);
+        if (variable) return variable.defs.length === 1 ? variable.defs[0] : undefined;
+      }
+      return undefined;
+    };
+    /** The parameter `name` of clickedImage (in clicked.ts), named directly or through a const that is exactly it. */
+    const isParameter = (node, name) => {
+      const definition = definitionOf(node);
+      if (definition?.type === 'Variable' && definition.parent.kind === 'const') {
+        return isParameter(definition.node.init, name);
+      }
+      const fn = definition?.node;
+      return (
+        definition?.type === 'Parameter' &&
+        definition.name.name === name &&
+        fn.params[parameters.indexOf(name)] === definition.name &&
+        fn.type === 'FunctionDeclaration' &&
+        fn.id?.name === receiver &&
+        context.filename.replaceAll('\\', '/').endsWith(file)
+      );
+    };
+    const literal = (node, value) => node?.type === 'Literal' && node.value === value;
+    return {
+      CallExpression(node) {
+        const callee = node.callee;
+        if (callee.type === 'Identifier' && callee.name === receiver) {
+          const fn = context.sourceCode
+            .getAncestors(node)
+            .findLast((n) => n.type.endsWith('FunctionExpression'));
+          const inListener =
+            fn?.parent.type === 'CallExpression' &&
+            fn.parent.arguments[0] === fn &&
+            context.sourceCode.getText(fn.parent.callee) === listener;
+          const ok =
+            inListener &&
+            node.arguments.length === from.length &&
+            from.every(([at, key], i) => {
+              const definition = definitionOf(node.arguments[i]);
+              const pattern = fn.params[at];
+              const holder = (pattern?.type === 'AssignmentPattern' ? pattern.left : pattern)
+                ?.properties;
+              const property = holder?.find((p) => keyOf(p) === key);
+              const bound =
+                property?.value.type === 'AssignmentPattern'
+                  ? property.value.left
+                  : property?.value;
+              return (
+                definition?.type === 'Parameter' && bound !== undefined && definition.name === bound
+              );
+            });
+          if (!ok) {
+            report(
+              node,
+              `${receiver} is called other than by the listener of the context menu with the parameters of the click`,
+            );
+          }
+          return;
+        }
+        if (
+          callee.type !== 'MemberExpression' ||
+          callee.computed ||
+          callee.property.name !== 'executeScript'
+        )
+          return;
+        const [options] = node.arguments;
+        if (options?.type !== 'ObjectExpression') return; // refused by no-restricted-syntax
+        const keys = new Map();
+        for (const property of options.properties) {
+          const name = keyOf(property);
+          if (name === undefined || !['target', 'func', 'args', 'files'].includes(name)) {
+            report(property, 'An option that is not target, func, args or files');
+          } else keys.set(name, property.value);
+        }
+        const target = keys.get('target');
+        if (target?.type !== 'ObjectExpression') {
+          report(node, 'The target is not an object literal');
+          return;
+        }
+        const func = keys.get('func')?.name;
+        const args =
+          keys.get('args')?.type === 'ArrayExpression' ? keys.get('args').elements : undefined;
+        const found = new Map();
+        for (const property of target.properties) {
+          const name = keyOf(property);
+          const value = property.value;
+          const [frame, ...more] = value?.type === 'ArrayExpression' ? value.elements : [];
+          const ok =
+            name === 'tabId'
+              ? func === undefined
+                ? value.type === 'Identifier' ||
+                  (value.type === 'MemberExpression' && !value.computed)
+                : isParameter(value, 'tabId')
+              : name === 'frameIds' &&
+                func !== undefined &&
+                more.length === 0 &&
+                (isParameter(frame, 'frameId')
+                  ? func === loader || (func === measurer && literal(args?.[1], 'image'))
+                  : literal(frame, 0) && func === measurer && literal(args?.[1], 'frame'));
+          if (ok) found.set(name, value);
+          else
+            report(
+              property,
+              "A target other than { tabId, frameIds: [frameId] } of clickedImage (measureImage of 'frame': [0])",
+            );
+        }
+        if (!found.has('tabId') || (func !== undefined && !found.has('frameIds'))) {
+          report(target, 'A target without a tabId, or a func without the frame it runs in');
+        }
+        if (func === loader && (args?.length !== 1 || !isParameter(args[0], 'srcUrl'))) {
+          report(node, `The arguments of ${loader} are not [srcUrl] of ${receiver}`);
+        }
+      },
+    };
+  },
+};
 export const fontsnapPlugin = {
-  rules: { 'global-access': globalAccessRule, 'dom-members': domMembersRule },
+  rules: {
+    'global-access': globalAccessRule,
+    'dom-members': domMembersRule,
+    'execute-script': executeScriptRule,
+  },
 };
 // Values that are a Window, or a stand-in for one, however they are reached: document.defaultView, iframe.contentWindow,
 // event.view, message.source, event.currentTarget (the window an event was added to), getBackgroundPage(). GLOBAL_ACCESS closes
@@ -800,7 +1187,7 @@ const importSelectors = (valueFrom) =>
   ].map((selector) => ({ selector, message: IMPORT_MESSAGE }));
 const selectImportSelectors = importSelectors(`:not([source.value=${SELECT_SIBLING}])`);
 const measureImportSelectors = importSelectors('');
-const pageProcessSelectors = [
+const pageProcessSelectorSources = [
   // no key that is computed at run time (a numeric index is fine), in access, destructuring, literals, classes
   "MemberExpression[computed=true]:not([property.type='Literal'][property.raw=/^[0-9]+$/])",
   'Property[computed=true]',
@@ -850,7 +1237,29 @@ const pageProcessSelectors = [
   'ForInStatement > MemberExpression.left',
   // elements: createElement('div') and nothing else, no second argument (`{ is }`)
   "CallExpression[callee.property.name='createElement']:not([arguments.length=1])",
-].map((selector) => ({ selector, message: PAGE_PROCESS_MESSAGE }));
+  // the only elements looked for by tag are the <iframe> elements of a document (measureImage, kind 'frame')
+  "CallExpression[callee.property.name='getElementsByTagName']:not([arguments.length=1][arguments.0.type='Literal'][arguments.0.value='iframe'])",
+];
+const pageProcessSelectors = pageProcessSelectorSources.map((selector) => ({
+  selector,
+  message: PAGE_PROCESS_MESSAGE,
+}));
+// loadImagePixels (LOAD_IMAGE_FILE) is the one page function that may load an address: the write of `src` is allowed here and judged by
+// fontsnap/dom-members (DOM_MEMBERS.fromParameter: once, from the first parameter, nothing else); `new Image()` is the only use of
+// Image, without arguments, and its crossOrigin is the literal 'anonymous' (a request without credentials).
+const LOADING_WRITE = `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`;
+const LOAD_IMAGE_MESSAGE = `${PAGE_PROCESS_MESSAGE} The one exception is src/background/load-image.ts: new Image() (no arguments), crossOrigin = 'anonymous' and a single src = <its first parameter>.`;
+const loadImageSelectors = [
+  ...pageProcessSelectorSources.map((selector) =>
+    selector === LOADING_WRITE ? `${LOADING_WRITE}:not([property.name='src'])` : selector,
+  ),
+  // the loader is never called, not even by itself (it could hand itself another address) and not taken as a value
+  `Identifier[name='${LOAD_IMAGE_FUNCTION}']:not(FunctionDeclaration > Identifier.id)`,
+  "NewExpression[callee.name='Image']:not([arguments.length=0])",
+  "Identifier[name='Image']:not(NewExpression > Identifier.callee)",
+  "AssignmentExpression[left.property.name='crossOrigin']:not([right.type='Literal'][right.value='anonymous'])",
+  "AssignmentExpression[left.property.name='crossOrigin']:not([operator='='])",
+].map((selector) => ({ selector, message: LOAD_IMAGE_MESSAGE }));
 
 // --- style of the code that runs in the web page (review round 7 of PR #6, blocker E) -------------------------------------------
 // A style can load a file: `box.style.backgroundImage = 'url(...)'`, with the string built at run time or written with a CSS escape.
@@ -932,16 +1341,25 @@ const noStyleSelectors = [
 }));
 
 // The one function that may be injected into a page with chrome.scripting.executeScript, and in no other world than the isolated one.
-const INJECTION_MESSAGE = `chrome.scripting.executeScript is called directly, with an object literal whose func is ${INJECTED_FUNCTION} (src/background/measure.ts, held to the rules of the content script) or a files list, and no world: any other function would run in the web page's process outside the CSP of the extension.`;
+const INJECTION_MESSAGE = `chrome.scripting.executeScript is called directly, with an object literal whose func is one of ${INJECTED_FUNCTIONS.join(', ')} (src/background/measure.ts and load-image.ts, held to the rules of the content script) or a files list, and no world: any other function would run in the web page's process outside the CSP of the extension.`;
 const EXECUTE = "CallExpression[callee.property.name='executeScript']";
 const injectionSelectors = [
   "MemberExpression[property.name='executeScript']:not(CallExpression > MemberExpression.callee)",
   `${EXECUTE}:not([arguments.0.type='ObjectExpression'])`,
   `${EXECUTE} > ObjectExpression > SpreadElement`,
   `${EXECUTE} > ObjectExpression > Property[computed=true]`,
-  `${EXECUTE} > ObjectExpression > Property:matches([key.name='func'], [key.value='func']):not([value.type='Identifier'][value.name='${INJECTED_FUNCTION}'])`,
-  `${EXECUTE} > ObjectExpression > Property:matches([key.name='world'], [key.value='world'])`,
+  `${EXECUTE} > ObjectExpression > Property:matches([key.name='func'], [key.value='func']):not([value.type='Identifier'][value.name=/^(${INJECTED_FUNCTIONS.join('|')})$/])`,
 ].map((selector) => ({ selector, message: INJECTION_MESSAGE }));
+// clickedImage is trusted by its name (EXECUTE_SCRIPT): it is only ever called by that name, never imported as another, aliased, passed on,
+// re-exported or called through .call/.apply
+const CLICKED_IMAGE_REFERENCES = [
+  "ImportSpecifier[imported.name='clickedImage'][local.name!='clickedImage']",
+  "Identifier[name='clickedImage']:not(CallExpression > Identifier.callee):not(FunctionDeclaration > Identifier.id):not(ImportSpecifier > Identifier):not(TSTypeQuery > Identifier.exprName)",
+].map((selector) => ({
+  selector,
+  message:
+    'clickedImage is used other than by calling it by its own name (EXECUTE_SCRIPT in eslint.config.js)',
+}));
 
 const noInjectedCodeBase = [
   ...injectedCodeSelectors.map((selector) => ({
@@ -967,6 +1385,7 @@ const noInjectedCodeBase = [
   // lets them be written: they are read as `globalThis.<allowed name>` only.
   ...globalTampering,
   ...injectionSelectors,
+  ...CLICKED_IMAGE_REFERENCES,
 ];
 // FontSnap runs WebAssembly only through the files pinned in scripts/lib/vendor.ts. onnxruntime-web can be pointed at
 // other code through its environment (env.wasm.wasmPaths: another URL or a different .wasm; env.wasm.wasmBinary:
@@ -1115,6 +1534,24 @@ export default tseslint.config(
     },
   },
   {
+    // The function that loads the clicked image in its own frame: the rules of the content script but for the narrow exception above.
+    files: [LOAD_IMAGE_FILE],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        noDynamicImport,
+        ...noRequireOrDeclare,
+        ...noInjectedCode,
+        ...noDynamicIn,
+        ...numbersAndText,
+        ...reachDefault,
+        ...loadImageSelectors,
+        ...noStyleSelectors,
+        ...measureImportSelectors,
+      ],
+    },
+  },
+  {
     // Two page scripts hold the Window of their page (hashchange, pagehide), under the narrow form of reachPages.
     files: PAGE_WINDOW_FILES,
     rules: {
@@ -1134,12 +1571,23 @@ export default tseslint.config(
     files: ['src/**/*.ts'],
     ignores: ['src/**/*.d.ts'],
     plugins: { fontsnap: fontsnapPlugin },
-    rules: { 'fontsnap/global-access': ['error', GLOBAL_ACCESS] },
+    rules: {
+      'fontsnap/global-access': ['error', GLOBAL_ACCESS],
+      'fontsnap/execute-script': ['error', EXECUTE_SCRIPT],
+    },
+  },
+  {
+    // The primitives of the click are not reassigned on their way to executeScript (review of PR #14, B1; see EXECUTE_SCRIPT); the
+    // whole worker, so that it is one context of the guards.
+    files: ['src/background/**/*.ts'],
+    rules: { 'no-param-reassign': 'error' },
   },
   {
     // The members of every DOM object in the code of the web page: an allowlist by type, see DOM_MEMBERS.
     files: PAGE_PROCESS_GLOBS,
-    rules: { 'fontsnap/dom-members': ['error', DOM_MEMBERS] },
+    rules: {
+      'fontsnap/dom-members': ['error', DOM_MEMBERS, PAGE_TYPES],
+    },
   },
   {
     // The one file that configures onnxruntime-web: every other src rule applies to it.

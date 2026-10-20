@@ -138,5 +138,14 @@
   },
   "wPrivacy": {
     "message": "Her şey cihazınızda çalışır. Resimler asla yüklenmez."
+  },
+  "wholeNote": {
+    "message": "Tıkladığınız görsel ayrıştırılamadı, bu yüzden görünen alanın tamamı analiz edildi. Daha iyi bir sonuç için FontSnap simgesine tıklayın ve metnin üzerinde sürükleyin."
+  },
+  "tabNotInFront": {
+    "message": "Görselin sekmesi artık önde değil: o sekmeye dönüp görsele yeniden tıklayın"
+  },
+  "tabClosed": {
+    "message": "Görselin sekmesi yakalanamadan kapatıldı"
   }
 }

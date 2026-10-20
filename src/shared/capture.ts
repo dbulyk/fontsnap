@@ -13,6 +13,8 @@ export interface CaptureEntry {
   dataUrl?: string;
   text?: string;
   error?: string;
+  /** The clicked image could not be isolated: `dataUrl` is the whole visible area and the result page says so. */
+  note?: 'whole-view';
 }
 
 export interface EncodeOptions {
@@ -73,6 +75,44 @@ export function clipCropRect(rect: Rect, dpr: number, bmpWidth: number, bmpHeigh
   const h = Math.min(Math.round((rect.h + Math.min(0, rect.y)) * scale), bmpHeight - y);
   if (w < MIN_CROP_PX || h < MIN_CROP_PX) throw new Error('Selection is outside the visible area');
   return { x, y, w, h };
+}
+
+/** What the client box of an iframe and the viewport of its document may differ by and still be one area (rounding of the two sizes). */
+const FRAME_ROUNDING_PX = 1;
+
+/**
+ * Map the rect of an image inside an iframe (CSS pixels of the frame's viewport `view`) to the viewport of the tab, from the border
+ * box `iframe` of the `<iframe>` there (as drawn, so with a CSS scale), its client box `box` (border on the left and top, size inside
+ * the border) and the size of the whole border box before the scale, `outer`. Every border is followed on its own: the one on the
+ * right and at the bottom is what `outer` has more than the client box and the left and top borders. Only the part of the image that
+ * the frame shows is kept.
+ * Padding cannot be followed: the client box includes it, and which side of the frame it is on is not known without reading the
+ * style, which the code of the page may not. A client box that is larger than the viewport of the frame says there is some (or that
+ * the frame is another one than the one measured); such a frame is refused.
+ * @throws {Error} when nothing of the image is inside the frame, or the frame cannot be placed exactly
+ */
+export function frameRect(image: Rect, view: Rect, iframe: Rect, box: Rect, outer: Rect): Rect {
+  const left = Math.max(image.x, view.x);
+  const top = Math.max(image.y, view.y);
+  const right = Math.min(image.x + image.w, view.x + view.w);
+  const bottom = Math.min(image.y + image.h, view.y + view.h);
+  if (right - left <= 0 || bottom - top <= 0)
+    throw new Error('Selection is outside the visible area');
+  if (
+    Math.abs(box.w - view.w) > FRAME_ROUNDING_PX ||
+    Math.abs(box.h - view.h) > FRAME_ROUNDING_PX
+  ) {
+    throw new Error('The frame has padding, or is not the frame of the image');
+  }
+  if (!(outer.w > 0 && outer.h > 0)) throw new Error('The frame has no size');
+  const sx = iframe.w / outer.w;
+  const sy = iframe.h / outer.h;
+  return {
+    x: iframe.x + (box.x + left) * sx,
+    y: iframe.y + (box.y + top) * sy,
+    w: (right - left) * sx,
+    h: (bottom - top) * sy,
+  };
 }
 
 export function scaleToMaxSide(

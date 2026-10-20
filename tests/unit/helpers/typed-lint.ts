@@ -35,13 +35,16 @@ function programFor(path: string, code: string): ts.Program {
 }
 
 /** Messages of the type-aware rule `fontsnap/dom-members` for `code` as if it were the file `file`. */
-export async function domMembers(file: string, code: string): Promise<string[]> {
+export const domMembers = (file: string, code: string): Promise<string[]> =>
+  typedRule('fontsnap/dom-members', file, code);
+
+async function typedRule(rule: string, file: string, code: string): Promise<string[]> {
   const path = join(ROOT, file);
   const configured = (await eslint.calculateConfigForFile(file)) as {
     rules?: Record<string, Linter.RuleEntry>;
   };
-  const entry = configured.rules?.['fontsnap/dom-members'];
-  if (entry === undefined) throw new Error(`${file} is not held to fontsnap/dom-members`);
+  const entry = configured.rules?.[rule];
+  if (entry === undefined) throw new Error(`${file} is not held to ${rule}`);
   const program = programFor(path, code);
   return new Linter()
     .verify(
@@ -54,7 +57,7 @@ export async function domMembers(file: string, code: string): Promise<string[]> 
             parserOptions: { programs: [program] },
           },
           plugins: { fontsnap: fontsnapPlugin },
-          rules: { 'fontsnap/dom-members': entry },
+          rules: { [rule]: entry },
         },
       ],
       path,

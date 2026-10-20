@@ -1,5 +1,5 @@
 import { cp, mkdtemp, rm } from 'node:fs/promises';
-import { createServer } from 'node:http';
+import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -20,6 +20,18 @@ interface TestFixtures {
   welcomePage: Page;
   serviceWorker: Worker;
   extensionId: string;
+  /**
+   * Starts a static server on a free 127.0.0.1 port (so every call is another origin) and returns its origin; closed after the test.
+   * `routes` maps a path to what is answered.
+   */
+  serve: (routes: ReadonlyMap<string, Route>) => Promise<string>;
+}
+
+/** What a test server answers for one path. */
+export interface Route {
+  type: string;
+  body: string | Buffer;
+  headers?: Record<string, string>;
 }
 
 interface WorkerFixtures {
@@ -87,14 +99,19 @@ export const test = playwright.test.extend<TestFixtures & Options, WorkerFixture
     await rm(copy, { recursive: true, force: true });
   },
 
-  context: async ({ uiLocale, extensionDir }, use) => {
+  // `deviceScaleFactor` is Playwright's own option (test.use({ deviceScaleFactor: 2 })): the window.devicePixelRatio of the browser,
+  // and the number of pixels per CSS pixel in the screenshot of a tab.
+  context: async ({ uiLocale, extensionDir, deviceScaleFactor: scale }, use) => {
+    const deviceScaleFactor = scale ?? 1;
     const profile = await mkdtemp(join(tmpdir(), 'pw-profile-'));
     const context = await playwright.chromium.launchPersistentContext(profile, {
       // Headed (under xvfb in CI) is what real users run; new headless is opt-in for quick local runs.
       ...(headless ? { channel: 'chromium', headless: true } : { headless: false }),
       locale: uiLocale,
+      deviceScaleFactor,
       env: { ...process.env, LANGUAGE: uiLocale },
       args: [
+        `--force-device-scale-factor=${String(deviceScaleFactor)}`,
         `--disable-extensions-except=${extensionDir}`,
         `--load-extension=${extensionDir}`,
         // Lets CDP's Extensions.loadUnpacked reload the extension (how a test updates it) and
@@ -133,6 +150,36 @@ export const test = playwright.test.extend<TestFixtures & Options, WorkerFixture
     const started = context.waitForEvent('serviceworker');
     started.catch(() => undefined); // not awaited when the worker is already running
     await use(context.serviceWorkers()[0] ?? (await started));
+  },
+
+  serve: async ({}, use) => {
+    const servers: Server[] = [];
+    await use(async (routes) => {
+      const server = createServer((request, response) => {
+        const route = routes.get(new URL(request.url ?? '/', 'http://x').pathname);
+        if (route === undefined) {
+          response.statusCode = 404;
+          response.end('not found');
+          return;
+        }
+        response.setHeader('content-type', route.type);
+        for (const [name, value] of Object.entries(route.headers ?? {})) {
+          response.setHeader(name, value);
+        }
+        response.end(route.body);
+      });
+      servers.push(server);
+      await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+      return `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`;
+    });
+    for (const server of servers) {
+      server.closeAllConnections();
+      await new Promise<void>((done) =>
+        server.close(() => {
+          done();
+        }),
+      );
+    }
   },
 
   extensionId: async ({ serviceWorker }, use) => {

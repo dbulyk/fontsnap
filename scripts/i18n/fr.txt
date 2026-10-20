@@ -39,3 +39,6 @@ Obtenez les 5 polices Google les plus proches, comparez les aperçus et copiez l
 Essayer maintenant
 Comment épingler FontSnap
 Tout fonctionne sur votre appareil. Les images ne sont jamais envoyées.
+L'image sur laquelle vous avez cliqué n'a pas pu être isolée ; toute la zone visible a donc été analysée. Pour un meilleur résultat, cliquez sur l'icône FontSnap et faites glisser la souris sur le texte.
+L’onglet de l’image n’est plus au premier plan : revenez-y et cliquez de nouveau sur l’image
+L’onglet de l’image a été fermé avant de pouvoir être capturé

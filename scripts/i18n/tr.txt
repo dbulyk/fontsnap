@@ -39,3 +39,6 @@ En yakın 5 Google yazı tipini alın, önizlemeleri karşılaştırın ve CSS'y
 Şimdi dene
 FontSnap nasıl sabitlenir
 Her şey cihazınızda çalışır. Resimler asla yüklenmez.
+Tıkladığınız görsel ayrıştırılamadı, bu yüzden görünen alanın tamamı analiz edildi. Daha iyi bir sonuç için FontSnap simgesine tıklayın ve metnin üzerinde sürükleyin.
+Görselin sekmesi artık önde değil: o sekmeye dönüp görsele yeniden tıklayın
+Görselin sekmesi yakalanamadan kapatıldı

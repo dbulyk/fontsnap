@@ -91,6 +91,8 @@ export function initResult(doc: Document): void {
   });
 
   async function fromBlob(blob: Blob): Promise<void> {
+    // the hint belongs to the capture the service worker handed over; it goes when the user brings an image of their own
+    $('wholeNote').hidden = true;
     let bmp: ImageBitmap;
     try {
       bmp = await createImageBitmap(blob);
@@ -157,5 +159,6 @@ export function initResult(doc: Document): void {
     }
     if (stored.text) preview.value = stored.text;
     if (stored.dataUrl) await fromBlob(dataUrlToBlob(stored.dataUrl));
+    $('wholeNote').hidden = stored.note !== 'whole-view';
   })();
 }

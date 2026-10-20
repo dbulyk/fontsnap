@@ -39,3 +39,6 @@ Dapatkan 5 Google Fonts paling hampir, bandingkan pratonton dan salin CSS.
 Cuba sekarang
 Cara menyematkan FontSnap
 Semuanya berjalan pada peranti anda. Imej tidak pernah dimuat naik.
+Imej yang anda klik tidak dapat diasingkan, jadi seluruh kawasan yang kelihatan telah dianalisis. Untuk hasil yang lebih baik, klik ikon FontSnap dan seret di atas teks.
+Tab imej tidak lagi berada di hadapan: kembali ke tab itu dan klik imej sekali lagi
+Tab imej ditutup sebelum sempat ditangkap

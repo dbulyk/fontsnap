@@ -39,3 +39,6 @@ Pata fonti 5 za Google zinazofanana zaidi, linganisha na unakili CSS.
 Jaribu sasa
 Jinsi ya kubandika FontSnap
 Kila kitu kinafanya kazi kwenye kifaa chako. Picha hazipakiwi kamwe.
+Picha uliyobofya haikuweza kutengwa, kwa hiyo eneo lote linaloonekana lilichanganuliwa. Kwa matokeo bora, bofya aikoni ya FontSnap kisha buruta juu ya maandishi.
+Kichupo cha picha hakiko tena mbele: rudi kwake kisha ubofye picha tena
+Kichupo cha picha kilifungwa kabla ya kunaswa

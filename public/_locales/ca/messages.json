@@ -138,5 +138,14 @@
   },
   "wPrivacy": {
     "message": "Tot funciona al teu dispositiu. Les imatges no es pugen mai."
+  },
+  "wholeNote": {
+    "message": "No s'ha pogut aïllar la imatge on heu fet clic, així que s'ha analitzat tota la zona visible. Per obtenir un millor resultat, feu clic a la icona de FontSnap i arrossegueu sobre el text."
+  },
+  "tabNotInFront": {
+    "message": "La pestanya de la imatge ja no és en primer pla: torna-hi i fes clic de nou a la imatge"
+  },
+  "tabClosed": {
+    "message": "La pestanya de la imatge s’ha tancat abans de poder-la capturar"
   }
 }

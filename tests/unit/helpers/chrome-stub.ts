@@ -145,6 +145,9 @@ export function createChromeStub(options: ChromeStubOptions = {}) {
           options?: { format?: 'png' | 'jpeg'; quality?: number },
         ) => Promise<string>
       >(() => Promise.resolve('data:image/png;base64,c2hvdA==')),
+      get: vi.fn((tabId: number) =>
+        Promise.resolve({ id: tabId, active: true } as chrome.tabs.Tab),
+      ),
       sendMessage: vi.fn((_tabId: number, message: unknown) => dispatch(message)),
     },
     scripting: {

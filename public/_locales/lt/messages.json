@@ -138,5 +138,14 @@
   },
   "wPrivacy": {
     "message": "Viskas veikia jūsų įrenginyje. Paveikslėliai niekada neįkeliami."
+  },
+  "wholeNote": {
+    "message": "Nepavyko išskirti paveikslėlio, kurį spustelėjote, todėl buvo išanalizuota visa matoma sritis. Norėdami geresnio rezultato, spustelėkite „FontSnap“ piktogramą ir vilkite per tekstą."
+  },
+  "tabNotInFront": {
+    "message": "Paveikslėlio skirtukas nebėra priekyje: grįžkite į jį ir dar kartą spustelėkite paveikslėlį"
+  },
+  "tabClosed": {
+    "message": "Paveikslėlio skirtukas buvo uždarytas, kol dar nebuvo užfiksuotas"
   }
 }

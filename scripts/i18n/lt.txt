@@ -39,3 +39,6 @@ Gaukite 5 panašiausius Google Fonts, palyginkite peržiūras ir nukopijuokite C
 Išbandyti dabar
 Kaip prisegti FontSnap
 Viskas veikia jūsų įrenginyje. Paveikslėliai niekada neįkeliami.
+Nepavyko išskirti paveikslėlio, kurį spustelėjote, todėl buvo išanalizuota visa matoma sritis. Norėdami geresnio rezultato, spustelėkite „FontSnap“ piktogramą ir vilkite per tekstą.
+Paveikslėlio skirtukas nebėra priekyje: grįžkite į jį ir dar kartą spustelėkite paveikslėlį
+Paveikslėlio skirtukas buvo uždarytas, kol dar nebuvo užfiksuotas

@@ -39,3 +39,6 @@ Obtén les 5 fonts Google més semblants, compara-les i copia el CSS.
 Prova-ho ara
 Com fixar FontSnap
 Tot funciona al teu dispositiu. Les imatges no es pugen mai.
+No s'ha pogut aïllar la imatge on heu fet clic, així que s'ha analitzat tota la zona visible. Per obtenir un millor resultat, feu clic a la icona de FontSnap i arrossegueu sobre el text.
+La pestanya de la imatge ja no és en primer pla: torna-hi i fes clic de nou a la imatge
+La pestanya de la imatge s’ha tancat abans de poder-la capturar

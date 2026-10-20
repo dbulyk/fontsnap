@@ -138,5 +138,14 @@
   },
   "wPrivacy": {
     "message": "Všetko beží vo vašom zariadení. Obrázky sa nikdy nenahrávajú."
+  },
+  "wholeNote": {
+    "message": "Obrázok, na ktorý ste klikli, sa nepodarilo vyňať, preto sa analyzovala celá viditeľná oblasť. Pre lepší výsledok kliknite na ikonu FontSnap a potiahnite myšou cez text."
+  },
+  "tabNotInFront": {
+    "message": "Karta s obrázkom už nie je v popredí: vráťte sa na ňu a kliknite na obrázok znova"
+  },
+  "tabClosed": {
+    "message": "Karta s obrázkom bola zatvorená skôr, než ju bolo možné zachytiť"
   }
 }

@@ -39,3 +39,6 @@ Otrzymaj 5 najbliższych czcionek Google, porównaj podglądy i skopiuj CSS.
 Wypróbuj teraz
 Jak przypiąć FontSnap
 Wszystko działa na Twoim urządzeniu. Obrazy nigdy nie są wysyłane.
+Nie udało się wyodrębnić obrazu, w który kliknięto, więc przeanalizowano cały widoczny obszar. Aby uzyskać lepszy wynik, kliknij ikonę FontSnap i przeciągnij po tekście.
+Karta z obrazem nie jest już na pierwszym planie: wróć do niej i kliknij obraz ponownie
+Karta z obrazem została zamknięta, zanim udało się ją przechwycić

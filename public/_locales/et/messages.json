@@ -138,5 +138,14 @@
   },
   "wPrivacy": {
     "message": "Kõik töötab sinu seadmes. Pilte ei laadita kunagi üles."
+  },
+  "wholeNote": {
+    "message": "Klõpsatud pilti ei õnnestunud eraldada, seega analüüsiti kogu nähtavat ala. Parema tulemuse saamiseks klõpsa FontSnapi ikoonil ja lohista üle teksti."
+  },
+  "tabNotInFront": {
+    "message": "Pildi vahekaart pole enam esiplaanil: minge selle juurde tagasi ja klõpsake pilti uuesti"
+  },
+  "tabClosed": {
+    "message": "Pildi vahekaart suleti enne, kui seda sai jäädvustada"
   }
 }

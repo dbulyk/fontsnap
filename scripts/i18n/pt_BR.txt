@@ -39,3 +39,6 @@ Receba as 5 fontes Google mais parecidas, compare as visualizações e copie o C
 Experimentar agora
 Como fixar o FontSnap
 Tudo funciona no seu dispositivo. As imagens nunca são enviadas.
+Não foi possível isolar a imagem em que você clicou, então toda a área visível foi analisada. Para um resultado melhor, clique no ícone do FontSnap e arraste sobre o texto.
+A guia da imagem não está mais em primeiro plano: volte para ela e clique na imagem de novo
+A guia da imagem foi fechada antes de ser capturada

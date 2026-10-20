@@ -331,7 +331,7 @@ function runtimeSettingProblems(file: string, text: string): string[] {
  * The SECOND layer for the code that runs in the web page's process, where the CSP of the extension does not apply (round 6 of
  * the review of PR #6; the first layer is lint plus the module graph of select.js, which also hold names built at run time):
  * no network API, no way to load or navigate, spelled with a literal name. `select.js` is that code as a whole; of
- * `background.js` it is the function handed to `chrome.scripting.executeScript({ func })` (measureImage), found in the AST.
+ * `background.js` it is the two functions handed to `chrome.scripting.executeScript({ func })` (measureImage and the loader), found in the AST.
  */
 const PAGE_CODE_FORBIDDEN: readonly { pattern: RegExp; what: string }[] = [
   {
@@ -378,6 +378,31 @@ export function pagePlatformProblems(text: string): string[] {
   return found;
 }
 
+/** One function that a script hands to `executeScript({ func })`, as the syntax tree of the built file shows it. */
+export interface InjectedFunction {
+  /** The source text of the function. */
+  text: string;
+  /** The name of its first parameter, if it has one that is a plain name. */
+  firstParam: string | undefined;
+  /** References, inside the function, to the function itself (by scope): a loader that calls itself can hand itself another address. */
+  selfReferences: number;
+  /** Is the first parameter assigned to, incremented, destructured into or a loop target anywhere? */
+  parameterWritten: boolean;
+  /** Set when the function constructs an `Image` (a `new Image` in the syntax tree, not in a string): what the loader may do, judged there. */
+  loader: LoaderFacts | undefined;
+  /** What is wrong with the target and the arguments of the call that hands the function over (see `callProblems`). */
+  call: string[];
+}
+
+/**
+ * What the syntax tree says of a function that constructs an `Image` (see `loaderProblems`): the problems found, and the spans
+ * (offsets into the text of the function) of the three expressions that only the loader may contain.
+ */
+export interface LoaderFacts {
+  problems: string[];
+  allowed: [number, number][];
+}
+
 /**
  * The text of every function that a script hands to `executeScript({ func })`, found with the TypeScript compiler so that names
  * are resolved by SCOPE (a minified file reuses short names): the `func` must be a function written in place or a name with ONE
@@ -386,6 +411,14 @@ export function pagePlatformProblems(text: string): string[] {
  * literal, an `executeScript` that is not called at once (an alias) - is an `undefined` entry, which fails the build.
  */
 export function injectedFunctions(file: string, text: string): (string | undefined)[] {
+  return injectedFunctionDetails(file, text).map((found) => found?.text);
+}
+
+/** Like `injectedFunctions`, but with the name of the first parameter of each function (the loader's `.src =` is judged by it). */
+export function injectedFunctionDetails(
+  file: string,
+  text: string,
+): (InjectedFunction | undefined)[] {
   const options: ts.CompilerOptions = {
     allowJs: true,
     noLib: true,
@@ -456,9 +489,285 @@ export function injectedFunctions(file: string, text: string): (string | undefin
     }
     return undefined;
   };
-  const found: (string | undefined)[] = [];
-  const read = (node: ts.Node | undefined): void => {
-    found.push(node?.getText(source));
+  /**
+   * The loader, read in the syntax tree: ONE `new Image` without arguments, bound to a `const` of the top level of the body; `crossOrigin
+   * = "anonymous"` and `src = <the first parameter>` as statements of that level (a comma sequence of them, as the minifier writes
+   * them, counts as statements), in that order, each once and nowhere else in the function. Nothing is read from the text of the code.
+   */
+  const loaderFacts = (what: {
+    node: ts.Node;
+    images: ts.NewExpression[];
+    parameter: ts.Symbol | undefined;
+    srcFromParameter: number;
+    srcFromElsewhere: number;
+    crossOriginWrites: number;
+  }): LoaderFacts => {
+    const problems: string[] = [];
+    const allowed: [number, number][] = [];
+    const base = what.node.getStart(source);
+    const allow = (inner: ts.Node): void => {
+      allowed.push([inner.getStart(source) - base, inner.getEnd() - base]);
+    };
+    for (const image of what.images) allow(image);
+    const image = what.images[0];
+    if (what.images.length !== 1 || image === undefined) {
+      problems.push('more or fewer than one new Image');
+    } else if ((image.arguments?.length ?? 0) > 0) {
+      problems.push('new Image with an argument');
+    }
+    const body =
+      ts.isFunctionDeclaration(what.node) ||
+      ts.isFunctionExpression(what.node) ||
+      ts.isArrowFunction(what.node) ||
+      ts.isMethodDeclaration(what.node)
+        ? what.node.body
+        : undefined;
+    const declaration =
+      image !== undefined &&
+      ts.isVariableDeclaration(image.parent) &&
+      image.parent.initializer === image &&
+      ts.isIdentifier(image.parent.name) &&
+      (image.parent.parent.flags & ts.NodeFlags.Const) !== 0
+        ? image.parent
+        : undefined;
+    const statement = declaration?.parent.parent;
+    const symbol = declaration && checker.getSymbolAtLocation(declaration.name);
+    if (
+      body === undefined ||
+      !ts.isBlock(body) ||
+      statement === undefined ||
+      !ts.isVariableStatement(statement) ||
+      statement.parent !== body ||
+      symbol === undefined
+    ) {
+      problems.push(
+        'the Image is not held by a const of the top level of the loader (the object that src and crossOrigin are written on must be the one that new Image made)',
+      );
+      return { problems, allowed };
+    }
+    // the statements after the declaration, a comma sequence taken apart in the order it is evaluated
+    const steps: ts.Expression[] = [];
+    const flatten = (expression: ts.Expression): void => {
+      if (
+        ts.isBinaryExpression(expression) &&
+        expression.operatorToken.kind === ts.SyntaxKind.CommaToken
+      ) {
+        flatten(expression.left);
+        flatten(expression.right);
+      } else {
+        steps.push(expression);
+      }
+    };
+    for (const one of body.statements) {
+      if (ts.isExpressionStatement(one) && one.pos >= statement.end) flatten(one.expression);
+    }
+    const writeOf = (
+      expression: ts.Expression,
+      property: string,
+    ): ts.BinaryExpression | undefined =>
+      ts.isBinaryExpression(expression) &&
+      expression.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isPropertyAccessExpression(expression.left) &&
+      expression.left.name.text === property &&
+      ts.isIdentifier(expression.left.expression) &&
+      checker.getSymbolAtLocation(expression.left.expression) === symbol
+        ? expression
+        : undefined;
+    const crossAt = steps.findIndex((one) => {
+      const write = writeOf(one, 'crossOrigin');
+      return (
+        write !== undefined &&
+        ts.isStringLiteralLike(write.right) &&
+        write.right.text === 'anonymous'
+      );
+    });
+    const srcAt = steps.findIndex((one) => {
+      const write = writeOf(one, 'src');
+      return (
+        write !== undefined &&
+        ts.isIdentifier(write.right) &&
+        what.parameter !== undefined &&
+        checker.getSymbolAtLocation(write.right) === what.parameter
+      );
+    });
+    const cross = steps[crossAt];
+    const src = steps[srcAt];
+    if (cross === undefined || what.crossOriginWrites !== 1) {
+      problems.push('crossOrigin other than a single assignment of "anonymous" to the new Image');
+    } else if (src !== undefined && crossAt > srcAt) {
+      problems.push('crossOrigin = "anonymous" is written after src (the request is already made)');
+    }
+    if (src === undefined || what.srcFromParameter !== 1 || what.srcFromElsewhere !== 0) {
+      problems.push(
+        'not exactly one .src = <the first parameter itself, by scope> on the new Image, and no other write of src',
+      );
+    }
+    if (cross !== undefined) allow(cross);
+    if (src !== undefined) allow(src);
+    return { problems, allowed };
+  };
+  /**
+   * The shape of the call that hands a function over, read from the options literal as the minifier leaves it: only target, func, args
+   * and files; the target is { tabId: <name> or <name>.id, frameIds: [<one frame>] } and nothing else (no allFrames, no documentIds, no
+   * second frame). The frame is a name (the frame of the click) for the loader and for measureImage with the literal kind "image", and
+   * the top frame `0` only for measureImage with the literal kind "frame" (the offset of an <iframe>); the arguments of the loader are
+   * [<name>] - the srcUrl that clickedImage got (lint says which parameter, in the source).
+   */
+  const callProblems = (options: ts.ObjectLiteralExpression, loader: boolean): string[] => {
+    const problems: string[] = [];
+    const keyOf = (property: ts.ObjectLiteralElementLike): string | undefined =>
+      (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) &&
+      ts.isIdentifier(property.name)
+        ? property.name.text
+        : undefined;
+    const valueOf = (property: ts.ObjectLiteralElementLike): ts.Expression | undefined =>
+      ts.isPropertyAssignment(property) ? property.initializer : undefined;
+    const named = (e: ts.Expression | undefined): boolean => e !== undefined && ts.isIdentifier(e);
+    const own = new Map<string, ts.Expression | undefined>();
+    for (const property of options.properties) {
+      const key = keyOf(property);
+      if (key === undefined || !['target', 'func', 'args', 'files'].includes(key)) {
+        problems.push('an option of executeScript that is not target, func, args or files');
+      } else own.set(key, valueOf(property));
+    }
+    const args = own.get('args');
+    const list =
+      args !== undefined && ts.isArrayLiteralExpression(args) ? args.elements : undefined;
+    const kind = list?.[1] !== undefined && ts.isStringLiteral(list[1]) ? list[1].text : undefined;
+    const target = own.get('target');
+    if (target === undefined || !ts.isObjectLiteralExpression(target)) {
+      problems.push('a target of executeScript that is not an object literal');
+    } else {
+      const parts = new Map<string, ts.Expression | undefined>();
+      for (const property of target.properties) {
+        const key = keyOf(property);
+        const value = valueOf(property);
+        const frames =
+          value !== undefined && ts.isArrayLiteralExpression(value) ? value.elements : undefined;
+        const one = frames?.length === 1 ? frames[0] : undefined;
+        if (
+          (key === 'tabId' &&
+            (named(value) ||
+              (value !== undefined &&
+                ts.isPropertyAccessExpression(value) &&
+                value.questionDotToken === undefined &&
+                named(value.expression) &&
+                value.name.text === 'id'))) ||
+          (key === 'frameIds' &&
+            one !== undefined &&
+            (named(one)
+              ? loader || kind === 'image'
+              : !loader && kind === 'frame' && ts.isNumericLiteral(one) && one.text === '0'))
+        ) {
+          parts.set(key, value);
+        } else {
+          problems.push(
+            'a target of executeScript other than { tabId: <name>, frameIds: [<one frame>] } (allFrames, documentIds, a second frame, a spread, a computed key; the top frame 0 is only for measureImage of "frame", the frame of the click for the loader or "image")',
+          );
+        }
+      }
+      if (!parts.has('tabId') || !parts.has('frameIds')) {
+        problems.push(
+          'a target of executeScript without a tabId or without the one frame it runs in',
+        );
+      }
+    }
+    if (loader && (list?.length !== 1 || !named(list[0]))) {
+      problems.push(
+        'a call of executeScript that hands the loader anything but [<name>] (the srcUrl clickedImage got)',
+      );
+    }
+    return problems;
+  };
+  const found: (InjectedFunction | undefined)[] = [];
+  const read = (node: ts.Node | undefined, options: ts.ObjectLiteralExpression): void => {
+    if (node === undefined) {
+      found.push(undefined);
+      return;
+    }
+    const first = ts.isFunctionLike(node) ? node.parameters[0] : undefined;
+    const parameter =
+      first !== undefined && ts.isIdentifier(first.name)
+        ? checker.getSymbolAtLocation(first.name)
+        : undefined;
+    // the symbol of the function itself: its own name, or the const it is the value of
+    const nameNode =
+      (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) && node.name !== undefined
+        ? node.name
+        : ts.isVariableDeclaration(node.parent)
+          ? node.parent.name
+          : undefined;
+    const self = nameNode !== undefined ? checker.getSymbolAtLocation(nameNode) : undefined;
+    let selfReferences = 0;
+    let srcFromParameter = 0;
+    let srcFromElsewhere = 0;
+    let crossOriginWrites = 0;
+    const images: ts.NewExpression[] = [];
+    const walk = (inner: ts.Node): void => {
+      if (
+        ts.isNewExpression(inner) &&
+        ts.isIdentifier(inner.expression) &&
+        inner.expression.text === 'Image' &&
+        (checker.getSymbolAtLocation(inner.expression)?.declarations ?? []).length === 0
+      ) {
+        images.push(inner);
+      }
+      if (
+        ts.isBinaryExpression(inner) &&
+        inner.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+        inner.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+        ts.isPropertyAccessExpression(inner.left) &&
+        inner.left.name.text === 'crossOrigin'
+      ) {
+        crossOriginWrites += 1;
+      }
+      if (
+        self !== undefined &&
+        ts.isIdentifier(inner) &&
+        inner !== nameNode &&
+        checker.getSymbolAtLocation(inner) === self
+      ) {
+        selfReferences += 1;
+      }
+      if (
+        ts.isBinaryExpression(inner) &&
+        inner.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+        inner.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+        ts.isPropertyAccessExpression(inner.left) &&
+        inner.left.name.text === 'src'
+      ) {
+        if (
+          inner.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+          ts.isIdentifier(inner.right) &&
+          parameter !== undefined &&
+          checker.getSymbolAtLocation(inner.right) === parameter
+        ) {
+          srcFromParameter += 1;
+        } else {
+          srcFromElsewhere += 1;
+        }
+      }
+      ts.forEachChild(inner, walk);
+    };
+    walk(node);
+    found.push({
+      text: node.getText(source),
+      firstParam: first !== undefined && ts.isIdentifier(first.name) ? first.name.text : undefined,
+      selfReferences,
+      parameterWritten: parameter !== undefined && isWrittenTo(parameter),
+      loader:
+        images.length === 0
+          ? undefined
+          : loaderFacts({
+              node,
+              images,
+              parameter,
+              srcFromParameter,
+              srcFromElsewhere,
+              crossOriginWrites,
+            }),
+      call: callProblems(options, images.length > 0),
+    });
   };
   const isTheName = (node: ts.Node): boolean =>
     (ts.isIdentifier(node) && node.text === 'executeScript') ||
@@ -489,13 +798,15 @@ export function injectedFunctions(file: string, text: string): (string | undefin
             const name = ts.isIdentifier(key) || ts.isStringLiteral(key) ? key.text : undefined;
             if (name !== 'func') continue;
             if (ts.isShorthandPropertyAssignment(property)) {
-              read(functionOf(checker.getShorthandAssignmentValueSymbol(property)));
+              read(functionOf(checker.getShorthandAssignmentValueSymbol(property)), options0);
             } else if (ts.isMethodDeclaration(property)) {
-              read(property);
+              read(property, options0);
             } else if (ts.isPropertyAssignment(property)) {
               const value = property.initializer;
-              if (ts.isIdentifier(value)) read(functionOf(checker.getSymbolAtLocation(value)));
-              else if (ts.isFunctionExpression(value) || ts.isArrowFunction(value)) read(value);
+              if (ts.isIdentifier(value))
+                read(functionOf(checker.getSymbolAtLocation(value)), options0);
+              else if (ts.isFunctionExpression(value) || ts.isArrowFunction(value))
+                read(value, options0);
               else found.push(undefined);
             } else {
               found.push(undefined);
@@ -510,6 +821,38 @@ export function injectedFunctions(file: string, text: string): (string | undefin
   };
   visit(source);
   return found;
+}
+
+/** The distinct functions background.js hands to executeScript: the measuring one (measure.ts) and the loader (load-image.ts). */
+const EXPECTED_INJECTED = 2;
+const EXPECTED_INJECTED_WORD = 'two';
+
+/**
+ * What the loader (src/background/load-image.ts) may do that no other page function may: construct ONE `Image` without arguments, set its
+ * `crossOrigin` to "anonymous" once, BEFORE it sets its `src` once from its FIRST PARAMETER - the address it is given. The syntax tree says
+ * whether the three expressions are there in that form (see `loaderFacts`); they are cut out of the text, and the rest is judged like any
+ * page function (`.src =` anywhere else, a second `Image`, fetch, setAttribute, location, ... still fail). Lint says the same of the
+ * source (DOM_MEMBERS.fromParameter in eslint.config.js).
+ */
+export function loaderProblems(loader: InjectedFunction): string[] {
+  if (loader.firstParam === undefined || loader.loader === undefined) {
+    return ['a loader without a first parameter that holds the address'];
+  }
+  const problems = [...loader.loader.problems];
+  if (loader.parameterWritten)
+    problems.push(`the first parameter ${loader.firstParam} is assigned to`);
+  if (loader.selfReferences > 0) {
+    problems.push('the loader refers to itself (it could hand itself another address)');
+  }
+  let rest = loader.text;
+  for (const [from, to] of [...loader.loader.allowed].sort((a, b) => b[0] - a[0])) {
+    rest = rest.slice(0, from) + rest.slice(to);
+  }
+  // a second spelling of the property (`e['crossOrigin']`) is not an assignment the tree above counts
+  if (rest.includes('crossOrigin')) {
+    problems.push('crossOrigin other than a single assignment of "anonymous" to the new Image');
+  }
+  return [...problems, ...pagePlatformProblems(rest)];
 }
 
 /**
@@ -542,18 +885,37 @@ export function scriptProblems(file: string, text: string): string[] {
     (name) =>
       `${file}: uses ${name}, which no script of the build uses (the sources are held to an allowlist of globals, see eslint.config.js)`,
   );
-  const injected = file === 'background.js' ? injectedFunctions(file, text) : [];
+  const injected = file === 'background.js' ? injectedFunctionDetails(file, text) : [];
+  // the same function is handed over from several places (measureImage is called to measure, to measure a frame and to restore):
+  // it counts once
+  const bodies = [
+    ...new Map(
+      injected.flatMap((one) => (one === undefined ? [] : [[one.text, one] as const])),
+    ).values(),
+  ];
+  const loaders = bodies.filter((one) => one.loader !== undefined);
   const page = [
     ...(file === 'select.js' ? pagePlatformProblems(text) : []),
-    ...injected.flatMap((body) =>
-      body === undefined
-        ? [
-            'a func of executeScript that could not be read (not a function declared once in this file)',
-          ]
-        : pagePlatformProblems(body),
+    ...injected.flatMap((one) => one?.call ?? []),
+    ...injected
+      .filter((one) => one === undefined)
+      .map(
+        () =>
+          'a func of executeScript that could not be read (not a function declared once in this file)',
+      ),
+    ...bodies.flatMap((one) =>
+      loaders.includes(one) ? loaderProblems(one) : pagePlatformProblems(one.text),
     ),
-    ...(file === 'background.js' && injected.length !== 1
-      ? [`exactly one function must be handed to executeScript (found ${String(injected.length)})`]
+    ...(file === 'background.js' &&
+    bodies.length + injected.filter((one) => one === undefined).length !== EXPECTED_INJECTED
+      ? [
+          `exactly ${EXPECTED_INJECTED_WORD} functions must be handed to executeScript (found ${String(bodies.length)})`,
+        ]
+      : []),
+    ...(file === 'background.js' && loaders.length !== 1
+      ? [
+          `exactly one of the functions handed to executeScript may load an image, the loader (found ${String(loaders.length)})`,
+        ]
       : []),
     ...(file !== 'background.js' && /\bexecuteScript\b/.test(text)
       ? ['executeScript outside background.js']

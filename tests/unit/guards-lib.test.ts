@@ -71,6 +71,7 @@ describe('contextOf', () => {
     ['src/select/chrome.ts', 'src-page-process/select'],
     ['src/select/deep/new-file.ts', 'src-page-process/select'],
     ['src/background/measure.ts', 'src-page-process/background-measure.ts'],
+    ['src/background/load-image.ts', 'src-page-process/background-load-image.ts'],
     ['src/background/shot.ts', 'src/background'],
     ['src/result/model.ts', 'src-ort-model'],
     ['src/sidepanel/deep/x.ts', 'src/sidepanel'],

@@ -138,5 +138,14 @@
   },
   "wPrivacy": {
     "message": "Everything runs on your device. Images are never uploaded."
+  },
+  "wholeNote": {
+    "message": "The clicked image could not be isolated, so the whole visible area was analysed. For a better result click the FontSnap icon and drag over the text."
+  },
+  "tabNotInFront": {
+    "message": "The tab of the image is no longer in front: go back to it and click the image again"
+  },
+  "tabClosed": {
+    "message": "The tab of the image was closed before it could be captured"
   }
 }
