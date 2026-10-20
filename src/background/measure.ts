@@ -3,8 +3,8 @@ import type { Rect } from '../shared/capture';
 /**
  * One of the two functions that FontSnap hands to chrome.scripting.executeScript({ func }) (the other is loadImagePixels in
  * load-image.ts). It is serialized and runs in the web page's process, where the CSP of the extension does not apply, so it lives alone
- * in this file, held to the rules of the content script (eslint.config.js, PAGE_PROCESS_GLOBS: no computed access, no casts, no types
- * of its own but the ones of PAGE_TYPES, `document` only as `document.images` and `document.getElementsByTagName`, `window` only as
+ * in this file, held to the rules of the content script (eslint.config.js, PAGE_PROCESS_GLOBS: no computed access, no casts, no members but
+ * those of lib.dom (DOM_MEMBERS), libraries and the interfaces of PAGE_TYPES, `document` only as `document.images` and `document.getElementsByTagName`, `window` only as
  * `window.devicePixelRatio`, `.innerWidth`, `.innerHeight`, and every DOM member on DOM_MEMBERS).
  */
 export interface MeasuredImage {

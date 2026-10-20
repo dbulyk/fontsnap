@@ -38,10 +38,6 @@ function programFor(path: string, code: string): ts.Program {
 export const domMembers = (file: string, code: string): Promise<string[]> =>
   typedRule('fontsnap/dom-members', file, code);
 
-/** Messages of the type-aware rule `fontsnap/page-types` for `code` as if it were the file `file`. */
-export const pageTypes = (file: string, code: string): Promise<string[]> =>
-  typedRule('fontsnap/page-types', file, code);
-
 async function typedRule(rule: string, file: string, code: string): Promise<string[]> {
   const path = join(ROOT, file);
   const configured = (await eslint.calculateConfigForFile(file)) as {

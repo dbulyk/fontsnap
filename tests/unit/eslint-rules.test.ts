@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import tseslint from 'typescript-eslint';
 import { describe, expect, it } from 'vitest';
 import { CSS_LOADING_SOURCE, cssUnescape, fontsnapPlugin } from '../../eslint.config.js';
-import { domMembers, pageTypes } from './helpers/typed-lint';
+import { domMembers } from './helpers/typed-lint';
 
 // What guards.test.ts cannot show: that the selectors in eslint.config.js really match the code
 // they are meant to stop. The config itself (rules and options) is pinned by the guard snapshots.
@@ -1937,7 +1937,6 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   /** Everything that judges the code of the page: the type-aware rule, the global allowlist, the selectors. */
   const verdict = async (file: string, code: string): Promise<string[]> => [
     ...(await domMembers(file, code)),
-    ...(await pageTypes(file, code)),
     ...(await reached(file, code)),
     ...(await flagged(file, code)),
   ];
@@ -2232,13 +2231,13 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   });
 });
 
-// Round 9 of the review of PR #6 (r4308642691): `dom-members` judges a member by where its symbol is declared, so a DOM value handed to
-// a variable, parameter or return of an own `interface` or object type loses its DOM-ness and the members of that type are free
-// (`querySelector('a')` with `host` and `click()`, `createElementNS('style')` with a text from run time, in measure.ts
-// `ownerDocument.createElementNS('style')`). The class is closed at its source (PAGE_TYPES, the rule fontsnap/page-types): the code of
-// the page has no type of its own - no interface but the listed ones, no type literal, mapped type, class or enum, no type name that is
-// not a library type, a type parameter or a listed name, and no object literal whose type is inferred. Every fixture is a form of it.
-describe('page code has no types of its own', () => {
+// Round 1 of the review of PR #14 (B2): `dom-members` skipped a member that had no declaration (`'click' in u` narrows an unknown value to
+// `object & Record<"click", unknown>`, whose `click` is a synthetic symbol), so `u.click.call(u)` navigated a page from measure.ts, and
+// `getElementsByTagName` took any tag. A DOM rule that lists the DOM members it knows leaves everything else to chance, so the question is
+// turned around once more: a member is allowed only when EVERY declaration of its symbol is in lib.dom and the member is on DOM_MEMBERS,
+// or in a non-DOM lib file (Array, Promise, Math...), or in an interface of PAGE_TYPES. A member with no declaration, or one declared
+// anywhere else (an interface or type literal of the code's own, an intersection with one), is an error.
+describe('every member in the code of the web page has a declaration that is allowed', () => {
   const OVERLAY = 'src/select/overlay.ts';
   const NEW_FILE = 'src/select/a-new-file.ts';
   const MEASURE = 'src/background/measure.ts';
@@ -2246,186 +2245,102 @@ describe('page code has no types of its own', () => {
     `export function startSelection(win: Window, u: string, k: string, n: number): void {\n  const doc = win.document;\n  const box = doc.createElement("div");\n  ${body}\n  void [doc, box, u, k, n];\n}`;
   const inMeasure = (body: string): string =>
     `export function measureImage(u: string): void {\n  const box = [...document.images][0]!;\n  ${body}\n  void [box, u];\n}`;
-  const DOC =
-    'interface D { createElementNS(ns: string | null, n: string): { textContent: string | null }; getElementById(id: string): { click(): void } | null }\n  interface B { ownerDocument: D }\n';
-  const FORMS: [string, string, string][] = [
+  const NARROWED =
+    "const u0: unknown = box;\n  if (typeof u0 === 'object' && u0 !== null && 'click' in u0 && typeof u0.click === 'function') u0.click.call(u0);";
+  const FORMS: [string, string][] = [
+    ['N1 narrowed by `in`: click.call (the reviewer)', NARROWED],
     [
-      'P1 own interfaces: ownerDocument, createElementNS(style), click()',
-      `${DOC}  const b: B = box;\n  const st = b.ownerDocument.createElementNS(null, 'style');\n  st.textContent = ['html{background:ur', 'l(', u, ')}'].join('');\n  b.ownerDocument.getElementById('x')?.click();`,
-      'interface',
+      'N1b narrowed by `in`: a write to href',
+      "const u0: unknown = box;\n  if (typeof u0 === 'object' && u0 !== null && 'href' in u0) u0.href = u;",
     ],
     [
-      'P2 a type literal as the annotation of a parameter',
-      "const f = (b: { ownerDocument: { createElementNS(ns: string | null, n: string): { textContent: string | null } } }): void => { b.ownerDocument.createElementNS(null, 'style'); };\n  f(box);",
-      'type literal',
+      'N2 narrowed by `in` on an object',
+      "const o: object = box;\n  if ('click' in o) void o.click;",
     ],
     [
-      'P3 an own type as a return type',
-      `${DOC}  const g = (): B => box;\n  g().ownerDocument.getElementById('x')?.click();`,
-      'interface',
+      'N3 an interface of its own that box is assigned to',
+      'interface Fake { click(): void }\n  const f: Fake = box;\n  f.click();',
     ],
     [
-      'P4 satisfies a type literal',
-      'const same = box satisfies { ownerDocument: unknown };\n  void same;',
-      'type literal',
+      'N4 a type literal in a parameter',
+      'const f = (x: { click(): void }): void => { x.click(); };\n  f(box);',
     ],
     [
-      'P5 an own type for an element, written through it',
-      'interface Im { src: string }\n  const f = (im: Im): void => { im.src = u; };\n  f(box as never);',
-      'interface',
+      'N5 an intersection of a DOM type with a type of its own (declared in both)',
+      'const f = (x: HTMLElement & { click(): void }): void => { x.click(); };\n  f(box);',
     ],
+    ['N6 a member of an object literal', 'const o = { src: u };\n  void o.src;'],
+    ['N7 a member of a class of its own', 'class A { src = ""; }\n  void new A().src;'],
     [
-      'P7 a type inferred from a default parameter',
-      'const f = (a = { src: "", click() { return; } }): void => { a.src = u; a.click(); };\n  f(box);',
-      'object literal',
-    ],
-    [
-      'P8 an array inferred from an object literal, then push',
-      'const list = [{ src: "", click() { return; } }];\n  list.push(box);\n  list[0]!.click();',
-      'object literal',
-    ],
-    [
-      'P9 a class with the members of an element',
-      'class A { src = ""; click(): void { return; } }\n  const a: A = box;\n  a.click();',
-      'class',
-    ],
-    [
-      'P10 a mapped type',
-      'type M = { [K in "src" | "click"]: unknown };\n  const m: M = box;\n  void m;',
-      'mapped type',
-    ],
-    [
-      'P11 a listed interface declared with a method',
-      'interface MeasuredImage { rect: unknown; click(): void }\n  void (0 as unknown as MeasuredImage);',
-      'MeasuredImage',
-    ],
-    [
-      'P12 a listed interface declared with a property that is not listed',
-      'interface MeasuredImage { rect: number; src: string }\n  void (0 as unknown as MeasuredImage);',
-      'MeasuredImage',
-    ],
-    ['P14 an enum', 'enum E { A, B }\n  void E.A;', 'enum'],
-    [
-      'P15 a generic with an own constraint',
-      'const f = <T extends { src: string }>(t: T): string => t.src;\n  void f;',
-      'type literal',
-    ],
-    [
-      'P16 a type alias of a type literal',
-      'type T = { src: string };\n  void (0 as unknown as T);',
-      'type literal',
-    ],
-    [
-      'P17 an object literal with no library or listed contextual type',
-      'const o = { src: u };\n  void o;',
-      'object literal',
-    ],
-    [
-      'P18 an object literal as the second argument of something that is not Object.assign',
-      'const o = [1].map(() => ({ src: u }));\n  void o;',
-      'object literal',
-    ],
-    [
-      'P19 a type named by import("...") instead of an import type declaration',
-      "const r: import('../shared/capture').Rect = { x: 0, y: 0, w: 1, h: 1 };\n  void r;",
-      'import type expression',
-    ],
-    [
-      'P20 a type taken by typeof import("...")',
-      "const m: typeof import('../shared/capture') | null = null;\n  void m;",
-      'import type expression',
+      'N8 a member of a type imported from a file that is not listed',
+      "import type { CaptureEntry } from '../shared/capture';\n  const c = {} as CaptureEntry;\n  void c.dataUrl;",
     ],
   ];
 
-  it.each(FORMS)('refuses %s', async (_what, body, reason) => {
+  it.each(FORMS)('refuses %s', async (_what, body) => {
     for (const [file, code] of [
       [OVERLAY, inSelect(body)],
       [NEW_FILE, inSelect(body)],
       [MEASURE, inMeasure(body)],
     ] as const) {
-      const messages = await pageTypes(file, code);
-      expect(messages, `${file}: ${body}`).not.toEqual([]);
-      expect(messages.join('\n'), `${file}: reported for ${reason}`).toContain(reason);
+      expect(await domMembers(file, code), `${file}: ${body}`).not.toEqual([]);
     }
   });
 
-  // The three forms of the reviewer's comment, as written there (only the line that gets the DOM value differs: `doc` is the
-  // Document of the overlay, `img` the image that measureImage found, `document` the global of the page function).
-  const VERBATIM: [string, string, string][] = [
-    [
-      'F4 by narrowing: querySelector("a"), host and click()',
-      "interface Ck { click(): void; host: string }\n  interface Qs { querySelector(s: string): Ck | null }\n  const pick = (d: Qs) => d.querySelector('a');\n  const a7 = pick(DOC);\n  if (a7) { a7.host = 'example.invalid'; a7.click(); }",
-      'interface',
-    ],
-    [
-      'E2 by narrowing: createElementNS("style") with a text from run time',
-      "interface Mk { createElementNS(ns: string, n: string): Node; documentElement: { append(e: Node): void } }\n  const d1: Mk = DOC;\n  const st1 = d1.createElementNS(['http:/', 'www.w3.org', '1999', 'xhtml'].join('/'), 'style');\n  st1.textContent = ['b', 'ody{background:', ['ur', 'l(', ['https:/', 'example.invalid', 'n2'].join('/'), ')'].join(''), '}'].join('');\n  d1.documentElement.append(st1);",
-      'interface',
-    ],
-    [
-      'measure.ts: <style> through ownerDocument',
-      "interface El { textContent: string | null }\n  interface Od { ownerDocument: { createElementNS(ns: string, n: string): El; body: { append(e: El | string): void } } }\n  const w9: Od = IMG;\n  const st9 = w9.ownerDocument.createElementNS(['http:/', 'www.w3.org', '1999', 'xhtml'].join('/'), 'style');\n  st9.textContent = ['ur', 'l(', ['https:/', 'example.invalid', 'n9'].join('/'), ')'].join('');\n  w9.ownerDocument.body.append(st9);",
-      'interface',
-    ],
-  ];
-
-  it.each(VERBATIM)('refuses, as written by the reviewer: %s', async (_what, body, reason) => {
-    for (const [file, code] of [
-      [OVERLAY, inSelect(body.replaceAll('DOC', 'doc').replaceAll('IMG', 'box'))],
-      [NEW_FILE, inSelect(body.replaceAll('DOC', 'doc').replaceAll('IMG', 'box'))],
-      [MEASURE, inMeasure(body.replaceAll('DOC', 'document').replaceAll('IMG', 'box'))],
-    ] as const) {
-      const messages = await pageTypes(file, code);
-      expect(messages, `${file}: ${body}`).not.toEqual([]);
-      expect(messages.join('\n'), `${file}: reported for ${reason}`).toContain(reason);
-    }
-  });
-
-  it('refuses an import type of a name that is not listed, and one listed name from the wrong file', async () => {
-    for (const code of [
-      "import type { Request } from '../shared/messages';\nexport function startSelection(win: Window, r?: Request): void {\n  void [win, r];\n}",
-      "import type { Rect } from '../shared/messages';\nexport function startSelection(win: Window, r?: Rect): void {\n  void [win, r];\n}",
+  it("refuses getElementsByTagName of anything but the literal 'iframe'", async () => {
+    for (const call of [
+      "document.getElementsByTagName('a')",
+      "document.getElementsByTagName('form')",
+      "document.getElementsByTagName('IFRAME')",
+      'document.getElementsByTagName(u)',
+      'document.getElementsByTagName(`iframe`)',
+      "document.getElementsByTagName('iframe'.toString())",
+      'document.getElementsByTagName()',
+      "document.getElementsByTagName('iframe', 'a')",
+      "box.getElementsByTagName('a')",
     ]) {
-      expect(await pageTypes(NEW_FILE, code), code).not.toEqual([]);
+      const code = inMeasure(`for (const a of ${call}) void a;`);
+      expect(
+        [...(await domMembers(MEASURE, code)), ...(await flagged(MEASURE, code))],
+        call,
+      ).not.toEqual([]);
     }
   });
 
-  it('accepts what the page code really uses: library types, listed types, type parameters, option objects, style objects', async () => {
+  it("accepts getElementsByTagName('iframe'), library members and the listed interface", async () => {
     expect(
-      await pageTypes(
-        NEW_FILE,
-        `import type { Rect } from '../shared/capture';
-export function startSelection(win: Window, r: Rect): void {
-  const doc = win.document;
-  const box = doc.createElement('div');
-  const pick = <T extends Node>(t: T): T => t;
-  const list: HTMLElement[] = [pick(box)];
-  Object.assign(box.style, { position: 'fixed', left: '0' });
-  box.addEventListener('click', () => undefined, { passive: true });
-  void [list, r];
-}`,
+      await domMembers(
+        MEASURE,
+        inMeasure(
+          "const frames = [...document.getElementsByTagName('iframe')].filter((f) => f.src === u);\n  void [frames.at(0), Math.max(1, 2), new Set([u]).has(u), [1].map((x) => x + 1)];",
+        ),
       ),
     ).toEqual([]);
     expect(
-      await pageTypes(
+      await domMembers(
         MEASURE,
         `import type { Rect } from '../shared/capture';
-interface MeasuredImage { rect: Rect; dpr: number; saved: number[]; box: Rect }
+interface MeasuredImage { rect: Rect; dpr: number; saved: number[]; box: Rect; outer: Rect }
 export async function measureImage(src: string): Promise<MeasuredImage | null> {
   const img = [...document.images].find((i) => i.currentSrc === src);
   if (!img) return null;
-  img.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   const b = img.getBoundingClientRect();
   const rect: Rect = { x: b.left, y: b.top, w: b.width, h: b.height };
-  return { rect, dpr: 1, saved: [], box: rect };
+  return { rect, dpr: 1, saved: [], box: rect, outer: rect };
 }`,
       ),
     ).toEqual([]);
   });
 
   it('the files of the page code as they are in the repository are clean', async () => {
-    for (const file of [OVERLAY, 'src/select/chrome.ts', 'src/select/index.ts', MEASURE]) {
-      expect(await pageTypes(file, readFileSync(file, 'utf8')), file).toEqual([]);
+    for (const file of [
+      OVERLAY,
+      'src/select/chrome.ts',
+      'src/select/index.ts',
+      MEASURE,
+      'src/background/load-image.ts',
+    ]) {
+      expect(await domMembers(file, readFileSync(file, 'utf8')), file).toEqual([]);
     }
   });
 });
@@ -2437,7 +2352,6 @@ describe('loadImagePixels: the narrow exception to "nothing that loads"', () => 
   const LOADER = 'src/background/load-image.ts';
   const verdict = async (file: string, code: string): Promise<string[]> => [
     ...(await domMembers(file, code)),
-    ...(await pageTypes(file, code)),
     ...(await reached(file, code)),
     ...(await flagged(file, code)),
   ];

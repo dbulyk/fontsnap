@@ -634,7 +634,7 @@ export const globalAccessRule = {
  * symbol is declared in lib.dom.d.ts; Window is left to GLOBAL_ACCESS (windowParams, `window`).
  */
 export const domMembersRule = {
-  meta: { type: 'problem', schema: [{ type: 'array' }] },
+  meta: { type: 'problem', schema: [{ type: 'array' }, { type: 'array' }] },
   create(context) {
     const relative = context.filename
       .slice(context.cwd.length + 1)
@@ -658,6 +658,26 @@ export const domMembersRule = {
       type.isUnionOrIntersection() ? type.types.flatMap(constituents) : [type];
     const isDomType = (type) =>
       constituents(type).some((one) => (one.symbol?.declarations ?? []).some(inDom));
+    // a member declared outside lib.dom: in a library that is no DOM (Array, Promise, Math...), or a property of an interface that
+    // PAGE_TYPES lists for this file (the names in `interfaces`) or of a type it imports from the file it names
+    const page = context.options[1].find((candidate) => candidate.match === entry.match);
+    const fileOf = (declaration) => declaration.getSourceFile().fileName.split('\\').join('/');
+    const allowedElsewhere = (declaration) => {
+      if (declaration === undefined) return false;
+      if (services.program.isSourceFileDefaultLibrary(declaration.getSourceFile()))
+        return !inDom(declaration);
+      if (page.ambient.some((path) => fileOf(declaration).includes(`/${path}`))) return true;
+      const owner = declaration.parent;
+      const type = owner !== undefined && ts.isInterfaceDeclaration(owner) ? owner.name.text : '';
+      const properties = Object.hasOwn(page.interfaces, type) ? page.interfaces[type] : undefined;
+      const imported = Object.hasOwn(page.imports, type) ? page.imports[type] : undefined;
+      return (
+        (properties !== undefined &&
+          fileOf(declaration).endsWith(`/${relative}`) &&
+          properties.includes(declaration.name?.getText())) ||
+        (imported !== undefined && fileOf(declaration).endsWith(`/${imported}`))
+      );
+    };
     const isWindow = (type) => {
       const text = checker.typeToString(type);
       return (
@@ -818,10 +838,19 @@ export const domMembersRule = {
           return;
         }
         const name = node.property.name;
-        const symbol = checker.getSymbolAtLocation(tsOf(node.property));
-        const dom =
-          symbol === undefined ? isDomType(receiver) : (symbol.declarations ?? []).some(inDom);
-        if (!dom) return;
+        const declarations = checker.getSymbolAtLocation(tsOf(node.property))?.declarations ?? [];
+        // fail-closed: a member is judged by where ALL of its declarations are. In lib.dom: it is on the list below. In the other
+        // libraries (Array, Promise, Math...) or in a type of PAGE_TYPES: not a DOM member. Anywhere else, or nowhere (the symbol that
+        // `'click' in u` makes up): not allowed - the type checker cannot say what it is
+        if (declarations.length === 0 || !declarations.every(inDom)) {
+          if (declarations.length === 0 || !declarations.every(allowedElsewhere)) {
+            report(
+              node,
+              `The member ${name} has no declaration, or one that is neither in lib.dom (DOM_MEMBERS), another library nor a type of PAGE_TYPES in eslint.config.js: the code of the web page may use only members whose declaration is known.`,
+            );
+          }
+          return;
+        }
         const kind = kindOf(node);
         const allowed = Object.hasOwn(entry.members, name) ? entry.members[name] : '';
         const grant = kind === 'w' ? fromParameter.find((one) => one.member === name) : undefined;
@@ -872,21 +901,17 @@ export const domMembersRule = {
     };
   },
 };
-// --- the code of the page has no types of its own (review round 9 of PR #6, r4308642691) ----------------------------------------------
-// `dom-members` knows a DOM value by where the symbol of the member is declared. A DOM value handed to a variable, a parameter or a
-// return of an `interface` or an object type of the code's own is no longer seen: the members of that type are free (`querySelector('a')`
-// with `host` and `click()`, `createElementNS('style')`, in measure.ts `ownerDocument.createElementNS('style')`). Following every place
-// a value can flow into such a type (an annotation, an argument, a return, `satisfies`, a default parameter, an array inferred from a
-// literal, the parameter of a callback) is a list that grows with the language; so the class is closed where such a type is BORN. In the
-// code of the page the only object types are library types (lib.*.d.ts), type parameters, and the names of this table: the interfaces
-// that may be declared here, with the property names each may have, and the type names that may be imported (`import type`) with the
-// file each must come from. Writing a type of its own is a deliberate edit of this table, like a permission.
+// --- the types whose members the code of the page may use besides the DOM and the libraries (review of PR #14, B2) ------------------------
+// `dom-members` allows a member only when ALL of its declarations are known: in lib.dom (and on DOM_MEMBERS), in a library that is no DOM
+// (Array, Promise, Math...), in the API of the extension (`ambient`, judged further by GLOBAL_ACCESS), or in this table: the properties of
+// the interfaces the file may declare (`interfaces`) and the types it may import (`imports`: name -> the file it must come from). A DOM value
+// handed to a type of the code's own therefore gains nothing: the members of that type are an error unless they are listed here, and a
+// member that has no declaration at all (what `'click' in u` makes up) is an error too. Writing a type of its own is a deliberate edit of
+// this table, like a permission.
 const PAGE_TYPES = [
   {
     match: 'src/select/',
-    // library types that ambient declarations add properties to (src/env.d.ts: the marker of the overlay; @types/chrome); the Window is
-    // judged by GLOBAL_ACCESS
-    augmented: ['Window'],
+    ambient: ['node_modules/@types/chrome/'],
     interfaces: {},
     imports: {
       Rect: 'src/shared/capture.ts',
@@ -896,158 +921,13 @@ const PAGE_TYPES = [
   },
   {
     match: MEASURE_FILE,
-    augmented: [],
+    ambient: [],
     interfaces: { MeasuredImage: ['rect', 'dpr', 'saved', 'box', 'outer'] },
     imports: { Rect: 'src/shared/capture.ts' },
   },
-  { match: LOAD_IMAGE_FILE, augmented: [], interfaces: {}, imports: {} },
+  { match: LOAD_IMAGE_FILE, ambient: [], interfaces: {}, imports: {} },
 ];
 
-/** Local rule (type-aware): see PAGE_TYPES. Plain JavaScript; exported so that tests can run it. */
-export const pageTypesRule = {
-  meta: { type: 'problem', schema: [{ type: 'array' }] },
-  create(context) {
-    const relative = context.filename
-      .slice(context.cwd.length + 1)
-      .split('\\')
-      .join('/');
-    const entry = context.options[0].find(
-      (candidate) =>
-        relative === candidate.match ||
-        (candidate.match.endsWith('/') && relative.startsWith(candidate.match)),
-    );
-    if (entry === undefined) return {};
-    const services = context.sourceCode.parserServices;
-    if (services.program === undefined || services.program === null) {
-      throw new Error('fontsnap/page-types needs type information (parserOptions.project)');
-    }
-    const { program } = services;
-    const checker = program.getTypeChecker();
-    const tsOf = (node) => services.esTreeNodeToTSNodeMap.get(node);
-    const fileOf = (declaration) => declaration.getSourceFile().fileName.split('\\').join('/');
-    const inLibrary = (declaration) =>
-      program.isSourceFileDefaultLibrary(declaration.getSourceFile());
-    const here = (declaration) => fileOf(declaration).endsWith(`/${relative}`);
-    const comesFrom = (declaration, path) => fileOf(declaration).endsWith(`/${path}`);
-    const listed = (table, name) => Object.hasOwn(table, name);
-    // a library type, or one of the global types that ambient declarations (src/env.d.ts, @types/*) add properties to
-    const library = (declaration, name) => inLibrary(declaration) || entry.augmented.includes(name);
-    const report = (node, what) => {
-      context.report({
-        node,
-        message: `${what}: the code that runs in the web page's process has no types of its own (PAGE_TYPES in eslint.config.js) - a DOM value typed by one is no longer checked by fontsnap/dom-members. Library types, type parameters and the listed names only.`,
-      });
-    };
-    const declared = new Set();
-    /** Is a type of a library, or of this table? Used for the contextual type of an object literal. */
-    const acceptable = (type) => {
-      if (type.isUnionOrIntersection()) return type.types.every(acceptable);
-      if ((type.flags & ts.TypeFlags.Object) === 0) {
-        return (type.flags & ts.TypeFlags.TypeParameter) === 0;
-      }
-      const declarations = type.symbol?.declarations ?? [];
-      const name = type.symbol?.name ?? '';
-      return (
-        declarations.length > 0 &&
-        declarations.every(
-          (declaration) =>
-            library(declaration, name) ||
-            (listed(entry.interfaces, name) && here(declaration)) ||
-            Object.values(entry.imports).some((path) => comesFrom(declaration, path)),
-        )
-      );
-    };
-    return {
-      TSInterfaceDeclaration(node) {
-        const name = node.id.name;
-        if (!listed(entry.interfaces, name) || declared.has(name)) {
-          report(node, `The interface ${name} is not on the list (or is declared twice)`);
-          return;
-        }
-        declared.add(name);
-        const properties = entry.interfaces[name];
-        if (node.extends.length > 0) report(node, `The interface ${name} extends another`);
-        for (const member of node.body.body) {
-          if (
-            member.type !== 'TSPropertySignature' ||
-            member.computed ||
-            member.key.type !== 'Identifier' ||
-            !properties.includes(member.key.name)
-          ) {
-            report(
-              member,
-              `A member of ${name} that is not a listed property (${properties.join(', ')})`,
-            );
-          }
-        }
-      },
-      TSTypeLiteral(node) {
-        report(node, 'A type literal');
-      },
-      TSMappedType(node) {
-        report(node, 'A mapped type');
-      },
-      // `import('../shared/x').Doc` and `typeof import('../shared/x')` name a type without an `import type` declaration, so the
-      // table of imports (a name from a file) could not judge them: the only way to import a type is the declaration
-      TSImportType(node) {
-        report(node, 'An import type expression (import("...") or typeof import("..."))');
-      },
-      ClassDeclaration(node) {
-        report(node, 'A class');
-      },
-      ClassExpression(node) {
-        report(node, 'A class');
-      },
-      TSEnumDeclaration(node) {
-        report(node, 'An enum');
-      },
-      TSTypeReference(node) {
-        const leaf = node.typeName.type === 'TSQualifiedName' ? node.typeName.right : node.typeName;
-        if (leaf.type === 'Identifier' && leaf.name === 'const') return; // `as const`
-        const found = checker.getSymbolAtLocation(tsOf(leaf));
-        const symbol =
-          found !== undefined && (found.flags & ts.SymbolFlags.Alias) !== 0
-            ? checker.getAliasedSymbol(found)
-            : found;
-        const declarations = symbol?.declarations ?? [];
-        const name = leaf.name;
-        const fine =
-          symbol !== undefined &&
-          ((symbol.flags & ts.SymbolFlags.TypeParameter) !== 0 ||
-            (declarations.length > 0 &&
-              declarations.every(
-                (declaration) =>
-                  library(declaration, name) ||
-                  (listed(entry.interfaces, name) && here(declaration)) ||
-                  (listed(entry.imports, name) && comesFrom(declaration, entry.imports[name])),
-              )));
-        if (!fine)
-          report(node, `The type ${name} is not a library type, a type parameter or a listed name`);
-      },
-      ObjectExpression(node) {
-        const parent = node.parent;
-        if (
-          parent.type === 'CallExpression' &&
-          parent.callee.type === 'MemberExpression' &&
-          parent.callee.object.type === 'Identifier' &&
-          parent.callee.object.name === 'Object' &&
-          parent.callee.property.type === 'Identifier' &&
-          parent.callee.property.name === 'assign' &&
-          parent.arguments[1] === node
-        ) {
-          return;
-        }
-        const contextual = checker.getContextualType(tsOf(node));
-        if (contextual === undefined || !acceptable(contextual)) {
-          report(
-            node,
-            'An object literal whose type is inferred, or is not a library or a listed type',
-          );
-        }
-      },
-    };
-  },
-};
 // --- the calls of chrome.scripting.executeScript: one tab, one frame, and the address of the click (review of PR #14, B1) --------------------
 // The name of `func` was all that was judged, so "only the frame of the click" and "only the srcUrl of the click" rested on how
 // clicked.ts happened to be written (allFrames, a second frame id, `info.srcUrl + '?leak=1'`, the frame URL instead of the srcUrl all
@@ -1207,7 +1087,6 @@ export const fontsnapPlugin = {
   rules: {
     'global-access': globalAccessRule,
     'dom-members': domMembersRule,
-    'page-types': pageTypesRule,
     'execute-script': executeScriptRule,
   },
 };
@@ -1346,6 +1225,8 @@ const pageProcessSelectorSources = [
   'ForInStatement > MemberExpression.left',
   // elements: createElement('div') and nothing else, no second argument (`{ is }`)
   "CallExpression[callee.property.name='createElement']:not([arguments.length=1])",
+  // the only elements looked for by tag are the <iframe> elements of a document (measureImage, kind 'frame')
+  "CallExpression[callee.property.name='getElementsByTagName']:not([arguments.length=1][arguments.0.type='Literal'][arguments.0.value='iframe'])",
 ];
 const pageProcessSelectors = pageProcessSelectorSources.map((selector) => ({
   selector,
@@ -1679,8 +1560,7 @@ export default tseslint.config(
     // The members of every DOM object in the code of the web page: an allowlist by type, see DOM_MEMBERS.
     files: PAGE_PROCESS_GLOBS,
     rules: {
-      'fontsnap/dom-members': ['error', DOM_MEMBERS],
-      'fontsnap/page-types': ['error', PAGE_TYPES],
+      'fontsnap/dom-members': ['error', DOM_MEMBERS, PAGE_TYPES],
     },
   },
   {
