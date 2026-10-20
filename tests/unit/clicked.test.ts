@@ -483,6 +483,25 @@ describe('the screenshots of steps 2 and 3 stay within the quota of Chrome', () 
   });
 });
 
+// QA of round 2, nit 1: captureVisibleTab takes the tab that is in front of the window. A click that waited for its turn behind
+// another one found the result tab of the first click in front, and Chrome refused the screenshot ("activeTab permission is required").
+describe('the screenshot is of the tab of the click', () => {
+  it('is not taken when that tab is no longer in front, and says so', async () => {
+    script({ load: () => null, measure: () => null });
+    stub.chrome.tabs.get.mockResolvedValue({ id: 5, active: false } as chrome.tabs.Tab);
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(entry.error).toMatch(/no longer in front/);
+    expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
+  });
+
+  it('asks for the tab of the click itself, right before each screenshot', async () => {
+    script({ measure: () => measured({ rect: { x: 5000, y: 0, w: 10, h: 10 } }) });
+    await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(2);
+    expect(stub.chrome.tabs.get.mock.calls).toEqual([[5], [5]]);
+  });
+});
+
 describe('a page that does not answer', () => {
   it('does not keep the worker waiting for the loader: step 2 follows after the time is up', async () => {
     stub.chrome.scripting.executeScript.mockImplementation((injection) => {

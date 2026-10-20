@@ -379,7 +379,8 @@ const GLOBAL_ACCESS = {
     'src/select/overlay.ts': { Object: ['assign'] },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
     // the timeout of a page script that does not answer
-    'src/background/clicked.ts': { clearTimeout: true },
+    // the tab of the click is asked whether it is still in front before its screenshot
+    'src/background/clicked.ts': { clearTimeout: true, chrome: ['tabs.get'] },
     // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_GLOBS): the images of the page, its pixel ratio
     'src/background/measure.ts': {
       document: ['images', 'getElementsByTagName'],

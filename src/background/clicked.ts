@@ -32,6 +32,8 @@ const MEASURE_TIMEOUT_MS = 5_000;
 // page that may not be captured come back every time, so they are not tried again.
 const CAPTURE_GAP_MS = 1000;
 const READBACK_FAILED = 'image readback failed';
+const NOT_IN_FRONT =
+  'The tab of the image is no longer in front: go back to it and click the image again';
 let lastCaptureAt = 0;
 
 function within<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -48,17 +50,17 @@ function within<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-/** The screenshot of the visible area of the window (a data: URL). */
-async function capture(windowId: number): Promise<string> {
+/** The screenshot of the visible area of the tab of the click (a data: URL). */
+async function capture(tabId: number, windowId: number): Promise<string> {
   let first: unknown;
   try {
-    return await captureInTurn(windowId);
+    return await captureInTurn(tabId, windowId);
   } catch (e) {
     if (!errorMessage(e).includes(READBACK_FAILED)) throw e;
     first = e;
   }
   try {
-    return await captureInTurn(windowId);
+    return await captureInTurn(tabId, windowId);
   } catch {
     // the error of the retry is not shown: the read-back failure is what went wrong
     throw first;
@@ -66,11 +68,14 @@ async function capture(windowId: number): Promise<string> {
 }
 
 /** One captureVisibleTab, a second after the one before; the turn is taken before waiting, so clicks at the same time queue up. */
-async function captureInTurn(windowId: number): Promise<string> {
+async function captureInTurn(tabId: number, windowId: number): Promise<string> {
   const at = Math.max(Date.now(), lastCaptureAt + CAPTURE_GAP_MS);
   lastCaptureAt = at;
   const wait = at - Date.now();
   if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
+  // captureVisibleTab takes whatever tab is in front of the window: while this click waited for its turn, the result tab of an
+  // earlier click may have come to the front
+  if (!(await chrome.tabs.get(tabId)).active) throw new Error(NOT_IN_FRONT);
   return chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
 }
 
@@ -135,7 +140,7 @@ export async function clickedImage(
   const tabId = tab.id;
   const frameId = info.frameId ?? 0;
   const windowId = tab.windowId;
-  const shoot = () => capture(windowId);
+  const shoot = () => capture(tabId, windowId);
   const measure: Measure = async (target, kind, saved) => {
     const [first] = await within(
       chrome.scripting.executeScript({
