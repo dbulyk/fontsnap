@@ -363,8 +363,6 @@ const GLOBAL_ACCESS = {
       'tabs.sendMessage',
     ],
     clearInterval: true,
-    // the timeout of a page script that does not answer (src/background/clicked.ts)
-    clearTimeout: true,
     createImageBitmap: true,
     encodeURIComponent: true,
     navigator: ['clipboard.writeText', 'hardwareConcurrency'],
@@ -380,6 +378,8 @@ const GLOBAL_ACCESS = {
     'src/select/index.ts': { window: [''] },
     'src/select/overlay.ts': { Object: ['assign'] },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
+    // the timeout of a page script that does not answer
+    'src/background/clicked.ts': { clearTimeout: true },
     // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_GLOBS): the images of the page, its pixel ratio
     'src/background/measure.ts': {
       document: ['images', 'getElementsByTagName'],

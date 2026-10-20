@@ -568,6 +568,13 @@ async function either(file: string, code: string): Promise<string[]> {
 }
 
 describe('src/ reaches the environment only through the allowlist of globals', () => {
+  it('clearTimeout is for clicked.ts only (the timeout of a page script that does not answer)', async () => {
+    const code = 'const t = setTimeout(() => undefined, 1); clearTimeout(t);';
+    expect(await reached('src/background/clicked.ts', code)).toEqual([]);
+    for (const file of ['src/background/handlers.ts', 'src/result/render.ts', 'src/shared/ui.ts'])
+      expect(await reached(file, code), file).not.toEqual([]);
+  });
+
   const FILES = [
     'src/result/render.ts',
     'src/result/index.ts',

@@ -331,7 +331,7 @@ function runtimeSettingProblems(file: string, text: string): string[] {
  * The SECOND layer for the code that runs in the web page's process, where the CSP of the extension does not apply (round 6 of
  * the review of PR #6; the first layer is lint plus the module graph of select.js, which also hold names built at run time):
  * no network API, no way to load or navigate, spelled with a literal name. `select.js` is that code as a whole; of
- * `background.js` it is the function handed to `chrome.scripting.executeScript({ func })` (measureImage), found in the AST.
+ * `background.js` it is the two functions handed to `chrome.scripting.executeScript({ func })` (measureImage and the loader), found in the AST.
  */
 const PAGE_CODE_FORBIDDEN: readonly { pattern: RegExp; what: string }[] = [
   {
@@ -378,13 +378,7 @@ export function pagePlatformProblems(text: string): string[] {
   return found;
 }
 
-/**
- * The text of every function that a script hands to `executeScript({ func })`, found with the TypeScript compiler so that names
- * are resolved by SCOPE (a minified file reuses short names): the `func` must be a function written in place or a name with ONE
- * declaration, in this file, that is a function declaration or a variable holding a function; a shorthand `{ func }` and a method
- * `func() {}` are read too. Anything else - an import, a member (`o.f`), a computed key, a spread, options that are not an object
- * literal, an `executeScript` that is not called at once (an alias) - is an `undefined` entry, which fails the build.
- */
+/** One function that a script hands to `executeScript({ func })`, as the syntax tree of the built file shows it. */
 export interface InjectedFunction {
   /** The source text of the function. */
   text: string;
@@ -409,6 +403,13 @@ export interface LoaderFacts {
   allowed: [number, number][];
 }
 
+/**
+ * The text of every function that a script hands to `executeScript({ func })`, found with the TypeScript compiler so that names
+ * are resolved by SCOPE (a minified file reuses short names): the `func` must be a function written in place or a name with ONE
+ * declaration, in this file, that is a function declaration or a variable holding a function; a shorthand `{ func }` and a method
+ * `func() {}` are read too. Anything else - an import, a member (`o.f`), a computed key, a spread, options that are not an object
+ * literal, an `executeScript` that is not called at once (an alias) - is an `undefined` entry, which fails the build.
+ */
 export function injectedFunctions(file: string, text: string): (string | undefined)[] {
   return injectedFunctionDetails(file, text).map((found) => found?.text);
 }
