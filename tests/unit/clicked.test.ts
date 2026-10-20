@@ -96,12 +96,22 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+interface Click {
+  srcUrl: string;
+  frameId?: number;
+  frameUrl?: string;
+}
+
+/** clickedImage with the primitives the listener of the context menu reads from a click and its tab. */
+const read = (info: Click, at: chrome.tabs.Tab | undefined): ReturnType<typeof clickedImage> =>
+  clickedImage(info.srcUrl, info.frameId ?? 0, info.frameUrl, at?.id, at?.windowId);
+
 /** clickedImage on the fake clock, which is moved on while the worker waits (the pause that keeps two screenshots apart). */
 async function clickOn(
-  info: Parameters<typeof clickedImage>[0],
+  info: Click,
   at: chrome.tabs.Tab | undefined,
 ): ReturnType<typeof clickedImage> {
-  const running = clickedImage(info, at);
+  const running = read(info, at);
   const state = { settled: false };
   void running.finally(() => {
     state.settled = true;
@@ -485,7 +495,7 @@ describe('the screenshots of steps 2 and 3 stay within the quota of Chrome', () 
 
   it('clicks at the same time do not take their screenshots together', async () => {
     script({ load: () => null, measure: () => null });
-    const all = Promise.all([1, 2, 3, 4].map(() => clickedImage({ srcUrl: SRC, frameId: 0 }, tab)));
+    const all = Promise.all([1, 2, 3, 4].map(() => read({ srcUrl: SRC, frameId: 0 }, tab)));
     await vi.advanceTimersByTimeAsync(10_000);
     const entries = await all;
     expect(entries.every((e) => e.note === 'whole-view')).toBe(true);
@@ -531,7 +541,7 @@ describe('a page that does not answer', () => {
         ? new Promise(() => undefined)
         : Promise.resolve([{ result: args[2] === null ? measured() : true }]);
     });
-    const done = clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const done = read({ srcUrl: SRC, frameId: 0 }, tab);
     await vi.advanceTimersByTimeAsync(30_000);
     const entry = await done;
     expect(entry.note).toBeUndefined();
@@ -540,7 +550,7 @@ describe('a page that does not answer', () => {
 
   it('gives up on a page that never answers a measurement and shows the whole view', async () => {
     stub.chrome.scripting.executeScript.mockImplementation(() => new Promise(() => undefined));
-    const done = clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const done = read({ srcUrl: SRC, frameId: 0 }, tab);
     await vi.advanceTimersByTimeAsync(60_000);
     expect((await done).note).toBe('whole-view');
   });

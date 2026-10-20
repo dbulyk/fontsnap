@@ -722,9 +722,9 @@ describe('the code of the web page: no network API, no way to load or navigate',
   describe('the function handed to executeScript, found in the minified background.js', () => {
     const MINIFIED = (
       body: string,
-      call = 'chrome.scripting.executeScript({target:{tabId:r.id,frameIds:[n]},args:[e],func:b})',
+      call = 'chrome.scripting.executeScript({target:{tabId:r.id,frameIds:[n]},args:[e,"image",null],func:b})',
     ) =>
-      `async function k(){const x=1;await ${call};await chrome.scripting.executeScript({target:{tabId:r.id,frameIds:[n]},args:[e.srcUrl],func:q})}async function b(t){${body}}async function q(t){const i=new Image;i.crossOrigin="anonymous";i.src=t;return i}function other(){return fetch(u)}`;
+      `async function k(){const x=1;await ${call};await chrome.scripting.executeScript({target:{tabId:r.id,frameIds:[n]},args:[e],func:q})}async function b(t){${body}}async function q(t){const i=new Image;i.crossOrigin="anonymous";i.src=t;return i}function other(){return fetch(u)}`;
 
     it('finds a named function, a variable and a function written in place', () => {
       expect(injectedFunctions('background.js', MINIFIED('return 1'))).toEqual([
@@ -1048,7 +1048,7 @@ describe('background.js hands two functions to executeScript: the measuring one 
   const LOADER =
     'async function l(t){const e=new Image;e.crossOrigin="anonymous",e.src=t;try{await e.decode()}catch{return null}return btoa(String(e.naturalWidth))}';
   const CALLS =
-    'chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[u,"image",null],func:m});chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[u,"frame",null],func:m});chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[e.srcUrl],func:l});';
+    'chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[u,"image",null],func:m});chrome.scripting.executeScript({target:{tabId:t,frameIds:[0]},args:[u,"frame",null],func:m});chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[e],func:l});';
   const problems = (text: string) => scriptProblems('background.js', text).join('\n');
 
   it('accepts the real shape: three call sites, two distinct functions', () => {
@@ -1056,12 +1056,15 @@ describe('background.js hands two functions to executeScript: the measuring one 
   });
 
   // Round 1 of the review of PR #14 (B1): only `func` was read. The target of every call is one tab and one frame, and the loader gets
-  // the srcUrl of the click as `<name>.srcUrl` and nothing else (lint says the same of the source, with the provenance of the name).
+  // the srcUrl that clickedImage got as `<name>` and nothing else (lint says the same of the source, with the provenance of the name).
+  // Round 4: the top frame goes only with the literal kind "frame" (measureFrameInTop), the frame of the click with the loader or the
+  // literal "image" (measureInClickFrame); there is no kind chosen at run time left to read.
   describe('the target and the arguments of the calls are as fixed as the functions (B1)', () => {
-    const LOAD =
-      'chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[e.srcUrl],func:l});';
+    const LOAD = 'chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[e],func:l});';
     const MEASURE_CALL =
       'chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[u,"image",null],func:m});';
+    const TOP_CALL =
+      'chrome.scripting.executeScript({target:{tabId:t,frameIds:[0]},args:[u,"frame",null],func:m});';
     const wrong = (text: string) => problems(`${text}${MEASURE}${LOADER}`);
     it.each([
       ['allFrames on the loader', LOAD.replace('frameIds:[n]', 'allFrames:!0')],
@@ -1073,6 +1076,8 @@ describe('background.js hands two functions to executeScript: the measuring one 
       ['documentIds on the loader', LOAD.replace('frameIds:[n]', 'documentIds:["x"]')],
       ['no frameIds for the loader', LOAD.replace(',frameIds:[n]', '')],
       ['an expression as the frame id', LOAD.replace('[n]', '[n+1]')],
+      ['the top frame for the loader', LOAD.replace('[n]', '[0]')],
+      ['a frame chosen by a kind for the loader', LOAD.replace('[n]', '["frame"===k?0:n]')],
       ['a literal tab id', LOAD.replace('tabId:t', 'tabId:1')],
       ['a spread in the target', LOAD.replace('frameIds:[n]', 'frameIds:[n],...o')],
       ['a target in a variable', LOAD.replace('{tabId:t,frameIds:[n]}', 'o')],
@@ -1082,63 +1087,43 @@ describe('background.js hands two functions to executeScript: the measuring one 
       ],
       ['a string key in the target', LOAD.replace('frameIds:[n]', 'frameIds:[n],"allFrames":!0')],
       ['an option that is not listed', LOAD.replace('args:', 'injectImmediately:!0,args:')],
-      ['the srcUrl plus a suffix', LOAD.replace('[e.srcUrl]', '[e.srcUrl+"?leak=1"]')],
-      ['the frame URL as a fallback', LOAD.replace('[e.srcUrl]', '[e.frameUrl??e.srcUrl]')],
-      ['the frame URL', LOAD.replace('[e.srcUrl]', '[e.frameUrl]')],
-      ['an address', LOAD.replace('[e.srcUrl]', '["https://example.invalid/x"]')],
-      ['a bare name', LOAD.replace('[e.srcUrl]', '[e]')],
-      ['a second argument', LOAD.replace('[e.srcUrl]', '[e.srcUrl,1]')],
-      ['no arguments', LOAD.replace('[e.srcUrl]', '[]')],
-      ['no args', LOAD.replace('args:[e.srcUrl],', '')],
-      ['args in a variable', LOAD.replace('[e.srcUrl]', 'o')],
-      ['a spread in args', LOAD.replace('[e.srcUrl]', '[...o]')],
-      ['a computed member', LOAD.replace('[e.srcUrl]', '[e["srcUrl"]]')],
-      ['an optional chain', LOAD.replace('[e.srcUrl]', '[e?.srcUrl]')],
-      ['a call as the srcUrl', LOAD.replace('[e.srcUrl]', '[o(e.srcUrl)]')],
+      ['the srcUrl plus a suffix', LOAD.replace('[e]', '[e+"?leak=1"]')],
+      ['another name as a fallback', LOAD.replace('[e]', '[o??e]')],
+      ['a member of an object', LOAD.replace('[e]', '[e.frameUrl]')],
+      ['an address', LOAD.replace('[e]', '["https://example.invalid/x"]')],
+      ['a second argument', LOAD.replace('[e]', '[e,1]')],
+      ['no arguments', LOAD.replace('[e]', '[]')],
+      ['no args', LOAD.replace('args:[e],', '')],
+      ['args in a variable', LOAD.replace('[e]', 'o')],
+      ['a spread in args', LOAD.replace('[e]', '[...o]')],
+      ['a computed member', LOAD.replace('[e]', '[e["srcUrl"]]')],
+      ['an optional chain', LOAD.replace('[e]', '[e?.srcUrl]')],
+      ['a call as the srcUrl', LOAD.replace('[e]', '[o(e)]')],
     ])('refuses the loader with %s', (_what, load) => {
-      expect(wrong(`${MEASURE_CALL}${MEASURE_CALL}${load}`)).toContain('executeScript');
-      expect(wrong(`${MEASURE_CALL}${MEASURE_CALL}${load}`)).not.toBe('');
+      expect(wrong(`${MEASURE_CALL}${TOP_CALL}${load}`)).toContain('executeScript');
     });
     it.each([
       ['allFrames', MEASURE_CALL.replace('frameIds:[n]', 'allFrames:!0')],
       ['a second frame id', MEASURE_CALL.replace('[n]', '[n,0]')],
       ['documentIds', MEASURE_CALL.replace('frameIds:[n]', 'documentIds:["x"]')],
       ['no frameIds', MEASURE_CALL.replace(',frameIds:[n]', '')],
+      ['the top frame with the kind "image"', MEASURE_CALL.replace('[n]', '[0]')],
+      ['the frame of the click with the kind "frame"', TOP_CALL.replace('[0]', '[n]')],
+      ['the kind "frame" in another frame than the top one', TOP_CALL.replace('[0]', '[1]')],
+      ['a kind that is a name (the frame of the click)', MEASURE_CALL.replace('"image"', 'k')],
+      ['a kind that is a name (the top frame)', TOP_CALL.replace('"frame"', 'k')],
+      ['another kind', MEASURE_CALL.replace('"image"', '"other"')],
+      ['no kind', MEASURE_CALL.replace('args:[u,"image",null],', '')],
+      // the shape of round 3, where one function chose the frame by its kind at run time
+      [
+        'the frame chosen by the kind at run time',
+        'chrome.scripting.executeScript({target:{tabId:a,frameIds:["frame"===e?0:o]},args:[t,e,r],func:m});',
+      ],
     ])('refuses measureImage with %s', (_what, call) => {
-      expect(wrong(`${call}${MEASURE_CALL}${LOAD}`)).not.toBe('');
+      expect(wrong(`${call}${TOP_CALL}${LOAD}`)).not.toBe('');
     });
-    // round 2: measureImage runs in the top frame only for the offset of an <iframe>, as the minifier writes it
-    const FRAME_CALL =
-      'chrome.scripting.executeScript({target:{tabId:a,frameIds:["frame"===e?0:o]},args:[t,e,r],func:m});';
-    it('accepts the frame of measureImage chosen by its kind', () => {
-      expect(wrong(`${FRAME_CALL}${LOAD}`)).toBe('');
-      expect(wrong(`${FRAME_CALL.replace('"frame"===e', 'e==="frame"')}${LOAD}`)).toBe('');
-    });
-    it.each([
-      ['another kind', FRAME_CALL.replace('"frame"===e', '"image"===e')],
-      ['a test of a name that is not the kind', FRAME_CALL.replace('"frame"===e', '"frame"===x')],
-      ['a loose comparison', FRAME_CALL.replace('"frame"===e', '"frame"==e')],
-      ['another frame than the top one', FRAME_CALL.replace('?0:', '?1:')],
-      ['an expression in the other branch', FRAME_CALL.replace(':o]', ':o+1]')],
-    ])('refuses the frame of measureImage with %s', (_what, call) => {
-      expect(wrong(`${call}${LOAD}`)).not.toBe('');
-    });
-    it('refuses the frame chosen by a kind for the loader', () => {
-      const load = LOAD.replace('frameIds:[n]', 'frameIds:["frame"===e?0:n]').replace(
-        'args:[e.srcUrl]',
-        'args:[e.srcUrl,e]',
-      );
-      expect(wrong(`${MEASURE_CALL}${load}`)).not.toBe('');
-      expect(
-        wrong(`${MEASURE_CALL}${LOAD.replace('frameIds:[n]', 'frameIds:["frame"===e?0:n]')}`),
-      ).not.toBe('');
-    });
-    it('accepts a tab id read from a name (tab.id) and a frame id that was inlined as a number', () => {
-      expect(
-        wrong(
-          `${MEASURE_CALL.replace('tabId:t', 'tabId:t.id').replace('[n]', '[0]')}${MEASURE_CALL}${LOAD}`,
-        ),
-      ).toBe('');
+    it('accepts a tab id read from a name (tab.id)', () => {
+      expect(wrong(`${MEASURE_CALL.replace('tabId:t', 'tabId:t.id')}${TOP_CALL}${LOAD}`)).toBe('');
     });
   });
 

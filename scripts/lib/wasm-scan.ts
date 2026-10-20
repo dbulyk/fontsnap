@@ -608,10 +608,10 @@ export function injectedFunctionDetails(
   };
   /**
    * The shape of the call that hands a function over, read from the options literal as the minifier leaves it: only target, func, args
-   * and files; the target is { tabId: <name> or <name>.id, frameIds: [<one name or number>] } and nothing else (no allFrames, no
-   * documentIds, no second frame); measureImage may also run in `[<kind> === 'frame' ? 0 : <name>]`, where `<kind>` is its second
-   * argument (the top frame for the offset of an <iframe>); the arguments of the loader are [<name>.srcUrl] - the srcUrl of the
-   * click, as it is read from the parameter of the function that got the click (lint says which parameter, in the source).
+   * and files; the target is { tabId: <name> or <name>.id, frameIds: [<one frame>] } and nothing else (no allFrames, no documentIds, no
+   * second frame). The frame is a name (the frame of the click) for the loader and for measureImage with the literal kind "image", and
+   * the top frame `0` only for measureImage with the literal kind "frame" (the offset of an <iframe>); the arguments of the loader are
+   * [<name>] - the srcUrl that clickedImage got (lint says which parameter, in the source).
    */
   const callProblems = (options: ts.ObjectLiteralExpression, loader: boolean): string[] => {
     const problems: string[] = [];
@@ -623,41 +623,17 @@ export function injectedFunctionDetails(
     const valueOf = (property: ts.ObjectLiteralElementLike): ts.Expression | undefined =>
       ts.isPropertyAssignment(property) ? property.initializer : undefined;
     const named = (e: ts.Expression | undefined): boolean => e !== undefined && ts.isIdentifier(e);
-    const reads = (e: ts.Expression | undefined, name: string): boolean =>
-      e !== undefined &&
-      ts.isPropertyAccessExpression(e) &&
-      e.questionDotToken === undefined &&
-      named(e.expression) &&
-      e.name.text === name;
     const own = new Map<string, ts.Expression | undefined>();
-    /** `<kind> === 'frame' ? 0 : <name>` (either side of ===), with `<kind>` the second of the args. */
-    const topForFrame = (e: ts.Expression): boolean => {
-      if (!ts.isConditionalExpression(e) || !ts.isBinaryExpression(e.condition)) return false;
-      const { left, right, operatorToken } = e.condition;
-      const kind = ts.isStringLiteral(left) ? right : left;
-      const frame = ts.isStringLiteral(left) ? left : right;
-      const args = own.get('args');
-      const second =
-        args !== undefined && ts.isArrayLiteralExpression(args) ? args.elements[1] : undefined;
-      return (
-        operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken &&
-        ts.isStringLiteral(frame) &&
-        frame.text === 'frame' &&
-        ts.isIdentifier(kind) &&
-        second !== undefined &&
-        ts.isIdentifier(second) &&
-        second.text === kind.text &&
-        ts.isNumericLiteral(e.whenTrue) &&
-        e.whenTrue.text === '0' &&
-        named(e.whenFalse)
-      );
-    };
     for (const property of options.properties) {
       const key = keyOf(property);
       if (key === undefined || !['target', 'func', 'args', 'files'].includes(key)) {
         problems.push('an option of executeScript that is not target, func, args or files');
       } else own.set(key, valueOf(property));
     }
+    const args = own.get('args');
+    const list =
+      args !== undefined && ts.isArrayLiteralExpression(args) ? args.elements : undefined;
+    const kind = list?.[1] !== undefined && ts.isStringLiteral(list[1]) ? list[1].text : undefined;
     const target = own.get('target');
     if (target === undefined || !ts.isObjectLiteralExpression(target)) {
       problems.push('a target of executeScript that is not an object literal');
@@ -666,19 +642,27 @@ export function injectedFunctionDetails(
       for (const property of target.properties) {
         const key = keyOf(property);
         const value = valueOf(property);
-        const list =
+        const frames =
           value !== undefined && ts.isArrayLiteralExpression(value) ? value.elements : undefined;
-        const one = list?.length === 1 ? list[0] : undefined;
+        const one = frames?.length === 1 ? frames[0] : undefined;
         if (
-          (key === 'tabId' && (named(value) || reads(value, 'id'))) ||
+          (key === 'tabId' &&
+            (named(value) ||
+              (value !== undefined &&
+                ts.isPropertyAccessExpression(value) &&
+                value.questionDotToken === undefined &&
+                named(value.expression) &&
+                value.name.text === 'id'))) ||
           (key === 'frameIds' &&
             one !== undefined &&
-            (named(one) || ts.isNumericLiteral(one) || (!loader && topForFrame(one))))
+            (named(one)
+              ? loader || kind === 'image'
+              : !loader && kind === 'frame' && ts.isNumericLiteral(one) && one.text === '0'))
         ) {
           parts.set(key, value);
         } else {
           problems.push(
-            'a target of executeScript other than { tabId: <name>, frameIds: [<one frame>] } (allFrames, documentIds, a second frame, a spread, a computed key)',
+            'a target of executeScript other than { tabId: <name>, frameIds: [<one frame>] } (allFrames, documentIds, a second frame, a spread, a computed key; the top frame 0 is only for measureImage of "frame", the frame of the click for the loader or "image")',
           );
         }
       }
@@ -688,18 +672,10 @@ export function injectedFunctionDetails(
         );
       }
     }
-    if (loader) {
-      const args = own.get('args');
-      if (
-        args === undefined ||
-        !ts.isArrayLiteralExpression(args) ||
-        args.elements.length !== 1 ||
-        !reads(args.elements[0], 'srcUrl')
-      ) {
-        problems.push(
-          'a call of executeScript that hands the loader anything but [<name>.srcUrl] (the srcUrl of the click)',
-        );
-      }
+    if (loader && (list?.length !== 1 || !named(list[0]))) {
+      problems.push(
+        'a call of executeScript that hands the loader anything but [<name>] (the srcUrl clickedImage got)',
+      );
     }
     return problems;
   };

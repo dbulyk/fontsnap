@@ -89,11 +89,11 @@ export async function reencodeWithinQuota(dataUrl: string): Promise<string> {
   return encodeCanvas(cv);
 }
 
-/** Store the capture (or error) and always open a result tab — never fail silently on quota/storage errors. */
-export async function openResult(
-  entry: CaptureEntry,
-  tab: chrome.tabs.Tab | undefined,
-): Promise<void> {
+/**
+ * Store the capture (or error) and always open a result tab — never fail silently on quota/storage errors. The tab opens next to the
+ * one the capture came from (`index`: the position of that tab).
+ */
+export async function openResult(entry: CaptureEntry, index: number | undefined): Promise<void> {
   const id = newCaptureId();
   let storeOk = false;
   let storeError: unknown;
@@ -118,7 +118,7 @@ export async function openResult(
   }
   await chrome.tabs.create({
     url: resultUrl('#' + hash),
-    ...(tab ? { index: tab.index + 1 } : {}),
+    ...(index === undefined ? {} : { index: index + 1 }),
   });
 }
 
@@ -134,5 +134,5 @@ export async function handleRect(
   } catch (e) {
     entry = { error: errorMessage(e) };
   }
-  await openResult(entry, tab);
+  await openResult(entry, tab.index);
 }

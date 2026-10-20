@@ -11,13 +11,6 @@ import { loadImagePixels } from './load-image';
 import { measureImage, type MeasuredImage } from './measure';
 import { base64ToDataUrl, cropToDataUrl, decodeDataImage, reencodeWithinQuota } from './shot';
 
-export interface ClickedImageInfo {
-  readonly srcUrl: string;
-  /** The frame the click happened in; the top frame when absent. */
-  readonly frameId?: number | undefined;
-  readonly frameUrl?: string | undefined;
-}
-
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 // A page that does not answer (an image on a slow server, a frame whose animation frames are throttled) must not keep the worker from
 // opening the result tab: the loader may take a while to download, a measurement is a few frames.
@@ -79,10 +72,9 @@ async function captureInTurn(tabId: number, windowId: number): Promise<string> {
   return chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
 }
 
-/** measureImage for an image in the frame of the click, or for an `<iframe>` (kind 'frame') in the top frame of its tab. */
+/** measureImage in one frame, for one kind of element: it measures (`saved` null) or puts the scroll back (`saved` a list). */
 type Measure = (
   target: string,
-  kind: 'image' | 'frame',
   saved: readonly number[] | null,
 ) => Promise<MeasuredImage | true | null>;
 
@@ -93,17 +85,18 @@ type Measure = (
  * @throws {Error} when the image cannot be measured, or is outside the screenshot
  */
 async function croppedFromScreenshot(
-  measure: Measure,
+  measureInClickFrame: Measure,
+  measureFrameInTop: Measure,
   shoot: () => Promise<string>,
   { srcUrl, frameId, frameUrl }: { srcUrl: string; frameId: number; frameUrl: string | undefined },
 ): Promise<string> {
-  const find = async (target: string, kind: 'image' | 'frame') => {
-    const found = await measure(target, kind, null);
+  const find = async (measure: Measure, target: string) => {
+    const found = await measure(target, null);
     return found === true ? null : found;
   };
   const restores: (() => Promise<boolean>)[] = [];
-  const restore = (target: string, kind: 'image' | 'frame', saved: readonly number[]) => {
-    restores.push(async () => (await measure(target, kind, saved)) === true);
+  const restore = (measure: Measure, target: string, saved: readonly number[]) => {
+    restores.push(async () => (await measure(target, saved)) === true);
   };
   let restored = true;
   let crop: string;
@@ -111,17 +104,17 @@ async function croppedFromScreenshot(
     let frame: MeasuredImage | null = null;
     if (frameId !== 0) {
       if (!frameUrl) throw new Error('The frame of the image is not known');
-      frame = await find(frameUrl, 'frame');
+      frame = await find(measureFrameInTop, frameUrl);
       if (!frame) throw new Error('The frame of the image was not found');
-      restore(frameUrl, 'frame', frame.saved);
+      restore(measureFrameInTop, frameUrl, frame.saved);
     }
-    const image = await find(srcUrl, 'image');
+    const image = await find(measureInClickFrame, srcUrl);
     if (!image) throw new Error('Could not access this image');
-    restore(srcUrl, 'image', image.saved);
+    restore(measureInClickFrame, srcUrl, image.saved);
     let rect: Rect = image.rect;
     if (frame && frameUrl) {
       // the frame may have moved with the scroll that brought the image into view
-      const moved = await find(frameUrl, 'frame');
+      const moved = await find(measureFrameInTop, frameUrl);
       if (!moved) throw new Error('The frame of the image was not found');
       // throws when the frame found by its URL is not the frame of the click (the same address can be a nested frame of another
       // frame) and when the frame has padding
@@ -138,24 +131,40 @@ async function croppedFromScreenshot(
   return crop;
 }
 
-/** The capture entry for the right-clicked image; never rejects: a failure is an entry with an error. */
+/**
+ * The capture entry for the right-clicked image; never rejects: a failure is an entry with an error. Every argument is a primitive
+ * that the listener of the context menu read from the click (the tab is undefined when the click has none); the targets and the
+ * arguments of executeScript are made of these parameters and nothing else (fontsnap/execute-script).
+ */
 export async function clickedImage(
-  info: ClickedImageInfo,
-  tab: Readonly<chrome.tabs.Tab> | undefined,
+  srcUrl: string,
+  frameId: number,
+  frameUrl: string | undefined,
+  tabId: number | undefined,
+  windowId: number | undefined,
 ): Promise<CaptureEntry> {
-  const decoded = await decodeDataImage(info.srcUrl);
+  const decoded = await decodeDataImage(srcUrl);
   if (decoded !== undefined) return { dataUrl: decoded, text: '' };
-  if (tab?.id === undefined) return { error: 'Could not access this image' };
-  // every target of executeScript is made of these two, read as they are from the click (fontsnap/execute-script)
-  const tabId = tab.id;
-  const frameId = info.frameId ?? 0;
-  const windowId = tab.windowId;
+  if (tabId === undefined || windowId === undefined)
+    return { error: 'Could not access this image' };
   const shoot = () => capture(tabId, windowId);
-  const measure: Measure = async (target, kind, saved) => {
+  const measureInClickFrame: Measure = async (target, saved) => {
     const [first] = await within(
       chrome.scripting.executeScript({
-        target: { tabId, frameIds: [kind === 'frame' ? 0 : frameId] },
-        args: [target, kind, saved],
+        target: { tabId, frameIds: [frameId] },
+        args: [target, 'image', saved],
+        func: measureImage,
+      }),
+      MEASURE_TIMEOUT_MS,
+    );
+    return first?.result ?? null;
+  };
+  // the offset of an <iframe>: the one thing measured in the top frame (Q1)
+  const measureFrameInTop: Measure = async (target, saved) => {
+    const [first] = await within(
+      chrome.scripting.executeScript({
+        target: { tabId, frameIds: [0] },
+        args: [target, 'frame', saved],
         func: measureImage,
       }),
       MEASURE_TIMEOUT_MS,
@@ -167,7 +176,7 @@ export async function clickedImage(
     const [first] = await within(
       chrome.scripting.executeScript({
         target: { tabId, frameIds: [frameId] },
-        args: [info.srcUrl],
+        args: [srcUrl],
         func: loadImagePixels,
       }),
       LOAD_TIMEOUT_MS,
@@ -180,8 +189,11 @@ export async function clickedImage(
     // the page refused the script, the image is not readable, or it did not decode: the screenshot is next
   }
   try {
-    const click = { srcUrl: info.srcUrl, frameId, frameUrl: info.frameUrl };
-    return { dataUrl: await croppedFromScreenshot(measure, shoot, click), text: '' };
+    const click = { srcUrl, frameId, frameUrl };
+    return {
+      dataUrl: await croppedFromScreenshot(measureInClickFrame, measureFrameInTop, shoot, click),
+      text: '',
+    };
   } catch {
     // not found, not scriptable, outside the screenshot: the whole visible area is next
   }

@@ -12,14 +12,14 @@ const RESTRICTED =
 
 const MENU_SELECT = 'fontsnap-select';
 
-async function startSelect(tab: chrome.tabs.Tab | undefined): Promise<void> {
-  if (!tab?.id || RESTRICTED.test(tab.url ?? '')) {
+async function startSelect(tabId: number | undefined, url: string | undefined): Promise<void> {
+  if (!tabId || RESTRICTED.test(url ?? '')) {
     await chrome.tabs.create({ url: resultUrl() });
     return;
   }
   try {
     await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
+      target: { tabId },
       files: [CONTENT_SCRIPT_FILE],
     });
   } catch {
@@ -60,8 +60,8 @@ function createMenus(): void {
  * synchronously at top level so Chrome can wake the worker.
  */
 export function registerBackground(): void {
-  chrome.action.onClicked.addListener((tab) => {
-    void startSelect(tab);
+  chrome.action.onClicked.addListener((tab?: chrome.tabs.Tab) => {
+    void startSelect(tab?.id, tab?.url);
   });
 
   chrome.runtime.onInstalled.addListener(({ reason }) => {
@@ -70,17 +70,19 @@ export function registerBackground(): void {
     if (reason === 'install') void openWelcome();
   });
 
+  // The click and its tab are taken apart in the parameters: every value FontSnap uses is a primitive read once, here, and there is no
+  // object left on the way to executeScript that anything could write into (fontsnap/execute-script).
   chrome.contextMenus.onClicked.addListener(
-    (info: Readonly<chrome.contextMenus.OnClickData>, tab?: Readonly<chrome.tabs.Tab>) => {
-      if (info.menuItemId === MENU_SELECT) void startSelect(tab);
-      else if (info.menuItemId === MENU_IMAGE && info.srcUrl) {
+    (
+      { menuItemId, srcUrl, frameId = 0, frameUrl }: chrome.contextMenus.OnClickData,
+      { id: tabId, windowId, index, url }: Partial<chrome.tabs.Tab> = {},
+    ) => {
+      if (menuItemId === MENU_SELECT) void startSelect(tabId, url);
+      else if (menuItemId === MENU_IMAGE && srcUrl) {
         // Keep the SW alive across the page scripts/crop/storage by chaining the whole async path.
-        void clickedImage(
-          { srcUrl: info.srcUrl, frameId: info.frameId, frameUrl: info.frameUrl },
-          tab,
-        )
-          .then((entry) => openResult(entry, tab))
-          .catch((e: unknown) => openResult({ error: errorMessage(e) }, tab));
+        void clickedImage(srcUrl, frameId, frameUrl, tabId, windowId)
+          .then((entry) => openResult(entry, index))
+          .catch((e: unknown) => openResult({ error: errorMessage(e) }, index));
       }
     },
   );
