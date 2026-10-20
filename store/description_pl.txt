@@ -1,0 +1,80 @@
+FontSnap to rozpoznawanie czcionki ze zdjęcia z AI (font identifier from image), które działa prosto w Chrome. Wpadła Ci w oko ładna czcionka na stronie, w banerze lub na zrzucie ekranu? Zaznacz tekst ramką albo kliknij obraz prawym przyciskiem myszy, a to narzędzie do rozpoznawania czcionek pokaże pięć najbliższych czcionek Google.
+
+🚀 Jak rozpoznać czcionkę ze zdjęcia w 3 krokach
+1️⃣ Kliknij ikonę FontSnap na pasku narzędzi albo naciśnij Alt+Shift+F.
+2️⃣ Przeciągnij prostokąt nad jedną lub dwiema liniami tekstu albo kliknij obraz prawym przyciskiem myszy i wybierz rozpoznaj czcionkę na tym obrazie.
+3️⃣ Sprawdź 5 najbliższych dopasowań z podglądami i wynikami dopasowania.
+
+Bez konta i bez wysyłania na serwer. Sieć neuronowa działa lokalnie, więc to narzędzie do rozpoznawania czcionki ze zdjęcia zostawia Twoje obrazy na Twoim komputerze.
+
+🔍 Czym FontSnap się wyróżnia
+Wiele rozszerzeń tego typu czyta tylko CSS i zawodzi przy logo, zdjęciach, banerach oraz tekście w canvas. FontSnap patrzy na piksele, a nie na kod, więc działa także tam, gdzie CSS nic nie mówi:
+• tekst na obrazach, plakatach i grafikach z mediów społecznościowych
+• zrzuty ekranu aplikacji, prezentacji i stron PDF
+• banery hero i reklamy na dowolnej stronie
+
+📌 Najważniejsze funkcje
+- Wybór obszaru na dowolnej stronie: wystarczy przeciągnąć po tekście.
+- Menu prawego przycisku myszy: rozpoznaj czcionkę ze zdjęcia na dowolnej stronie jednym kliknięciem.
+- Tryb przesyłania, czyli wyszukiwarka czcionek po obrazie: wklej przez Ctrl+V, upuść plik lub wybierz obraz.
+- 5 najbliższych czcionek z wynikiem dopasowania.
+- Podgląd każdego dopasowania z Twoim własnym tekstem próbnym.
+- Jedno kliknięcie kopiuje gotową linię CSS.
+- Obsługuje tekst w alfabecie łacińskim, cyrylicy i piśmie arabskim.
+
+🧠 Wyszukiwarka czcionek z AI, wytrenowana na tysiącach stylów
+FontSnap używa kompaktowego modelu rozpoznawania czcionek, wytrenowanego na ponad 3 600 stylów pisma. Grupuje style w rodziny i podaje krótką, przejrzystą listę. Dzięki temu to praktyczny dopasowywacz i detektor czcionek: jeśli dokładny krój jest komercyjny, i tak dostajesz najbliższy zamiennik, którego możesz użyć już dziś.
+
+🎨 Kto korzysta z tej wyszukiwarki czcionek po obrazie
+➤ Webdesignerzy, którzy muszą dopasować czcionkę do makiety klienta.
+➤ Programiści front-end, którzy chcą linii CSS, a nie tylko nazwy.
+➤ Marketerzy i specjaliści SMM, którzy odtwarzają styl banera.
+➤ Studenci i blogerzy, którzy ciągle pytają, co to za czcionka.
+➤ Każdy, kto chce poznać nazwę czcionki ze zdjęcia bez ciężkiej aplikacji na komputer.
+➤ Badacze, którzy prowadzą wyszukiwanie czcionki po obrazie na skanach i zrzutach ekranu.
+
+⚡ Dlaczego narzędzie online nie zawsze wystarcza
+Narzędzia webowe każą zapisać, wgrać i przyciąć obraz. FontSnap to pomija:
+▸ zaznaczenie odbywa się na stronie, na którą już patrzysz;
+▸ do obrazów na stronie wystarczy kliknięcie prawym przyciskiem;
+▸ wyniki otwierają się w nowej karcie obok źródła.
+To sposób na rozpoznawanie czcionki ze zdjęcia, który mieści się w przeglądarce i nie jest objazdem.
+
+📊 Detektor czcionek a inspektor CSS
+Inspektor CSS czyta rzeczywisty tekst strony, ale nie widzi tekstu w pliku JPG ani w canvas. Detektor czcionek oparty na obrazie wypełnia tę lukę.
+
+🔒 Prywatność przede wszystkim
+▸ Analiza obrazu działa na urządzeniu dzięki WebAssembly.
+▸ Twoje zrzuty ekranu nigdy nie opuszczają przeglądarki.
+▸ Z Google Fonts pobierane są tylko nazwy rodzin potrzebne do podglądów.
+▸ Bez śledzenia, bez reklam, bez rejestracji.
+
+💡 Wskazówki dla dokładnych wyników
+• Zaznacz jedną lub dwie linie tekstu, a nie całą stronę.
+• Przeciągaj tylko po tekście widocznym na ekranie: zaznaczenie obejmuje bieżący widok, a nie treść przewiniętą poza ekran.
+• Większy tekst daje dokładniejsze wyniki niż drobne podpisy.
+• Jeśli pierwszy typ wygląda źle, sprawdź pozostałe cztery: właściwa rodzina często jest w top 5.
+
+❓ FAQ
+📍 Czym jest FontSnap?
+To rozszerzenie do Chrome i narzędzie AI do rozpoznawania czcionki ze zdjęcia, które rozpoznaje kroje pisma w zaznaczonym obszarze ekranu, na obrazie na stronie internetowej lub w przesłanym pliku.
+
+📍 Jak rozpoznać czcionkę z pliku ze zdjęciem?
+Otwórz FontSnap na dowolnej stronie, przełącz się na tryb przesyłania i wklej, upuść lub wybierz obraz z tekstem.
+
+📍 Czy mogę sprawdzić obraz na stronie bez zapisywania go?
+Tak. Kliknij obraz prawym przyciskiem myszy i wybierz rozpoznaj czcionkę na tym obrazie.
+
+📍 Czy FontSnap działa offline?
+Samo rozpoznawanie działa lokalnie. Połączenie z internetem służy tylko do wczytywania podglądów z Google Fonts.
+
+📍 Czy FontSnap rozpozna czcionki komercyjne?
+FontSnap dopasowuje wyniki do rodzin Google Fonts. Dla czcionki komercyjnej pokazuje najbliższe alternatywy z Google Fonts, a to często dokładnie to, czego potrzeba w projekcie webowym.
+
+📍 Jakie języki są obsługiwane?
+Pismo łacińskie, cyrylica i pismo arabskie dają najdokładniejsze wyniki. Obsługa chińskiego i japońskiego jest wciąż ograniczona.
+
+📍 Czy moje dane są zbierane?
+Nie. Rozszerzenie nie zbiera danych osobowych i nigdzie nie wysyła Twoich obrazów.
+
+🌟 Zainstaluj FontSnap, rozpoznawanie czcionki ze zdjęcia do codziennej pracy projektowej, i zamień każde pytanie jaka to czcionka w jasną odpowiedź. Zaznacz tekst, odbierz dopasowanie, skopiuj CSS i projektuj dalej.

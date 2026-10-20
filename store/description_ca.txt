@@ -1,0 +1,80 @@
+FontSnap és un identificador de fonts per imatge amb IA (font identifier from image) que funciona directament dins de Chrome. Has vist una tipografia bonica en una pàgina web, en un bàner o en una captura de pantalla? Arrossega un requadre sobre el text o fes clic amb el botó dret a la imatge, i aquest identificador de fonts et mostra les cinc tipografies de Google més semblants.
+
+🚀 Com identificar una font a partir d'una imatge en 3 passos
+1️⃣ Fes clic a la icona de FontSnap de la barra d'eines o prem Alt+Shift+F.
+2️⃣ Arrossega un rectangle sobre una o dues línies de text, o fes clic amb el botó dret en una imatge i tria l'opció identifica la font d'aquesta imatge.
+3️⃣ Mira les 5 coincidències principals amb previsualitzacions i puntuacions de coincidència.
+
+Sense compte i sense pujar res a cap servidor. La xarxa neuronal s'executa en local, de manera que aquest identificador de fonts per imatge manté les teves imatges a l'ordinador.
+
+🔍 Què fa diferent FontSnap
+Moltes extensions d'aquest tipus només llegeixen el CSS i fallen amb logotips, imatges, bàners i text en canvas. FontSnap mira els píxels, no el codi, així que també funciona allà on el CSS no diu res:
+• text dins d'imatges, pòsters i gràfics per a xarxes socials
+• captures de pantalla d'aplicacions, presentacions i pàgines PDF
+• bàners principals i anuncis a qualsevol web
+
+📌 Funcions principals
+- Selecció d'una regió a qualsevol pàgina: només cal arrossegar sobre el text.
+- Menú del botó dret: troba la font a partir d'una imatge a qualsevol web amb un sol clic.
+- Mode de pujada, un identificador de fonts per imatge: enganxa amb Ctrl+V, deixa anar un fitxer o tria una imatge.
+- Les 5 tipografies més semblants amb puntuació de coincidència.
+- Previsualització de cada coincidència amb el teu propi text d'exemple.
+- Un clic per copiar la línia de CSS ja feta.
+- Funciona amb text llatí, ciríl·lic i àrab.
+
+🧠 Un cercador de fonts amb IA entrenat amb milers d'estils
+FontSnap fa servir un model compacte de reconeixement de fonts entrenat amb més de 3.600 estils tipogràfics. Agrupa els estils en famílies i dona una llista curta i neta. Això el converteix en un detector i reconeixedor de fonts pràctic: si la tipografia exacta és comercial, igualment obtens l'alternativa més propera que pots fer servir avui.
+
+🎨 Qui fa servir aquest identificador de fonts per imatge
+➤ Dissenyadors web que necessiten una tipografia equivalent per a la maqueta d'un client.
+➤ Desenvolupadors front-end que volen la línia de CSS, no només un nom.
+➤ Màrqueters i especialistes en SMM que reconstrueixen l'estil d'un bàner.
+➤ Estudiants i blogaires que sempre es pregunten quina font és aquesta.
+➤ Qualsevol persona que vulgui trobar el nom d'una font a partir d'una imatge sense una pesada aplicació d'escriptori.
+➤ Investigadors que fan una cerca de fonts per imatge amb escanejats i captures de pantalla.
+
+⚡ Per què un identificador de fonts per imatge en línia no sempre n'hi ha prou
+Les eines web et fan desar, pujar i retallar una imatge. FontSnap s'ho estalvia:
+▸ la selecció es fa a la pàgina que ja estàs mirant;
+▸ amb un clic dret n'hi ha prou per a les imatges de la pàgina;
+▸ els resultats s'obren en una pestanya nova al costat de l'origen.
+És un identificador de fonts per imatge que s'integra al navegador, no un desviament fora d'ell.
+
+📊 Detector de fonts vs. verificador de CSS
+Un verificador de CSS llegeix el text web real però no pot veure el text d'un JPG ni d'un canvas. Un detector de fonts basat en imatges omple aquest buit.
+
+🔒 Privadesa primer
+▸ L'anàlisi d'imatges s'executa al dispositiu amb WebAssembly.
+▸ Les teves captures de pantalla mai surten del navegador.
+▸ Només se sol·liciten a Google Fonts els noms de les famílies per a les previsualitzacions.
+▸ Sense seguiment, sense anuncis, sense registre.
+
+💡 Consells per obtenir resultats precisos
+• Selecciona una o dues línies de text, no una pàgina sencera.
+• Arrossega només sobre text visible a la pantalla: la selecció captura l'àrea visible actual, no el contingut que s'ha desplaçat fora de la pantalla.
+• El text gran dona resultats més precisos que els peus de foto minúsculs.
+• Si la primera proposta sembla errònia, mira les altres quatre: la família correcta sovint és al top 5.
+
+❓ Preguntes freqüents
+📍 Què és FontSnap?
+És una extensió de Chrome i un identificador de fonts per imatge amb IA que reconeix tipografies en una àrea seleccionada de la pantalla, en una imatge d'una pàgina web o en una imatge pujada.
+
+📍 Com puc identificar una font a partir d'un fitxer d'imatge?
+Obre FontSnap en qualsevol pàgina, passa al mode de pujada i enganxa, deixa anar o tria una imatge amb text.
+
+📍 Puc comprovar una imatge d'un web sense desar-la?
+Sí. Fes clic dret a la imatge i tria identifica la font d'aquesta imatge.
+
+📍 FontSnap funciona sense connexió?
+El reconeixement funciona en local. La connexió a internet només s'utilitza per carregar les previsualitzacions de Google Fonts.
+
+📍 Pot FontSnap reconèixer tipografies comercials?
+FontSnap compara amb les famílies de Google Fonts. Per a una tipografia comercial mostra les alternatives de Google Fonts més properes, que sovint és el que necessites per a un projecte web.
+
+📍 Quins idiomes són compatibles?
+Els alfabets llatí, ciríl·lic i àrab donen els resultats més precisos. El suport per al xinès i el japonès encara és limitat.
+
+📍 Es recullen les meves dades?
+No. L'extensió no recull dades personals ni envia les teves imatges enlloc.
+
+🌟 Instal·la FontSnap, l'identificador de fonts per imatge per a la feina de disseny de cada dia, i converteix cada moment de quina font és aquesta en una resposta clara. Captura el text, obtén la coincidència, copia el CSS i continua dissenyant.

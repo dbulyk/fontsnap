@@ -252,6 +252,20 @@ its checksum as release assets (`gh release create`, never overwriting). Nothing
 `main`. Build provenance (`actions/attest-build-provenance`) runs in its own `attest` job when the repository is public or the
 repository variable `ENABLE_ATTESTATIONS` is `true`. Publishing to the Chrome Web Store is manual.
 
+### Web Store graphics
+
+`store/graphics/<locale>/` holds five screenshots and two promo tiles for each of the 55 locales; the root set is a copy of `en/`.
+`scripts/store/` draws them from a release zip with the Playwright Chromium (not run in CI). It needs the Noto fonts (CJK, Ethiopic
+and the Indic scripts), Inter and Heebo installed; `fonts.conf` picks the right Noto family per script.
+
+```
+unzip release/fontsnap-extension-0.1.0.zip -d /tmp/fs-ext                  # or the zip artifact of a CI run
+for l in $(ls public/_locales); do LOC=$l EXT=/tmp/fs-ext npx tsx scripts/store/shots.ts; done   # → scripts/store/out/raw/
+EXT=/tmp/fs-ext npx tsx scripts/store/compose.ts [locale ...]              # → store/graphics/<locale>/
+```
+
+Headlines are in `scripts/store/captions.json`; `npx tsx scripts/store/samples.ts` redraws the four sample images.
+
 ## CI
 
 `.github/workflows/ci.yml`: `checks` (lint, format, types, unit tests with coverage, locales, version), `e2e` (Chromium cached by

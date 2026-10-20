@@ -1,0 +1,80 @@
+FontSnap là công cụ nhận diện font chữ từ ảnh bằng AI (font identifier from image), hoạt động bên trong Chrome. Gặp một kiểu chữ đẹp trên website, banner hay ảnh chụp màn hình? Kéo một khung quanh văn bản hoặc nhấp chuột phải vào hình, công cụ tìm font này sẽ hiển thị năm font Google giống nhất.
+
+🚀 Cách nhận diện font chữ từ ảnh qua 3 bước
+1️⃣ Nhấp biểu tượng FontSnap trên thanh công cụ hoặc nhấn Alt+Shift+F.
+2️⃣ Kéo một hình chữ nhật quanh một hoặc hai dòng văn bản, hoặc nhấp chuột phải vào hình và chọn nhận diện font trong ảnh này.
+3️⃣ Xem 5 kết quả hàng đầu cùng bản xem trước và điểm khớp.
+
+Không cần tài khoản, không tải lên máy chủ. Mạng nơ-ron chạy cục bộ, vì vậy công cụ nhận diện font chữ từ ảnh này giữ mọi hình của bạn trên máy tính của bạn.
+
+🔍 FontSnap khác biệt ở điểm nào
+Nhiều tiện ích mở rộng cùng loại chỉ đọc CSS nên bó tay với logo, ảnh, banner và chữ trong canvas. FontSnap nhìn vào điểm ảnh chứ không phải mã, nên vẫn hoạt động ở nơi CSS không cho biết gì:
+• chữ trong ảnh, áp phích và đồ họa mạng xã hội
+• screenshot ứng dụng, slide và trang PDF
+• banner chính và quảng cáo trên mọi website
+
+📌 Tính năng chính
+- Chọn vùng trên mọi trang: chỉ cần kéo qua đoạn chữ.
+- Menu chuột phải: tìm font từ ảnh trên mọi website chỉ với một lần nhấp.
+- Chế độ tải lên, công cụ tìm font bằng ảnh: dán bằng Ctrl+V, thả tệp hoặc chọn ảnh.
+- 5 kiểu chữ giống nhất kèm điểm khớp.
+- Xem trước từng kết quả với đoạn chữ mẫu của riêng bạn.
+- Sao chép dòng CSS có sẵn chỉ với một lần nhấp.
+- Hỗ trợ chữ Latinh, Kirin và Ả Rập.
+
+🧠 Công cụ nhận dạng font bằng AI, được huấn luyện trên hàng nghìn kiểu chữ
+FontSnap dùng mô hình nhận dạng gọn nhẹ, được huấn luyện trên hơn 3.600 kiểu chữ. Mô hình gom các kiểu vào từng họ và đưa ra danh sách ngắn gọn, sạch sẽ. Nhờ vậy đây là công cụ đối chiếu và nhận dạng font thực dụng: nếu kiểu chữ gốc là loại thương mại, bạn vẫn có phương án thay thế gần nhất để dùng ngày hôm nay.
+
+🎨 Ai dùng công cụ tìm font từ ảnh này
+➤ Nhà thiết kế web cần tìm kiểu chữ khớp cho bản mockup của khách hàng.
+➤ Lập trình viên front-end muốn có dòng CSS, không chỉ một cái tên.
+➤ Marketer và chuyên viên SMM dựng lại phong cách banner.
+➤ Sinh viên và blogger hay hỏi font này là font gì.
+➤ Bất kỳ ai muốn tìm tên font từ ảnh mà không cần ứng dụng máy tính nặng nề.
+➤ Nhà nghiên cứu tìm kiếm font bằng ảnh trên các bản scan và screenshot.
+
+⚡ Vì sao công cụ nhận diện font online chưa phải lúc nào cũng đủ
+Công cụ web bắt bạn lưu, tải lên và cắt hình. FontSnap bỏ qua những bước đó:
+▸ thao tác chọn diễn ra trên chính trang bạn đang xem;
+▸ với hình trên trang, một lần nhấp chuột phải là đủ;
+▸ kết quả mở trong tab mới bên cạnh nguồn.
+Đây là công cụ nhận diện font chữ từ ảnh nằm gọn trong trình duyệt, không phải đường vòng ra bên ngoài.
+
+📊 Công cụ dò font so với trình kiểm tra CSS
+Trình kiểm tra CSS đọc chữ thật trên trang web nhưng không thấy được chữ trong ảnh JPG hay canvas. Công cụ dò font dựa trên ảnh lấp đầy khoảng trống đó.
+
+🔒 Quyền riêng tư là trên hết
+▸ Việc phân tích ảnh chạy trên thiết bị bằng WebAssembly.
+▸ Screenshot của bạn không bao giờ rời khỏi trình duyệt.
+▸ Chỉ tên họ font được yêu cầu từ Google Fonts để xem trước.
+▸ Không theo dõi, không quảng cáo, không cần đăng ký.
+
+💡 Mẹo để có kết quả chính xác
+• Chọn một hoặc hai dòng chữ, không chọn cả trang.
+• Chỉ kéo qua chữ đang hiện trên màn hình: vùng chọn ghi lại khung nhìn hiện tại, không lấy nội dung đã cuộn khuất.
+• Cỡ lớn cho kết quả tốt hơn chú thích nhỏ li ti.
+• Nếu đoán đầu tiên có vẻ sai, hãy xem bốn kết quả còn lại: họ font đúng thường nằm trong top 5.
+
+❓ Câu hỏi thường gặp
+📍 FontSnap là gì?
+Đây là tiện ích mở rộng Chrome và công cụ nhận dạng font bằng AI, nhận ra kiểu chữ trong vùng màn hình đã chọn, trong ảnh trên trang web hoặc trong ảnh tải lên.
+
+📍 Làm sao để nhận diện font từ tệp ảnh?
+Mở FontSnap trên bất kỳ trang nào, chuyển sang chế độ tải lên rồi dán, thả hoặc chọn hình có chứa chữ.
+
+📍 Tôi có thể kiểm tra ảnh trên website mà không cần lưu về không?
+Có. Nhấp chuột phải vào ảnh và chọn nhận diện font trong ảnh này.
+
+📍 FontSnap có hoạt động ngoại tuyến không?
+Bản thân việc nhận dạng chạy cục bộ. Kết nối internet chỉ dùng để tải bản xem trước từ Google Fonts.
+
+📍 FontSnap có nhận ra kiểu chữ thương mại không?
+FontSnap đối chiếu với các họ font trên Google Fonts. Với kiểu chữ thương mại, công cụ hiển thị các lựa chọn thay thế gần nhất trên Google Fonts, thường đúng là thứ bạn cần cho dự án web.
+
+📍 Những ngôn ngữ nào được hỗ trợ?
+Chữ Latinh, Kirin và Ả Rập cho kết quả chính xác nhất. Hỗ trợ tiếng Trung và tiếng Nhật vẫn còn hạn chế.
+
+📍 Dữ liệu của tôi có bị thu thập không?
+Không. Tiện ích không thu thập dữ liệu cá nhân và không gửi ảnh của bạn đi đâu cả.
+
+🌟 Hãy cài FontSnap, công cụ nhận diện font chữ từ ảnh cho công việc thiết kế hằng ngày, và biến mỗi lần tự hỏi font này là font gì thành một câu trả lời rõ ràng. Chọn chữ, nhận kết quả khớp, sao chép CSS rồi tiếp tục thiết kế.

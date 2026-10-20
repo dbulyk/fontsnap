@@ -1,0 +1,80 @@
+FontSnap ir AI rīks fontu atpazīšanai no attēla (font identifier from image), kas darbojas tieši pārlūkā Chrome. Redzējāt skaistu fontu mājaslapā, reklāmkarogā vai ekrānuzņēmumā? Velciet rāmi pāri tekstam vai ar peles labo pogu noklikšķiniet uz attēla, un šis fontu atpazīšanas rīks parādīs piecus līdzīgākos Google fontus.
+
+🚀 Kā atpazīt fontu no attēla 3 soļos
+1️⃣ Noklikšķiniet uz FontSnap ikonas rīkjoslā vai nospiediet Alt+Shift+F.
+2️⃣ Velciet taisnstūri pāri vienai vai divām teksta rindām vai ar peles labo pogu noklikšķiniet uz attēla un izvēlieties atpazīt fontu šajā attēlā.
+3️⃣ Apskatiet 5 tuvākos rezultātus ar tiešajiem priekšskatījumiem un atbilstības punktiem.
+
+Bez konta un bez augšupielādes serverī. Neironu tīkls darbojas lokāli, tāpēc šī fontu atpazīšana no attēla glabā jūsu attēlus jūsu datorā.
+
+🔍 Ar ko FontSnap atšķiras
+Daudzi šāda veida paplašinājumi lasa tikai CSS un cieš neveiksmi ar logotipiem, attēliem, reklāmkarogiem un canvas tekstu. FontSnap skatās uz pikseļiem, nevis uz kodu, tāpēc darbojas arī tur, kur CSS neko neizstāsta:
+• teksts attēlos, plakātos un sociālo tīklu grafikā
+• lietotņu, slaidu un PDF lappušu ekrānuzņēmumi
+• galvenie reklāmkarogi un reklāmas jebkurā vietnē
+
+📌 Galvenās iespējas
+- Apgabala atlase jebkurā lapā: vienkārši velciet pāri tekstam.
+- Peles labās pogas izvēlne: atrodiet fontu no attēla jebkurā vietnē ar vienu klikšķi.
+- Augšupielādes režīms, fontu meklētājs pēc attēla: ielīmējiet ar Ctrl+V, nometiet failu vai izvēlieties attēlu.
+- 5 tuvākie varianti ar atbilstības punktiem.
+- Katra varianta tiešais priekšskatījums ar jūsu paša parauga tekstu.
+- Ar vienu klikšķi nokopējiet gatavo CSS rindu.
+- Darbojas ar latīņu, kirilicas un arābu rakstu.
+
+🧠 Ar AI darbināts fontu meklētājs, apmācīts uz tūkstošiem stilu
+FontSnap izmanto kompaktu fontu atpazīšanas modeli, kas apmācīts uz vairāk nekā 3 600 burtu stilu. Tas sagrupē stilus saimēs un dod īsu, tīru sarakstu. Tāpēc tas noder kā atbilstības meklēšanas un atpazīšanas rīks: ja precīzais fonts ir komerciāls, jūs tāpat saņemat tuvāko alternatīvu, ko varat izmantot jau šodien.
+
+🎨 Kas izmanto šo fontu meklētāju pēc attēla
+➤ Tīmekļa dizaineri, kuriem klienta maketam vajadzīgs atbilstošs fonts.
+➤ Front-end izstrādātāji, kuriem vajadzīga CSS rinda, ne tikai nosaukums.
+➤ Mārketinga speciālisti un SMM profesionāļi, kas atjauno reklāmkara stilu.
+➤ Studenti un blogeri, kuri bieži jautā, kas tas par fontu.
+➤ Ikviens, kas grib atrast fonta nosaukumu pēc attēla bez smagas darbvirsmas lietotnes.
+➤ Pētnieki, kas veic fontu meklēšanu pēc attēla skenējumos un ekrānuzņēmumos.
+
+⚡ Kāpēc tiešsaistes fontu atpazīšana ne vienmēr der
+Tīmekļa rīki liek attēlu saglabāt, augšupielādēt un apgriezt. FontSnap to izlaiž:
+▸ atlase notiek lapā, kuru jau skatāties;
+▸ lapā redzamiem attēliem pietiek ar peles labo pogu;
+▸ rezultāti atveras jaunā cilnē blakus avotam.
+Tā ir fontu atpazīšana no attēla, kas ietilpst pārlūkā, nevis līkumots ceļš prom no tā.
+
+📊 Fontu detektors pret CSS pārbaudītāju
+CSS pārbaudītājs nolasa īstu tīmekļa tekstu, bet neredz tekstu JPG failā vai canvas elementā. Uz attēliem balstīts fontu detektors aizpilda šo robu.
+
+🔒 Privātums pirmajā vietā
+▸ Attēlu analīze notiek ierīcē ar WebAssembly.
+▸ Jūsu ekrānuzņēmumi nekad nepamet pārlūku.
+▸ No Google Fonts priekšskatījumiem tiek pieprasīti tikai saimju nosaukumi.
+▸ Bez izsekošanas, bez reklāmām, bez reģistrēšanās.
+
+💡 Padomi precīziem rezultātiem
+• Atlasiet vienu vai divas teksta rindas, nevis visu lapu.
+• Velciet tikai pāri tekstam, kas redzams ekrānā: atlase tver pašreizējo skatloga saturu, nevis ārpus ekrāna aizritinātu saturu.
+• Lielāks teksts dod precīzākus rezultātus nekā sīki parakstī.
+• Ja pirmais minējums šķiet nepareizs, apskatiet pārējos četrus: pareizā saime bieži atrodas pirmajos 5.
+
+❓ Biežāk uzdotie jautājumi
+📍 Kas ir FontSnap?
+Tas ir Chrome paplašinājums un AI rīks fontu atpazīšanai, kas atpazīst fontus atlasītā ekrāna apgabalā, attēlā tīmekļa lapā vai augšupielādētā attēlā.
+
+📍 Kā atpazīt fontu no attēla faila?
+Atveriet FontSnap jebkurā lapā, pārslēdzieties uz augšupielādes režīmu un ielīmējiet, nometiet vai izvēlieties attēlu ar tekstu.
+
+📍 Vai attēlu vietnē var pārbaudīt, to nesaglabājot?
+Jā. Ar peles labo pogu noklikšķiniet uz attēla un izvēlieties atpazīt fontu šajā attēlā.
+
+📍 Vai FontSnap darbojas bezsaistē?
+Pati atpazīšana notiek lokāli. Interneta savienojums tiek izmantots tikai Google Fonts priekšskatījumu ielādei.
+
+📍 Vai FontSnap var atpazīt komerciālus fontus?
+FontSnap salīdzina ar Google Fonts saimēm. Komerciālam fontam tas parāda tuvākās Google Fonts alternatīvas, kas tīmekļa projektam bieži vien ir tieši tas, kas vajadzīgs.
+
+📍 Kuras valodas tiek atbalstītas?
+Latīņu, kirilicas un arābu raksts dod visprecīzākos rezultātus. Ķīniešu un japāņu valodas atbalsts joprojām ir ierobežots.
+
+📍 Vai mani dati tiek vākti?
+Nē. Paplašinājums nevāc personas datus un nekur nesūta jūsu attēlus.
+
+🌟 Instalējiet FontSnap, fontu atpazīšanu no attēla ikdienas dizaina darbam, un katru brīdi, kad prasāt, kas tas par fontu, pārvērtiet skaidrā atbildē. Atlasiet tekstu, saņemiet atbilstību, nokopējiet CSS un turpiniet dizainēt.

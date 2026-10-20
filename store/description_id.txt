@@ -1,47 +1,47 @@
-FontSnap adalah pendeteksi font dari gambar berbasis AI yang bekerja langsung di Chrome. Melihat tipografi bagus di situs web, banner, atau tangkapan layar? Tarik kotak di atas teks, dan FontSnap menampilkan lima font Google yang paling mirip.
+FontSnap adalah pendeteksi font dari gambar berbasis AI (font identifier from image) yang bekerja di dalam Chrome. Melihat huruf yang bagus di situs web, banner, atau tangkapan layar? Tarik kotak di atas teks atau klik kanan fotonya, lalu alat ini menampilkan lima font Google yang paling mirip.
 
 🚀 Cara mendeteksi font dari gambar dalam 3 langkah
 1️⃣ Klik ikon FontSnap di toolbar atau tekan Alt+Shift+F.
-2️⃣ Tarik persegi panjang di atas satu atau dua baris teks.
-3️⃣ Lihat 5 kecocokan teratas dengan pratinjau langsung dan bilah keyakinan.
+2️⃣ Tarik persegi panjang di atas satu atau dua baris teks, atau klik kanan sebuah foto lalu pilih kenali font di gambar ini.
+3️⃣ Lihat 5 kecocokan teratas dengan pratinjau visual dan skor kecocokan.
 
-Tanpa akun, tanpa unggah ke server, tanpa menunggu. Jaringan saraf berjalan secara lokal, jadi gambar Anda tetap di komputer Anda.
+Tanpa akun dan tanpa unggah ke server. Jaringan saraf berjalan secara lokal, jadi pendeteksi font dari gambar ini menjaga semuanya tetap di komputer Anda.
 
 🔍 Apa yang membuat FontSnap berbeda
 Sebagian besar ekstensi sejenis hanya membaca CSS dan gagal pada logo, gambar, banner, dan teks canvas. FontSnap melihat piksel, bukan kode, sehingga tetap bekerja saat CSS tidak memberi petunjuk:
 • teks di dalam gambar, poster, dan grafis media sosial
 • tangkapan layar aplikasi, slide, dan halaman PDF
-• banner dan iklan di situs mana pun
-• mockup yang dikirim klien lewat chat
+• banner utama dan iklan di situs mana pun
 
 📌 Fitur utama
 - Pilih area di halaman mana pun: cukup seret di atas teks.
-- Mode unggah: tempel dengan Ctrl+V, letakkan file, atau pilih gambar.
-- 5 font paling mirip dengan skor keyakinan.
-- Pratinjau langsung setiap hasil dengan teks Anda sendiri.
+- Menu klik kanan: cari font dari gambar di situs mana pun hanya dengan satu klik.
+- Mode unggah, font finder dari gambar: tempel dengan Ctrl+V, letakkan file, atau pilih gambar.
+- 5 font paling mirip dengan skor kecocokan.
+- Pratinjau visual setiap hasil dengan teks contoh Anda sendiri.
 - Salin baris CSS siap pakai dengan satu klik.
 - Mendukung teks Latin, Sirilik, dan Arab.
 
-🧠 Pendeteksi font AI yang dilatih dengan ribuan keluarga font
-FontSnap menggunakan model pengenalan gambar ringkas yang dilatih dengan lebih dari 3.600 gaya huruf. Model ini mengelompokkan gaya ke dalam keluarga dan memberi daftar pendek yang rapi, bukan puluhan duplikat yang hampir sama. Jika font aslinya berbayar, Anda tetap mendapat alternatif terdekat yang bisa langsung dipakai.
+🧠 Pendeteksi font AI yang dilatih dengan ribuan gaya huruf
+FontSnap memakai model pengenal huruf yang ringkas, dilatih dengan lebih dari 3.600 gaya huruf. Model ini mengelompokkan gaya ke dalam keluarga dan memberi daftar pendek yang rapi. Karena itu ia praktis sebagai pencocok sekaligus pengenal huruf: jika jenis huruf aslinya berbayar, Anda tetap mendapat alternatif terdekat yang bisa dipakai hari ini.
 
-🎨 Siapa yang memakai font finder dari gambar ini
-➤ Desainer web yang perlu cepat menemukan font dari mockup klien.
+🎨 Siapa yang memakai pendeteksi font dari gambar ini
+➤ Desainer web yang perlu mencocokkan jenis huruf untuk mockup klien.
 ➤ Developer front-end yang ingin baris CSS, bukan hanya nama.
-➤ Pemasar dan spesialis media sosial yang membuat ulang gaya banner.
-➤ Pelajar dan blogger yang sering bertanya "ini font apa?".
-➤ Siapa saja yang ingin mencari font dari gambar tanpa aplikasi desktop yang berat.
-➤ Pencinta tipografi yang mengoleksi pasangan font dari logo dan kemasan.
+➤ Pemasar dan spesialis SMM yang membuat ulang gaya banner.
+➤ Pelajar dan blogger yang sering bertanya ini font apa.
+➤ Siapa saja yang ingin mencari nama font dari gambar tanpa aplikasi desktop yang berat.
+➤ Peneliti yang melakukan pencarian font dari gambar pada hasil pindai dan tangkapan layar.
 
-⚡ Mengapa alat online saja tidak selalu cukup
-Alat web mengharuskan Anda menyimpan, mengunggah, dan memotong gambar. FontSnap melewati semua itu:
+⚡ Mengapa pendeteksi font online saja tidak selalu cukup
+Alat web mengharuskan Anda menyimpan, mengunggah, dan memotong foto. FontSnap melewati semua itu:
 ▸ pemilihan dilakukan di halaman yang sedang Anda lihat;
-▸ deteksi dimulai begitu Anda melepas mouse;
+▸ untuk foto di halaman, satu klik kanan sudah cukup;
 ▸ hasil terbuka di tab baru di samping sumbernya.
-Ini pendeteksi font yang menyatu dengan browser, bukan jalan memutar keluar darinya.
+Ini pendeteksi font dari gambar yang menyatu dengan browser, bukan jalan memutar keluar darinya.
 
 📊 Pendeteksi font vs pemeriksa CSS
-Pemeriksa CSS membaca gaya teks asli di halaman, tetapi tidak bisa melihat teks di JPG atau canvas. Pendeteksi font berbasis gambar mengisi celah itu. Gunakan keduanya: CSS untuk teks asli, FontSnap untuk gambar.
+Pemeriksa CSS membaca teks web yang asli, tetapi tidak bisa melihat teks di JPG atau canvas. Pendeteksi berbasis citra mengisi celah itu.
 
 🔒 Privasi diutamakan
 ▸ Analisis gambar berjalan di perangkat dengan WebAssembly.
@@ -51,22 +51,25 @@ Pemeriksa CSS membaca gaya teks asli di halaman, tetapi tidak bisa melihat teks 
 
 💡 Tips agar hasil akurat
 • Pilih satu atau dua baris teks, bukan seluruh halaman.
-• Seret hanya di atas teks yang terlihat di layar — FontSnap mengambil viewport saat ini, bukan konten di luar layar.
+• Seret hanya di atas teks yang terlihat di layar: FontSnap mengambil viewport saat ini, bukan konten yang sudah tergulir keluar layar.
 • Teks besar memberi hasil lebih baik daripada keterangan kecil.
 • Jika tebakan pertama kurang cocok, lihat empat lainnya: keluarga yang tepat sering ada di 5 teratas.
 
 ❓ Tanya jawab
 📍 Apa itu FontSnap?
-Ekstensi Chrome sekaligus pendeteksi font AI yang mengenali jenis huruf di area layar yang dipilih atau di gambar yang diunggah.
+Ekstensi Chrome sekaligus pendeteksi font AI yang mengenali jenis huruf di area layar yang dipilih, di halaman web, atau di file yang diunggah.
 
 📍 Bagaimana cara mendeteksi font dari file gambar?
-Buka FontSnap di halaman mana pun lalu beralih ke mode unggah, atau buka di halaman terbatas seperti pengaturan Chrome. Tempel, letakkan, atau pilih gambar berisi teks.
+Buka FontSnap di halaman mana pun, beralih ke mode unggah, lalu tempel, letakkan, atau pilih file berisi teks.
+
+📍 Bisakah memeriksa gambar di situs web tanpa menyimpannya?
+Bisa. Klik kanan gambar lalu pilih kenali font di gambar ini.
 
 📍 Apakah bisa dipakai offline?
 Pengenalannya berjalan secara lokal. Internet hanya dipakai untuk memuat pratinjau dari Google Fonts.
 
-📍 Bisakah mengenali font berbayar?
-FontSnap mencocokkan dengan keluarga Google Fonts. Untuk font berbayar, ia menampilkan alternatif Google Fonts terdekat, yang sering kali memang dibutuhkan untuk proyek web.
+📍 Bisakah mengenali jenis huruf berbayar?
+FontSnap mencocokkan dengan keluarga Google Fonts. Untuk jenis huruf berbayar, ia menampilkan alternatif Google Fonts terdekat, yang sering kali memang dibutuhkan untuk proyek web.
 
 📍 Bahasa apa saja yang didukung?
 Aksara Latin, Sirilik, dan Arab memberi hasil paling akurat. Dukungan Mandarin dan Jepang masih terbatas.
@@ -74,4 +77,4 @@ Aksara Latin, Sirilik, dan Arab memberi hasil paling akurat. Dukungan Mandarin d
 📍 Apakah data saya dikumpulkan?
 Tidak. Ekstensi ini tidak mengumpulkan data pribadi dan tidak mengirim gambar Anda ke mana pun.
 
-🌟 Pasang FontSnap, pendeteksi font dari gambar untuk pekerjaan desain sehari-hari, dan ubah setiap "ini font apa?" menjadi jawaban cepat. Pilih teks, dapatkan hasilnya, salin CSS, dan lanjutkan berkarya.
+🌟 Pasang FontSnap, pendeteksi font dari gambar untuk pekerjaan desain sehari-hari, dan ubah setiap pertanyaan ini font apa menjadi jawaban yang jelas. Pilih teks, dapatkan kecocokan, salin CSS, dan lanjutkan berkarya.

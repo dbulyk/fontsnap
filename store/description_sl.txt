@@ -1,0 +1,80 @@
+FontSnap je razširitev za prepoznavanje pisave iz slike (font identifier from image) z umetno inteligenco, ki deluje kar v brskalniku Chrome. Vam je všeč pisava na spletni strani, v pasici ali na posnetku zaslona? Povlecite okvir čez besedilo ali z desno tipko miške kliknite sliko, FontSnap pa pokaže pet najbližjih pisav Google.
+
+🚀 Kako poteka prepoznavanje pisave iz slike v 3 korakih
+1️⃣ Kliknite ikono FontSnap v orodni vrstici ali pritisnite Alt+Shift+F.
+2️⃣ Povlecite pravokotnik čez eno ali dve vrstici besedila ali z desno tipko miške kliknite sliko in izberite prepoznaj pisavo na tej sliki.
+3️⃣ Preglejte prvih 5 zadetkov s predogledi in ocenami ujemanja.
+
+Brez računa in brez nalaganja na strežnik. Nevronska mreža deluje lokalno, zato to prepoznavanje pisave iz slike ohrani vaše slike v vašem računalniku.
+
+🔍 Po čem se FontSnap razlikuje
+Številne razširitve te vrste berejo le CSS in odpovejo pri logotipih, slikah, pasicah in besedilu na platnu (canvas). FontSnap gleda slikovne pike, ne kode, zato deluje tudi tam, kjer CSS ne pove ničesar:
+• besedilo v slikah, plakatih in grafikah za družbena omrežja
+• posnetki zaslona aplikacij, diapozitivov in strani PDF
+• glavne pasice in oglasi na katerem koli spletnem mestu
+
+📌 Ključne funkcije
+- Izbira območja na kateri koli strani: samo povlecite čez besedilo.
+- Meni z desnim klikom: poiščite pisavo iz slike na katerem koli spletnem mestu z enim klikom.
+- Način nalaganja, iskalnik pisav po sliki: prilepite s Ctrl+V, spustite datoteko ali izberite sliko.
+- Prvih 5 ujemanj pisav z oceno ujemanja.
+- Predogled vsakega zadetka z vašim lastnim vzorčnim besedilom.
+- En klik za kopiranje pripravljene vrstice CSS.
+- Deluje z latinico, cirilico in arabščino.
+
+🧠 Prepoznavalnik pisav z umetno inteligenco, naučen na tisočih slogov
+FontSnap uporablja kompakten model za prepoznavanje pisav, naučen na več kot 3.600 slogih črk. Sloge združuje v družine in poda kratek, pregleden seznam. Zato je praktično orodje za ujemanje in prepoznavanje pisav: če je prava pisava komercialna, vseeno dobite najbližjo nadomestno, ki jo lahko uporabite že danes.
+
+🎨 Kdo uporablja ta iskalnik pisav iz slike
+➤ Spletni oblikovalci, ki potrebujejo ujemajočo pisavo za osnutek stranke.
+➤ Front-end razvijalci, ki želijo vrstico CSS, ne samo imena.
+➤ Tržniki in strokovnjaki za SMM, ki poustvarjajo slog pasice.
+➤ Študenti in blogerji, ki se venomer sprašujejo, katera pisava je to.
+➤ Vsi, ki želijo poiskati ime pisave iz slike brez težke namizne aplikacije.
+➤ Raziskovalci, ki iščejo pisavo po sliki na skenih in posnetkih zaslona.
+
+⚡ Zakaj spletno prepoznavanje pisav ni vedno dovolj
+Spletna orodja zahtevajo, da sliko shranite, naložite in obrežete. FontSnap to preskoči:
+▸ izbira poteka na strani, ki jo že gledate;
+▸ za slike na strani zadošča desni klik;
+▸ rezultati se odprejo v novem zavihku ob viru.
+To je prepoznavanje pisave iz slike, ki se prilega brskalniku, ne obvoz stran od njega.
+
+📊 Zaznavanje pisav ali pregledovalnik CSS
+Pregledovalnik CSS bere pravo spletno besedilo, vendar ne vidi besedila v datoteki JPG ali na platnu. Zaznavalnik pisav na podlagi slike zapolni to vrzel.
+
+🔒 Zasebnost na prvem mestu
+▸ Analiza slik poteka v napravi z WebAssembly.
+▸ Vaši posnetki zaslona nikoli ne zapustijo brskalnika.
+▸ Za predoglede se iz Google Fonts zahtevajo samo imena družin.
+▸ Brez sledenja, brez oglasov, brez registracije.
+
+💡 Nasveti za natančne rezultate
+• Izberite eno ali dve vrstici besedila, ne cele strani.
+• Vlecite le čez besedilo, ki je vidno na zaslonu: izbor zajame trenutni vidni del strani, ne vsebine, ki je pomaknjena izven zaslona.
+• Večje besedilo da boljše rezultate kot drobni podnapisi.
+• Če se prva domneva zdi napačna, preverite preostale štiri: prava družina je pogosto med prvimi 5.
+
+❓ Pogosta vprašanja
+📍 Kaj je FontSnap?
+To je razširitev za Chrome in prepoznavalnik pisav z umetno inteligenco, ki prepozna pisave v izbranem delu zaslona, na sliki na spletni strani ali v naloženi sliki.
+
+📍 Kako prepoznam pisavo iz slikovne datoteke?
+Odprite FontSnap na kateri koli strani, preklopite na način nalaganja in prilepite, spustite ali izberite sliko z besedilom.
+
+📍 Ali lahko preverim sliko na spletni strani, ne da bi jo shranil?
+Da. Z desno tipko miške kliknite sliko in izberite prepoznaj pisavo na tej sliki.
+
+📍 Ali FontSnap deluje brez povezave?
+Samo prepoznavanje poteka lokalno. Internetna povezava se uporablja le za nalaganje predogledov iz Google Fonts.
+
+📍 Ali FontSnap prepozna komercialne pisave?
+FontSnap primerja z družinami Google Fonts. Pri komercialni pisavi pokaže najbližje nadomestke iz Google Fonts, kar je za spletni projekt pogosto tisto, kar potrebujete.
+
+📍 Katera pisma so podprta?
+Latinica, cirilica in arabščina dajejo najnatančnejše rezultate. Podpora za kitajščino in japonščino je še omejena.
+
+📍 Ali se zbirajo moji podatki?
+Ne. Razširitev ne zbira osebnih podatkov in vaših slik ne pošilja nikamor.
+
+🌟 Namestite FontSnap, prepoznavanje pisave iz slike za vsakdanje oblikovalsko delo, in vsako vprašanje katera pisava je to spremenite v jasen odgovor. Označite besedilo, dobite ujemanje, kopirajte CSS in oblikujte naprej.

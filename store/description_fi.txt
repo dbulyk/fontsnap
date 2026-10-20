@@ -1,0 +1,80 @@
+FontSnap on tekoälyllä toimiva työkalu, jolla voit tunnistaa fontin kuvasta (font identifier from image) suoraan Chromessa. Näitkö kauniin kirjaintyypin verkkosivulla, bannerissa tai kuvakaappauksessa? Vedä laatikko tekstin päälle tai napsauta kuvaa hiiren kakkospainikkeella, niin tämä fontin tunnistus kuvasta näyttää viisi lähintä Google-fonttia.
+
+🚀 Näin tunnistat fontin kuvasta kolmessa vaiheessa
+1️⃣ Napsauta FontSnap-kuvaketta työkalupalkissa tai paina Alt+Shift+F.
+2️⃣ Vedä suorakulmio yhden tai kahden tekstirivin päälle tai napsauta kuvaa hiiren kakkospainikkeella ja valitse tunnista tämän kuvan fontti.
+3️⃣ Katso viisi lähintä osumaa esikatseluineen ja vastaavuuspisteineen.
+
+Ei tiliä eikä latausta palvelimelle. Neuroverkko toimii paikallisesti, joten tämä fontin tunnistus kuvasta pitää kuvasi omalla tietokoneellasi.
+
+🔍 Mikä tekee FontSnapista erilaisen
+Monet vastaavat laajennukset lukevat vain CSS:ää ja epäonnistuvat logojen, kuvien, bannerien ja canvas-tekstin kanssa. FontSnap katsoo pikseleitä, ei koodia, joten se toimii myös siellä, missä CSS ei kerro mitään:
+• teksti kuvissa, julisteissa ja somegrafiikoissa
+• sovellusten, esitysten ja PDF-sivujen kuvakaappaukset
+• hero-bannerit ja mainokset millä tahansa sivustolla
+
+📌 Tärkeimmät ominaisuudet
+- Alueen valinta millä tahansa sivulla: vedä vain tekstin yli.
+- Hiiren kakkospainikkeen valikko: tunnista fontti kuvasta millä tahansa sivustolla yhdellä napsautuksella.
+- Lataustila, fonttihaku kuvan perusteella: liitä Ctrl+V:llä, pudota tiedosto tai valitse kuva.
+- Viisi lähintä fonttia vastaavuuspisteillä.
+- Jokaisen osuman esikatselu omalla esimerkkitekstilläsi.
+- Yksi napsautus kopioi valmiin CSS-rivin.
+- Toimii latinalaisen, kyrillisen ja arabialaisen tekstin kanssa.
+
+🧠 Tekoälyfonttihaku, joka on koulutettu tuhansilla tyyleillä
+FontSnap käyttää kompaktia fonttientunnistusmallia, joka on koulutettu yli 3600 kirjaintyylillä. Se ryhmittelee tyylit perheiksi ja antaa lyhyen, siistin listan. Siksi se on käytännöllinen fonttien vertailija ja tunnistin: jos tarkka kirjaintyyppi on kaupallinen, saat silti lähimmän vaihtoehdon, jonka voit ottaa käyttöön jo tänään.
+
+🎨 Kuka käyttää tätä fonttihakua kuvasta
+➤ Verkkosuunnittelijat, jotka tarvitsevat fonttivastineen asiakkaan luonnokseen.
+➤ Front-end-kehittäjät, jotka haluavat CSS-rivin eivätkä pelkkää nimeä.
+➤ Markkinoijat ja SMM-asiantuntijat, jotka rakentavat bannerin tyylin uudelleen.
+➤ Opiskelijat ja bloggaajat, jotka kyselevät jatkuvasti, mikä fontti tämä on.
+➤ Kaikki, jotka haluavat selvittää fontin nimen kuvasta ilman raskasta työpöytäohjelmaa.
+➤ Tutkijat, jotka tekevät fonttihaun kuvan perusteella skannauksista ja kuvakaappauksista.
+
+⚡ Miksi verkkopalvelu fontin tunnistukseen kuvasta ei aina riitä
+Verkkotyökalut vaativat kuvan tallentamista, lataamista ja rajaamista. FontSnap ohittaa nämä:
+▸ valinta tehdään sivulla, jota jo katsot;
+▸ sivun kuviin riittää hiiren kakkospainikkeen napsautus;
+▸ tulokset avautuvat uuteen välilehteen lähdesivun viereen.
+Se on fontin tunnistus kuvasta, joka sopii selaimeen eikä vie sinua sen ulkopuolelle kiertotielle.
+
+📊 Fonttitunnistin vs. CSS-tarkistin
+CSS-tarkistin lukee sivun varsinaista tekstiä mutta ei näe JPG-kuvan tai canvasin tekstiä. Kuviin perustuva fonttitunnistin täyttää tämän aukon.
+
+🔒 Yksityisyys ensin
+▸ Kuva-analyysi toimii laitteella WebAssemblyn avulla.
+▸ Kuvakaappauksesi eivät koskaan poistu selaimesta.
+▸ Google Fontsilta pyydetään esikatselua varten vain perheiden nimet.
+▸ Ei seurantaa, ei mainoksia, ei rekisteröitymistä.
+
+💡 Vinkit tarkkoihin tuloksiin
+• Valitse yksi tai kaksi tekstiriviä, älä koko sivua.
+• Vedä vain näytöllä näkyvän tekstin yli: valinta tallentaa nykyisen näkymän, ei näytön ulkopuolelle vieritettyä sisältöä.
+• Suuri teksti antaa tarkempia tuloksia kuin pienet kuvatekstit.
+• Jos ensimmäinen arvaus vaikuttaa väärältä, tarkista muut neljä: oikea perhe on usein viiden lähimmän joukossa.
+
+❓ UKK
+📍 Mikä FontSnap on?
+Se on Chrome-laajennus ja tekoälypohjainen fontin tunnistus kuvasta, joka tunnistaa kirjaintyyppejä näytön valitulta alueelta, verkkosivun kuvasta tai ladatusta kuvasta.
+
+📍 Miten tunnistan fontin kuvatiedostosta?
+Avaa FontSnap millä tahansa sivulla, vaihda lataustilaan ja liitä, pudota tai valitse kuva, jossa on tekstiä.
+
+📍 Voinko tarkistaa verkkosivun kuvan tallentamatta sitä?
+Kyllä. Napsauta kuvaa hiiren kakkospainikkeella ja valitse tunnista tämän kuvan fontti.
+
+📍 Toimiiko FontSnap offline-tilassa?
+Tunnistus toimii paikallisesti. Internet-yhteyttä käytetään vain esikatseluiden lataamiseen Google Fontsista.
+
+📍 Tunnistaako FontSnap kaupallisia kirjaintyyppejä?
+FontSnap vertaa Google Fonts -perheisiin. Kaupallisen kirjaintyypin kohdalla se näyttää lähimmät Google Fonts -vaihtoehdot, mikä on usein juuri se, mitä verkkoprojektiin tarvitaan.
+
+📍 Mitä kieliä tuetaan?
+Latinalainen, kyrillinen ja arabialainen kirjoitus antavat tarkimmat tulokset. Kiinan ja japanin tuki on vielä rajallista.
+
+📍 Kerätäänkö tietojani?
+Ei. Laajennus ei kerää henkilötietoja eikä lähetä kuviasi minnekään.
+
+🌟 Asenna FontSnap, fontin tunnistus kuvasta arjen suunnittelutyöhön, ja muuta jokainen mikä fontti tämä on -hetki selkeäksi vastaukseksi. Kaappaa teksti, hae osuma, kopioi CSS ja jatka suunnittelua.

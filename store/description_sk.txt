@@ -1,0 +1,80 @@
+FontSnap je nástroj na rozpoznanie fontu z obrázka pomocou AI (font identifier from image), ktorý funguje priamo v Chrome. Zaujal vás pekný font na webe, v bannere alebo na snímke obrazovky? Potiahnite rámik cez text alebo kliknite pravým tlačidlom na obrázok a tento identifikátor písma ukáže päť najpodobnejších písiem Google.
+
+🚀 Rozpoznanie fontu z obrázka v 3 krokoch
+1️⃣ Kliknite na ikonu FontSnap na paneli nástrojov alebo stlačte Alt+Shift+F.
+2️⃣ Potiahnite obdĺžnik cez riadok či dva textu alebo kliknite pravým tlačidlom na obrázok a vyberte rozpoznať písmo na tomto obrázku.
+3️⃣ Prečítajte si 5 najpodobnejších zhôd s náhľadmi a skóre zhody.
+
+Bez účtu a bez nahrávania na server. Neurónová sieť beží lokálne, takže toto rozpoznanie fontu z obrázka necháva vaše obrázky vo vašom počítači.
+
+🔍 Čím sa FontSnap líši
+Mnohé rozšírenia tohto druhu čítajú iba CSS a zlyhajú pri logách, obrázkoch, bannéroch a texte v canvase. FontSnap sleduje pixely, nie kód, preto funguje aj tam, kde CSS nepovie nič:
+• text v obrázkoch, na plagátoch a v grafike pre sociálne siete
+• snímky obrazovky aplikácií, prezentácií a strán PDF
+• hlavné bannery a reklamy na ktoromkoľvek webe
+
+📌 Hlavné funkcie
+- Výber oblasti na ľubovoľnej stránke: stačí potiahnuť cez text.
+- Ponuka pravého tlačidla: rozpoznanie fontu z obrázka na ktoromkoľvek webe jedným kliknutím.
+- Režim nahrávania, vyhľadávač fontov podľa obrázka: vložte cez Ctrl+V, pustite súbor alebo vyberte obrázok.
+- 5 zhôd typov písma so skóre zhody.
+- Náhľad každej zhody s vlastným vzorovým textom.
+- Jedným kliknutím skopírujete hotový riadok CSS.
+- Funguje s latinkou, cyrilikou a arabským písmom.
+
+🧠 AI vyhľadávač fontov natrénovaný na tisíckach štýlov
+FontSnap používa kompaktný model na rozpoznávanie písma natrénovaný na viac ako 3 600 štýloch písma. Štýly zoskupuje do rodín a vráti krátky, prehľadný zoznam. Vďaka tomu je praktickým nástrojom na priradenie a rozpoznanie fontov: ak je presné písmo komerčné, aj tak dostanete najbližšiu alternatívu, ktorú môžete použiť ešte dnes.
+
+🎨 Kto používa tento vyhľadávač fontov podľa obrázka
+➤ Webdizajnéri, ktorí potrebujú zhodu písma pre návrh klienta.
+➤ Front-end vývojári, ktorí chcú riadok CSS, nielen názov.
+➤ Marketéri a SMM špecialisti, ktorí znovu vytvárajú štýl bannera.
+➤ Študenti a blogeri, ktorí sa stále pýtajú, aký je to font.
+➤ Každý, kto chce zistiť názov fontu z obrázka bez ťažkej desktopovej aplikácie.
+➤ Výskumníci, ktorí robia vyhľadávanie fontov podľa obrázka na skenoch a snímkach obrazovky.
+
+⚡ Prečo online rozpoznanie fontu z obrázka nie je vždy dosť
+Webové nástroje vás nútia obrázok uložiť, nahrať a orezať. FontSnap to preskakuje:
+▸ výber prebieha na stránke, na ktorú sa už pozeráte;
+▸ na obrázky na stránke stačí kliknutie pravým tlačidlom;
+▸ výsledky sa otvoria na novej karte vedľa zdroja.
+Je to rozpoznanie fontu z obrázka, ktoré sa zmestí do prehliadača, nie okľuka mimo neho.
+
+📊 Detektor fontov vs. kontrola CSS
+Kontrola CSS číta živý webový text, ale nevidí text v JPG ani v canvase. Detektor fontov podľa obrázka túto medzeru vypĺňa.
+
+🔒 Súkromie na prvom mieste
+▸ Analýza obrázkov beží v zariadení pomocou WebAssembly.
+▸ Vaše snímky obrazovky nikdy neopustia prehliadač.
+▸ Na náhľady sa z Google Fonts žiadajú iba názvy rodín.
+▸ Bez sledovania, bez reklám, bez registrácie.
+
+💡 Tipy pre presné výsledky
+• Vyberte jeden či dva riadky textu, nie celú stránku.
+• Potiahnite iba cez text viditeľný na obrazovke: výber zachytí aktuálne zobrazenú oblasť, nie obsah posunutý mimo obrazovky.
+• Väčší text dáva presnejšie výsledky ako drobné popisky.
+• Ak sa prvý tip zdá nesprávny, skontrolujte ďalšie štyri: správna rodina je často v prvej päťke.
+
+❓ Časté otázky
+📍 Čo je FontSnap?
+Je to rozšírenie pre Chrome a AI nástroj na rozpoznanie fontu z obrázka, ktorý rozpozná písma vo vybranej oblasti obrazovky, na obrázku na webovej stránke alebo v nahranom obrázku.
+
+📍 Ako urobiť rozpoznanie fontu z obrázka zo súboru?
+Otvorte FontSnap na ľubovoľnej stránke, prepnite sa do režimu nahrávania a vložte, pustite alebo vyberte obrázok s textom.
+
+📍 Môžem skontrolovať obrázok na webe bez jeho uloženia?
+Áno. Kliknite na obrázok pravým tlačidlom a vyberte rozpoznať písmo na tomto obrázku.
+
+📍 Funguje FontSnap offline?
+Samotné rozpoznávanie beží lokálne. Internetové pripojenie sa používa iba na načítanie náhľadov z Google Fonts.
+
+📍 Dokáže FontSnap rozpoznať komerčné písma?
+FontSnap porovnáva s rodinami Google Fonts. Pri komerčnom písme ukáže najbližšie alternatívy z Google Fonts, čo je pre webový projekt často presne to, čo treba.
+
+📍 Ktoré jazyky sú podporované?
+Latinka, cyrilika a arabské písmo dávajú najpresnejšie výsledky. Podpora čínštiny a japončiny je zatiaľ obmedzená.
+
+📍 Zbierajú sa moje údaje?
+Nie. Rozšírenie nezbiera osobné údaje ani nikam neposiela vaše obrázky.
+
+🌟 Nainštalujte si FontSnap, nástroj na rozpoznanie fontu z obrázka pre každodennú dizajnérsku prácu, a každú chvíľu, keď sa pýtate, aký je to font, zmeňte na jasnú odpoveď. Označte text, získajte zhodu, skopírujte CSS a dizajnujte ďalej.

@@ -1,0 +1,80 @@
+FontSnap is een AI-tool om een lettertype te herkennen uit een afbeelding (font identifier from image) die rechtstreeks in Chrome werkt. Zie je een mooi lettertype op een website, in een banner of in een screenshot? Sleep een kader over de tekst of klik met de rechtermuisknop op de afbeelding, en deze font finder toont de vijf meest gelijkende Google-lettertypen.
+
+🚀 Zo ga je in 3 stappen een lettertype herkennen uit een afbeelding
+1️⃣ Klik op het FontSnap-pictogram in de werkbalk of druk op Alt+Shift+F.
+2️⃣ Sleep een rechthoek over een of twee regels tekst, of klik met de rechtermuisknop op een afbeelding en kies lettertype in deze afbeelding herkennen.
+3️⃣ Bekijk de top 5 resultaten met voorbeelden en overeenkomstscores.
+
+Geen account en geen upload naar een server. Het neurale netwerk draait lokaal, dus deze tool om een lettertype te herkennen uit een afbeelding houdt je afbeeldingen op je eigen computer.
+
+🔍 Wat FontSnap anders maakt
+Veel extensies van dit soort lezen alleen CSS en laten het afweten bij logo's, afbeeldingen, banners en canvastekst. FontSnap kijkt naar de pixels, niet naar de code, en werkt dus ook waar CSS niets vertelt:
+• tekst in afbeeldingen, posters en social-mediagrafieken
+• screenshots van apps, presentaties en PDF-pagina's
+• herobanners en advertenties op elke website
+
+📌 Belangrijkste functies
+- Gebiedsselectie op elke pagina: sleep gewoon over de tekst.
+- Rechtermuisknopmenu: lettertype herkennen uit een afbeelding op elke website met één klik.
+- Uploadmodus, een font finder voor afbeeldingen: plak met Ctrl+V, sleep een bestand of kies een afbeelding.
+- Top 5 lettertypematches met een overeenkomstscore.
+- Voorbeeld van elke match met je eigen voorbeeldtekst.
+- Eén klik om de kant-en-klare CSS-regel te kopiëren.
+- Werkt met Latijnse, Cyrillische en Arabische tekst.
+
+🧠 Een AI-fontfinder getraind op duizenden stijlen
+FontSnap gebruikt een compact model voor lettertypeherkenning, getraind op meer dan 3.600 lettertypestijlen. Het groepeert stijlen in families en geeft een korte, nette lijst. Zo is het een praktische fontmatcher en lettertypeherkenner: als het exacte lettertype commercieel is, krijg je toch het dichtstbijzijnde alternatief dat je vandaag kunt gebruiken.
+
+🎨 Wie gebruikt deze font finder voor afbeeldingen
+➤ Webdesigners die een passend lettertype nodig hebben voor een klantmockup.
+➤ Front-enddevelopers die de CSS-regel willen, niet alleen een naam.
+➤ Marketeers en SMM-specialisten die de stijl van een banner nabouwen.
+➤ Studenten en bloggers die steeds weer vragen welk lettertype is dit.
+➤ Iedereen die de naam van een lettertype uit een afbeelding wil vinden zonder zware desktopapp.
+➤ Onderzoekers die een lettertype zoeken op afbeelding in scans en screenshots.
+
+⚡ Waarom een online lettertype herkennen uit een afbeelding niet altijd genoeg is
+Webtools laten je een afbeelding opslaan, uploaden en bijsnijden. FontSnap slaat dat over:
+▸ de selectie gebeurt op de pagina waar je al naar kijkt;
+▸ een rechtsklik is genoeg voor afbeeldingen op de pagina;
+▸ resultaten openen in een nieuw tabblad naast de bron.
+Het is een manier om een lettertype te herkennen uit een afbeelding die in de browser past, geen omweg buiten de browser.
+
+📊 Fontdetector versus CSS-checker
+Een CSS-checker leest echte webtekst maar ziet geen tekst in een JPG of canvas. Een fontdetector op basis van afbeeldingen vult dat gat.
+
+🔒 Privacy eerst
+▸ Beeldanalyse draait op het apparaat met WebAssembly.
+▸ Je screenshots verlaten de browser nooit.
+▸ Voor voorbeelden worden alleen familienamen opgevraagd bij Google Fonts.
+▸ Geen tracking, geen advertenties, geen aanmelding.
+
+💡 Tips voor nauwkeurige resultaten
+• Selecteer een of twee regels tekst, geen hele pagina.
+• Sleep alleen over tekst die zichtbaar is op het scherm: de selectie legt het huidige zichtbare deel vast, niet content die buiten beeld is gescrold.
+• Grotere tekst geeft nauwkeuriger resultaten dan piepkleine bijschriften.
+• Ziet de eerste gok er verkeerd uit, bekijk dan de andere vier: de juiste familie staat vaak in de top 5.
+
+❓ Veelgestelde vragen
+📍 Wat is FontSnap?
+Het is een Chrome-extensie en AI-lettertypeherkenner die lettertypen herkent in een geselecteerd deel van het scherm, in een afbeelding op een webpagina of in een geüploade afbeelding.
+
+📍 Hoe kan ik een lettertype herkennen uit een afbeeldingsbestand?
+Open FontSnap op een willekeurige pagina, schakel over naar de uploadmodus en plak, sleep of kies een afbeelding met tekst.
+
+📍 Kan ik een afbeelding op een website controleren zonder haar op te slaan?
+Ja. Klik met de rechtermuisknop op de afbeelding en kies lettertype in deze afbeelding herkennen.
+
+📍 Werkt FontSnap offline?
+De herkenning zelf draait lokaal. Een internetverbinding wordt alleen gebruikt om voorbeelden van Google Fonts te laden.
+
+📍 Kan FontSnap commerciële lettertypen herkennen?
+FontSnap vergelijkt met families uit Google Fonts. Voor een commercieel lettertype toont het de dichtstbijzijnde alternatieven van Google Fonts, wat vaak precies is wat je nodig hebt voor een webproject.
+
+📍 Welke talen worden ondersteund?
+Latijnse, Cyrillische en Arabische schriften geven de nauwkeurigste resultaten. Ondersteuning voor Chinees en Japans is nog beperkt.
+
+📍 Worden mijn gegevens verzameld?
+Nee. De extensie verzamelt geen persoonlijke gegevens en stuurt je afbeeldingen nergens naartoe.
+
+🌟 Installeer FontSnap, de tool om een lettertype te herkennen uit een afbeelding voor dagelijks ontwerpwerk, en maak van elk welk lettertype is dit-moment een duidelijk antwoord. Leg de tekst vast, krijg de match, kopieer de CSS en ontwerp verder.

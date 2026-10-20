@@ -1,0 +1,80 @@
+A FontSnap egy AI betűtípus-felismerő képről (font identifier from image), amely közvetlenül a Chrome-ban működik. Tetszik egy betűtípus egy weboldalon, bannerben vagy képernyőképen? Húzzon keretet a szöveg fölé, vagy kattintson jobb gombbal a képre, és ez a betűtípus-felismerő az öt leghasonlóbb Google-fontot mutatja.
+
+🚀 Betűtípus felismerése képről 3 lépésben
+1️⃣ Kattintson a FontSnap ikonra az eszköztáron, vagy nyomja meg az Alt+Shift+F billentyűkombinációt.
+2️⃣ Húzzon téglalapot egy-két sornyi szöveg fölé, vagy kattintson jobb gombbal egy képre, és válassza ezt a menüpontot: a kép betűtípusának felismerése.
+3️⃣ Nézze meg az 5 leghasonlóbb találatot előnézetekkel és egyezési pontszámmal.
+
+Nincs szükség fiókra, és semmi sem kerül feltöltésre kiszolgálóra. A neurális hálózat helyben fut, így ez a betűtípus-felismerő képről a képeit a számítógépén tartja.
+
+🔍 Miben más a FontSnap
+Sok hasonló bővítmény csak a CSS-t olvassa, és elbukik logókon, képeken, bannereken és canvas-szövegen. A FontSnap a pixeleket nézi, nem a kódot, ezért ott is működik, ahol a CSS semmit sem árul el:
+• képeken, plakátokon és közösségimédia-grafikákon lévő szöveg
+• alkalmazások képernyőképei, diák és PDF-oldalak
+• nagy bannerek és hirdetések bármely weboldalon
+
+📌 Fő funkciók
+- Területkijelölés bármely oldalon: egyszerűen húzzon keretet a szöveg fölé.
+- Jobb gombos menü: betűtípus keresése képről bármely weboldalon egyetlen kattintással.
+- Feltöltési mód, képalapú betűtípus-kereső: illessze be Ctrl+V-vel, dobjon be egy fájlt, vagy válasszon képet.
+- 5 találat egyezési pontszámmal.
+- Minden találat előnézete a saját mintaszövegével.
+- Egy kattintással másolható a kész CSS-sor.
+- Latin, cirill és arab írású szöveggel működik.
+
+🧠 Több ezer stílusra betanított AI betűtípus-kereső
+A FontSnap egy kompakt betűtípus-felismerő modellt használ, amelyet több mint 3600 betűstílusra tanítottak be. A stílusokat családokba csoportosítja, és rövid, áttekinthető listát ad. Így gyakorlati betűtípus-párosító és -felismerő: ha a pontos font kereskedelmi, akkor is megkapja a hozzá legközelebbi alternatívát, amelyet még ma használhat.
+
+🎨 Kik használják ezt a betűtípus-felismerőt képről
+➤ Webdesignerek, akiknek betűtípus-egyezés kell egy ügyfél látványtervéhez.
+➤ Front-end fejlesztők, akik a CSS-sort szeretnék, nem csak a nevet.
+➤ Marketingesek és SMM-szakemberek, akik egy bannerstílust építenek újra.
+➤ Diákok és bloggerek, akik folyton azt kérdezik: milyen font ez?
+➤ Mindenki, aki nehézkes asztali program nélkül szeretné megtudni a betűtípus nevét képről.
+➤ Kutatók, akik szkennelt anyagokon és képernyőképeken végeznek betűtípus-keresést kép alapján.
+
+⚡ Miért nem mindig elég egy online betűtípus-felismerő képről
+A webes eszközök arra kényszerítenek, hogy mentse, feltöltse és vágja a képet. A FontSnap ezt kihagyja:
+▸ a kijelölés azon az oldalon történik, amelyet éppen néz;
+▸ az oldalon lévő képekhez elég egy jobb kattintás;
+▸ az eredmények új lapon nyílnak meg a forrás mellett.
+Ez egy böngészőbe illeszkedő betűtípus-felismerő képről, nem pedig kitérő a böngészőn kívülre.
+
+📊 Betűtípus-észlelő és CSS-ellenőrző
+A CSS-ellenőrző az élő webes szöveget olvassa, de a JPG-ben vagy a canvasban lévő szöveget nem látja. A képalapú betűtípus-észlelő ezt a hiányt pótolja.
+
+🔒 Az adatvédelem az első
+▸ A képelemzés az eszközön fut WebAssembly segítségével.
+▸ A képernyőképei sosem hagyják el a böngészőt.
+▸ Az előnézetekhez csak a családneveket kéri le a Google Fonts.
+▸ Nincs követés, nincsenek hirdetések, nincs regisztráció.
+
+💡 Tippek a pontos eredményhez
+• Egy-két sornyi szöveget jelöljön ki, ne egész oldalt.
+• Csak a képernyőn látható szöveg fölé húzzon keretet: a kijelölés az aktuális nézetet rögzíti, nem a képernyőn kívülre görgetett tartalmat.
+• A nagyobb szöveg pontosabb eredményt ad, mint az apró feliratok.
+• Ha az első tipp rossznak tűnik, nézze meg a másik négyet: a megfelelő család gyakran az első öt találat között van.
+
+❓ GYIK
+📍 Mi a FontSnap?
+Chrome-bővítmény és AI betűtípus-felismerő képről, amely a képernyő kijelölt területén, egy weboldalon lévő képen vagy feltöltött képen ismeri fel a betűtípusokat.
+
+📍 Hogyan ismerhetek fel betűtípust képfájlból?
+Nyissa meg a FontSnap bővítményt bármely oldalon, váltson feltöltési módra, majd illesszen be, dobjon be vagy válasszon ki egy szöveges képet.
+
+📍 Ellenőrizhetek egy weboldalon lévő képet mentés nélkül?
+Igen. Kattintson jobb gombbal a képre, és válassza ezt a menüpontot: a kép betűtípusának felismerése.
+
+📍 Működik a FontSnap offline?
+Maga a felismerés helyben fut. Internetkapcsolatot csak a Google Fonts előnézeteinek betöltéséhez használ.
+
+📍 Felismeri a FontSnap a kereskedelmi fontokat?
+A FontSnap Google Fonts-családokkal vet össze. Kereskedelmi fontnál a legközelebbi Google Fonts-alternatívákat mutatja, ami egy webes projekthez gyakran pont elég.
+
+📍 Mely nyelveket támogatja?
+A latin, cirill és arab írás adja a legpontosabb eredményt. A kínai és a japán támogatás még korlátozott.
+
+📍 Gyűjtenek rólam adatokat?
+Nem. A bővítmény nem gyűjt személyes adatokat, és a képeit sehová sem küldi el.
+
+🌟 Telepítse a FontSnap bővítményt, a mindennapi tervezőmunka betűtípus-felismerőjét képről, és alakítsa tiszta válasszá azokat a pillanatokat, amikor azt kérdezi: milyen betűtípus ez. Jelölje ki a szöveget, kapja meg a találatot, másolja a CSS-t, és tervezzen tovább.

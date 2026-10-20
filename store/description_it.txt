@@ -1,47 +1,47 @@
-FontSnap è uno strumento di IA per riconoscere il font da un'immagine, direttamente in Chrome. Hai visto un bel carattere su un sito, in un banner o in uno screenshot? Traccia un riquadro sul testo e FontSnap mostra i cinque font Google più simili.
+FontSnap è uno strumento di IA per riconoscere font da immagine (font identifier from image) che funziona direttamente in Chrome. Hai visto un bel carattere su un sito, in un banner o in uno screenshot? Trascina un riquadro sul testo o fai clic con il tasto destro sull'immagine, e questo font finder mostra i cinque caratteri Google più simili.
 
-🚀 Come riconoscere il font di un'immagine in 3 passaggi
-1️⃣ Fai clic sull'icona di FontSnap nella barra o premi Alt+Shift+F.
-2️⃣ Trascina un rettangolo su una o due righe di testo.
-3️⃣ Guarda i 5 migliori risultati con anteprima dal vivo e barra di affidabilità.
+🚀 Come riconoscere font da immagine in 3 passaggi
+1️⃣ Fai clic sull'icona di FontSnap nella barra degli strumenti o premi Alt+Shift+F.
+2️⃣ Trascina un rettangolo su una o due righe di testo, oppure fai clic con il tasto destro su un'immagine e scegli riconosci il font in questa immagine.
+3️⃣ Guarda i 5 risultati principali con anteprime e punteggi di corrispondenza.
 
-Nessun account, nessun caricamento su server, nessuna attesa. La rete neurale funziona in locale, quindi le tue immagini restano sul tuo computer.
+Nessun account e nessun caricamento su server. La rete neurale funziona in locale, quindi questo strumento per riconoscere font da immagine tiene le tue immagini sul tuo computer.
 
 🔍 Cosa rende FontSnap diverso
 La maggior parte delle estensioni di questo tipo legge solo il CSS e fallisce con loghi, immagini, banner e testo in canvas. FontSnap analizza i pixel, non il codice, quindi funziona anche dove il CSS non dice nulla:
 • testo dentro immagini, poster e grafiche social
 • screenshot di app, slide e pagine PDF
-• banner e pubblicità su qualsiasi sito
-• mockup inviati da un cliente in chat
+• banner hero e pubblicità su qualsiasi sito
 
 📌 Funzioni principali
 - Selezione di un'area su qualsiasi pagina: basta trascinare sul testo.
-- Modalità caricamento: incolla con Ctrl+V, trascina un file o scegli un'immagine.
-- I 5 font più simili con punteggio di affidabilità.
-- Anteprima dal vivo di ogni risultato con il tuo testo.
-- Copia della riga CSS pronta con un clic.
+- Menu del tasto destro: riconoscere font da immagine su qualsiasi sito con un solo clic.
+- Modalità caricamento, un font finder da immagine: incolla con Ctrl+V, trascina un file o scegli un'immagine.
+- I 5 caratteri più simili con punteggio di corrispondenza.
+- Anteprima di ogni risultato con il tuo testo di esempio.
+- Un clic per copiare la riga CSS pronta.
 - Funziona con testo latino, cirillico e arabo.
 
-🧠 Un riconoscitore di font con IA addestrato su migliaia di famiglie
-FontSnap usa un modello compatto di riconoscimento immagini addestrato su oltre 3.600 stili tipografici. Raggruppa gli stili in famiglie e restituisce un elenco breve e pulito invece di decine di quasi duplicati. Se il font esatto è commerciale, ottieni comunque l'alternativa più vicina da usare subito.
+🧠 Un font finder con IA addestrato su migliaia di stili
+FontSnap usa un modello compatto di riconoscimento dei font addestrato su oltre 3.600 stili tipografici. Raggruppa gli stili in famiglie e restituisce un elenco breve e pulito. Per questo è un pratico abbinatore e riconoscitore di font: se il carattere esatto è commerciale, ottieni comunque l'alternativa più vicina da usare oggi.
 
 🎨 Chi usa questo font finder da immagine
-➤ Web designer che devono trovare in fretta il font di un mockup.
-➤ Sviluppatori front-end che vogliono la riga CSS, non solo il nome.
-➤ Marketer e social media manager che ricreano lo stile di un banner.
-➤ Studenti e blogger che si chiedono sempre "che font è questo?".
-➤ Chiunque voglia trovare un font da un'immagine senza un pesante programma desktop.
-➤ Appassionati di tipografia che collezionano abbinamenti da loghi e confezioni.
+➤ Web designer che cercano un carattere equivalente per il mockup di un cliente.
+➤ Sviluppatori front-end che vogliono la riga CSS, non solo un nome.
+➤ Marketer e specialisti SMM che ricreano lo stile di un banner.
+➤ Studenti e blogger che si chiedono sempre che font è questo.
+➤ Chiunque voglia trovare il nome di un font da un'immagine senza un pesante programma desktop.
+➤ Ricercatori che fanno una ricerca di font per immagine su scansioni e screenshot.
 
-⚡ Perché uno strumento online non sempre basta
-Gli strumenti web ti obbligano a salvare, caricare e ritagliare l'immagine. FontSnap salta tutto questo:
+⚡ Perché riconoscere font da immagine con uno strumento online non sempre basta
+Gli strumenti web ti fanno salvare, caricare e ritagliare un'immagine. FontSnap salta tutto questo:
 ▸ la selezione avviene sulla pagina che stai già guardando;
-▸ il riconoscimento parte appena rilasci il mouse;
+▸ per le immagini della pagina basta un clic destro;
 ▸ i risultati si aprono in una nuova scheda accanto alla fonte.
-È un riconoscitore di font che vive nel browser, non una deviazione fuori da esso.
+È uno strumento per riconoscere font da immagine che vive nel browser, non una deviazione fuori da esso.
 
-📊 Riconoscimento font vs ispettore CSS
-Un ispettore CSS legge gli stili del testo reale di una pagina, ma non vede il testo in un JPG o in un canvas. Un riconoscitore basato su immagini colma questa lacuna. Usali entrambi: CSS per il testo reale, FontSnap per le immagini.
+📊 Rilevatore di font vs. ispettore CSS
+Un ispettore CSS legge il testo reale di una pagina ma non vede il testo in un JPG o in un canvas. Un rilevatore di font basato sulle immagini colma questa lacuna.
 
 🔒 Privacy prima di tutto
 ▸ L'analisi delle immagini avviene sul dispositivo con WebAssembly.
@@ -49,29 +49,32 @@ Un ispettore CSS legge gli stili del testo reale di una pagina, ma non vede il t
 ▸ A Google Fonts vengono richiesti solo i nomi delle famiglie per le anteprime.
 ▸ Nessun tracciamento, nessuna pubblicità, nessuna registrazione.
 
-💡 Consigli per risultati precisi
+💡 Suggerimenti per risultati precisi
 • Seleziona una o due righe di testo, non l'intera pagina.
-• Trascina solo sul testo visibile sullo schermo: FontSnap cattura il viewport corrente, non il contenuto fuori schermo.
-• Il testo grande dà risultati migliori delle didascalie minuscole.
-• Se il primo risultato non convince, guarda gli altri quattro: la famiglia giusta è spesso nella top 5.
+• Trascina solo sul testo visibile sullo schermo: la selezione cattura l'area visibile attuale, non il contenuto scorso fuori schermo.
+• Il testo grande dà risultati più affidabili delle didascalie minuscole.
+• Se il primo risultato non convince, guarda gli altri quattro: la famiglia giusta è spesso tra i primi 5.
 
 ❓ Domande frequenti
 📍 Che cos'è FontSnap?
-Un'estensione di Chrome per riconoscere i font con l'IA in un'area selezionata dello schermo o in un'immagine caricata.
+È un'estensione di Chrome e uno strumento di IA per riconoscere font da immagine, che individua i caratteri in un'area selezionata dello schermo, in un'immagine di una pagina web o in un'immagine caricata.
 
-📍 Come riconosco il font di un file immagine?
-Apri FontSnap su qualsiasi pagina e passa alla modalità caricamento, oppure aprilo su una pagina protetta come le impostazioni di Chrome. Incolla, trascina o scegli un'immagine con del testo.
+📍 Come posso riconoscere font da immagine partendo da un file?
+Apri FontSnap su qualsiasi pagina, passa alla modalità caricamento e incolla, trascina o scegli un'immagine con del testo.
 
-📍 Funziona offline?
-Il riconoscimento avviene in locale. La connessione serve solo per caricare le anteprime da Google Fonts.
+📍 Posso controllare un'immagine su un sito senza salvarla?
+Sì. Fai clic con il tasto destro sull'immagine e scegli riconosci il font in questa immagine.
 
-📍 Riconosce i font commerciali?
-FontSnap confronta con le famiglie di Google Fonts. Per un font commerciale mostra le alternative Google Fonts più vicine, spesso ciò che serve per un progetto web.
+📍 FontSnap funziona offline?
+Il riconoscimento avviene in locale. La connessione a internet serve solo per caricare le anteprime da Google Fonts.
+
+📍 FontSnap riconosce i caratteri commerciali?
+FontSnap confronta con le famiglie di Google Fonts. Per un carattere commerciale mostra le alternative Google Fonts più vicine, spesso ciò che serve per un progetto web.
 
 📍 Quali lingue sono supportate?
-Gli alfabeti latino, cirillico e arabo danno i risultati più precisi. Cinese e giapponese sono ancora limitati.
+Gli alfabeti latino, cirillico e arabo danno i risultati più precisi. Il supporto per cinese e giapponese è ancora limitato.
 
 📍 I miei dati vengono raccolti?
 No. L'estensione non raccoglie dati personali e non invia le tue immagini da nessuna parte.
 
-🌟 Installa FontSnap per riconoscere i font dalle immagini nel lavoro di tutti i giorni e trasforma ogni "che font è questo?" in una risposta rapida. Seleziona il testo, ottieni il risultato, copia il CSS e continua a progettare.
+🌟 Installa FontSnap, lo strumento per riconoscere font da immagine nel lavoro di design di ogni giorno, e trasforma ogni dubbio del tipo che font è questo in una risposta chiara. Seleziona il testo, ottieni la corrispondenza, copia il CSS e continua a progettare.

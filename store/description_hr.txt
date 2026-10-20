@@ -1,0 +1,80 @@
+FontSnap je AI alat za prepoznavanje fonta sa slike (font identifier from image) koji radi izravno u pregledniku Chrome. Vidjeli ste lijep font na web-stranici, u baneru ili na snimci zaslona? Povucite okvir preko teksta ili desnom tipkom miša kliknite sliku, a ovaj alat za prepoznavanje fonta sa slike prikazat će pet najsličnijih Google fontova.
+
+🚀 Kako prepoznati font sa slike u 3 koraka
+1️⃣ Kliknite ikonu FontSnap na alatnoj traci ili pritisnite Alt+Shift+F.
+2️⃣ Povucite pravokutnik preko jednog ili dva retka teksta ili desnom tipkom miša kliknite sliku i odaberite stavku prepoznaj font na ovoj slici.
+3️⃣ Pogledajte 5 najsličnijih fontova s pregledom uživo i ocjenom podudaranja.
+
+Bez računa i bez slanja na poslužitelj. Neuronska mreža radi lokalno, pa ovaj alat za prepoznavanje fonta sa slike čuva vaše slike na vašem računalu.
+
+🔍 Po čemu se FontSnap razlikuje
+Mnoga slična proširenja čitaju samo CSS i zakazuju kod logotipa, slika, banera i teksta na canvasu. FontSnap gleda piksele, a ne kôd, pa radi i ondje gdje CSS ne govori ništa:
+• tekst unutar slika, plakata i grafika za društvene mreže
+• snimke zaslona aplikacija, prezentacija i PDF stranica
+• glavni baneri i oglasi na bilo kojoj web-stranici
+
+📌 Glavne značajke
+- Odabir područja na bilo kojoj stranici: samo povucite preko teksta.
+- Izbornik desnog klika: pronađite font sa slike na bilo kojoj web-stranici jednim klikom.
+- Način učitavanja, tražilica fontova po slici: zalijepite pomoću Ctrl+V, ispustite datoteku ili odaberite sliku.
+- Pet najsličnijih fontova s ocjenom podudaranja.
+- Pregled uživo za svako podudaranje s vlastitim probnim tekstom.
+- Jedan klik za kopiranje gotove CSS linije.
+- Radi s latiničnim, ćiriličnim i arapskim pismom.
+
+🧠 AI detektor fontova istreniran na tisućama stilova
+FontSnap koristi kompaktan model za prepoznavanje fontova istreniran na više od 3.600 stilova pisma. Stilove grupira u obitelji i daje kratak, pregledan popis. Zato je praktičan alat za uparivanje i prepoznavanje fontova: ako je točan font komercijalan, i dalje dobivate najbližu alternativu koju možete upotrijebiti već danas.
+
+🎨 Tko koristi ovu tražilicu fontova sa slike
+➤ Web dizajneri kojima treba odgovarajući font za klijentovu skicu.
+➤ Front-end programeri koji žele CSS liniju, a ne samo naziv.
+➤ Marketinški stručnjaci i SMM specijalisti koji ponovno grade stil banera.
+➤ Studenti i blogeri koji se stalno pitaju koji je ovo font.
+➤ Svi koji žele saznati naziv fonta sa slike bez glomazne desktop aplikacije.
+➤ Istraživači koji traže font po slici na skeniranim dokumentima i snimkama zaslona.
+
+⚡ Zašto online alat za prepoznavanje fonta nije uvijek dovoljan
+Web alati traže da sliku spremite, učitate i izrežete. FontSnap to preskače:
+▸ odabir se događa na stranici koju već gledate;
+▸ za slike na stranici dovoljan je desni klik;
+▸ rezultati se otvaraju u novoj kartici pored izvorne.
+To je alat za prepoznavanje fonta sa slike koji stane u preglednik, a ne zaobilazni put izvan njega.
+
+📊 Detektor fontova ili CSS inspektor
+CSS inspektor čita tekst žive web-stranice, ali ne vidi tekst u JPG-u ili na canvasu. Detektor fontova temeljen na slici popunjava tu prazninu.
+
+🔒 Privatnost na prvom mjestu
+▸ Analiza slike izvodi se na uređaju pomoću WebAssembly.
+▸ Vaše snimke zaslona nikad ne napuštaju preglednik.
+▸ Od Google Fonts traže se samo nazivi obitelji za preglede.
+▸ Bez praćenja, bez oglasa, bez registracije.
+
+💡 Savjeti za precizne rezultate
+• Odaberite jedan ili dva retka teksta, a ne cijelu stranicu.
+• Povlačite samo preko teksta vidljivog na zaslonu: odabir hvata trenutačno vidljivo područje, a ne sadržaj izvan prikaza.
+• Veći tekst daje točnije rezultate od sitnih opisa.
+• Ako prva pretpostavka izgleda pogrešno, provjerite ostala četiri: prava obitelj često je među prvih 5.
+
+❓ Česta pitanja
+📍 Što je FontSnap?
+To je proširenje za Chrome i AI alat koji prepoznaje fontove u odabranom dijelu zaslona, na slici na web-stranici ili na učitanoj slici.
+
+📍 Kako prepoznati font sa slike iz datoteke?
+Otvorite FontSnap na bilo kojoj stranici, prebacite se na način učitavanja te zalijepite, ispustite ili odaberite sliku s tekstom.
+
+📍 Mogu li provjeriti sliku na web-stranici bez spremanja?
+Da. Desnom tipkom miša kliknite sliku i odaberite prepoznaj font na ovoj slici.
+
+📍 Radi li FontSnap izvan mreže?
+Samo prepoznavanje radi lokalno. Internetska veza koristi se jedino za učitavanje pregleda s Google Fonts.
+
+📍 Može li FontSnap prepoznati komercijalne fontove?
+FontSnap uspoređuje s obiteljima Google Fonts. Za komercijalni font prikazuje najbliže alternative iz Google Fonts, što je za web-projekt često upravo ono što trebate.
+
+📍 Koja su pisma podržana?
+Latinica, ćirilica i arapsko pismo daju najtočnije rezultate. Podrška za kineski i japanski još je ograničena.
+
+📍 Prikupljaju li se moji podaci?
+Ne. Proširenje ne prikuplja osobne podatke niti šalje vaše slike bilo kamo.
+
+🌟 Instalirajte FontSnap, alat za prepoznavanje fonta sa slike za svakodnevni dizajnerski posao, i pretvorite svako pitanje koji je ovo font u jasan odgovor. Označite tekst, dobijte podudaranje, kopirajte CSS i nastavite dizajnirati.

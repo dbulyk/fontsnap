@@ -1,0 +1,80 @@
+FontSnap är ett AI-verktyg för att identifiera typsnitt från bild (font identifier from image) som fungerar rakt i Chrome. Ser du ett snyggt typsnitt på en webbplats, i en banner eller på en skärmdump? Dra en ruta över texten eller högerklicka på bilden, så visar det här verktyget de fem närmaste Google-typsnitten.
+
+🚀 Så identifierar du typsnitt från bild i 3 steg
+1️⃣ Klicka på FontSnap-ikonen i verktygsfältet eller tryck på Alt+Shift+F.
+2️⃣ Dra en rektangel över en eller två rader text, eller högerklicka på en bild och välj menyvalet identifiera typsnittet i den här bilden.
+3️⃣ Läs de 5 närmaste träffarna med liveförhandsvisningar och träffpoäng.
+
+Inget konto och ingen uppladdning till någon server. Det neurala nätverket körs lokalt, så du kan identifiera typsnitt från bild utan att dina bilder lämnar datorn.
+
+🔍 Det här skiljer FontSnap från andra
+Många tillägg av det här slaget läser bara CSS och misslyckas med logotyper, bilder, banners och text i canvas. FontSnap tittar på pixlarna, inte på koden, så det fungerar även där CSS inte säger något:
+• text i bilder, affischer och grafik för sociala medier
+• skärmdumpar av appar, bildspel och PDF-sidor
+• hero-banners och annonser på vilken webbplats som helst
+
+📌 Viktiga funktioner
+- Områdesval på vilken sida som helst: dra bara över texten.
+- Högerklicksmeny: hitta typsnitt från bild på vilken webbplats som helst med ett klick.
+- Uppladdningsläge, en typsnittssökare för bilder: klistra in med Ctrl+V, släpp en fil eller välj en bild.
+- Topp 5 typsnittsträffar med träffpoäng.
+- Liveförhandsvisning av varje träff med din egen exempeltext.
+- Ett klick för att kopiera färdig CSS-rad.
+- Fungerar med latinsk, kyrillisk och arabisk text.
+
+🧠 En AI-typsnittssökare tränad på tusentals stilar
+FontSnap använder en kompakt modell för typsnittsigenkänning tränad på fler än 3 600 typsnittsstilar. Den grupperar stilar i familjer och ger en kort, ren lista. Det gör verktyget till en praktisk typsnittsmatchare och typsnittsigenkännare: om det exakta typsnittet är kommersiellt får du ändå det närmaste alternativet som du kan använda i dag.
+
+🎨 Vem behöver identifiera typsnitt från bild
+➤ Webbdesigners som behöver en typsnittsmatch till en kundmockup.
+➤ Frontend-utvecklare som vill ha CSS-raden, inte bara ett namn.
+➤ Marknadsförare och SMM-specialister som återskapar stilen i en banner.
+➤ Studenter och bloggare som ständigt undrar vilket typsnitt det här är.
+➤ Alla som vill hitta typsnittets namn från bild utan ett tungt skrivbordsprogram.
+➤ Forskare som gör typsnittssökning med bild på skanningar och skärmdumpar.
+
+⚡ Varför en webbaserad typsnittsidentifierare inte alltid räcker
+Webbverktyg får dig att spara, ladda upp och beskära en bild. FontSnap hoppar över det:
+▸ markeringen sker på sidan du redan tittar på;
+▸ ett högerklick räcker för bilder på sidan;
+▸ resultaten öppnas i en ny flik bredvid källan.
+Det är ett sätt att identifiera typsnitt från bild som ryms i webbläsaren, inte en omväg bort från den.
+
+📊 Typsnittsdetektor vs. CSS-kontroll
+En CSS-kontroll läser levande webbtext men kan inte se text i en JPG eller i canvas. En bildbaserad typsnittsdetektor fyller det gapet.
+
+🔒 Integritet först
+▸ Bildanalysen körs på enheten med WebAssembly.
+▸ Dina skärmdumpar lämnar aldrig webbläsaren.
+▸ Bara familjenamn begärs från Google Fonts för förhandsvisningar.
+▸ Ingen spårning, inga annonser, ingen registrering.
+
+💡 Tips för träffsäkra resultat
+• Markera en eller två rader text, inte en hel sida.
+• Dra bara över text som syns på skärmen: markeringen fångar den aktuella vyn, inte innehåll som rullats utanför skärmen.
+• Större text ger bättre resultat än små bildtexter.
+• Om första gissningen ser fel ut, kolla de andra fyra: rätt familj finns ofta bland topp 5.
+
+❓ Vanliga frågor
+📍 Vad är FontSnap?
+Det är ett Chrome-tillägg som kan identifiera typsnitt från bild: i ett markerat område på skärmen, i en bild på en webbsida eller i en uppladdad bild.
+
+📍 Hur kan jag identifiera typsnitt från bild när jag har en fil?
+Öppna FontSnap på valfri sida, byt till uppladdningsläge och klistra in, släpp eller välj en bild med text.
+
+📍 Kan jag kontrollera en bild på en webbplats utan att spara den?
+Ja. Högerklicka på bilden och välj identifiera typsnittet i den här bilden.
+
+📍 Fungerar FontSnap offline?
+Själva igenkänningen körs lokalt. Internetanslutning används bara för att ladda förhandsvisningar från Google Fonts.
+
+📍 Kan FontSnap känna igen kommersiella typsnitt?
+FontSnap matchar mot familjer i Google Fonts. För ett kommersiellt typsnitt visas de närmaste alternativen från Google Fonts, vilket ofta är precis vad du behöver i ett webbprojekt.
+
+📍 Vilka språk stöds?
+Latinska, kyrilliska och arabiska skriftsystem ger de mest träffsäkra resultaten. Stödet för kinesiska och japanska är fortfarande begränsat.
+
+📍 Samlas mina data in?
+Nej. Tillägget samlar inte in personuppgifter och skickar inte dina bilder någonstans.
+
+🌟 Installera FontSnap, verktyget för att identifiera typsnitt från bild i vardagligt designarbete, och förvandla varje gång du undrar vilket typsnitt det här är till ett tydligt svar. Snappa texten, få träffen, kopiera CSS och fortsätt designa.

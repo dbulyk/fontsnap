@@ -1,0 +1,80 @@
+FontSnap hjælper dig med at finde skrifttype fra billede direkte i Chrome – en AI-baseret font identifier from image. Har du set en flot skrifttype på en hjemmeside, i et banner eller på et screenshot? Træk en ramme over teksten, eller højreklik på billedet, så viser dette værktøj til skrifttypegenkendelse de fem tætteste Google-skrifttyper.
+
+🚀 Sådan kan du finde skrifttype fra billede i 3 trin
+1️⃣ Klik på FontSnap-ikonet i værktøjslinjen, eller tryk på Alt+Shift+F.
+2️⃣ Træk et rektangel over en eller to linjer tekst, eller højreklik på et billede og vælg genkend skrifttypen i dette billede.
+3️⃣ Se de 5 tætteste match med eksempler og match-score.
+
+Ingen konto og ingen upload til en server. Det neurale netværk kører lokalt, så dette værktøj til at finde skrifttype fra billede beholder dine billeder på din computer.
+
+🔍 Det gør FontSnap anderledes
+Mange udvidelser af den slags læser kun CSS og fejler ved logoer, billeder, bannere og tekst i canvas. FontSnap kigger på pixels og ikke på koden, så den virker også, hvor CSS intet kan fortælle:
+• tekst i billeder, plakater og grafik til sociale medier
+• screenshots af apps, slides og PDF-sider
+• hero-bannere og reklamer på enhver hjemmeside
+
+📌 Vigtigste funktioner
+- Områdevalg på enhver side: du trækker bare over teksten.
+- Højreklik-menu: find skrifttype fra billede på enhver hjemmeside med ét klik.
+- Uploadtilstand, en font finder via billede: indsæt med Ctrl+V, slip en fil eller vælg et billede.
+- Top 5 skrifttyper med en match-score.
+- Eksempel på hvert match med din egen prøvetekst.
+- Ét klik kopierer den færdige CSS-linje.
+- Virker med latinsk, kyrillisk og arabisk tekst.
+
+🧠 En AI-font finder trænet på tusindvis af stilarter
+FontSnap bruger en kompakt model til skrifttypegenkendelse, trænet på mere end 3.600 skrifttypestilarter. Den samler stilene i familier og giver en kort, ren liste. Det gør værktøjet til en praktisk font matcher og font detector: Hvis den præcise skrifttype er kommerciel, får du stadig det tætteste alternativ, som du kan bruge i dag.
+
+🎨 Hvem bruger denne font finder til billeder
+➤ Webdesignere, der skal finde en skrifttype, der passer til et kundemockup.
+➤ Frontend-udviklere, der vil have CSS-linjen og ikke kun et navn.
+➤ Marketingfolk og SMM-specialister, der genskaber et banners stil.
+➤ Studerende og bloggere, der hele tiden spørger: hvilken skrifttype er det her?
+➤ Alle, der vil finde skrifttype fra billede uden et tungt desktopprogram.
+➤ Forskere, der foretager en skrifttypesøgning via billede i scanninger og screenshots.
+
+⚡ Hvorfor en online skrifttypefinder ikke altid er nok
+Webværktøjer kræver, at du gemmer, uploader og beskærer et billede. FontSnap springer det over:
+▸ markeringen sker på den side, du allerede kigger på;
+▸ et højreklik er nok til billeder på siden;
+▸ resultaterne åbner i en ny fane ved siden af kilden.
+Det er en måde at finde skrifttype fra billede, som passer ind i browseren og ikke er en omvej væk fra den.
+
+📊 Font detector eller CSS-tjek
+Et CSS-tjek læser den rigtige webtekst, men kan ikke se tekst i en JPG eller i et canvas. En billedbaseret font detector lukker det hul.
+
+🔒 Privatliv først
+▸ Billedanalysen kører på enheden med WebAssembly.
+▸ Dine screenshots forlader aldrig browseren.
+▸ Der anmodes kun om familienavne fra Google Fonts til eksemplerne.
+▸ Ingen sporing, ingen reklamer, ingen tilmelding.
+
+💡 Tips til nøjagtige resultater
+• Markér en eller to linjer tekst, ikke en hel side.
+• Træk kun over tekst, der er synlig på skærmen: markeringen fanger det aktuelle visningsområde og ikke indhold, der er scrollet uden for skærmen.
+• Større tekst giver mere nøjagtige resultater end små billedtekster.
+• Hvis det første gæt ser forkert ud, så tjek de andre fire: Den rigtige familie er ofte blandt top 5.
+
+❓ FAQ
+📍 Hvad er FontSnap?
+Det er en Chrome-udvidelse og et AI-værktøj til at finde skrifttype fra billede, som genkender skrifttyper i et markeret område af skærmen, i et billede på en webside eller i et uploadet billede.
+
+📍 Hvordan kan jeg genkende skrifttype fra billedfiler?
+Åbn FontSnap på en vilkårlig side, skift til uploadtilstand, og indsæt, slip eller vælg et billede med tekst.
+
+📍 Kan jeg tjekke et billede på en hjemmeside uden at gemme det?
+Ja. Højreklik på billedet, og vælg genkend skrifttypen i dette billede.
+
+📍 Virker FontSnap offline?
+Selve genkendelsen kører lokalt. En internetforbindelse bruges kun til at hente eksempler fra Google Fonts.
+
+📍 Kan FontSnap genkende kommercielle skrifttyper?
+FontSnap sammenligner med Google Fonts-familier. For en kommerciel skrifttype viser den de tætteste Google Fonts-alternativer, og det er ofte netop det, et webprojekt har brug for.
+
+📍 Hvilke sprog understøttes?
+Latinske, kyrilliske og arabiske skrifttegn giver de mest præcise resultater. Understøttelsen af kinesisk og japansk er stadig begrænset.
+
+📍 Indsamles mine data?
+Nej. Udvidelsen indsamler ikke personlige data og sender ikke dine billeder nogen steder hen.
+
+🌟 Installér FontSnap, så du kan finde skrifttype fra billede i dit daglige designarbejde, og forvandl hvert hvilken skrifttype er det her-øjeblik til et klart svar. Fang teksten, få matchet, kopiér CSS'en og design videre.
