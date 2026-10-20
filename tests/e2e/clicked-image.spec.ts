@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { BrowserContext, Page, Worker } from '@playwright/test';
 import { EXTENSION_PAGES, MENU_IMAGE } from '../../src/shared/constants';
 import {
@@ -149,9 +151,11 @@ async function shown(result: Page, expectResults = true): Promise<Shown> {
   await expect(result.locator('#shot')).toBeVisible({ timeout: 60_000 });
   if (expectResults)
     await expect(result.locator('#results li').first()).toBeVisible({ timeout: 60_000 });
-  await expect(result.locator('#status')).not.toHaveText(/^(Loading model|Analyzing)…$/, {
-    timeout: 60_000,
-  });
+  // "Ready." is shown once the model is in, before the page reads the capture it was handed: only a status after it is final
+  await expect(result.locator('#status')).not.toHaveText(
+    /^(Loading model…|Analyzing…|Ready\. Paste, drop or choose an image\.)$/,
+    { timeout: 60_000 },
+  );
   const [width, height] = await result
     .locator('#shot')
     .evaluate((canvas: HTMLCanvasElement) => [canvas.width, canvas.height]);
@@ -712,4 +716,286 @@ test.describe('the whole visible area, with a hint (step 3)', () => {
     expect([got.width, got.height]).toEqual(viewport);
     expect(await scrollY(site), 'the page is where it was').toBe(100);
   });
+});
+
+test.describe('the whole visible area at pixel ratio 2', () => {
+  test.use({ deviceScaleFactor: 2 });
+
+  test('it is taken in device pixels, the longest side at most 2400', async ({
+    context,
+    extensionId,
+    serviceWorker,
+    serve,
+  }) => {
+    test.setTimeout(120_000);
+    const origin = await serve(
+      new Map([['/page.html', html(`${AROUND(SAMPLE_TEXT)}${SPACER(300)}`)]]),
+    );
+    const site = await openSite(context, extensionId, `${origin}/page.html`);
+    const tabId = await siteTabId(serviceWorker);
+    const [width, height] = await site.evaluate(() => [
+      innerWidth * devicePixelRatio,
+      innerHeight * devicePixelRatio,
+    ]);
+    const scale = Math.min(1, 2400 / Math.max(width, height));
+    const result = await clickImage(context, serviceWorker, {
+      tabId,
+      srcUrl: `${origin}/gone.png`,
+      frameUrl: `${origin}/page.html`,
+    });
+    const got = await shown(result, false);
+    await expect(result.locator('#wholeNote')).toBeVisible();
+    expect([got.width, got.height]).toEqual([
+      Math.round(width * scale),
+      Math.round(height * scale),
+    ]);
+  });
+});
+
+test.describe('the scroll position cannot be put back', () => {
+  test('the page got shorter while the image was brought into view: the whole visible area, with the hint', async ({
+    context,
+    extensionId,
+    serviceWorker,
+    serve,
+  }) => {
+    test.setTimeout(120_000);
+    const file = await renderPng(context, extensionId);
+    const other = await serve(new Map([['/img.png', png(file)]]));
+    const origin = await serve(
+      new Map([
+        [
+          '/page.html',
+          html(
+            `<img src="${other}/img.png" width="${String(WIDTH)}" height="${String(HEIGHT)}">${AROUND('Text below')}<div id="tail" style="height:4000px"></div><script>addEventListener('scroll', () => { if (scrollY < 800) document.getElementById('tail')?.remove(); });</script>`,
+          ),
+        ],
+      ]),
+    );
+    const site = await openSite(context, extensionId, `${origin}/page.html`, 2500);
+    const tabId = await siteTabId(serviceWorker);
+    const viewport = await site.evaluate(() => [innerWidth, innerHeight]);
+    const result = await clickImage(context, serviceWorker, {
+      tabId,
+      srcUrl: `${other}/img.png`,
+      frameUrl: `${origin}/page.html`,
+    });
+    const got = await shown(result, false);
+    await expect(result.locator('#wholeNote')).toBeVisible();
+    expect([got.width, got.height], 'not a crop of a page that moved').toEqual(viewport);
+  });
+});
+
+test('the live region of the hint is on the result page from the start, before any hint', async ({
+  context,
+  extensionId,
+}) => {
+  const page = await openResultPage(context, extensionId);
+  const region = page.getByRole('status');
+  await expect(region).toHaveCount(1);
+  await expect(region.locator('#wholeNote')).toBeHidden();
+  await expect(page.locator('#status')).toHaveText('Ready. Paste, drop or choose an image.', {
+    timeout: 60_000,
+  });
+  await expect(region.locator('#wholeNote')).toBeHidden();
+});
+
+/**
+ * What a result page ends with: the error it shows, or 'image' when it analyses a picture, which is the image of the click or the
+ * whole visible area with the hint (#wholeNote).
+ */
+async function outcome(result: Page): Promise<string> {
+  const status = result.locator('#status');
+  await expect
+    .poll(
+      async () =>
+        /\berr\b/.test((await status.getAttribute('class')) ?? '') ||
+        (await result.locator('#wholeNote').isVisible()) ||
+        (await result.locator('#results li').count()) > 0,
+      { timeout: 60_000 },
+    )
+    .toBe(true);
+  return /\berr\b/.test((await status.getAttribute('class')) ?? '')
+    ? ((await status.textContent()) ?? '')
+    : 'image';
+}
+
+/** Several right-clicks in the same moment on the tab `tabId`, then `meanwhile`; resolves to the result pages the clicks open. */
+async function clickImagesAtOnce(
+  context: BrowserContext,
+  serviceWorker: Worker,
+  tabId: number,
+  srcUrls: string[],
+  meanwhile: () => Promise<void> = () => Promise.resolve(),
+): Promise<Page[]> {
+  const results: Page[] = [];
+  const opened = new Promise<void>((done) => {
+    const onPage = (page: Page) => {
+      if (!isExtensionPage(page.url(), EXTENSION_PAGES.result)) return;
+      results.push(page);
+      if (results.length === srcUrls.length) {
+        context.off('page', onPage);
+        done();
+      }
+    };
+    context.on('page', onPage);
+  });
+  await serviceWorker.evaluate(
+    async ({ id, urls, menuItemId }) => {
+      const tab = await chrome.tabs.get(id);
+      const menu = chrome.contextMenus.onClicked as unknown as {
+        dispatch: (info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab) => void;
+      };
+      for (const srcUrl of urls)
+        menu.dispatch(
+          { menuItemId, srcUrl, frameId: 0, editable: false, pageUrl: tab.url ?? '' },
+          tab,
+        );
+    },
+    { id: tabId, urls: srcUrls, menuItemId: MENU_IMAGE },
+  );
+  await meanwhile();
+  await opened;
+  return results;
+}
+
+/** The Russian text of `key`, as the user reads it: the expected messages follow the translation instead of copying it. */
+const RU = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, '../../public/_locales/ru/messages.json'), 'utf8'),
+) as Record<string, { message: string } | undefined>;
+function ru(key: string): string {
+  const text = RU[key]?.message;
+  if (text === undefined) throw new Error(`no Russian message ${key}`);
+  return text;
+}
+const ruCaptureFail = (reason: string): string => ru('captureFail').replace('$ERR$', reason);
+
+test.describe('clicks that come too fast or too late, in Russian', () => {
+  test.use({ uiLocale: 'ru' });
+
+  test('three clicks at once: each gets the image or is told to go back to the tab, never the quota of Chrome', async ({
+    context,
+    extensionId,
+    serviceWorker,
+    serve,
+  }) => {
+    test.setTimeout(120_000);
+    const file = await renderPng(context, extensionId);
+    const other = await serve(new Map([['/img.png', png(file)]]));
+    const origin = await serve(
+      new Map([
+        [
+          '/page.html',
+          html(
+            `${AROUND('Above')}<img src="${other}/img.png" width="${String(WIDTH)}" height="${String(HEIGHT)}">${SPACER(1500)}`,
+          ),
+        ],
+      ]),
+    );
+    await openSite(context, extensionId, `${origin}/page.html`);
+    const tabId = await siteTabId(serviceWorker);
+    const results = await clickImagesAtOnce(context, serviceWorker, tabId, [
+      `${other}/img.png`,
+      `${origin}/gone.png`,
+      `${other}/img.png`,
+    ]);
+    const outcomes = await Promise.all(results.map(outcome));
+    const notInFront = ruCaptureFail(ru('tabNotInFront'));
+    for (const one of outcomes) expect(['image', notInFront]).toContain(one);
+    // which click takes the first turn is not fixed; 'image' is also the whole visible area with the hint (the click on gone.png)
+    expect(outcomes, 'one of the clicks is analysed').toContain('image');
+    expect(outcomes, 'a click behind the result tab of another is told so').toContain(notInFront);
+  });
+
+  test('the tab is closed while a click waits for its screenshot: the user is told the tab was closed', async ({
+    context,
+    extensionId,
+    serviceWorker,
+    serve,
+  }) => {
+    test.setTimeout(120_000);
+    const origin = await serve(
+      new Map([['/page.html', html(`${AROUND(SAMPLE_TEXT)}${SPACER(300)}`)]]),
+    );
+    const site = await openSite(context, extensionId, `${origin}/page.html`);
+    const tabId = await siteTabId(serviceWorker);
+    const results = await clickImagesAtOnce(
+      context,
+      serviceWorker,
+      tabId,
+      [`${origin}/gone-1.png`, `${origin}/gone-2.png`],
+      () => site.close(),
+    );
+    const outcomes = await Promise.all(results.map(outcome));
+    const closed = ruCaptureFail(ru('tabClosed'));
+    for (const one of outcomes) expect(['image', closed]).toContain(one);
+    expect(outcomes, 'the second click found the tab gone').toContain(closed);
+  });
+});
+
+test('a tab without the activeTab grant: the user is told the reason of Chrome, not its quota', async ({
+  context,
+  serviceWorker,
+  serve,
+}) => {
+  test.setTimeout(120_000);
+  const origin = await serve(
+    new Map([['/page.html', html(`${AROUND(SAMPLE_TEXT)}${SPACER(300)}`)]]),
+  );
+  // no toolbar click: without the grant Chrome refuses every screenshot of the tab
+  const site = await context.newPage();
+  await site.goto(`${origin}/page.html`);
+  await site.bringToFront();
+  const tabId = await siteTabId(serviceWorker);
+  const said = await outcome(
+    await clickImage(context, serviceWorker, { tabId, srcUrl: `${origin}/gone.png` }),
+  );
+  expect(said).toMatch(/^Capture failed: .+ — try again or paste a screenshot\.$/);
+  expect(said).not.toMatch(/quota/i);
+  expect(said, 'the permission Chrome asks for').toMatch(/permission/i);
+});
+
+test('an image clicked in a PDF: the whole visible area, with the hint', async ({
+  context,
+  extensionId,
+  serviceWorker,
+  serve,
+}) => {
+  test.setTimeout(120_000);
+  const file = await renderPng(context, extensionId);
+  // an image of another origin without CORS: it is in no <img> of the PDF to crop, and cannot be loaded again in the page
+  const other = await serve(new Map([['/img.png', png(file)]]));
+  const origin = await serve(
+    new Map([
+      [
+        '/doc.pdf',
+        {
+          type: 'application/pdf',
+          body: '%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 300 144]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF',
+        },
+      ],
+    ]),
+  );
+  const pdf = await context.newPage();
+  await pdf.goto(`${origin}/doc.pdf`);
+  // the toolbar click gives the grant; the overlay it puts on the PDF is taken down with Escape, which reaches the page only while
+  // the viewer, which takes the focus back as it loads, does not hold it
+  await clickToolbarIcon(context, extensionId, pdf);
+  const overlay = pdf.locator('div[style*="crosshair"]');
+  await expect(overlay).toBeVisible();
+  await expect(async () => {
+    await pdf.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    });
+    await pdf.keyboard.press('Escape');
+    await expect(overlay).toHaveCount(0, { timeout: 1000 });
+  }).toPass();
+  const tabId = await siteTabId(serviceWorker);
+  const viewport = await pdf.evaluate(() => [innerWidth, innerHeight]);
+  const result = await clickImage(context, serviceWorker, { tabId, srcUrl: `${other}/img.png` });
+  expect(await outcome(result)).toBe('image');
+  const got = await shown(result, false);
+  expect(got.wholeNote).toBe(true);
+  expect([got.width, got.height]).toEqual(viewport);
+  await expect(result.locator('#status')).not.toHaveClass(/err/);
 });
