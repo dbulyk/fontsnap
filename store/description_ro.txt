@@ -1,0 +1,80 @@
+FontSnap este un identificator de fonturi din imagine cu AI (font identifier from image), care funcționează direct în Chrome. Ați văzut un font frumos pe un site, într-un banner sau într-o captură de ecran? Trageți un chenar peste text sau faceți clic dreapta pe imagine, iar acest instrument de identificare a fonturilor arată cele cinci fonturi Google cele mai apropiate.
+
+🚀 Identificare font din imagine în 3 pași
+1️⃣ Faceți clic pe pictograma FontSnap din bara de instrumente sau apăsați Alt+Shift+F.
+2️⃣ Trageți un dreptunghi peste una sau două rânduri de text ori faceți clic dreapta pe o imagine și alegeți Identifică fontul din această imagine.
+3️⃣ Citiți primele 5 potriviri cu previzualizări live și scoruri de potrivire.
+
+Fără cont și fără încărcare pe vreun server. Rețeaua neuronală rulează local, așa că acest identificator de fonturi din imagine vă păstrează pozele pe computer.
+
+🔍 Prin ce se deosebește FontSnap
+Multe extensii de acest fel citesc doar CSS și dau greș la logouri, imagini, bannere și text din canvas. FontSnap se uită la pixeli, nu la cod, așa că funcționează și acolo unde CSS nu spune nimic:
+• text din imagini, afișe și grafică pentru rețelele sociale
+• capturi de ecran ale aplicațiilor, ale prezentărilor și ale paginilor PDF
+• bannere principale și reclame de pe orice site
+
+📌 Funcții principale
+- Selectarea unei zone pe orice pagină: trageți pur și simplu peste text.
+- Meniul clic dreapta: găsiți fontul din imagine pe orice site cu un singur clic.
+- Modul de încărcare, un instrument de căutare font după imagine: lipiți cu Ctrl+V, plasați un fișier sau alegeți o imagine.
+- Primele 5 potriviri de fonturi, cu scor de potrivire.
+- Previzualizare live a fiecărei potriviri, cu propriul text de probă.
+- Un singur clic pentru a copia linia CSS gata de folosit.
+- Funcționează cu text latin, chirilic și arab.
+
+🧠 Un detector de fonturi cu AI, antrenat pe mii de stiluri
+FontSnap folosește un model compact de recunoaștere a fonturilor, antrenat pe peste 3.600 de stiluri tipografice. Grupează stilurile în familii și oferă o listă scurtă și curată. Așa devine un instrument practic de potrivire și recunoaștere a fonturilor: dacă fontul exact este comercial, tot primiți cea mai apropiată alternativă, pe care o puteți folosi chiar azi.
+
+🎨 Cine folosește acest instrument de căutare a fonturilor din imagine
+➤ Designeri web care au nevoie de un font potrivit pentru macheta unui client.
+➤ Dezvoltatori front-end care vor linia CSS, nu doar un nume.
+➤ Marketeri și specialiști SMM care refac stilul unui banner.
+➤ Studenți și bloggeri care se tot întreabă ce font este acesta.
+➤ Oricine vrea să afle numele unui font din imagine fără o aplicație desktop grea.
+➤ Cercetători care caută fonturi după imagine în scanări și capturi de ecran.
+
+⚡ De ce un identificator online nu este mereu suficient
+Instrumentele web vă obligă să salvați, să încărcați și să decupați imaginea. FontSnap sare peste toate acestea:
+▸ selecția se face pe pagina pe care o priviți deja;
+▸ pentru imaginile din pagină este de ajuns un clic dreapta;
+▸ rezultatele se deschid într-o filă nouă, lângă sursă.
+Este un identificator de fonturi din imagine care încape în browser, nu un ocol pe lângă el.
+
+📊 Detector de fonturi vs. verificator CSS
+Un verificator CSS citește textul real de pe web, dar nu vede textul dintr-un JPG sau dintr-un canvas. Un detector de fonturi bazat pe imagini umple acest gol.
+
+🔒 Confidențialitatea mai întâi
+▸ Analiza imaginilor rulează pe dispozitiv, cu WebAssembly.
+▸ Capturile dvs. de ecran nu părăsesc niciodată browserul.
+▸ Pentru previzualizări, de la Google Fonts se cer doar numele familiilor.
+▸ Fără urmărire, fără reclame, fără înregistrare.
+
+💡 Sfaturi pentru rezultate precise
+• Selectați una sau două rânduri de text, nu toată pagina.
+• Trageți doar peste textul vizibil pe ecran: selecția captează fereastra curentă, nu conținutul derulat în afara ecranului.
+• Textul mai mare dă rezultate mai precise decât legendele mici.
+• Dacă prima variantă pare greșită, verificați-le pe celelalte patru: familia potrivită se află adesea în primele 5.
+
+❓ Întrebări frecvente
+📍 Ce este FontSnap?
+Este o extensie Chrome și un identificator de fonturi cu AI, care recunoaște fonturile dintr-o zonă selectată a ecranului, dintr-o imagine de pe o pagină web sau dintr-o imagine încărcată.
+
+📍 Cum fac identificare font din imagine, pornind de la un fișier?
+Deschideți FontSnap pe orice pagină, treceți pe modul de încărcare și lipiți, plasați sau alegeți o imagine cu text.
+
+📍 Pot verifica o imagine de pe un site fără să o salvez?
+Da. Faceți clic dreapta pe imagine și alegeți Identifică fontul din această imagine.
+
+📍 Funcționează FontSnap offline?
+Recunoașterea în sine rulează local. Conexiunea la internet este folosită doar pentru a încărca previzualizările de la Google Fonts.
+
+📍 Poate FontSnap să recunoască fonturi comerciale?
+FontSnap compară cu familiile Google Fonts. Pentru un font comercial arată cele mai apropiate alternative din Google Fonts, ceea ce este adesea exact ce vă trebuie într-un proiect web.
+
+📍 Ce limbi sunt acceptate?
+Alfabetele latin, chirilic și arab dau cele mai precise rezultate. Suportul pentru chineză și japoneză este încă limitat.
+
+📍 Sunt colectate datele mele?
+Nu. Extensia nu colectează date personale și nu trimite imaginile dvs. nicăieri.
+
+🌟 Instalați FontSnap, identificatorul de fonturi din imagine pentru munca de design de zi cu zi, și transformați fiecare moment de tipul ce font este acesta într-un răspuns clar. Selectați textul, primiți potrivirea, copiați CSS și continuați să creați.

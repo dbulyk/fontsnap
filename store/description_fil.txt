@@ -1,0 +1,80 @@
+Ang FontSnap ay AI na tagatukoy ng font mula sa larawan (font identifier from image) na gumagana mismo sa loob ng Chrome. May nakita kang magandang typeface sa website, banner o screenshot? Mag-drag ng kahon sa teksto o i-right-click ang larawan, at ipapakita ng tool na ito ang limang pinakakahawig na Google typeface.
+
+🚀 Paano alamin ang font mula sa larawan sa 3 hakbang
+1️⃣ I-click ang icon ng FontSnap sa toolbar o pindutin ang Alt+Shift+F.
+2️⃣ Mag-drag ng parihaba sa isa o dalawang linya ng teksto, o i-right-click ang larawan at piliin ang opsyong tukuyin ang font sa larawang ito.
+3️⃣ Basahin ang 5 pinakakahawig na resulta na may live preview at match score.
+
+Walang account at walang pag-upload sa server. Lokal na tumatakbo ang neural network, kaya nananatili sa iyong computer ang iyong mga larawan habang tinutukoy mo ang font mula sa larawan.
+
+🔍 Ano ang kaibahan ng FontSnap
+Maraming extension na ganito ang CSS lang ang binabasa at pumapalya sa mga logo, larawan, banner at teksto sa canvas. Pixel ang tinitingnan ng FontSnap, hindi ang code, kaya gumagana rin ito kahit walang masabi ang CSS:
+• teksto sa loob ng mga larawan, poster at graphics sa social media
+• mga screenshot ng app, slide at pahina ng PDF
+• mga hero banner at ad sa kahit anong website
+
+📌 Mga pangunahing feature
+- Pagpili ng rehiyon sa anumang pahina: i-drag lang sa ibabaw ng teksto.
+- Right-click menu: hanapin ang font mula sa larawan sa kahit anong website sa isang click.
+- Upload mode, isang font finder gamit ang larawan: i-paste gamit ang Ctrl+V, i-drop ang file o pumili ng larawan.
+- Top 5 na tugmang typeface na may match score.
+- Live preview ng bawat tugma gamit ang sarili mong sample na teksto.
+- Isang click para kopyahin ang handa nang linya ng CSS.
+- Gumagana sa tekstong Latin, Cyrillic at Arabic.
+
+🧠 Isang AI font finder na sinanay sa libu-libong istilo
+Gumagamit ang FontSnap ng compact na modelo sa font recognition na sinanay sa mahigit 3,600 istilo ng typeface. Pinagsasama nito ang mga istilo sa mga pamilya at nagbibigay ng maikli at malinis na listahan. Kaya praktikal itong font matcher at font recognizer: kung komersyal ang eksaktong typeface, makakakuha ka pa rin ng pinakamalapit na alternatibong magagamit mo ngayon.
+
+🎨 Sino ang gumagamit ng font finder mula sa larawan
+➤ Mga web designer na kailangan ng katugmang typeface para sa mockup ng kliyente.
+➤ Mga front-end developer na gusto ang linya ng CSS, hindi lang pangalan.
+➤ Mga marketer at SMM specialist na gumagawa muli ng istilo ng banner.
+➤ Mga estudyante at blogger na laging nagtatanong kung anong font ito.
+➤ Sinumang gustong alamin ang pangalan ng font mula sa larawan nang walang mabigat na desktop app.
+➤ Mga mananaliksik na naghahanap ng font gamit ang larawan sa mga scan at screenshot.
+
+⚡ Bakit hindi laging sapat ang online na tagatukoy ng font
+Pinapa-save, pinapa-upload at pinapa-crop sa iyo ng mga web tool ang larawan. Nilalaktawan ito ng FontSnap:
+▸ nangyayari ang pagpili sa pahinang tinitingnan mo na;
+▸ sapat na ang isang right-click para sa mga larawan sa pahina;
+▸ nagbubukas ang mga resulta sa bagong tab sa tabi ng pinagmulan.
+Isa itong tagatukoy ng font mula sa larawan na kasya sa browser, hindi paliko palayo rito.
+
+📊 Font detector vs. CSS checker
+Binabasa ng CSS checker ang live na teksto sa web pero hindi nito nakikita ang teksto sa JPG o canvas. Pinupunan ng font detector na nakabase sa larawan ang puwang na iyon.
+
+🔒 Privacy muna
+▸ Tumatakbo ang pagsusuri ng larawan sa mismong device gamit ang WebAssembly.
+▸ Hindi kailanman lumalabas ng browser ang iyong mga screenshot.
+▸ Pangalan lang ng pamilya ang hinihiling sa Google Fonts para sa mga preview.
+▸ Walang tracking, walang ad, walang sign-up.
+
+💡 Mga tip para sa tumpak na resulta
+• Pumili ng isa o dalawang linya ng teksto, hindi ng buong pahina.
+• Mag-drag lang sa tekstong nakikita sa screen: kinukuha ng seleksyon ang kasalukuyang viewport, hindi ang nilalamang nakatago sa labas ng screen.
+• Mas maganda ang resulta sa malalaking teksto kaysa sa maliliit na caption.
+• Kung mukhang mali ang unang hula, tingnan ang iba pang apat: madalas nasa top 5 ang tamang pamilya.
+
+❓ Mga madalas itanong
+📍 Ano ang FontSnap?
+Isa itong Chrome extension at AI na tagatukoy ng font na kumikilala ng mga typeface sa napiling bahagi ng screen, sa larawan sa web page o sa na-upload na larawan.
+
+📍 Paano tukuyin ang font mula sa larawan sa isang file?
+Buksan ang FontSnap sa anumang pahina, lumipat sa upload mode at i-paste, i-drop o pumili ng larawang may teksto.
+
+📍 Puwede ko bang suriin ang larawan sa website nang hindi ito sine-save?
+Oo. I-right-click ang larawan at piliin ang tukuyin ang font sa larawang ito.
+
+📍 Gumagana ba ang FontSnap offline?
+Lokal na tumatakbo mismo ang pagkilala. Internet connection lang ang ginagamit para mag-load ng mga preview mula sa Google Fonts.
+
+📍 Nakakakilala ba ang FontSnap ng mga komersyal na typeface?
+Itinutugma ng FontSnap ang mga pamilya ng Google Fonts. Para sa komersyal na typeface, ipinapakita nito ang pinakamalapit na alternatibo mula sa Google Fonts, na madalas ang kailangan mo sa web project.
+
+📍 Anong mga wika ang sinusuportahan?
+Pinakatumpak ang mga resulta sa Latin, Cyrillic at Arabic na script. Limitado pa ang suporta sa Chinese at Japanese.
+
+📍 Kinokolekta ba ang aking data?
+Hindi. Hindi kumokolekta ng personal na data ang extension at hindi nito ipinapadala kahit saan ang iyong mga larawan.
+
+🌟 I-install ang FontSnap, ang tagatukoy ng font mula sa larawan para sa pang-araw-araw na disenyo, at gawing malinaw na sagot ang bawat pagkakataong nagtatanong ka ng anong font ito. I-snap ang teksto, kunin ang tugma, kopyahin ang CSS at ituloy ang pagdidisenyo.

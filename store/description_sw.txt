@@ -1,0 +1,80 @@
+FontSnap ni kitambua fonti kutoka picha chenye AI (font identifier from image) kinachofanya kazi ndani ya Chrome. Umeona aina nzuri ya herufi kwenye tovuti, kwenye bango au kwenye taswira ya skrini? Buruta kisanduku juu ya maandishi au bofya kulia picha, na zana hii ya kutambua fonti itakuonyesha fonti tano za Google zinazofanana zaidi.
+
+🚀 Jinsi ya kutambua fonti kutoka picha kwa hatua 3
+1️⃣ Bofya aikoni ya FontSnap kwenye upau wa zana au bonyeza Alt+Shift+F.
+2️⃣ Buruta mstatili juu ya mstari mmoja au miwili ya maandishi, au bofya kulia picha na uchague tambua fonti kwenye picha hii.
+3️⃣ Soma matokeo 5 yanayofanana zaidi pamoja na maonyesho na alama za ulinganifu.
+
+Hakuna akaunti wala upakiaji kwenye seva. Mtandao wa neva hufanya kazi kwenye kifaa chako, kwa hivyo zana hii ya kutambua fonti kutoka picha hubakiza faili zako kwenye kompyuta yako.
+
+🔍 Kinachofanya FontSnap tofauti
+Viendelezi vingi vya aina hii husoma CSS tu na hushindwa kwenye nembo, michoro, mabango na maandishi ya canvas. FontSnap huangalia pikseli, si msimbo, kwa hivyo hufanya kazi hata pale ambapo CSS haisemi kitu:
+• maandishi kwenye mabango, matangazo na michoro ya mitandao ya kijamii
+• taswira za skrini za programu, slaidi na kurasa za PDF
+• mabango makuu na matangazo kwenye tovuti yoyote
+
+📌 Vipengele muhimu
+- Kuchagua eneo kwenye ukurasa wowote: buruta tu juu ya maandishi.
+- Menyu ya kubofya kulia: tambua fonti kutoka picha kwenye tovuti yoyote kwa mbofyo mmoja.
+- Hali ya kupakia, kitafuta fonti kwa picha: bandika kwa Ctrl+V, dondosha faili au chagua picha.
+- Fonti 5 zinazofanana zaidi zikiwa na alama ya ulinganifu.
+- Onyesho la kila ulinganifu kwa maandishi yako ya mfano.
+- Mbofyo mmoja hunakili mstari wa CSS ulio tayari.
+- Hufanya kazi na maandishi ya Kilatini, Kisiriliki na Kiarabu.
+
+🧠 Kitafuta fonti kutoka picha cha AI kilichofunzwa kwa maelfu ya mitindo
+FontSnap hutumia modeli ndogo ya kutambua fonti iliyofunzwa kwa zaidi ya mitindo 3,600 ya herufi. Huipanga mitindo katika familia na kutoa orodha fupi na safi. Hii inaifanya kuwa zana ya vitendo ya kulinganisha na kutambua fonti: ikiwa aina kamili ya herufi ni ya kibiashara, bado unapata mbadala wa karibu zaidi unaoweza kutumia leo.
+
+🎨 Nani hutumia kitafuta fonti hiki cha picha
+➤ Wabunifu wa wavuti wanaohitaji aina ya herufi inayolingana na muundo wa mteja.
+➤ Wasanidi wa front-end wanaotaka mstari wa CSS, si jina tu.
+➤ Wauzaji na wataalamu wa SMM wanaounda upya mtindo wa bango.
+➤ Wanafunzi na wanablogu wanaouliza kila mara hii ni fonti gani.
+➤ Yeyote anayetaka kupata jina la fonti kutoka picha bila programu nzito ya kompyuta.
+➤ Watafiti wanaotafuta fonti kwa picha kwenye skani na taswira za skrini.
+
+⚡ Kwa nini zana ya mtandaoni haitoshi kila mara
+Zana za wavuti hukulazimisha kuhifadhi, kupakia na kukata picha. FontSnap huruka hatua hizo:
+▸ uteuzi hufanyika kwenye ukurasa unaoutazama tayari;
+▸ kubofya kulia kunatosha kwa picha zilizo kwenye ukurasa;
+▸ matokeo hufunguka kwenye kichupo kipya karibu na chanzo.
+Ni njia ya kutambua fonti kutoka picha inayotoshea ndani ya kivinjari, si njia ya kuzunguka mbali nacho.
+
+📊 Kitambua fonti dhidi ya kikagua CSS
+Kikagua CSS husoma maandishi halisi ya wavuti lakini hakiwezi kuona maandishi ndani ya JPG au canvas. Kitambua fonti kinachotumia taswira huziba pengo hilo.
+
+🔒 Faragha kwanza
+▸ Uchambuzi wa picha hufanyika kwenye kifaa kwa WebAssembly.
+▸ Picha zako za skrini haziondoki kwenye kivinjari kamwe.
+▸ Majina ya familia pekee ndiyo huombwa kutoka Google Fonts kwa ajili ya maonyesho.
+▸ Hakuna ufuatiliaji, hakuna matangazo, hakuna kujisajili.
+
+💡 Vidokezo vya matokeo sahihi
+• Chagua mstari mmoja au miwili ya maandishi, si ukurasa mzima.
+• Buruta juu ya maandishi yanayoonekana skrinini tu: uteuzi hunasa eneo linaloonekana sasa, si maudhui yaliyo nje ya skrini.
+• Maandishi makubwa hutoa matokeo sahihi zaidi kuliko maelezo madogo.
+• Ikiwa ubashiri wa kwanza unaonekana si sahihi, angalia manne mengine: familia sahihi mara nyingi iko kwenye 5 za juu.
+
+❓ Maswali ya mara kwa mara (FAQ)
+📍 FontSnap ni nini?
+Ni kiendelezi cha Chrome na kitambua fonti cha AI kinachotambua aina za herufi katika eneo lililochaguliwa la skrini, kwenye picha ya ukurasa wa wavuti au kwenye faili iliyopakiwa.
+
+📍 Ninawezaje kutambua fonti kutoka faili ya picha?
+Fungua FontSnap kwenye ukurasa wowote, badilisha hadi hali ya kupakia na ubandike, dondosha au uchague faili yenye maandishi.
+
+📍 Je, naweza kukagua picha kwenye tovuti bila kuihifadhi?
+Ndiyo. Bofya kulia picha na uchague tambua fonti kwenye picha hii.
+
+📍 Je, FontSnap inafanya kazi bila mtandao?
+Utambuzi wenyewe hufanyika kwenye kifaa. Muunganisho wa intaneti hutumika tu kupakia maonyesho kutoka Google Fonts.
+
+📍 Je, FontSnap inaweza kutambua fonti za kibiashara?
+FontSnap hulinganisha na familia za Google Fonts. Kwa aina ya kibiashara huonyesha mbadala wa karibu zaidi wa Google Fonts, ambao mara nyingi ndio unaohitajika kwa mradi wa wavuti.
+
+📍 Lugha zipi zinaungwa mkono?
+Maandishi ya Kilatini, Kisiriliki na Kiarabu hutoa matokeo sahihi zaidi. Usaidizi wa Kichina na Kijapani bado ni mdogo.
+
+📍 Je, data yangu inakusanywa?
+Hapana. Kiendelezi hakikusanyi data ya kibinafsi wala kutuma picha zako popote.
+
+🌟 Sakinisha FontSnap, kitambua fonti kutoka picha kwa kazi za kila siku za ubunifu, na ugeuze kila swali la hii ni fonti gani kuwa jibu wazi. Nasa maandishi, pata ulinganifu, nakili CSS na endelea kubuni.

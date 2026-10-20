@@ -1,0 +1,80 @@
+FontSnap – tai AI šrifto atpažinimas iš paveikslėlio (font identifier from image), kuris veikia tiesiai Chrome naršyklėje. Pamatėte gražų šriftą svetainėje, reklamjuostėje ar ekrano nuotraukoje? Nutempkite rėmelį virš teksto arba dešiniuoju pelės klavišu spustelėkite paveikslėlį, ir šis įrankis parodys penkis panašiausius Google šriftus.
+
+🚀 Kaip vyksta šrifto atpažinimas iš paveikslėlio per 3 žingsnius
+1️⃣ Spustelėkite FontSnap piktogramą įrankių juostoje arba paspauskite Alt+Shift+F.
+2️⃣ Nutempkite stačiakampį virš vienos ar dviejų teksto eilučių arba dešiniuoju pelės klavišu spustelėkite paveikslėlį ir pasirinkite atpažinti šriftą šiame paveikslėlyje.
+3️⃣ Peržiūrėkite 5 tiksliausius atitikmenis su gyvomis peržiūromis ir atitikties įvertinimais.
+
+Be paskyros ir be įkėlimo į serverį. Neuroninis tinklas veikia vietoje, todėl šrifto atpažinimas iš paveikslėlio palieka jūsų paveikslėlius jūsų kompiuteryje.
+
+🔍 Kuo FontSnap skiriasi
+Daugelis tokio tipo plėtinių skaito tik CSS ir nepasiteisina su logotipais, paveikslėliais, reklamjuostėmis ir canvas tekstu. FontSnap žiūri į pikselius, o ne į kodą, todėl veikia ir ten, kur CSS nieko nepasako:
+• tekstas paveikslėliuose, plakatuose ir socialinių tinklų grafikoje
+• programėlių, skaidrių ir PDF puslapių ekrano nuotraukos
+• pagrindinės reklamjuostės ir skelbimai bet kurioje svetainėje
+
+📌 Pagrindinės funkcijos
+- Srities pasirinkimas bet kuriame puslapyje: tiesiog nutempkite virš teksto.
+- Dešiniojo pelės klavišo meniu: atpažinti šriftą iš paveikslėlio bet kurioje svetainėje vienu spustelėjimu.
+- Failo režimas, šriftų paieška pagal paveikslėlį: įklijuokite Ctrl+V, numeskite failą arba pasirinkite paveikslėlį.
+- 5 šriftų atitikmenys su atitikties įvertinimu.
+- Kiekvieno atitikmens gyva peržiūra su jūsų pačių teksto pavyzdžiu.
+- Vienas spustelėjimas paruoštai CSS eilutei nukopijuoti.
+- Veikia su lotyniško, kirilicos ir arabų rašto tekstu.
+
+🧠 AI šriftų ieškiklis, išmokytas pagal tūkstančius stilių
+FontSnap naudoja kompaktišką šriftų atpažinimo modelį, išmokytą pagal daugiau nei 3 600 stilių. Jis sugrupuoja stilius į šeimas ir pateikia trumpą, aiškų sąrašą. Dėl to tai praktiškas šriftų derinimo ir atpažinimo įrankis: jei tikslus šriftas komercinis, vis tiek gausite artimiausią alternatyvą, kurią galite naudoti jau šiandien.
+
+🎨 Kas naudoja šį įrankį šriftui atpažinti iš paveikslėlio
+➤ Interneto dizaineriai, kuriems reikia šrifto atitikmens kliento maketui.
+➤ Front-end programuotojai, kuriems reikia CSS eilutės, o ne tik pavadinimo.
+➤ Rinkodaros ir SMM specialistai, atkuriantys reklamjuostės stilių.
+➤ Studentai ir tinklaraštininkai, nuolat klausiantys, koks čia šriftas.
+➤ Kiekvienas, norintis sužinoti šrifto pavadinimą iš paveikslėlio be sunkios kompiuterinės programos.
+➤ Tyrėjai, atliekantys šriftų paiešką pagal paveikslėlį skenuotuose dokumentuose ir ekrano nuotraukose.
+
+⚡ Kodėl internetinio šriftų atpažinimo įrankio ne visada pakanka
+Internetiniai įrankiai verčia išsaugoti, įkelti ir apkarpyti paveikslėlį. FontSnap to nereikalauja:
+▸ pasirinkimas vyksta puslapyje, į kurį jau žiūrite;
+▸ paveikslėliams puslapyje pakanka dešiniojo pelės klavišo spustelėjimo;
+▸ rezultatai atsidaro naujame skirtuke šalia šaltinio.
+Tai šrifto atpažinimas iš paveikslėlio, tinkantis naršyklėje, o ne aplinkkelis už jos ribų.
+
+📊 Šriftų detektorius ir CSS tikrintuvas
+CSS tikrintuvas skaito gyvą svetainių tekstą, bet nemato teksto JPG ar canvas. Paveikslėliais pagrįstas šriftų detektorius užpildo šią spragą.
+
+🔒 Privatumas pirmiausia
+▸ Vaizdo analizė vyksta įrenginyje naudojant WebAssembly.
+▸ Jūsų ekrano nuotraukos niekada nepalieka naršyklės.
+▸ Peržiūroms iš Google Fonts prašoma tik šeimų pavadinimų.
+▸ Be sekimo, be reklamų, be registracijos.
+
+💡 Patarimai tiksliems rezultatams
+• Pažymėkite vieną ar dvi teksto eilutes, o ne visą puslapį.
+• Nutempkite tik virš ekrane matomo teksto: pasirinkimas fiksuoja dabartinį rodinį, o ne turinį, nustumtą už ekrano ribų.
+• Didesnis tekstas duoda tikslesnius rezultatus nei maži parašai.
+• Jei pirmas spėjimas atrodo klaidingas, patikrinkite kitus keturis: tinkama šeima dažnai būna 5 pirmųjų sąraše.
+
+❓ DUK
+📍 Kas yra FontSnap?
+Tai Chrome plėtinys ir AI įrankis šrifto atpažinimui iš paveikslėlio, atpažįstantis šriftus pasirinktoje ekrano srityje, puslapio paveikslėlyje ar paveikslėlyje, atidarytame iš failo.
+
+📍 Kaip atpažinti šriftą iš paveikslėlio failo?
+Atidarykite FontSnap bet kuriame puslapyje, perjunkite į failo režimą ir įklijuokite, numeskite arba pasirinkite paveikslėlį su tekstu.
+
+📍 Ar galiu patikrinti svetainės paveikslėlį jo neišsaugojęs?
+Taip. Dešiniuoju pelės klavišu spustelėkite paveikslėlį ir pasirinkite atpažinti šriftą šiame paveikslėlyje.
+
+📍 Ar FontSnap veikia neprisijungus?
+Pats atpažinimas vyksta vietoje. Interneto ryšys naudojamas tik peržiūroms iš Google Fonts įkelti.
+
+📍 Ar FontSnap gali atpažinti komercinius šriftus?
+FontSnap lygina su Google Fonts šeimomis. Komerciniam šriftui jis parodo artimiausias Google Fonts alternatyvas, o interneto projektui dažnai to ir reikia.
+
+📍 Kokios kalbos palaikomos?
+Lotynų, kirilicos ir arabų raštas duoda tiksliausius rezultatus. Kinų ir japonų kalbų palaikymas dar ribotas.
+
+📍 Ar renkami mano duomenys?
+Ne. Plėtinys nerenka asmens duomenų ir niekur nesiunčia jūsų paveikslėlių.
+
+🌟 Įdiekite FontSnap – šrifto atpažinimą iš paveikslėlio kasdieniam dizaino darbui – ir kiekvieną klausimą koks čia šriftas paverskite aiškiu atsakymu. Pažymėkite tekstą, gaukite atitikmenį, nukopijuokite CSS ir kurkite toliau.

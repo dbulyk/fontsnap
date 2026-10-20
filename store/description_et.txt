@@ -1,0 +1,80 @@
+FontSnap on AI fondituvastaja pildilt (font identifier from image), mis töötab otse Chrome'is. Näed veebilehel, bänneril või ekraanipildil ilusat kirjatüüpi? Tõmba tekstile kast ümber või tee pildil paremklõps ning see fondituvastaja näitab viit lähimat Google'i kirjatüüpi.
+
+🚀 Kuidas kasutada fondituvastajat pildilt 3 sammuga
+1️⃣ Klõpsa tööriistaribal FontSnap-ikoonil või vajuta Alt+Shift+F.
+2️⃣ Tõmba kast ühe-kahe tekstirea peale või tee pildil paremklõps ja vali tuvasta selle pildi font.
+3️⃣ Vaata viit kõige sarnasemat vastet koos eelvaadete ja sobivusskooridega.
+
+Kontot pole vaja ja serverisse midagi üles ei laadita. Närvivõrk töötab lokaalselt, nii et see fondituvastaja pildilt hoiab sinu pildid sinu arvutis.
+
+🔍 Mille poolest FontSnap erineb
+Paljud sedalaadi laiendused loevad ainult CSS-i ning jäävad hätta logode, piltide, bännerite ja canvase tekstiga. FontSnap vaatab piksleid, mitte koodi, seega töötab ta ka seal, kus CSS midagi ei ütle:
+• tekst piltidel, plakatitel ja sotsiaalmeedia graafikas
+• rakenduste ekraanipildid, slaidid ja PDF-lehed
+• suured bännerid ja reklaamid igal veebilehel
+
+📌 Peamised funktsioonid
+- Ala valimine igal lehel: tõmba lihtsalt tekstile kast peale.
+- Paremklõpsu menüü: leia font pildilt igal veebilehel ühe klõpsuga.
+- Üleslaadimisrežiim, fondiotsija pildi järgi: kleebi Ctrl+V abil, lohista fail või vali pilt.
+- 5 kõige sarnasemat kirjatüüpi sobivusskooriga.
+- Iga vaste eelvaade sinu enda näidisteksti abil.
+- Üks klõps kopeerib valmis CSS-rea.
+- Töötab ladina, kirillitsa ja araabia kirjas tekstiga.
+
+🧠 AI fondiotsija, mis on õppinud tuhandete stiilide pealt
+FontSnap kasutab kompaktset fondituvastusmudelit, mis on õpetatud rohkem kui 3 600 kirjastiili peal. Ta rühmitab stiilid perekondadeks ja annab lühikese, selge nimekirja. Nii on tegu praktilise fondisobitaja ja fonditundjaga: kui täpne kirjatüüp on kommertslik, saad ikkagi lähima alternatiivi, mida saad kasutada juba täna.
+
+🎨 Kes kasutab seda fondituvastajat pildilt
+➤ Veebidisainerid, kes vajavad kliendi maketi jaoks sobivat kirjatüüpi.
+➤ Esiotsa arendajad, kes tahavad CSS-rida, mitte ainult nime.
+➤ Turundajad ja SMM-spetsialistid, kes taasloovad bänneri stiili.
+➤ Õpilased ja blogijad, kes küsivad pidevalt, mis font see on.
+➤ Kõik, kes tahavad leida fondi nime pildilt ilma raske töölauarakenduseta.
+➤ Teadlased, kes otsivad fonte pildi järgi skannide ja ekraanipiltide seast.
+
+⚡ Miks veebipõhine fondituvastaja pildilt ei ole alati piisav
+Veebitööriistad panevad pildi salvestama, üles laadima ja kärpima. FontSnap jätab selle vahele:
+▸ valik toimub lehel, mida juba vaatad;
+▸ lehel olevate piltide jaoks piisab paremklõpsust;
+▸ tulemused avanevad uuel vahekaardil allika kõrval.
+See on fondituvastaja pildilt, mis mahub brauserisse, mitte ei vii sind sellest eemale.
+
+📊 Fonditundja vs CSS-kontroll
+CSS-kontroll loeb veebilehe tegelikku teksti, kuid ei näe teksti JPG-failis ega canvasel. Pildipõhine fonditundja täidab selle lünga.
+
+🔒 Privaatsus esikohal
+▸ Pildianalüüs töötab seadmes WebAssembly abil.
+▸ Sinu ekraanipildid ei lahku brauserist.
+▸ Eelvaadete jaoks küsitakse Google Fontsist ainult perekonnanimesid.
+▸ Ei mingit jälgimist, reklaame ega registreerumist.
+
+💡 Näpunäited täpsete tulemuste jaoks
+• Vali üks või kaks tekstirida, mitte kogu lehte.
+• Tõmba kast ainult ekraanil nähtavale tekstile: valik jäädvustab praeguse vaatevälja, mitte ekraanilt välja kerinud sisu.
+• Suurem tekst annab täpsema tulemuse kui pisikesed allkirjad.
+• Kui esimene pakkumine tundub vale, vaata ülejäänud nelja: õige perekond on sageli esiviiene seas.
+
+❓ KKK
+📍 Mis on FontSnap?
+See on Chrome'i laiendus ja AI fondituvastaja pildilt, mis tuvastab kirjatüüpe ekraani valitud alalt, veebilehel olevalt pildilt või üles laaditud pildilt.
+
+📍 Kuidas kasutada fondituvastajat pildilt pildifaili puhul?
+Ava FontSnap mis tahes lehel, lülitu üleslaadimisrežiimi ning kleebi, lohista või vali tekstiga pilt.
+
+📍 Kas saan veebilehel oleva pildi üle kontrollida ilma seda salvestamata?
+Jah. Tee pildil paremklõps ja vali tuvasta selle pildi font.
+
+📍 Kas FontSnap töötab võrguühenduseta?
+Tuvastamine ise toimub lokaalselt. Internetiühendust kasutatakse ainult eelvaadete laadimiseks Google Fontsist.
+
+📍 Kas FontSnap tunneb ära kommertskirjatüüpe?
+FontSnap võrdleb Google Fontsi perekondadega. Kommertskirjatüübi puhul näitab ta lähimaid Google Fontsi alternatiive, mis on veebiprojekti jaoks tihti just see, mida vaja.
+
+📍 Milliseid keeli toetatakse?
+Ladina, kirillitsa ja araabia kiri annavad kõige täpsemaid tulemusi. Hiina ja jaapani keele tugi on veel piiratud.
+
+📍 Kas minu andmeid kogutakse?
+Ei. Laiendus ei kogu isikuandmeid ega saada sinu pilte kuhugi.
+
+🌟 Paigalda FontSnap, igapäevase disainitöö fondituvastaja pildilt, ja muuda iga hetk, mil küsid mis font see on, selgeks vastuseks. Tõmba tekstile kast, saa vaste, kopeeri CSS ja jätka disainimist.

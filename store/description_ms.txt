@@ -1,0 +1,80 @@
+FontSnap ialah pengecam fon daripada imej berasaskan AI (font identifier from image) yang berfungsi di dalam Chrome. Nampak fon yang cantik di laman web, sepanduk atau tangkapan skrin? Seret kotak ke atas teks atau klik kanan gambar, dan alat pencari fon ini menunjukkan lima fon Google yang paling hampir.
+
+🚀 Cara mengecam fon daripada imej dalam 3 langkah
+1️⃣ Klik ikon FontSnap pada bar alat atau tekan Alt+Shift+F.
+2️⃣ Seret segi empat tepat ke atas satu atau dua baris teks, atau klik kanan sesuatu imej dan pilih kenal pasti fon dalam imej ini.
+3️⃣ Lihat 5 padanan teratas dengan pratonton visual dan skor padanan.
+
+Tanpa akaun dan tanpa muat naik ke pelayan. Rangkaian saraf berjalan secara setempat, jadi pengecam fon daripada imej ini mengekalkan gambar anda di komputer anda.
+
+🔍 Apa yang membezakan FontSnap
+Kebanyakan sambungan sebegini hanya membaca CSS dan gagal pada logo, gambar, sepanduk dan teks canvas. FontSnap melihat piksel, bukan kod, jadi ia turut berfungsi di tempat CSS tidak memberitahu apa-apa:
+• teks di dalam imej, poster dan grafik media sosial
+• tangkapan skrin apl, slaid dan halaman PDF
+• sepanduk utama dan iklan di mana-mana laman web
+
+📌 Ciri utama
+- Pilihan kawasan pada mana-mana halaman: cuma seret ke atas teks.
+- Menu klik kanan: cari fon daripada imej di mana-mana laman web dengan satu klik.
+- Mod muat naik, pencari fon melalui imej: tampal dengan Ctrl+V, lepaskan fail atau pilih gambar.
+- 5 padanan fon teratas dengan skor padanan.
+- Pratonton visual bagi setiap padanan dengan teks contoh anda sendiri.
+- Satu klik untuk menyalin baris CSS yang siap digunakan.
+- Berfungsi dengan teks Latin, Cyril dan Arab.
+
+🧠 Pengecam fon AI yang dilatih dengan beribu-ribu gaya taip
+FontSnap menggunakan model pengecaman yang padat, dilatih dengan lebih daripada 3,600 gaya taip. Gaya dikumpulkan ke dalam keluarga dan memberi senarai pendek yang kemas. Ini menjadikannya pemadan dan pengecam huruf yang praktikal: jika jenis taip asal bersifat komersial, anda tetap mendapat alternatif terdekat yang boleh digunakan hari ini.
+
+🎨 Siapa yang menggunakan pencari fon daripada imej ini
+➤ Pereka web yang memerlukan padanan jenis taip untuk mockup pelanggan.
+➤ Pembangun bahagian hadapan yang mahukan baris CSS, bukan sekadar nama.
+➤ Pemasar dan pakar SMM yang membina semula gaya sepanduk.
+➤ Pelajar dan blogger yang sering bertanya fon apa ini.
+➤ Sesiapa sahaja yang mahu mencari nama fon daripada imej tanpa aplikasi desktop yang berat.
+➤ Penyelidik yang membuat carian fon melalui imej pada imbasan dan tangkapan skrin.
+
+⚡ Mengapa pengecam fon dalam talian tidak selalunya mencukupi
+Alat web memaksa anda menyimpan, memuat naik dan memangkas gambar. FontSnap melangkaui semua itu:
+▸ pemilihan dibuat pada halaman yang sedang anda lihat;
+▸ untuk gambar pada halaman, satu klik kanan sudah memadai;
+▸ hasil dibuka dalam tab baharu di sebelah sumbernya.
+Ini pengecam fon daripada imej yang muat dalam pelayar, bukan jalan memutar keluar daripadanya.
+
+📊 Pengesan fon lwn penyemak CSS
+Penyemak CSS membaca teks web yang sebenar tetapi tidak dapat melihat teks dalam JPG atau canvas. Pengesan berasaskan imej mengisi jurang itu.
+
+🔒 Privasi diutamakan
+▸ Analisis imej berjalan pada peranti dengan WebAssembly.
+▸ Tangkapan skrin anda tidak pernah meninggalkan pelayar.
+▸ Hanya nama keluarga fon diminta daripada Google Fonts untuk pratonton.
+▸ Tanpa penjejakan, tanpa iklan, tanpa pendaftaran.
+
+💡 Petua untuk hasil yang tepat
+• Pilih satu atau dua baris teks, bukan seluruh halaman.
+• Seret hanya ke atas teks yang kelihatan pada skrin: pilihan merakam viewport semasa, bukan kandungan yang telah tergulung keluar skrin.
+• Teks yang lebih besar memberi hasil yang lebih baik daripada kapsyen kecil.
+• Jika tekaan pertama nampak salah, semak empat yang lain: keluarga yang betul sering berada dalam 5 teratas.
+
+❓ Soalan lazim
+📍 Apakah FontSnap?
+Ia ialah sambungan Chrome dan pengecam fon AI yang mengenali jenis taip dalam kawasan skrin yang dipilih, dalam imej pada halaman web atau dalam gambar yang dimuat naik.
+
+📍 Bagaimana cara mengecam fon daripada fail imej?
+Buka FontSnap pada mana-mana halaman, tukar ke mod muat naik, kemudian tampal, lepaskan atau pilih gambar yang mengandungi teks.
+
+📍 Bolehkah saya menyemak gambar di laman web tanpa menyimpannya?
+Boleh. Klik kanan gambar dan pilih kenal pasti fon dalam imej ini.
+
+📍 Adakah FontSnap berfungsi di luar talian?
+Pengecaman itu sendiri berjalan secara setempat. Sambungan internet hanya digunakan untuk memuatkan pratonton daripada Google Fonts.
+
+📍 Bolehkah FontSnap mengecam jenis taip komersial?
+FontSnap memadankan dengan keluarga Google Fonts. Untuk jenis taip komersial, ia menunjukkan alternatif Google Fonts yang paling hampir, yang sering kali memang diperlukan untuk projek web.
+
+📍 Bahasa apakah yang disokong?
+Skrip Latin, Cyril dan Arab memberi hasil yang paling tepat. Sokongan untuk bahasa Cina dan Jepun masih terhad.
+
+📍 Adakah data saya dikumpulkan?
+Tidak. Sambungan ini tidak mengumpul data peribadi dan tidak menghantar gambar anda ke mana-mana.
+
+🌟 Pasang FontSnap, pengecam fon daripada imej untuk kerja reka bentuk harian, dan ubah setiap soalan fon apa ini menjadi jawapan yang jelas. Pilih teks, dapatkan padanan, salin CSS dan teruskan mereka bentuk.

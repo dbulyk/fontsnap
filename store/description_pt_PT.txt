@@ -1,0 +1,80 @@
+O FontSnap é um identificador de tipos de letra por imagem com IA (font identifier from image) que funciona diretamente no Chrome. Viu um tipo de letra bonito num site, num banner ou numa captura de ecrã? Arraste uma caixa sobre o texto ou clique com o botão direito do rato na imagem, e a extensão mostra os cinco tipos de letra Google mais parecidos.
+
+🚀 Como usar o identificador de tipos de letra por imagem em 3 passos
+1️⃣ Clique no ícone do FontSnap na barra de ferramentas ou prima Alt+Shift+F.
+2️⃣ Arraste um retângulo sobre uma ou duas linhas de texto, ou clique com o botão direito do rato numa imagem e escolha identificar o tipo de letra desta imagem.
+3️⃣ Veja as 5 principais correspondências com pré-visualizações em direto e pontuações de correspondência.
+
+Sem conta e sem envio para servidores. A rede neuronal corre localmente, por isso este identificador de tipos de letra por imagem mantém as suas imagens no seu computador.
+
+🔍 O que torna o FontSnap diferente
+Muitas extensões deste tipo só leem CSS e falham em logótipos, imagens, banners e texto em canvas. O FontSnap analisa os píxeis, não o código, por isso também funciona onde o CSS não diz nada:
+• texto dentro de imagens, cartazes e gráficos para redes sociais
+• capturas de ecrã de aplicações, diapositivos e páginas PDF
+• banners principais e anúncios em qualquer site
+
+📌 Principais funcionalidades
+- Seleção de zona em qualquer página: basta arrastar sobre o texto.
+- Menu do botão direito: identificar tipo de letra por imagem em qualquer site com um clique.
+- Modo de ficheiro, um identificador de tipos de letra por imagem: cole com Ctrl+V, largue um ficheiro ou escolha uma imagem.
+- As 5 principais correspondências de tipos de letra com pontuação.
+- Pré-visualização em direto de cada correspondência com o seu próprio texto de exemplo.
+- Um clique para copiar a linha de CSS pronta.
+- Funciona com texto em alfabeto latino, cirílico e árabe.
+
+🧠 Um localizador de fontes com IA treinado com milhares de estilos
+O FontSnap usa um modelo compacto de reconhecimento de tipos de letra, treinado com mais de 3600 estilos. Agrupa os estilos em famílias e devolve uma lista curta e limpa. Isto torna-o um comparador e reconhecedor prático: se o tipo de letra exato for comercial, obtém na mesma a alternativa mais próxima que pode usar hoje.
+
+🎨 Quem usa este identificador de tipos de letra por imagem
+➤ Web designers que precisam de uma correspondência de tipo de letra para a maquete de um cliente.
+➤ Programadores front-end que querem a linha de CSS, e não apenas um nome.
+➤ Profissionais de marketing e de SMM que recriam o estilo de um banner.
+➤ Estudantes e bloggers que perguntam sempre que tipo de letra é este.
+➤ Qualquer pessoa que queira descobrir o nome do tipo de letra por imagem sem uma aplicação de secretária pesada.
+➤ Investigadores que fazem pesquisa de fontes por imagem em digitalizações e capturas de ecrã.
+
+⚡ Porque é que um detetor de tipos de letra online nem sempre chega
+As ferramentas web obrigam a guardar, enviar e recortar uma imagem. O FontSnap dispensa isso:
+▸ a seleção faz-se na página que já está a ver;
+▸ um clique com o botão direito do rato chega para as imagens da página;
+▸ os resultados abrem num novo separador ao lado da origem.
+É um identificador de tipos de letra por imagem que cabe no navegador, não um desvio para fora dele.
+
+📊 Detetor de tipos de letra vs. verificador de CSS
+Um verificador de CSS lê texto web em direto, mas não vê texto num JPG ou num canvas. Um detetor baseado em imagem preenche essa lacuna.
+
+🔒 Privacidade em primeiro lugar
+▸ A análise da imagem corre no dispositivo com WebAssembly.
+▸ As suas capturas de ecrã nunca saem do navegador.
+▸ Só são pedidos nomes de famílias ao Google Fonts para as pré-visualizações.
+▸ Sem rastreamento, sem anúncios, sem registo.
+
+💡 Dicas para resultados rigorosos
+• Selecione uma ou duas linhas de texto, não uma página inteira.
+• Arraste apenas sobre texto visível no ecrã: a seleção capta a área de visualização atual, não o conteúdo fora do ecrã.
+• Texto maior dá resultados mais rigorosos do que legendas minúsculas.
+• Se o primeiro palpite parecer errado, verifique os outros quatro: a família certa está muitas vezes nas 5 primeiras.
+
+❓ Perguntas frequentes
+📍 O que é o FontSnap?
+É uma extensão do Chrome e um identificador de tipos de letra por imagem com IA, que reconhece tipos de letra numa zona selecionada do ecrã, numa imagem de uma página web ou numa imagem aberta a partir de um ficheiro.
+
+📍 Como identificar tipos de letra por imagem a partir de ficheiros?
+Abra o FontSnap em qualquer página, mude para o modo de ficheiro e cole, largue ou escolha uma imagem com texto.
+
+📍 Posso verificar uma imagem de um site sem a guardar?
+Sim. Clique com o botão direito do rato na imagem e escolha identificar o tipo de letra desta imagem.
+
+📍 O FontSnap funciona offline?
+O reconhecimento em si corre localmente. A ligação à internet só é usada para carregar pré-visualizações do Google Fonts.
+
+📍 O FontSnap consegue reconhecer tipos de letra comerciais?
+O FontSnap faz a correspondência com famílias do Google Fonts. Para um tipo de letra comercial mostra as alternativas mais próximas do Google Fonts, que muitas vezes é o que precisa para um projeto web.
+
+📍 Que idiomas são suportados?
+Os alfabetos latino, cirílico e árabe dão os resultados mais rigorosos. O suporte para chinês e japonês ainda é limitado.
+
+📍 Os meus dados são recolhidos?
+Não. A extensão não recolhe dados pessoais nem envia as suas imagens para lado nenhum.
+
+🌟 Instale o FontSnap, o identificador de tipos de letra por imagem para o trabalho de design do dia a dia, e transforme cada momento de que tipo de letra é este numa resposta clara. Capture o texto, obtenha a correspondência, copie o CSS e continue a criar.
