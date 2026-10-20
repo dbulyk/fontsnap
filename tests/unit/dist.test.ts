@@ -63,7 +63,7 @@ function makeDist(
     'manifest.json': JSON.stringify(options.patch ? options.patch(manifest) : manifest),
     // as the build has it: two functions are handed to the page (measureImage and the loader loadImagePixels), nothing else is
     'background.js':
-      'export {};chrome.scripting.executeScript({target:{tabId:1},args:[1],func:measure});chrome.scripting.executeScript({target:{tabId:1},args:[1],func:load});async function measure(t){return t}async function load(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+      'export {};chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[1],func:measure});chrome.scripting.executeScript({target:{tabId:t,frameIds:[n]},args:[e.srcUrl],func:load});async function measure(t){return t}async function load(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
     [BASE_CHUNK]: REAL_CHUNK,
     'select.js': options.content ?? '(function(){})();',
     ...Object.fromEntries(Object.values(EXTENSION_PAGES).map((page) => [page, '<html></html>'])),
@@ -1083,7 +1083,7 @@ describe('verifyDist: the FontSnap manifest and its narrow WebAssembly exception
     it('accepts imports of chunks that exist', () => {
       const files = {
         'background.js':
-          'import{a}from"./assets/x-abc.js";chrome.scripting.executeScript({target:{tabId:a},func:m});chrome.scripting.executeScript({target:{tabId:a},func:l});async function m(t){return t}async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
+          'import{a}from"./assets/x-abc.js";chrome.scripting.executeScript({target:{tabId:a,frameIds:[n]},func:m});chrome.scripting.executeScript({target:{tabId:a,frameIds:[n]},args:[e.srcUrl],func:l});async function m(t){return t}async function l(t){const e=new Image;e.crossOrigin="anonymous";e.src=t;return e}',
         'assets/x-abc.js': 'export const a=1;',
       };
       expect(verifyDist(makeDist({ files }), withMain({ 'assets/x-abc.js': 'chunk' }))).toEqual([]);

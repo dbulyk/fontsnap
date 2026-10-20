@@ -396,6 +396,8 @@ export interface InjectedFunction {
   parameterWritten: boolean;
   /** Set when the function constructs an `Image` (a `new Image` in the syntax tree, not in a string): what the loader may do, judged there. */
   loader: LoaderFacts | undefined;
+  /** What is wrong with the target and the arguments of the call that hands the function over (see `callProblems`). */
+  call: string[];
 }
 
 /**
@@ -603,8 +605,80 @@ export function injectedFunctionDetails(
     if (src !== undefined) allow(src);
     return { problems, allowed };
   };
+  /**
+   * The shape of the call that hands a function over, read from the options literal as the minifier leaves it: only target, func, args
+   * and files; the target is { tabId: <name> or <name>.id, frameIds: [<one name or number>] } and nothing else (no allFrames, no
+   * documentIds, no second frame); the arguments of the loader are [<name>.srcUrl] - the srcUrl of the click, as it is read from the
+   * parameter of the function that got the click (lint says which parameter, in the source).
+   */
+  const callProblems = (options: ts.ObjectLiteralExpression, loader: boolean): string[] => {
+    const problems: string[] = [];
+    const keyOf = (property: ts.ObjectLiteralElementLike): string | undefined =>
+      (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) &&
+      ts.isIdentifier(property.name)
+        ? property.name.text
+        : undefined;
+    const valueOf = (property: ts.ObjectLiteralElementLike): ts.Expression | undefined =>
+      ts.isPropertyAssignment(property) ? property.initializer : undefined;
+    const named = (e: ts.Expression | undefined): boolean => e !== undefined && ts.isIdentifier(e);
+    const reads = (e: ts.Expression | undefined, name: string): boolean =>
+      e !== undefined &&
+      ts.isPropertyAccessExpression(e) &&
+      e.questionDotToken === undefined &&
+      named(e.expression) &&
+      e.name.text === name;
+    const own = new Map<string, ts.Expression | undefined>();
+    for (const property of options.properties) {
+      const key = keyOf(property);
+      if (key === undefined || !['target', 'func', 'args', 'files'].includes(key)) {
+        problems.push('an option of executeScript that is not target, func, args or files');
+      } else own.set(key, valueOf(property));
+    }
+    const target = own.get('target');
+    if (target === undefined || !ts.isObjectLiteralExpression(target)) {
+      problems.push('a target of executeScript that is not an object literal');
+    } else {
+      const parts = new Map<string, ts.Expression | undefined>();
+      for (const property of target.properties) {
+        const key = keyOf(property);
+        const value = valueOf(property);
+        const list =
+          value !== undefined && ts.isArrayLiteralExpression(value) ? value.elements : undefined;
+        const one = list?.length === 1 ? list[0] : undefined;
+        if (
+          (key === 'tabId' && (named(value) || reads(value, 'id'))) ||
+          (key === 'frameIds' && one !== undefined && (named(one) || ts.isNumericLiteral(one)))
+        ) {
+          parts.set(key, value);
+        } else {
+          problems.push(
+            'a target of executeScript other than { tabId: <name>, frameIds: [<one frame>] } (allFrames, documentIds, a second frame, a spread, a computed key)',
+          );
+        }
+      }
+      if (!parts.has('tabId') || !parts.has('frameIds')) {
+        problems.push(
+          'a target of executeScript without a tabId or without the one frame it runs in',
+        );
+      }
+    }
+    if (loader) {
+      const args = own.get('args');
+      if (
+        args === undefined ||
+        !ts.isArrayLiteralExpression(args) ||
+        args.elements.length !== 1 ||
+        !reads(args.elements[0], 'srcUrl')
+      ) {
+        problems.push(
+          'a call of executeScript that hands the loader anything but [<name>.srcUrl] (the srcUrl of the click)',
+        );
+      }
+    }
+    return problems;
+  };
   const found: (InjectedFunction | undefined)[] = [];
-  const read = (node: ts.Node | undefined): void => {
+  const read = (node: ts.Node | undefined, options: ts.ObjectLiteralExpression): void => {
     if (node === undefined) {
       found.push(undefined);
       return;
@@ -690,6 +764,7 @@ export function injectedFunctionDetails(
               srcFromElsewhere,
               crossOriginWrites,
             }),
+      call: callProblems(options, images.length > 0),
     });
   };
   const isTheName = (node: ts.Node): boolean =>
@@ -721,13 +796,15 @@ export function injectedFunctionDetails(
             const name = ts.isIdentifier(key) || ts.isStringLiteral(key) ? key.text : undefined;
             if (name !== 'func') continue;
             if (ts.isShorthandPropertyAssignment(property)) {
-              read(functionOf(checker.getShorthandAssignmentValueSymbol(property)));
+              read(functionOf(checker.getShorthandAssignmentValueSymbol(property)), options0);
             } else if (ts.isMethodDeclaration(property)) {
-              read(property);
+              read(property, options0);
             } else if (ts.isPropertyAssignment(property)) {
               const value = property.initializer;
-              if (ts.isIdentifier(value)) read(functionOf(checker.getSymbolAtLocation(value)));
-              else if (ts.isFunctionExpression(value) || ts.isArrowFunction(value)) read(value);
+              if (ts.isIdentifier(value))
+                read(functionOf(checker.getSymbolAtLocation(value)), options0);
+              else if (ts.isFunctionExpression(value) || ts.isArrowFunction(value))
+                read(value, options0);
               else found.push(undefined);
             } else {
               found.push(undefined);
@@ -817,6 +894,7 @@ export function scriptProblems(file: string, text: string): string[] {
   const loaders = bodies.filter((one) => one.loader !== undefined);
   const page = [
     ...(file === 'select.js' ? pagePlatformProblems(text) : []),
+    ...injected.flatMap((one) => one?.call ?? []),
     ...injected
       .filter((one) => one === undefined)
       .map(

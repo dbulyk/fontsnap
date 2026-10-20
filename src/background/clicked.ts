@@ -54,25 +54,6 @@ async function captureWithRetry(windowId: number): Promise<string> {
   }
 }
 
-async function loadedPixels(
-  tabId: number,
-  frameId: number,
-  srcUrl: string,
-): Promise<string | undefined> {
-  const [first] = await within(
-    chrome.scripting.executeScript({
-      target: { tabId, frameIds: [frameId] },
-      args: [srcUrl],
-      func: loadImagePixels,
-    }),
-    LOAD_TIMEOUT_MS,
-  );
-  const pixels = first?.result;
-  return typeof pixels === 'string' && BASE64.test(pixels)
-    ? base64ToDataUrl(pixels, 'image/png')
-    : undefined;
-}
-
 async function measure(
   tabId: number,
   frameId: number,
@@ -144,9 +125,21 @@ export async function clickedImage(
   if (decoded !== undefined) return { dataUrl: decoded, text: '' };
   if (tab?.id === undefined) return { error: 'Could not access this image' };
   const tabId = tab.id;
+  const frameId = info.frameId ?? 0;
   try {
-    const pixels = await loadedPixels(tabId, info.frameId ?? 0, info.srcUrl);
-    if (pixels !== undefined) return { dataUrl: await reencodeWithinQuota(pixels), text: '' };
+    // the target and the arguments of this call are fixed by lint (fontsnap/execute-script) and by verify-dist: one frame, and the srcUrl
+    const [first] = await within(
+      chrome.scripting.executeScript({
+        target: { tabId, frameIds: [frameId] },
+        args: [info.srcUrl],
+        func: loadImagePixels,
+      }),
+      LOAD_TIMEOUT_MS,
+    );
+    const pixels = first?.result;
+    if (typeof pixels === 'string' && BASE64.test(pixels)) {
+      return { dataUrl: await reencodeWithinQuota(base64ToDataUrl(pixels, 'image/png')), text: '' };
+    }
   } catch {
     // the page refused the script, the image is not readable, or it did not decode: the screenshot is next
   }
