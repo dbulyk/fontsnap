@@ -1,4 +1,4 @@
-FontSnap è uno strumento di IA per riconoscere il font da un'immagine, direttamente in Chrome. Hai visto un bel carattere su un sito, in un banner o in uno screenshot? Traccia un riquadro sul testo e FontSnap mostra in circa un secondo i cinque font Google più simili.
+FontSnap è uno strumento di IA per riconoscere il font da un'immagine, direttamente in Chrome. Hai visto un bel carattere su un sito, in un banner o in uno screenshot? Traccia un riquadro sul testo e FontSnap mostra i cinque font Google più simili.
 
 🚀 Come riconoscere il font di un'immagine in 3 passaggi
 1️⃣ Fai clic sull'icona di FontSnap nella barra o premi Alt+Shift+F.
@@ -74,4 +74,4 @@ Gli alfabeti latino, cirillico e arabo danno i risultati più precisi. Cinese e 
 📍 I miei dati vengono raccolti?
 No. L'estensione non raccoglie dati personali e non invia le tue immagini da nessuna parte.
 
-🌟 Installa FontSnap per riconoscere i font dalle immagini nel lavoro di tutti i giorni e trasforma ogni "che font è questo?" in una risposta di due secondi. Seleziona il testo, ottieni il risultato, copia il CSS e continua a progettare.
+🌟 Installa FontSnap per riconoscere i font dalle immagini nel lavoro di tutti i giorni e trasforma ogni "che font è questo?" in una risposta rapida. Seleziona il testo, ottieni il risultato, copia il CSS e continua a progettare.

@@ -1,4 +1,4 @@
-FontSnap, doğrudan Chrome içinde çalışan, yapay zeka destekli bir resimden yazı tipi bulma aracıdır. Bir sitede, banner'da veya ekran görüntüsünde güzel bir yazı tipi mi gördünüz? Metnin üzerine bir çerçeve çizin; FontSnap yaklaşık bir saniyede en yakın beş Google yazı tipini göstersin.
+FontSnap, doğrudan Chrome içinde çalışan, yapay zeka destekli bir resimden yazı tipi bulma aracıdır. Bir sitede, banner'da veya ekran görüntüsünde güzel bir yazı tipi mi gördünüz? Metnin üzerine bir çerçeve çizin; FontSnap en yakın beş Google yazı tipini göstersin.
 
 🚀 3 adımda resimden yazı tipi bulma
 1️⃣ Araç çubuğundaki FontSnap simgesine tıklayın veya Alt+Shift+F'ye basın.
@@ -74,4 +74,4 @@ Latin, Kiril ve Arap alfabeleri en doğru sonuçları verir. Çince ve Japonca d
 📍 Verilerim toplanıyor mu?
 Hayır. Eklenti kişisel veri toplamaz ve resimlerinizi hiçbir yere göndermez.
 
-🌟 Günlük tasarım işleriniz için resimden yazı tipi bulma aracı FontSnap'i yükleyin ve her "bu hangi yazı tipi?" sorusunu iki saniyelik bir cevaba dönüştürün. Metni seçin, eşleşmeyi alın, CSS'i kopyalayın ve tasarlamaya devam edin.
+🌟 Günlük tasarım işleriniz için resimden yazı tipi bulma aracı FontSnap'i yükleyin ve her "bu hangi yazı tipi?" sorusunu hızlı bir cevaba dönüştürün. Metni seçin, eşleşmeyi alın, CSS'i kopyalayın ve tasarlamaya devam edin.
