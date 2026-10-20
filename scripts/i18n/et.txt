@@ -40,3 +40,5 @@ Proovi kohe
 Kuidas FontSnap kinnitada
 Kõik töötab sinu seadmes. Pilte ei laadita kunagi üles.
 Klõpsatud pilti ei õnnestunud eraldada, seega analüüsiti kogu nähtavat ala. Parema tulemuse saamiseks klõpsa FontSnapi ikoonil ja lohista üle teksti.
+Pildi vahekaart pole enam esiplaanil: minge selle juurde tagasi ja klõpsake pilti uuesti
+Pildi vahekaart suleti enne, kui seda sai jäädvustada

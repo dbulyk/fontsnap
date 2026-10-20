@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Attēlu, uz kura noklikšķinājāt, neizdevās izdalīt, tāpēc tika analizēta visa redzamā zona. Lai iegūtu labāku rezultātu, noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam."
+  },
+  "tabNotInFront": {
+    "message": "Attēla cilne vairs nav priekšplānā: atgriezieties tajā un vēlreiz noklikšķiniet uz attēla"
+  },
+  "tabClosed": {
+    "message": "Attēla cilne tika aizvērta, pirms to izdevās uzņemt"
   }
 }

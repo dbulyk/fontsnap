@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Bilden du klickade på kunde inte avgränsas, så hela det synliga området analyserades. För ett bättre resultat klickar du på FontSnap-ikonen och drar över texten."
+  },
+  "tabNotInFront": {
+    "message": "Fliken med bilden är inte längre i förgrunden: gå tillbaka till den och klicka på bilden igen"
+  },
+  "tabClosed": {
+    "message": "Fliken med bilden stängdes innan den kunde fångas"
   }
 }

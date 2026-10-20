@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Slika na koju ste kliknuli nije se mogla izdvojiti pa je analizirano cijelo vidljivo područje. Za bolji rezultat kliknite ikonu FontSnap i povucite preko teksta."
+  },
+  "tabNotInFront": {
+    "message": "Kartica sa slikom više nije u prvom planu: vratite se na nju i ponovno kliknite sliku"
+  },
+  "tabClosed": {
+    "message": "Kartica sa slikom zatvorena je prije nego što ju je bilo moguće snimiti"
   }
 }

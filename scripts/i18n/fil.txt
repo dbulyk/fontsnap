@@ -40,3 +40,5 @@ Subukan ngayon
 Paano i-pin ang FontSnap
 Lahat ay tumatakbo sa iyong device. Hindi kailanman ina-upload ang mga larawan.
 Hindi ma-isolate ang larawang na-click mo, kaya ang buong nakikitang bahagi ang sinuri. Para sa mas magandang resulta, i-click ang icon ng FontSnap at i-drag sa ibabaw ng teksto.
+Wala na sa harap ang tab ng larawan: bumalik dito at i-click muli ang larawan
+Isinara ang tab ng larawan bago ito na-capture

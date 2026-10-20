@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Nie udało się wyodrębnić obrazu, w który kliknięto, więc przeanalizowano cały widoczny obszar. Aby uzyskać lepszy wynik, kliknij ikonę FontSnap i przeciągnij po tekście."
+  },
+  "tabNotInFront": {
+    "message": "Karta z obrazem nie jest już na pierwszym planie: wróć do niej i kliknij obraz ponownie"
+  },
+  "tabClosed": {
+    "message": "Karta z obrazem została zamknięta, zanim udało się ją przechwycić"
   }
 }

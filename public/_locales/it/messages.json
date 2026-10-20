@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Non è stato possibile isolare l'immagine su cui hai fatto clic, quindi è stata analizzata l'intera area visibile. Per un risultato migliore, fai clic sull'icona di FontSnap e trascina sul testo."
+  },
+  "tabNotInFront": {
+    "message": "La scheda dell’immagine non è più in primo piano: tornaci e fai di nuovo clic sull’immagine"
+  },
+  "tabClosed": {
+    "message": "La scheda dell’immagine è stata chiusa prima che potesse essere acquisita"
   }
 }

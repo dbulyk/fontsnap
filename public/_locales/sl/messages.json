@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Slike, na katero ste kliknili, ni bilo mogoče izolirati, zato je bilo analizirano celotno vidno območje. Za boljši rezultat kliknite ikono FontSnap in povlecite čez besedilo."
+  },
+  "tabNotInFront": {
+    "message": "Zavihek s sliko ni več v ospredju: vrnite se nanj in znova kliknite sliko"
+  },
+  "tabClosed": {
+    "message": "Zavihek s sliko je bil zaprt, preden ga je bilo mogoče zajeti"
   }
 }

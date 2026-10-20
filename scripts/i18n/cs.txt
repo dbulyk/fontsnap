@@ -40,3 +40,5 @@ Vyzkoušet
 Jak připnout FontSnap
 Vše běží ve vašem zařízení. Obrázky se nikdy nenahrávají.
 Obrázek, na který jste klikli, se nepodařilo vyjmout, proto byla analyzována celá viditelná oblast. Pro lepší výsledek klikněte na ikonu FontSnap a táhněte myší přes text.
+Karta s obrázkem už není v popředí: vraťte se na ni a klikněte na obrázek znovu
+Karta s obrázkem byla zavřena dřív, než ji šlo zachytit

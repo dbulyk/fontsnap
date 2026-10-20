@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Napsauttamaasi kuvaa ei voitu erottaa, joten koko näkyvä alue analysoitiin. Saat paremman tuloksen napsauttamalla FontSnap-kuvaketta ja vetämällä tekstin yli."
+  },
+  "tabNotInFront": {
+    "message": "Kuvan välilehti ei ole enää edessä: palaa siihen ja napsauta kuvaa uudelleen"
+  },
+  "tabClosed": {
+    "message": "Kuvan välilehti suljettiin ennen kuin siitä saatiin kuva"
   }
 }

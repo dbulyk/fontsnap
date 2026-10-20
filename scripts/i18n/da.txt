@@ -40,3 +40,5 @@ Prøv nu
 Sådan fastgør du FontSnap
 Alt kører på din enhed. Billeder uploades aldrig.
 Det billede, du klikkede på, kunne ikke isoleres, så hele det synlige område er blevet analyseret. For et bedre resultat skal du klikke på FontSnap-ikonet og trække hen over teksten.
+Fanen med billedet er ikke længere forrest: gå tilbage til den, og klik på billedet igen
+Fanen med billedet blev lukket, før den kunne optages

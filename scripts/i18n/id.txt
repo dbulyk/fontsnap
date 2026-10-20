@@ -40,3 +40,5 @@ Coba sekarang
 Cara menyematkan FontSnap
 Semua berjalan di perangkat Anda. Gambar tidak pernah diunggah.
 Gambar yang Anda klik tidak dapat diisolasi, sehingga seluruh area yang terlihat dianalisis. Untuk hasil yang lebih baik, klik ikon FontSnap lalu seret di atas teks.
+Tab gambar tidak lagi berada di depan: kembali ke tab itu dan klik gambar sekali lagi
+Tab gambar ditutup sebelum sempat ditangkap

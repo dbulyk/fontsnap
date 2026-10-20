@@ -40,3 +40,5 @@ Experimentar agora
 Como afixar o FontSnap
 Tudo funciona no seu dispositivo. As imagens nunca são enviadas.
 Não foi possível isolar a imagem em que clicou, por isso foi analisada toda a área visível. Para um melhor resultado, clique no ícone do FontSnap e arraste sobre o texto.
+O separador da imagem já não está em primeiro plano: volte a ele e clique novamente na imagem
+O separador da imagem foi fechado antes de poder ser capturado

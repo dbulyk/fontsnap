@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Không thể tách riêng hình ảnh bạn đã nhấp vào, nên toàn bộ vùng hiển thị đã được phân tích. Để có kết quả tốt hơn, hãy nhấp vào biểu tượng FontSnap rồi kéo qua văn bản."
+  },
+  "tabNotInFront": {
+    "message": "Thẻ chứa hình ảnh không còn ở phía trước: hãy quay lại thẻ đó và nhấp vào hình ảnh lần nữa"
+  },
+  "tabClosed": {
+    "message": "Thẻ chứa hình ảnh đã bị đóng trước khi kịp chụp"
   }
 }

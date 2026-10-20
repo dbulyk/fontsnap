@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Picha uliyobofya haikuweza kutengwa, kwa hiyo eneo lote linaloonekana lilichanganuliwa. Kwa matokeo bora, bofya aikoni ya FontSnap kisha buruta juu ya maandishi."
+  },
+  "tabNotInFront": {
+    "message": "Kichupo cha picha hakiko tena mbele: rudi kwake kisha ubofye picha tena"
+  },
+  "tabClosed": {
+    "message": "Kichupo cha picha kilifungwa kabla ya kunaswa"
   }
 }

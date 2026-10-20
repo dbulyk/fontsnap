@@ -40,3 +40,5 @@ Izmēģināt tagad
 Kā piespraust FontSnap
 Viss darbojas jūsu ierīcē. Attēli nekad netiek augšupielādēti.
 Attēlu, uz kura noklikšķinājāt, neizdevās izdalīt, tāpēc tika analizēta visa redzamā zona. Lai iegūtu labāku rezultātu, noklikšķiniet uz FontSnap ikonas un velciet pāri tekstam.
+Attēla cilne vairs nav priekšplānā: atgriezieties tajā un vēlreiz noklikšķiniet uz attēla
+Attēla cilne tika aizvērta, pirms to izdevās uzņemt

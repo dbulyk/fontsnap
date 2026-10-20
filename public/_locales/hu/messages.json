@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "A rákattintott képet nem sikerült kiemelni, ezért a teljes látható területet elemeztük. A jobb eredményért kattintson a FontSnap ikonra, és húzza át az egeret a szövegen."
+  },
+  "tabNotInFront": {
+    "message": "A kép lapja már nincs előtérben: térjen vissza rá, és kattintson újra a képre"
+  },
+  "tabClosed": {
+    "message": "A kép lapját bezárták, mielőtt rögzíteni lehetett volna"
   }
 }

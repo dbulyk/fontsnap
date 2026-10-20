@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "No se pudo aislar la imagen en la que hizo clic, así que se analizó toda el área visible. Para un mejor resultado, haga clic en el icono de FontSnap y arrastre sobre el texto."
+  },
+  "tabNotInFront": {
+    "message": "La pestaña de la imagen ya no está en primer plano: vuelve a ella y haz clic de nuevo en la imagen"
+  },
+  "tabClosed": {
+    "message": "La pestaña de la imagen se cerró antes de poder capturarla"
   }
 }

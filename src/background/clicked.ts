@@ -7,6 +7,7 @@
 // The pixels reach nobody but this worker (the result of executeScript); every address handed to a page is the srcUrl of the click.
 import { frameRect, validRect, type CaptureEntry, type Rect } from '../shared/capture';
 import { errorMessage } from '../shared/errors';
+import { t } from '../shared/i18n';
 import { loadImagePixels } from './load-image';
 import { measureImage, type MeasuredImage } from './measure';
 import { base64ToDataUrl, cropToDataUrl, decodeDataImage, reencodeWithinQuota } from './shot';
@@ -25,8 +26,6 @@ const MEASURE_TIMEOUT_MS = 5_000;
 // page that may not be captured come back every time, so they are not tried again.
 const CAPTURE_GAP_MS = 1000;
 const READBACK_FAILED = 'image readback failed';
-const NOT_IN_FRONT =
-  'The tab of the image is no longer in front: go back to it and click the image again';
 let lastCaptureAt = 0;
 
 function within<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -67,8 +66,13 @@ async function captureInTurn(tabId: number, windowId: number): Promise<string> {
   const wait = at - Date.now();
   if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
   // captureVisibleTab takes whatever tab is in front of the window: while this click waited for its turn, the result tab of an
-  // earlier click may have come to the front
-  if (!(await chrome.tabs.get(tabId)).active) throw new Error(NOT_IN_FRONT);
+  // earlier click may have come to the front, or the tab may have been closed (tabs.get rejects with "No tab with id: N")
+  const active = await chrome.tabs.get(tabId).then(
+    (tab) => tab.active,
+    () => undefined,
+  );
+  if (active === undefined) throw new Error(t('tabClosed'));
+  if (!active) throw new Error(t('tabNotInFront'));
   return chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
 }
 

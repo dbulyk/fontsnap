@@ -40,3 +40,5 @@ Kipróbálom
 A FontSnap rögzítése
 Minden az Ön eszközén fut. A képeket sosem tölti fel.
 A rákattintott képet nem sikerült kiemelni, ezért a teljes látható területet elemeztük. A jobb eredményért kattintson a FontSnap ikonra, és húzza át az egeret a szövegen.
+A kép lapja már nincs előtérben: térjen vissza rá, és kattintson újra a képre
+A kép lapját bezárták, mielőtt rögzíteni lehetett volna

@@ -525,6 +525,30 @@ describe('the screenshot is of the tab of the click', () => {
     expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
   });
 
+  // QA of round 3, nits 1 and 2: the reason is a message of the locales (it was English in every language), and a tab closed while the
+  // click waited for its turn is said in words, not as Chrome's "No tab with id: N"
+  it('says it in the language of the browser', async () => {
+    stub = createChromeStub({ locale: 'ru' });
+    stub.install();
+    script({ load: () => null, measure: () => null });
+    stub.chrome.tabs.get.mockResolvedValue({ id: 5, active: false } as chrome.tabs.Tab);
+    const away = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(away.error).toBe(stub.chrome.i18n.getMessage('tabNotInFront'));
+    expect(away.error).toMatch(/^Вкладка с картинкой больше не на переднем плане/);
+    stub.chrome.tabs.get.mockRejectedValue(new Error('No tab with id: 5.'));
+    const closed = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(closed.error).toMatch(/^Вкладку с картинкой закрыли/);
+  });
+
+  it('says that the tab was closed when it is gone', async () => {
+    script({ load: () => null, measure: () => null });
+    stub.chrome.tabs.get.mockRejectedValue(new Error('No tab with id: 5.'));
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(entry.error).toBe(stub.chrome.i18n.getMessage('tabClosed'));
+    expect(entry.error).toMatch(/was closed/);
+    expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
+  });
+
   it('asks for the tab of the click itself, right before each screenshot', async () => {
     script({ measure: () => measured({ rect: { x: 5000, y: 0, w: 10, h: 10 } }) });
     await clickOn({ srcUrl: SRC, frameId: 0 }, tab);

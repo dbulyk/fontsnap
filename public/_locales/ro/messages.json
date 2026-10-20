@@ -141,5 +141,11 @@
   },
   "wholeNote": {
     "message": "Imaginea pe care ați făcut clic nu a putut fi izolată, așa că a fost analizată întreaga zonă vizibilă. Pentru un rezultat mai bun, faceți clic pe pictograma FontSnap și trageți peste text."
+  },
+  "tabNotInFront": {
+    "message": "Fila imaginii nu mai este în prim-plan: reveniți la ea și dați din nou clic pe imagine"
+  },
+  "tabClosed": {
+    "message": "Fila imaginii a fost închisă înainte de a putea fi capturată"
   }
 }

@@ -40,3 +40,5 @@ Prova nu
 Så fäster du FontSnap
 Allt körs på din enhet. Bilder laddas aldrig upp.
 Bilden du klickade på kunde inte avgränsas, så hela det synliga området analyserades. För ett bättre resultat klickar du på FontSnap-ikonen och drar över texten.
+Fliken med bilden är inte längre i förgrunden: gå tillbaka till den och klicka på bilden igen
+Fliken med bilden stängdes innan den kunde fångas
