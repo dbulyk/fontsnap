@@ -84,7 +84,7 @@ type Measure = (
   target: string,
   kind: 'image' | 'frame',
   saved: readonly number[] | null,
-) => Promise<MeasuredImage | null>;
+) => Promise<MeasuredImage | true | null>;
 
 /**
  * Step 2. The positions of every scroller are recorded before the image is scrolled into view and written back in `finally`, also
@@ -97,24 +97,31 @@ async function croppedFromScreenshot(
   shoot: () => Promise<string>,
   { srcUrl, frameId, frameUrl }: { srcUrl: string; frameId: number; frameUrl: string | undefined },
 ): Promise<string> {
-  const restores: (() => Promise<unknown>)[] = [];
+  const find = async (target: string, kind: 'image' | 'frame') => {
+    const found = await measure(target, kind, null);
+    return found === true ? null : found;
+  };
+  const restores: (() => Promise<boolean>)[] = [];
+  const restore = (target: string, kind: 'image' | 'frame', saved: readonly number[]) => {
+    restores.push(async () => (await measure(target, kind, saved)) === true);
+  };
+  let restored = true;
+  let crop: string;
   try {
     let frame: MeasuredImage | null = null;
     if (frameId !== 0) {
       if (!frameUrl) throw new Error('The frame of the image is not known');
-      frame = await measure(frameUrl, 'frame', null);
+      frame = await find(frameUrl, 'frame');
       if (!frame) throw new Error('The frame of the image was not found');
-      const baseline = frame.saved;
-      restores.push(() => measure(frameUrl, 'frame', baseline));
+      restore(frameUrl, 'frame', frame.saved);
     }
-    const image = await measure(srcUrl, 'image', null);
+    const image = await find(srcUrl, 'image');
     if (!image) throw new Error('Could not access this image');
-    const saved = image.saved;
-    restores.push(() => measure(srcUrl, 'image', saved));
+    restore(srcUrl, 'image', image.saved);
     let rect: Rect = image.rect;
     if (frame && frameUrl) {
       // the frame may have moved with the scroll that brought the image into view
-      const moved = await measure(frameUrl, 'frame', null);
+      const moved = await find(frameUrl, 'frame');
       if (!moved) throw new Error('The frame of the image was not found');
       // throws when the frame found by its URL is not the frame of the click (the same address can be a nested frame of another
       // frame) and when the frame has padding
@@ -122,10 +129,13 @@ async function croppedFromScreenshot(
     }
     if (!validRect(rect)) throw new Error('Could not access this image');
     const shot = await shoot();
-    return await cropToDataUrl(shot, rect, image.dpr);
+    crop = await cropToDataUrl(shot, rect, image.dpr);
   } finally {
-    for (const restore of restores.reverse()) await restore().catch(() => undefined);
+    for (const back of restores.reverse()) restored = (await back().catch(() => false)) && restored;
   }
+  // the page is not where the user left it: that is not passed over, and the ladder goes on to the whole visible area with the hint
+  if (!restored) throw new Error('The scroll position of the page could not be put back');
+  return crop;
 }
 
 /** The capture entry for the right-clicked image; never rejects: a failure is an entry with an error. */

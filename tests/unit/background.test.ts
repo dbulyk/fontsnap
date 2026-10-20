@@ -410,7 +410,7 @@ describe('right-click on an image', () => {
     stub.chrome.scripting.executeScript
       .mockResolvedValueOnce([{ result: null }])
       .mockResolvedValueOnce([measured()])
-      .mockResolvedValue([{ result: null }]);
+      .mockResolvedValue([{ result: true }]);
     await click('https://cdn.example/photo.png');
     const { entry } = await openedResult();
     expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledWith(9, { format: 'png' });

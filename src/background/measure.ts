@@ -32,14 +32,15 @@ export interface MeasuredImage {
  * `kind 'image'`: the image of this document that shows `target`. `kind 'frame'`: the one `<iframe>` of this document whose src is
  * `target`. With `saved === null` the element is measured (an image is first scrolled into view and given two animation frames
  * to be painted; the scroll positions that this will change are returned in `saved`). With the list a previous call returned
- * the positions are written back and the answer is null, as it is when the element is not there (or, for a frame, not one).
+ * the positions are written back and the answer is true when every one of them took (a page that changed meanwhile may not scroll
+ * that far); null when the element is not there (or, for a frame, not one).
  */
 // Runs inside the page (serialized by chrome.scripting): it may not touch anything from this module.
 export async function measureImage(
   target: string,
   kind: 'image' | 'frame',
   saved: readonly number[] | null,
-): Promise<MeasuredImage | null> {
+): Promise<MeasuredImage | true | null> {
   const shown = (e: HTMLElement): boolean => {
     const r = e.getBoundingClientRect();
     return (
@@ -74,14 +75,14 @@ export async function measureImage(
   for (let p = el.parentElement; p; p = p.parentElement) chain.push(p);
   if (saved !== null) {
     // `instant`: a page with `scroll-behavior: smooth` would otherwise still be moving afterwards
-    chain.forEach((p, i) => {
-      p.scrollTo({
-        left: saved.at(2 * i + 1) ?? p.scrollLeft,
-        top: saved.at(2 * i + 2) ?? p.scrollTop,
-        behavior: 'instant',
-      });
+    // a pixel of slack: a scroll position can be a fraction at a pixel ratio other than 1
+    const back = chain.map((p, i) => {
+      const left = saved.at(2 * i + 1) ?? p.scrollLeft;
+      const top = saved.at(2 * i + 2) ?? p.scrollTop;
+      p.scrollTo({ left, top, behavior: 'instant' });
+      return Math.abs(p.scrollLeft - left) <= 1 && Math.abs(p.scrollTop - top) <= 1;
     });
-    return null;
+    return back.every((ok) => ok) || null;
   }
   const before = [matches.indexOf(el), ...chain.flatMap((p) => [p.scrollLeft, p.scrollTop])];
   if (kind === 'image') {

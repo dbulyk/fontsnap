@@ -140,18 +140,31 @@ describe('measureImage', () => {
     });
   });
 
-  it('writes the recorded positions back and answers null', async () => {
+  it('writes the recorded positions back and answers true', async () => {
     const root = scroller(0, 1200);
     const box = scroller(0, 0, root);
     const img = element({ parentElement: box });
     page({ images: [img] });
-    await expect(measureImage(SRC, 'image', [0, 5, 40, 0, 700])).resolves.toBeNull();
+    await expect(measureImage(SRC, 'image', [0, 5, 40, 0, 700])).resolves.toBe(true);
     expect([box.scrollLeft, box.scrollTop, root.scrollLeft, root.scrollTop]).toEqual([
       5, 40, 0, 700,
     ]);
     expect(img.scrollIntoView).not.toHaveBeenCalled();
     // at once: a page with `scroll-behavior: smooth` would otherwise still be moving when the screenshot is taken
     expect(box.scrolls).toEqual(['instant']);
+  });
+
+  it('answers null when a position did not take (the page cannot scroll that far any more), and still writes back the rest', async () => {
+    const root = scroller(0, 1200);
+    const box = scroller(0, 0, root);
+    box.scrollTo = (options) => {
+      box.scrollLeft = options.left;
+      box.scrollTop = Math.min(options.top, 10);
+      box.scrolls.push(options.behavior);
+    };
+    page({ images: [element({ parentElement: box })] });
+    await expect(measureImage(SRC, 'image', [0, 5, 40, 0, 700])).resolves.toBeNull();
+    expect([root.scrollLeft, root.scrollTop]).toEqual([0, 700]);
   });
 
   it('restores the chain of the image that was measured, not of another with the same URL', async () => {

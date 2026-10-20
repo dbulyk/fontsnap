@@ -27,9 +27,13 @@ let stub: ReturnType<typeof createChromeStub>;
 let images: ReturnType<typeof installImageApis>;
 let calls: Call[];
 
-/** Answers the injected functions: `load` for loadImagePixels, `measure(kind, saved, frame)` for measureImage. */
+/**
+ * Answers the injected functions: `load` for loadImagePixels, `measure(kind, saved, frame)` for measureImage, `restore` for
+ * measureImage with saved positions (true by default: they were put back).
+ */
 function script(options: {
   load?: () => string | null | Error;
+  restore?: () => true | null | Error;
   measure?: (
     target: string,
     kind: 'image' | 'frame',
@@ -49,12 +53,12 @@ function script(options: {
     calls.push({ fn: isLoad ? 'load' : 'measure', frame, args });
     const answer = isLoad
       ? (options.load?.() ?? null)
-      : (options.measure?.(
-          args[0] as string,
-          args[1] as 'image' | 'frame',
-          args[2] as number[] | null,
-          frame ?? 0,
-        ) ?? null);
+      : args[2] !== null
+        ? options.restore
+          ? options.restore()
+          : true
+        : (options.measure?.(args[0] as string, args[1] as 'image' | 'frame', null, frame ?? 0) ??
+          null);
     return answer instanceof Error ? Promise.reject(answer) : Promise.resolve([{ result: answer }]);
   });
 }
@@ -195,13 +199,30 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
     expect(calls.filter((c) => c.fn === 'measure').map((c) => c.args[2])).toEqual([null, [1, 2]]);
   });
 
-  it('keeps going when the restore itself fails', async () => {
-    script({
-      measure: (_t, _k, saved) => (saved === null ? measured() : new Error('frame is gone')),
-    });
+  // Q1 (the manager of FontSnap): the scroll is put back, also on failure; when it cannot be, that is not passed over in silence,
+  // and the whole visible area with the hint is what the user gets
+  it.each([
+    ['the restore fails', () => new Error('frame is gone')],
+    ['the page did not scroll back (it changed meanwhile)', () => null],
+  ])('goes to step 3 when %s, after trying to put back every position', async (_what, restore) => {
+    script({ measure: () => measured(), restore });
     const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
-    expect(entry.dataUrl).toBeDefined();
-    expect(entry.note).toBeUndefined();
+    expect(entry.note).toBe('whole-view');
+    expect(calls.filter((c) => c.fn === 'measure' && c.args[2] !== null)).toHaveLength(1);
+  });
+
+  it('puts the frame back too when the image cannot be put back', async () => {
+    script({
+      measure: (_t, kind) => (kind === 'frame' ? measured({ saved: [0, 7, 8] }) : measured()),
+      restore: () => null,
+    });
+    const entry = await clickOn({ srcUrl: SRC, frameId: 3, frameUrl: 'https://f.example/' }, tab);
+    expect(entry.note).toBe('whole-view');
+    const restores = calls.filter((c) => c.fn === 'measure' && c.args[2] !== null);
+    expect(restores.map((c) => [c.args[1], c.frame])).toEqual([
+      ['image', 3],
+      ['frame', 0],
+    ]);
   });
 
   it.each([
@@ -505,10 +526,10 @@ describe('the screenshot is of the tab of the click', () => {
 describe('a page that does not answer', () => {
   it('does not keep the worker waiting for the loader: step 2 follows after the time is up', async () => {
     stub.chrome.scripting.executeScript.mockImplementation((injection) => {
-      const { func } = injection as { func: unknown };
+      const { func, args } = injection as { func: unknown; args: unknown[] };
       return func === loadImagePixels
         ? new Promise(() => undefined)
-        : Promise.resolve([{ result: measured() }]);
+        : Promise.resolve([{ result: args[2] === null ? measured() : true }]);
     });
     const done = clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
     await vi.advanceTimersByTimeAsync(30_000);
