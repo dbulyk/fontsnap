@@ -1,4 +1,4 @@
-FontSnap é um identificador de fontes por imagem com IA que funciona dentro do Chrome. Viu uma tipografia bonita em um site, banner ou captura de tela? Desenhe um retângulo sobre o texto e a ferramenta mostra em cerca de um segundo as cinco fontes do Google mais parecidas.
+FontSnap é um identificador de fontes por imagem com IA que funciona dentro do Chrome. Viu uma tipografia bonita em um site, banner ou captura de tela? Desenhe um retângulo sobre o texto e a ferramenta mostra as cinco fontes do Google mais parecidas.
 
 🚀 Como identificar a fonte de uma imagem em 3 passos
 1️⃣ Clique no ícone do FontSnap na barra ou pressione Alt+Shift+F.
@@ -74,4 +74,4 @@ Os alfabetos latino, cirílico e árabe dão os resultados mais precisos. O supo
 📍 Meus dados são coletados?
 Não. A extensão não coleta dados pessoais nem envia suas imagens para lugar nenhum.
 
-🌟 Instale o FontSnap, o identificador de fontes por imagem para o seu trabalho de design diário, e transforme cada “que fonte é essa?” em uma resposta de dois segundos. Selecione o texto, receba a correspondência, copie o CSS e continue criando.
+🌟 Instale o FontSnap, o identificador de fontes por imagem para o seu trabalho de design diário, e transforme cada “que fonte é essa?” em uma resposta rápida. Selecione o texto, receba a correspondência, copie o CSS e continue criando.

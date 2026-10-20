@@ -1,4 +1,4 @@
-FontSnap adalah pendeteksi font dari gambar berbasis AI yang bekerja langsung di Chrome. Melihat tipografi bagus di situs web, banner, atau tangkapan layar? Tarik kotak di atas teks, dan FontSnap menampilkan lima font Google yang paling mirip dalam sekitar satu detik.
+FontSnap adalah pendeteksi font dari gambar berbasis AI yang bekerja langsung di Chrome. Melihat tipografi bagus di situs web, banner, atau tangkapan layar? Tarik kotak di atas teks, dan FontSnap menampilkan lima font Google yang paling mirip.
 
 🚀 Cara mendeteksi font dari gambar dalam 3 langkah
 1️⃣ Klik ikon FontSnap di toolbar atau tekan Alt+Shift+F.
@@ -74,4 +74,4 @@ Aksara Latin, Sirilik, dan Arab memberi hasil paling akurat. Dukungan Mandarin d
 📍 Apakah data saya dikumpulkan?
 Tidak. Ekstensi ini tidak mengumpulkan data pribadi dan tidak mengirim gambar Anda ke mana pun.
 
-🌟 Pasang FontSnap, pendeteksi font dari gambar untuk pekerjaan desain sehari-hari, dan ubah setiap "ini font apa?" menjadi jawaban dua detik. Pilih teks, dapatkan hasilnya, salin CSS, dan lanjutkan berkarya.
+🌟 Pasang FontSnap, pendeteksi font dari gambar untuk pekerjaan desain sehari-hari, dan ubah setiap "ini font apa?" menjadi jawaban cepat. Pilih teks, dapatkan hasilnya, salin CSS, dan lanjutkan berkarya.
