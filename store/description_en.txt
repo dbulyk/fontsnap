@@ -1,4 +1,4 @@
-FontSnap is an AI font identifier from image that works right inside Chrome. See a nice typeface on a website, in a banner or in a screenshot? Drag a box over the text and this font identifier tool returns the five closest Google typefaces in about a second.
+FontSnap is an AI font identifier from image that works right inside Chrome. See a nice typeface on a website, in a banner or in a screenshot? Drag a box over the text and this font identifier tool returns the five closest Google typefaces.
 
 🚀 How to identify font from image in 3 steps
 1️⃣ Click the FontSnap icon in the toolbar or press Alt+Shift+F.
@@ -75,4 +75,4 @@ Latin, Cyrillic and Arabic scripts give the most accurate results. Chinese and J
 📍 Is my data collected?
 No. The extension does not collect personal data or send your images anywhere.
 
-🌟 Install FontSnap, the font identifier from image for everyday design work, and turn every what font is this moment into a two-second answer. Snap the text, get the match, copy the CSS and keep designing.
+🌟 Install FontSnap, the font identifier from image for everyday design work, and turn every what font is this moment into a quick answer. Snap the text, get the match, copy the CSS and keep designing.
