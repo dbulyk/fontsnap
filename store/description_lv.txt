@@ -66,7 +66,7 @@ Atveriet FontSnap jebkurā lapā, pārslēdzieties uz augšupielādes režīmu u
 Jā. Ar peles labo pogu noklikšķiniet uz attēla un izvēlieties atpazīt fontu šajā attēlā.
 
 📍 Vai FontSnap darbojas bezsaistē?
-Pati atpazīšana notiek lokāli. Interneta savienojums tiek izmantots tikai Google Fonts priekšskatījumu ielādei.
+Atpazīšana notiek jūsu ierīcē, un jūsu attēli netiek sūtīti ne mums, ne kādam serverim. Internets tiek izmantots, lai parādītu Google Fonts priekšskatījumus, un pēc klikšķa ar peles labo pogu pārlūkprogramma var vēlreiz ielādēt attēlu, uz kura noklikšķināts, no vietnes, kurā tas jau atrodas.
 
 📍 Vai FontSnap var atpazīt komerciālus fontus?
 FontSnap salīdzina ar Google Fonts saimēm. Komerciālam fontam tas parāda tuvākās Google Fonts alternatīvas, kas tīmekļa projektam bieži vien ir tieši tas, kas vajadzīgs.

@@ -66,7 +66,7 @@ Ouvrez FontSnap sur n'importe quelle page, passez en mode import, puis collez, d
 Oui. Faites un clic droit sur l'image et choisissez identifier la police de cette image.
 
 📍 FontSnap fonctionne-t-il hors ligne ?
-La reconnaissance s'exécute en local. La connexion sert uniquement à charger les aperçus depuis Google Fonts.
+La reconnaissance s'exécute sur votre appareil et vos images ne sont envoyées ni à nous ni à aucun serveur. Internet sert à afficher les aperçus depuis Google Fonts et, après un clic droit, le navigateur peut recharger l'image sur laquelle vous avez cliqué depuis le site où elle se trouve déjà.
 
 📍 FontSnap reconnaît-il les polices commerciales ?
 FontSnap compare avec les familles de Google Fonts. Pour une police commerciale, il propose les alternatives Google Fonts les plus proches, souvent ce qu'il faut pour un projet web.

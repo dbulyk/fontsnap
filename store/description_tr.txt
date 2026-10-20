@@ -66,7 +66,7 @@ FontSnap'i herhangi bir sayfada açıp yükleme moduna geçin. Metin içeren bir
 Evet. Resme sağ tıklayın ve bu resimdeki yazı tipini bul seçeneğini seçin.
 
 📍 Eklenti çevrimdışı çalışır mı?
-Tanıma işleminin kendisi yerel olarak çalışır. İnternet yalnızca Google Fonts önizlemelerini yüklemek için kullanılır.
+Tanıma işlemi cihazınızda çalışır ve görselleriniz bize veya herhangi bir sunucuya gönderilmez. İnternet, Google Fonts önizlemelerini göstermek için kullanılır; sağ tıklamadan sonra tarayıcı, tıkladığınız görseli zaten bulunduğu siteden yeniden yükleyebilir.
 
 📍 Ticari yazı tiplerini tanıyabilir mi?
 FontSnap, Google Fonts aileleriyle karşılaştırır. Ticari bir yazı tipi için Google Fonts'taki en yakın alternatifleri gösterir; bir web projesi için çoğu zaman gereken de budur.

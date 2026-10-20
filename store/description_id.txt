@@ -66,7 +66,7 @@ Buka FontSnap di halaman mana pun, beralih ke mode unggah, lalu tempel, letakkan
 Bisa. Klik kanan gambar lalu pilih kenali font di gambar ini.
 
 📍 Apakah bisa dipakai offline?
-Pengenalannya berjalan secara lokal. Internet hanya dipakai untuk memuat pratinjau dari Google Fonts.
+Pengenalan berjalan di perangkat Anda, dan gambar Anda tidak dikirim ke kami maupun ke server mana pun. Internet dipakai untuk menampilkan pratinjau dari Google Fonts, dan setelah klik kanan, browser mungkin memuat ulang gambar yang diklik dari situs tempat gambar itu sudah berada.
 
 📍 Bisakah mengenali jenis huruf berbayar?
 FontSnap mencocokkan dengan keluarga Google Fonts. Untuk jenis huruf berbayar, ia menampilkan alternatif Google Fonts terdekat, yang sering kali memang dibutuhkan untuk proyek web.

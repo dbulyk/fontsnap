@@ -66,7 +66,7 @@ Atidarykite FontSnap bet kuriame puslapyje, perjunkite į failo režimą ir įkl
 Taip. Dešiniuoju pelės klavišu spustelėkite paveikslėlį ir pasirinkite atpažinti šriftą šiame paveikslėlyje.
 
 📍 Ar FontSnap veikia neprisijungus?
-Pats atpažinimas vyksta vietoje. Interneto ryšys naudojamas tik peržiūroms iš Google Fonts įkelti.
+Atpažinimas vyksta jūsų įrenginyje, o jūsų vaizdai nesiunčiami nei mums, nei jokiam serveriui. Internetas naudojamas peržiūroms iš Google Fonts rodyti, o spustelėjus dešiniuoju pelės mygtuku naršyklė gali dar kartą įkelti spustelėtą vaizdą iš svetainės, kurioje jis jau yra.
 
 📍 Ar FontSnap gali atpažinti komercinius šriftus?
 FontSnap lygina su Google Fonts šeimomis. Komerciniam šriftui jis parodo artimiausias Google Fonts alternatyvas, o interneto projektui dažnai to ir reikia.

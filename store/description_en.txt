@@ -66,7 +66,7 @@ Open FontSnap on any page, switch to upload mode and paste, drop or choose a pic
 Yes. Right-click the image and choose Identify font in this image.
 
 📍 Does FontSnap work offline?
-Recognition itself runs locally. An internet connection is only used to load previews from Google Fonts.
+Recognition runs on your device, and your images are not sent to us or to any server. The internet is used to show previews from Google Fonts, and after a right-click the browser may load the clicked image again from the site it is already on.
 
 📍 Can FontSnap recognize commercial typefaces?
 FontSnap matches against Google Fonts families. For a commercial typeface it shows the closest Google Fonts alternatives, which is often what you need for a web project.

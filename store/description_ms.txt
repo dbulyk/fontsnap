@@ -66,7 +66,7 @@ Buka FontSnap pada mana-mana halaman, tukar ke mod muat naik, kemudian tampal, l
 Boleh. Klik kanan gambar dan pilih kenal pasti fon dalam imej ini.
 
 📍 Adakah FontSnap berfungsi di luar talian?
-Pengecaman itu sendiri berjalan secara setempat. Sambungan internet hanya digunakan untuk memuatkan pratonton daripada Google Fonts.
+Pengecaman berjalan pada peranti anda, dan imej anda tidak dihantar kepada kami atau mana-mana pelayan. Internet digunakan untuk memaparkan pratonton daripada Google Fonts, dan selepas klik kanan, pelayar mungkin memuatkan semula imej yang diklik daripada tapak tempat imej itu sudah berada.
 
 📍 Bolehkah FontSnap mengecam jenis taip komersial?
 FontSnap memadankan dengan keluarga Google Fonts. Untuk jenis taip komersial, ia menunjukkan alternatif Google Fonts yang paling hampir, yang sering kali memang diperlukan untuk projek web.

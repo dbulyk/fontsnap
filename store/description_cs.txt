@@ -66,7 +66,7 @@ Otevřete FontSnap na libovolné stránce, přepněte do režimu nahrávání a 
 Ano. Klikněte na obrázek pravým tlačítkem a zvolte položku rozpoznat písmo na tomto obrázku.
 
 📍 Funguje FontSnap offline?
-Samotné rozpoznávání běží lokálně. Připojení k internetu se používá jen k načtení náhledů z Google Fonts.
+Rozpoznávání běží na vašem zařízení a vaše obrázky se neodesílají nám ani na žádný server. Internet se používá k zobrazení náhledů z Google Fonts a po kliknutí pravým tlačítkem může prohlížeč znovu načíst obrázek, na který jste klikli, ze stránky, na které už je.
 
 📍 Umí FontSnap rozpoznat komerční písma?
 FontSnap porovnává s rodinami Google Fonts. U komerčního písma ukáže nejbližší alternativy z Google Fonts, což je pro webový projekt často přesně to, co potřebujete.

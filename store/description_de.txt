@@ -66,7 +66,7 @@ Eine Chrome-Erweiterung und KI-Schriftarterkennung, die Schriften in einem marki
 Ja. Klicken Sie mit der rechten Maustaste auf das Bild und wählen Sie Schriftart in diesem Bild erkennen.
 
 📍 Funktioniert FontSnap offline?
-Die Erkennung selbst läuft lokal. Eine Internetverbindung wird nur für die Vorschauen von Google Fonts genutzt.
+Die Erkennung läuft auf Ihrem Gerät, und Ihre Bilder werden weder an uns noch an einen Server gesendet. Das Internet wird für die Vorschauen von Google Fonts genutzt, und nach einem Rechtsklick kann der Browser das angeklickte Bild erneut von der Website laden, auf der es sich bereits befindet.
 
 📍 Erkennt FontSnap kommerzielle Schriften?
 FontSnap vergleicht mit Google-Fonts-Familien. Bei einer kommerziellen Schrift zeigt es die nächsten Alternativen aus Google Fonts, oft genau das, was man für ein Webprojekt braucht.

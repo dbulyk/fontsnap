@@ -66,7 +66,7 @@ Abra o FontSnap em qualquer página, mude para o modo de ficheiro e cole, largue
 Sim. Clique com o botão direito do rato na imagem e escolha identificar o tipo de letra desta imagem.
 
 📍 O FontSnap funciona offline?
-O reconhecimento em si corre localmente. A ligação à internet só é usada para carregar pré-visualizações do Google Fonts.
+O reconhecimento corre no seu dispositivo e as suas imagens não são enviadas para nós nem para qualquer servidor. A internet é usada para mostrar pré-visualizações do Google Fonts e, depois de um clique com o botão direito, o navegador pode voltar a carregar a imagem clicada a partir do site em que já se encontra.
 
 📍 O FontSnap consegue reconhecer tipos de letra comerciais?
 O FontSnap faz a correspondência com famílias do Google Fonts. Para um tipo de letra comercial mostra as alternativas mais próximas do Google Fonts, que muitas vezes é o que precisa para um projeto web.

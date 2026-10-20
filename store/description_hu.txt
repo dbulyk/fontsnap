@@ -66,7 +66,7 @@ Nyissa meg a FontSnap bővítményt bármely oldalon, váltson feltöltési mód
 Igen. Kattintson jobb gombbal a képre, és válassza ezt a menüpontot: a kép betűtípusának felismerése.
 
 📍 Működik a FontSnap offline?
-Maga a felismerés helyben fut. Internetkapcsolatot csak a Google Fonts előnézeteinek betöltéséhez használ.
+A felismerés az eszközén fut, a képei pedig sem hozzánk, sem más szerverre nem kerülnek elküldésre. Az internetet a Google Fonts előnézeteinek megjelenítésére használja a bővítmény, jobb kattintás után pedig a böngésző újra betöltheti a rákattintott képet arról a webhelyről, amelyen az már megtalálható.
 
 📍 Felismeri a FontSnap a kereskedelmi fontokat?
 A FontSnap Google Fonts-családokkal vet össze. Kereskedelmi fontnál a legközelebbi Google Fonts-alternatívákat mutatja, ami egy webes projekthez gyakran pont elég.

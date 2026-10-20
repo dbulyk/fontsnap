@@ -66,7 +66,7 @@ Det är ett Chrome-tillägg som kan identifiera typsnitt från bild: i ett marke
 Ja. Högerklicka på bilden och välj identifiera typsnittet i den här bilden.
 
 📍 Fungerar FontSnap offline?
-Själva igenkänningen körs lokalt. Internetanslutning används bara för att ladda förhandsvisningar från Google Fonts.
+Igenkänningen körs på din enhet och dina bilder skickas varken till oss eller till någon server. Internet används för att visa förhandsvisningar från Google Fonts, och efter ett högerklick kan webbläsaren läsa in bilden du klickade på igen från den webbplats där den redan finns.
 
 📍 Kan FontSnap känna igen kommersiella typsnitt?
 FontSnap matchar mot familjer i Google Fonts. För ett kommersiellt typsnitt visas de närmaste alternativen från Google Fonts, vilket ofta är precis vad du behöver i ett webbprojekt.

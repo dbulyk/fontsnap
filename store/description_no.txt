@@ -66,7 +66,7 @@ Det er en Chrome-utvidelse og et AI-verktøy for å gjenkjenne skrifttype fra bi
 Ja. Høyreklikk på bildet og velg gjenkjenn skrifttypen i dette bildet.
 
 📍 Fungerer FontSnap offline?
-Selve gjenkjenningen kjører lokalt. Internettforbindelse brukes bare til å laste forhåndsvisninger fra Google Fonts.
+Gjenkjenningen kjører på enheten din, og bildene dine sendes ikke til oss eller til noen server. Internett brukes til å vise forhåndsvisninger fra Google Fonts, og etter et høyreklikk kan nettleseren laste inn bildet du klikket på på nytt fra nettstedet det allerede ligger på.
 
 📍 Kan FontSnap gjenkjenne kommersielle skrifttyper?
 FontSnap sammenligner med familier fra Google Fonts. For en kommersiell skrifttype viser den de nærmeste alternativene fra Google Fonts, som ofte er akkurat det du trenger i et webprosjekt.
