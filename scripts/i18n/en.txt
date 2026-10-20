@@ -1,5 +1,5 @@
 FontSnap: AI Font Identifier from Image
-Snap any text with this AI font identifier from image: a font finder and font matcher that shows the 5 closest Google typefaces.
+Snap any text with this AI font identifier from image: a font finder and font detector that shows the 5 closest Google typefaces.
 FontSnap: identify a font
 FontSnap: identify font in this image
 FontSnap: select an area to identify font

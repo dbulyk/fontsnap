@@ -4,7 +4,7 @@
     "description": "Extension name (Chrome Web Store, max 75 chars)"
   },
   "appDesc": {
-    "message": "Snap any text with this AI font identifier from image: a font finder and font matcher that shows the 5 closest Google typefaces.",
+    "message": "Snap any text with this AI font identifier from image: a font finder and font detector that shows the 5 closest Google typefaces.",
     "description": "Short description (max 132 chars)"
   },
   "actionTitle": {
