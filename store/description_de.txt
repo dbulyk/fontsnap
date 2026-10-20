@@ -1,4 +1,4 @@
-FontSnap ist eine KI-Schriftarterkennung aus Bildern, die direkt in Chrome läuft. Sie sehen eine schöne Schrift auf einer Website, in einem Banner oder auf einem Screenshot? Ziehen Sie einen Rahmen über den Text, und FontSnap zeigt in etwa einer Sekunde die fünf ähnlichsten Google-Schriften.
+FontSnap ist eine KI-Schriftarterkennung aus Bildern, die direkt in Chrome läuft. Sie sehen eine schöne Schrift auf einer Website, in einem Banner oder auf einem Screenshot? Ziehen Sie einen Rahmen über den Text, und FontSnap zeigt die fünf ähnlichsten Google-Schriften.
 
 🚀 Schriftart aus Bild erkennen in 3 Schritten
 1️⃣ Klicken Sie auf das FontSnap-Symbol in der Symbolleiste oder drücken Sie Alt+Shift+F.
@@ -74,4 +74,4 @@ Lateinische, kyrillische und arabische Schrift liefern die genauesten Ergebnisse
 📍 Werden meine Daten gesammelt?
 Nein. Die Erweiterung sammelt keine personenbezogenen Daten und sendet Ihre Bilder nirgendwohin.
 
-🌟 Installieren Sie FontSnap, die Schriftarterkennung aus Bildern für die tägliche Designarbeit, und machen Sie aus jedem „Welche Schrift ist das?“ eine Antwort in zwei Sekunden. Text markieren, Treffer erhalten, CSS kopieren und weiter gestalten.
+🌟 Installieren Sie FontSnap, die Schriftarterkennung aus Bildern für die tägliche Designarbeit, und machen Sie aus jedem „Welche Schrift ist das?“ eine schnelle Antwort. Text markieren, Treffer erhalten, CSS kopieren und weiter gestalten.
