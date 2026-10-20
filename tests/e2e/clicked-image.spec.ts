@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { BrowserContext, Page, Worker } from '@playwright/test';
 import { EXTENSION_PAGES, MENU_IMAGE } from '../../src/shared/constants';
 import {
@@ -798,7 +800,10 @@ test('the live region of the hint is on the result page from the start, before a
   await expect(region.locator('#wholeNote')).toBeHidden();
 });
 
-/** What a result page ends with: the image it analyses, or the error it shows. */
+/**
+ * What a result page ends with: the error it shows, or 'image' when it analyses a picture, which is the image of the click or the
+ * whole visible area with the hint (#wholeNote).
+ */
 async function outcome(result: Page): Promise<string> {
   const status = result.locator('#status');
   await expect
@@ -854,6 +859,17 @@ async function clickImagesAtOnce(
   return results;
 }
 
+/** The Russian text of `key`, as the user reads it: the expected messages follow the translation instead of copying it. */
+const RU = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, '../../public/_locales/ru/messages.json'), 'utf8'),
+) as Record<string, { message: string } | undefined>;
+function ru(key: string): string {
+  const text = RU[key]?.message;
+  if (text === undefined) throw new Error(`no Russian message ${key}`);
+  return text;
+}
+const ruCaptureFail = (reason: string): string => ru('captureFail').replace('$ERR$', reason);
+
 test.describe('clicks that come too fast or too late, in Russian', () => {
   test.use({ uiLocale: 'ru' });
 
@@ -884,10 +900,10 @@ test.describe('clicks that come too fast or too late, in Russian', () => {
       `${other}/img.png`,
     ]);
     const outcomes = await Promise.all(results.map(outcome));
-    const notInFront =
-      'Не удалось сделать снимок: Вкладка с картинкой больше не на переднем плане: вернитесь на неё и кликните по картинке ещё раз — попробуйте ещё раз или вставьте скриншот.';
+    const notInFront = ruCaptureFail(ru('tabNotInFront'));
     for (const one of outcomes) expect(['image', notInFront]).toContain(one);
-    expect(outcomes, 'the first click is analysed').toContain('image');
+    // which click takes the first turn is not fixed; 'image' is also the whole visible area with the hint (the click on gone.png)
+    expect(outcomes, 'one of the clicks is analysed').toContain('image');
     expect(outcomes, 'a click behind the result tab of another is told so').toContain(notInFront);
   });
 
@@ -911,45 +927,75 @@ test.describe('clicks that come too fast or too late, in Russian', () => {
       () => site.close(),
     );
     const outcomes = await Promise.all(results.map(outcome));
-    const closed =
-      'Не удалось сделать снимок: Вкладку с картинкой закрыли до того, как её удалось снять — попробуйте ещё раз или вставьте скриншот.';
+    const closed = ruCaptureFail(ru('tabClosed'));
     for (const one of outcomes) expect(['image', closed]).toContain(one);
     expect(outcomes, 'the second click found the tab gone').toContain(closed);
   });
 });
 
-test.describe('a tab FontSnap may not take a screenshot of: the reason of Chrome, not its quota', () => {
-  for (const kind of ['a PDF', 'chrome://version'] as const) {
-    test(kind, async ({ context, serviceWorker, serve }) => {
-      test.setTimeout(120_000);
-      const origin = await serve(
-        new Map([
-          [
-            '/doc.pdf',
-            {
-              type: 'application/pdf',
-              body: '%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 300 144]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF',
-            },
-          ],
-        ]),
-      );
-      const page = await context.newPage();
-      await page
-        .goto(kind === 'a PDF' ? `${origin}/doc.pdf` : 'chrome://version')
-        .catch(() => undefined);
-      await page.bringToFront();
-      const tabId = await serviceWorker.evaluate(
-        async () =>
-          (await chrome.tabs.query({ active: true, lastFocusedWindow: true }))[0]?.id ?? -1,
-      );
-      const result = await clickImage(context, serviceWorker, {
-        tabId,
-        srcUrl: `${origin}/img.png`,
-      });
-      const said = await outcome(result);
-      expect(said).toMatch(/^Capture failed: .+ — try again or paste a screenshot\.$/);
-      expect(said).not.toMatch(/quota/i);
-      expect(said, 'the permission Chrome asks for').toMatch(/permission/i);
+test('a tab without the activeTab grant: the user is told the reason of Chrome, not its quota', async ({
+  context,
+  serviceWorker,
+  serve,
+}) => {
+  test.setTimeout(120_000);
+  const origin = await serve(
+    new Map([['/page.html', html(`${AROUND(SAMPLE_TEXT)}${SPACER(300)}`)]]),
+  );
+  // no toolbar click: without the grant Chrome refuses every screenshot of the tab
+  const site = await context.newPage();
+  await site.goto(`${origin}/page.html`);
+  await site.bringToFront();
+  const tabId = await siteTabId(serviceWorker);
+  const said = await outcome(
+    await clickImage(context, serviceWorker, { tabId, srcUrl: `${origin}/gone.png` }),
+  );
+  expect(said).toMatch(/^Capture failed: .+ — try again or paste a screenshot\.$/);
+  expect(said).not.toMatch(/quota/i);
+  expect(said, 'the permission Chrome asks for').toMatch(/permission/i);
+});
+
+test('an image clicked in a PDF: the whole visible area, with the hint', async ({
+  context,
+  extensionId,
+  serviceWorker,
+  serve,
+}) => {
+  test.setTimeout(120_000);
+  const file = await renderPng(context, extensionId);
+  // an image of another origin without CORS: it is in no <img> of the PDF to crop, and cannot be loaded again in the page
+  const other = await serve(new Map([['/img.png', png(file)]]));
+  const origin = await serve(
+    new Map([
+      [
+        '/doc.pdf',
+        {
+          type: 'application/pdf',
+          body: '%PDF-1.1\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 300 144]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF',
+        },
+      ],
+    ]),
+  );
+  const pdf = await context.newPage();
+  await pdf.goto(`${origin}/doc.pdf`);
+  // the toolbar click gives the grant; the overlay it puts on the PDF is taken down with Escape, which reaches the page only while
+  // the viewer, which takes the focus back as it loads, does not hold it
+  await clickToolbarIcon(context, extensionId, pdf);
+  const overlay = pdf.locator('div[style*="crosshair"]');
+  await expect(overlay).toBeVisible();
+  await expect(async () => {
+    await pdf.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     });
-  }
+    await pdf.keyboard.press('Escape');
+    await expect(overlay).toHaveCount(0, { timeout: 1000 });
+  }).toPass();
+  const tabId = await siteTabId(serviceWorker);
+  const viewport = await pdf.evaluate(() => [innerWidth, innerHeight]);
+  const result = await clickImage(context, serviceWorker, { tabId, srcUrl: `${other}/img.png` });
+  expect(await outcome(result)).toBe('image');
+  const got = await shown(result, false);
+  expect(got.wholeNote).toBe(true);
+  expect([got.width, got.height]).toEqual(viewport);
+  await expect(result.locator('#status')).not.toHaveClass(/err/);
 });
