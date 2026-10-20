@@ -149,7 +149,9 @@ async function shown(result: Page, expectResults = true): Promise<Shown> {
   await expect(result.locator('#shot')).toBeVisible({ timeout: 60_000 });
   if (expectResults)
     await expect(result.locator('#results li').first()).toBeVisible({ timeout: 60_000 });
-  await expect(result.locator('#status')).not.toHaveText('Analyzing…');
+  await expect(result.locator('#status')).not.toHaveText(/^(Loading model|Analyzing)…$/, {
+    timeout: 60_000,
+  });
   const [width, height] = await result
     .locator('#shot')
     .evaluate((canvas: HTMLCanvasElement) => [canvas.width, canvas.height]);

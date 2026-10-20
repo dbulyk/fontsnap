@@ -342,7 +342,18 @@ describe('storage failures never leave the user without a result tab', () => {
   });
 });
 
+// the screenshots of clicked.ts are kept a second apart and the helper remembers the last one, so each test starts on a fake clock an
+// hour after the one before (vi.waitFor moves a fake clock on)
+let clock = Date.now();
+
 describe('right-click on an image', () => {
+  beforeEach(() => {
+    clock += 3_600_000;
+    vi.useFakeTimers({ now: clock });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
   const dataUrl = (type: string, bytes: Uint8Array) =>
     `data:${type};base64,${Buffer.from(bytes).toString('base64')}`;
   const png = () => dataUrl('image/png', new Uint8Array(1000).fill(7));

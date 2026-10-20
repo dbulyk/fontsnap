@@ -23,10 +23,16 @@ const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 // opening the result tab: the loader may take a while to download, a measurement is a few frames.
 const LOAD_TIMEOUT_MS = 20_000;
 const MEASURE_TIMEOUT_MS = 5_000;
-// The last step has nothing after it, and captureVisibleTab fails now and then for no reason of the page's ("Failed to capture tab:
-// image readback failed", the compositor has not painted the tab yet): it is tried a few times before the error reaches the user.
-const CAPTURE_ATTEMPTS = 3;
-const CAPTURE_RETRY_MS = 300;
+// Chrome lets an extension call captureVisibleTab twice a second (MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND); a third call within the
+// second fails with the quota. Every screenshot of steps 2 and 3 goes through `capture`, which keeps the calls a second apart (so two
+// calls never fall in one second, also across two clicks) and takes the picture again, once, when the browser says "image readback
+// failed". That error is transient: measured in Chromium (e2e build, 8 browsers and 8 busy loops on 8 cores), a screenshot asked for
+// soon after the page changed what it shows fails that way in about a quarter of the runs, 3 in 100 half a second after the change and
+// none after a second or after the page had drawn two frames; the second call always worked. The quota, a tab that is not active or a
+// page that may not be captured come back every time, so they are not tried again.
+const CAPTURE_GAP_MS = 1000;
+const READBACK_FAILED = 'image readback failed';
+let lastCaptureAt = 0;
 
 function within<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -42,14 +48,16 @@ function within<T>(promise: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-/** The screenshot of the visible area, taken again after a short pause when the browser fails to read it back. */
-async function captureWithRetry(windowId: number): Promise<string> {
-  for (let attempt = 1; ; attempt++) {
+/** The screenshot of the visible area of the window (a data: URL). */
+async function capture(windowId: number): Promise<string> {
+  for (let retried = false; ; retried = true) {
+    const wait = lastCaptureAt + CAPTURE_GAP_MS - Date.now();
+    if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
+    lastCaptureAt = Date.now();
     try {
       return await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
     } catch (e) {
-      if (attempt >= CAPTURE_ATTEMPTS) throw e;
-      await new Promise((ok) => setTimeout(ok, CAPTURE_RETRY_MS));
+      if (retried || !errorMessage(e).includes(READBACK_FAILED)) throw e;
     }
   }
 }
@@ -109,7 +117,7 @@ async function croppedFromScreenshot(
       rect = frameRect(image.rect, image.box, moved.rect, moved.box, moved.outer);
     }
     if (!validRect(rect)) throw new Error('Could not access this image');
-    const shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    const shot = await capture(tab.windowId);
     return await cropToDataUrl(shot, rect, image.dpr);
   } finally {
     for (const restore of restores.reverse()) await restore().catch(() => undefined);
@@ -149,7 +157,7 @@ export async function clickedImage(
     // not found, not scriptable, outside the screenshot: the whole visible area is next
   }
   try {
-    const shot = await captureWithRetry(tab.windowId);
+    const shot = await capture(tab.windowId);
     return { dataUrl: await reencodeWithinQuota(shot), text: '', note: 'whole-view' };
   } catch (e) {
     return { error: errorMessage(e) };

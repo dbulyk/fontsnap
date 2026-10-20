@@ -68,15 +68,43 @@ const measured = (extra: Partial<MeasuredImage> = {}): MeasuredImage => ({
   ...extra,
 });
 
+/** When (on the fake clock) each screenshot was asked for. */
+let shots: number[];
+
+// `capture` in clicked.ts remembers when it last took a screenshot, so every test starts on a clock an hour after the one before
+let clock = Date.now();
+
 beforeEach(() => {
+  clock += 3_600_000;
+  vi.useFakeTimers({ now: clock });
   stub = createChromeStub();
   stub.install();
   images = installImageApis();
   calls = [];
+  shots = [];
+  stub.chrome.tabs.captureVisibleTab.mockImplementation(() => {
+    shots.push(Date.now());
+    return Promise.resolve('data:image/png;base64,c2hvdA==');
+  });
 });
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
+
+/** clickedImage on the fake clock, which is moved on while the worker waits (the pause that keeps two screenshots apart). */
+async function clickOn(
+  info: Parameters<typeof clickedImage>[0],
+  at: chrome.tabs.Tab | undefined,
+): ReturnType<typeof clickedImage> {
+  const running = clickedImage(info, at);
+  const state = { settled: false };
+  void running.finally(() => {
+    state.settled = true;
+  });
+  while (!state.settled) await vi.advanceTimersByTimeAsync(50);
+  return running;
+}
 
 const dataUrl = (type: string, bytes: Uint8Array) =>
   `data:${type};base64,${Buffer.from(bytes).toString('base64')}`;
@@ -84,7 +112,7 @@ const dataUrl = (type: string, bytes: Uint8Array) =>
 describe('data: images', () => {
   it('are decoded in the worker: no injection, no screenshot', async () => {
     const src = dataUrl('image/png', new Uint8Array(1000).fill(7));
-    const entry = await clickedImage({ srcUrl: src, frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: src, frameId: 0 }, tab);
     expect(entry).toEqual({ dataUrl: src, text: '' });
     expect(stub.chrome.scripting.executeScript).not.toHaveBeenCalled();
     expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
@@ -97,7 +125,7 @@ describe('data: images', () => {
     ['malformed', () => 'data:image/png;base64,@@@@'],
   ])('go down the ladder when the data: URL is %s', async (_what, url) => {
     script({ load: () => PIXELS });
-    const entry = await clickedImage({ srcUrl: url(), frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: url(), frameId: 0 }, tab);
     expect(entry.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(calls.map((c) => c.fn)).toEqual(['load']);
   });
@@ -106,10 +134,7 @@ describe('data: images', () => {
 describe('step 1: the pixels are loaded in the frame of the click', () => {
   it('injects loadImagePixels into that frame with the address and nothing else', async () => {
     script({ load: () => PIXELS });
-    const entry = await clickedImage(
-      { srcUrl: SRC, frameId: 7, frameUrl: 'https://f.example/' },
-      tab,
-    );
+    const entry = await clickOn({ srcUrl: SRC, frameId: 7, frameUrl: 'https://f.example/' }, tab);
     expect(entry.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(entry.text).toBe('');
     expect(entry.note).toBeUndefined();
@@ -124,13 +149,13 @@ describe('step 1: the pixels are loaded in the frame of the click', () => {
 
   it('uses the top frame when the click has no frame', async () => {
     script({ load: () => PIXELS });
-    await clickedImage({ srcUrl: SRC }, tab);
+    await clickOn({ srcUrl: SRC }, tab);
     expect(calls[0]?.frame).toBe(0);
   });
 
   it('re-encodes the pixels within the session quota (they are decoded, so they must be an image)', async () => {
     script({ load: () => PIXELS });
-    await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(images.createImageBitmap).toHaveBeenCalledTimes(1);
     expect(images.encodes[0]).toEqual({ type: 'image/png', quality: undefined });
   });
@@ -141,7 +166,7 @@ describe('step 1: the pixels are loaded in the frame of the click', () => {
     ['a refused injection', () => new Error('Cannot access contents of the page')],
   ])('goes to step 2 when the loader answers %s', async (_what, load) => {
     script({ load, measure: () => measured() });
-    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(entry.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(entry.note).toBeUndefined();
     expect(images.draws).toEqual([[60, 80, 200, 100, 0, 0, 200, 100]]);
@@ -151,7 +176,7 @@ describe('step 1: the pixels are loaded in the frame of the click', () => {
 describe('step 2: a crop of a screenshot, the scroll position put back', () => {
   it('measures, takes the screenshot, crops by the box × dpr and restores the saved positions', async () => {
     script({ measure: () => measured() });
-    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(entry.dataUrl).toMatch(/^data:image\/png/);
     expect(entry.note).toBeUndefined();
     expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledWith(9, { format: 'png' });
@@ -165,7 +190,7 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
   it('restores the scroll position even when the screenshot fails (and goes on to step 3)', async () => {
     script({ measure: () => measured() });
     stub.chrome.tabs.captureVisibleTab.mockRejectedValueOnce(new Error('no activeTab'));
-    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(entry.note).toBe('whole-view');
     expect(calls.filter((c) => c.fn === 'measure').map((c) => c.args[2])).toEqual([null, [1, 2]]);
   });
@@ -174,7 +199,7 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
     script({
       measure: (_t, _k, saved) => (saved === null ? measured() : new Error('frame is gone')),
     });
-    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(entry.dataUrl).toBeDefined();
     expect(entry.note).toBeUndefined();
   });
@@ -188,13 +213,13 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
     ],
   ])('goes to step 3 when %s', async (_what, measure) => {
     script({ measure });
-    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(entry.note).toBe('whole-view');
   });
 
   it('crops the visible part of an image that is larger than the screenshot', async () => {
     script({ measure: () => measured({ rect: { x: -100, y: -50, w: 1000, h: 800 }, dpr: 1 }) });
-    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(entry.note).toBeUndefined();
     expect(images.draws).toEqual([[0, 0, 400, 300, 0, 0, 400, 300]]);
   });
@@ -224,7 +249,7 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
 
     it('measures the frame, then the image, then the frame again, and puts both back', async () => {
       script({ measure });
-      const entry = await clickedImage(click, tab);
+      const entry = await clickOn(click, tab);
       expect(entry.note).toBeUndefined();
       expect(calls.filter((c) => c.fn === 'measure').map((c) => [c.frame, ...c.args])).toEqual([
         [0, FRAME, 'frame', null],
@@ -251,7 +276,7 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
       ],
     ])('goes to step 3 when %s', async (_what, arrange) => {
       arrange();
-      const entry = await clickedImage(click, tab);
+      const entry = await clickOn(click, tab);
       expect(entry.note).toBe('whole-view');
       // the frame is looked for first: with no iframe to put it in, the image is not even scrolled into view
       expect(calls.filter((c) => c.fn === 'measure' && c.args[1] === 'image')).toEqual([]);
@@ -270,7 +295,7 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
               })
             : measure(target, kind, saved, frame),
       });
-      const entry = await clickedImage(click, tab);
+      const entry = await clickOn(click, tab);
       expect(entry.note).toBe('whole-view');
       expect(images.draws).toEqual([[0, 0, 400, 300, 0, 0, 400, 300]]);
     });
@@ -296,7 +321,7 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
                 })
               : null,
       });
-      const entry = await clickedImage(click, tab);
+      const entry = await clickOn(click, tab);
       expect(entry.note).toBeUndefined();
       expect(images.draws).toEqual([[27, 43, 40, 30, 0, 0, 40, 30]]);
     });
@@ -321,14 +346,14 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
                 })
               : null,
       });
-      const entry = await clickedImage(click, tab);
+      const entry = await clickOn(click, tab);
       expect(entry.note).toBe('whole-view');
       expect(calls.filter((c) => c.fn === 'measure' && c.args[2] !== null).length).toBe(2);
     });
 
     it('goes to step 3 without measuring when the click does not say which frame URL it came from', async () => {
       script({ measure });
-      const entry = await clickedImage({ srcUrl: SRC, frameId: 3 }, tab);
+      const entry = await clickOn({ srcUrl: SRC, frameId: 3 }, tab);
       expect(entry.note).toBe('whole-view');
       expect(calls.filter((c) => c.fn === 'measure')).toEqual([]);
     });
@@ -338,49 +363,108 @@ describe('step 2: a crop of a screenshot, the scroll position put back', () => {
 describe('step 3: the whole visible area with a hint', () => {
   it('keeps the screenshot and says it is the whole view when no injection works', async () => {
     script({ load: () => new Error('refused'), measure: () => new Error('refused') });
-    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(entry.dataUrl).toMatch(/^data:image\/png/);
     expect(entry.note).toBe('whole-view');
     expect(entry.text).toBe('');
     expect(images.draws).toEqual([[0, 0, 400, 300, 0, 0, 400, 300]]);
   });
 
-  it('takes the screenshot again when the browser fails to read it back once (image readback failed)', async () => {
+  const READBACK = 'Failed to capture tab: image readback failed';
+
+  it('takes the screenshot again, once and after the pause of the quota, when the browser fails to read it back (image readback failed)', async () => {
     script({ load: () => null, measure: () => null });
-    stub.chrome.tabs.captureVisibleTab.mockRejectedValueOnce(
-      new Error('Failed to capture tab: image readback failed'),
-    );
-    const entry = await clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
+    stub.chrome.tabs.captureVisibleTab.mockRejectedValueOnce(new Error(READBACK));
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(entry.dataUrl).toMatch(/^data:image\/png/);
     expect(entry.note).toBe('whole-view');
     expect(entry.error).toBeUndefined();
     expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(2);
   });
 
+  it('shows the error when the second read-back fails too (no third try)', async () => {
+    script({ load: () => null, measure: () => null });
+    stub.chrome.tabs.captureVisibleTab.mockRejectedValue(new Error(READBACK));
+    await expect(clickOn({ srcUrl: SRC, frameId: 0 }, tab)).resolves.toEqual({ error: READBACK });
+    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ['the quota', 'This request exceeds the MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND quota.'],
+    ['a tab that is not active', 'The tab is not active'],
+    ['a page that is not allowed', 'Cannot access contents of the page.'],
+    ['no permission', "Either the '<all_urls>' or 'activeTab' permission is required."],
+  ])('does not take it again after an error that will come back (%s)', async (_what, message) => {
+    script({ load: () => null, measure: () => null });
+    stub.chrome.tabs.captureVisibleTab.mockRejectedValue(new Error(message));
+    await expect(clickOn({ srcUrl: SRC, frameId: 0 }, tab)).resolves.toEqual({ error: message });
+    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(1);
+  });
+
   it('shows the error when even the screenshot cannot be taken', async () => {
     script({ load: () => null, measure: () => null });
     stub.chrome.tabs.captureVisibleTab.mockRejectedValue(new Error('The tab is not active'));
-    await expect(clickedImage({ srcUrl: SRC, frameId: 0 }, tab)).resolves.toEqual({
+    await expect(clickOn({ srcUrl: SRC, frameId: 0 }, tab)).resolves.toEqual({
       error: 'The tab is not active',
     });
-    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(3);
   });
 
   it('shows an error when there is no tab to script', async () => {
-    await expect(clickedImage({ srcUrl: SRC, frameId: 0 }, undefined)).resolves.toEqual({
+    await expect(clickOn({ srcUrl: SRC, frameId: 0 }, undefined)).resolves.toEqual({
       error: 'Could not access this image',
     });
     expect(stub.chrome.scripting.executeScript).not.toHaveBeenCalled();
   });
 });
 
-describe('a page that does not answer', () => {
-  afterEach(() => {
-    vi.useRealTimers();
+// Chrome lets an extension call captureVisibleTab twice a second (MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND): the third call within the
+// second fails with the quota, whatever the page does. Steps 2 and 3 take their screenshots through one helper that keeps the calls apart.
+describe('the screenshots of steps 2 and 3 stay within the quota of Chrome', () => {
+  const READBACK = 'Failed to capture tab: image readback failed';
+  /** No window of one second holds more than two of the times. */
+  const withinQuota = (times: number[]): boolean =>
+    times.every((time, i) => (times[i + 2] ?? Infinity) - time >= 1000);
+
+  it('step 2 and step 3 after it: the second screenshot waits for the pause', async () => {
+    script({ measure: () => measured({ rect: { x: 5000, y: 0, w: 10, h: 10 } }) });
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(entry.note).toBe('whole-view');
+    expect(shots).toHaveLength(2);
+    expect((shots[1] ?? 0) - (shots[0] ?? 0)).toBeGreaterThanOrEqual(1000);
   });
 
+  it('step 2 that fails to read back is taken again, and the crop is still the image', async () => {
+    script({ measure: () => measured() });
+    stub.chrome.tabs.captureVisibleTab.mockRejectedValueOnce(new Error(READBACK));
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(entry.note).toBeUndefined();
+    expect(images.draws).toEqual([[60, 80, 200, 100, 0, 0, 200, 100]]);
+    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(2);
+  });
+
+  it('a read-back that fails in step 2 and again in the retry goes on to step 3, which is the third screenshot, still within the quota', async () => {
+    script({ measure: () => measured() });
+    stub.chrome.tabs.captureVisibleTab
+      .mockRejectedValueOnce(new Error(READBACK))
+      .mockRejectedValueOnce(new Error(READBACK));
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(entry.note).toBe('whole-view');
+    expect(stub.chrome.tabs.captureVisibleTab).toHaveBeenCalledTimes(3);
+    expect(withinQuota(shots)).toBe(true);
+  });
+
+  it('two clicks one after the other do not make a third call within the second', async () => {
+    script({ load: () => null, measure: () => null });
+    await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(shots).toHaveLength(3);
+    expect(withinQuota(shots)).toBe(true);
+  });
+});
+
+describe('a page that does not answer', () => {
   it('does not keep the worker waiting for the loader: step 2 follows after the time is up', async () => {
-    vi.useFakeTimers();
     stub.chrome.scripting.executeScript.mockImplementation((injection) => {
       const { func } = injection as { func: unknown };
       return func === loadImagePixels
@@ -395,7 +479,6 @@ describe('a page that does not answer', () => {
   });
 
   it('gives up on a page that never answers a measurement and shows the whole view', async () => {
-    vi.useFakeTimers();
     stub.chrome.scripting.executeScript.mockImplementation(() => new Promise(() => undefined));
     const done = clickedImage({ srcUrl: SRC, frameId: 0 }, tab);
     await vi.advanceTimersByTimeAsync(60_000);
@@ -410,7 +493,7 @@ describe('what is handed to the page', () => {
       measure: (_t, k) =>
         k === 'frame' ? measured() : measured({ rect: { x: 1, y: 1, w: 20, h: 20 } }),
     });
-    await clickedImage({ srcUrl: SRC, frameId: 4, frameUrl: 'https://frame.example/' }, tab);
+    await clickOn({ srcUrl: SRC, frameId: 4, frameUrl: 'https://frame.example/' }, tab);
     for (const call of calls) {
       for (const arg of call.args) {
         const fine =
