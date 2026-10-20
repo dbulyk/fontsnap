@@ -50,16 +50,28 @@ function within<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 /** The screenshot of the visible area of the window (a data: URL). */
 async function capture(windowId: number): Promise<string> {
-  for (let retried = false; ; retried = true) {
-    const wait = lastCaptureAt + CAPTURE_GAP_MS - Date.now();
-    if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
-    lastCaptureAt = Date.now();
-    try {
-      return await chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
-    } catch (e) {
-      if (retried || !errorMessage(e).includes(READBACK_FAILED)) throw e;
-    }
+  let first: unknown;
+  try {
+    return await captureInTurn(windowId);
+  } catch (e) {
+    if (!errorMessage(e).includes(READBACK_FAILED)) throw e;
+    first = e;
   }
+  try {
+    return await captureInTurn(windowId);
+  } catch {
+    // the error of the retry is not shown: the read-back failure is what went wrong
+    throw first;
+  }
+}
+
+/** One captureVisibleTab, a second after the one before; the turn is taken before waiting, so clicks at the same time queue up. */
+async function captureInTurn(windowId: number): Promise<string> {
+  const at = Math.max(Date.now(), lastCaptureAt + CAPTURE_GAP_MS);
+  lastCaptureAt = at;
+  const wait = at - Date.now();
+  if (wait > 0) await new Promise((ok) => setTimeout(ok, wait));
+  return chrome.tabs.captureVisibleTab(windowId, { format: 'png' });
 }
 
 async function measure(
