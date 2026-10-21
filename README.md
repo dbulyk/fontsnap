@@ -34,20 +34,23 @@ enforced by code and automated checks, not by review alone; see "What the checks
 
 ## Layout
 
-| Path                                   | Contents                                                                                                                                                                |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/manifest.ts`                      | the manifest, generated into `dist/manifest.json` (the version comes from `package.json`)                                                                               |
-| `src/shared/`                          | constants (`EXTENSION_PAGES`), i18n, typed messaging, `capture.ts` (crop → session handoff helpers), `ui.ts`, `core/` (the recognition pipeline); imports no other area |
-| `src/background/`                      | service worker: toolbar and context menus, screenshot, crop, handoff                                                                                                    |
-| `src/select/`                          | the selection overlay, injected on demand, built as `dist/select.js`                                                                                                    |
-| `src/result/`, `src/welcome/`          | the two pages (markup and styles as before)                                                                                                                             |
-| `public/`                              | `_locales/` (55 languages) and `icons/icon-<size>.png`, copied as is                                                                                                    |
-| `model/`                               | `model_fp16.onnx` (Git LFS) and `meta.json`: copied into the build by the vendor plugin, byte for byte                                                                  |
-| `scripts/`                             | build and check helpers (`lib/` is unit-tested), `eval/` (JS evaluation on realset3), `i18n/` (locale sources and `build-locales.py`)                                   |
-| `python/fontsnap_ref/`, `python/data/` | Python reference pipeline (`textcrop`, `pipeline`, `evaluate`, `build_meta`) and its data (classes, family mapping v2b, Google Fonts metadata)                          |
-| `data/realset3/`                       | 263 labelled screenshots (`images/` via Git LFS, `labels.csv`) and the collection scripts                                                                               |
-| `tests/`                               | `unit` (Vitest), `e2e` (Playwright), `regression` (realset3 + parity), `python` (pytest), `fixtures`, `guard-snapshots`, `thresholds.json`                              |
-| `store/`                               | Chrome Web Store listings, graphics and the privacy policy (not part of the build, never formatted)                                                                     |
+| Path                                              | Contents                                                                                                                                                                |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/manifest.ts`                                 | the manifest, generated into `dist/manifest.json` (the version comes from `package.json`)                                                                               |
+| `src/shared/`                                     | constants (`EXTENSION_PAGES`), i18n, typed messaging, `capture.ts` (crop → session handoff helpers), `ui.ts`, `core/` (the recognition pipeline); imports no other area |
+| `src/background/`                                 | service worker: toolbar and context menus, screenshot, crop, handoff                                                                                                    |
+| `src/select/`                                     | the selection overlay, injected on demand, built as `dist/select.js`                                                                                                    |
+| `src/result/`, `src/welcome/`                     | the two pages (markup and styles as before)                                                                                                                             |
+| `public/`                                         | `_locales/` (55 languages) and `icons/icon-<size>.png`, copied as is                                                                                                    |
+| `model/`                                          | `model_fp16.onnx` (Git LFS) and `meta.json`: copied into the build by the vendor plugin, byte for byte                                                                  |
+| `scripts/`                                        | build and check helpers (`lib/` is unit-tested), `eval/` (JS evaluation on realset3), `i18n/` (locale sources and `build-locales.py`)                                   |
+| `python/fontsnap_ref/`, `python/data/`            | Python reference pipeline (`textcrop`, `pipeline`, `evaluate`, `build_meta`) and its data (classes, family mapping v2b, Google Fonts metadata)                          |
+| `python/train/`                                   | Free-phase OFL inventory, on-the-fly synth loader, PyTorch port/parity, RunPod dry launcher (extra deps in `python/train/requirements.txt`)                             |
+| `data/fonts_manifest_v3.tsv`, `data/licenses/v3/` | 606 new OFL class rows (Fontsource / Collletttivo / Velvetyne) and per-family `OFL.txt` (no font binaries)                                                              |
+| `data/realset3/`                                  | 263 labelled screenshots (`images/` via Git LFS, `labels.csv`) and the collection scripts                                                                               |
+| `data/realshots/`                                 | Label CSV format for tester-collected screenshots of new families (`out/realshots/images/` holds pixels)                                                                |
+| `tests/`                                          | `unit` (Vitest), `e2e` (Playwright), `regression` (realset3 + parity), `python` (pytest), `fixtures`, `guard-snapshots`, `thresholds.json`                              |
+| `store/`                                          | Chrome Web Store listings, graphics and the privacy policy (not part of the build, never formatted)                                                                     |
 
 ## Setup
 
@@ -58,7 +61,24 @@ git lfs install && git lfs pull        # model and test images
 npm ci
 npx playwright install chromium        # once (add --with-deps on a fresh Linux machine)
 python -m venv .venv && . .venv/bin/activate && pip install -r python/requirements.txt
+# optional, local train/parity only (not the CI reference job):
+pip install -r python/train/requirements.txt
 ```
+
+## Train prep (OFL sources, $0 path)
+
+Working directory for these commands is `python/` (same as `fontsnap_ref.evaluate`). The shipped `model/` bytes stay read-only.
+
+```
+python -m train inventory          # rebuild data/fonts_manifest_v3.tsv + licenses (network)
+python -m train generate --check   # assert TSV/licenses match the loader
+python -m train samples --split train --per-class 2 --dry-run
+python -m train parity --limit 4   # CPU: PyTorch vs ORT on prep(crop_normalize)
+python -m train runpod plan --mode calibrate   # prints create body; does not read RUNPOD_API_KEY
+# live calibrate later (not in CI): FONTSNAP_RUNPOD_LIVE=1 python -m train.runpod watch --mode calibrate
+```
+
+Real-shot labels: `data/realshots/README.md`. Prior/merge tables for new sources live in `python/train/policy.py` (values stay at product defaults until a GPU hold-out).
 
 ## Commands
 
