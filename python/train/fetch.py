@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
+from train.cache import HashMismatch, read_verified, store_bytes
 from train.inventory import read_font_bytes
 from train.paths import MANIFEST_TSV, OUT, assert_under_out
 from train.registry import FontClassRecord, dump_manifest, is_sfnt, load_manifest, sha256_hex
@@ -63,7 +64,7 @@ def _fetch_all(records: tuple[FontClassRecord, ...], cache: Path) -> tuple[dict[
     failures: list[str] = []
 
     def one(rec: FontClassRecord) -> tuple[str, str]:
-        return rec.class_id, _fetch_one(rec, _dest(cache, rec))
+        return rec.class_id, _fetch_one(rec, cache)
 
     workers = min(8, max(1, len(records)))
     with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -71,41 +72,28 @@ def _fetch_all(records: tuple[FontClassRecord, ...], cache: Path) -> tuple[dict[
         for rec, future in zip(records, futures, strict=True):
             try:
                 class_id, digest = future.result()
-            except (OSError, RuntimeError, ValueError) as exc:
+            except (OSError, RuntimeError, ValueError, HashMismatch) as exc:
                 failures.append(f"{rec.class_id}: {exc}")
                 continue
             digests[class_id] = digest
     return digests, failures
 
 
-def _dest(cache: Path, rec: FontClassRecord) -> Path:
-    return assert_under_out(cache / rec.source.value / rec.family_id / rec.download.filename)
-
-
-def _fetch_one(rec: FontClassRecord, dest: Path) -> str:
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    if dest.is_file():
-        digest = sha256_hex(dest.read_bytes())
-        if is_sfnt(dest.read_bytes()[:4]) and (not rec.file_sha256 or digest == rec.file_sha256):
-            _sidecar(dest, digest)
-            return digest
-        dest.unlink()
-    partial = dest.with_name(dest.name + ".partial")
-    assert_under_out(partial)
+def _fetch_one(rec: FontClassRecord, root: Path) -> str:
+    if rec.file_sha256:
+        try:
+            read_verified(rec.file_sha256, root)
+            return rec.file_sha256
+        except (FileNotFoundError, HashMismatch):
+            pass
     data = read_font_bytes(rec.download.url)
     if not is_sfnt(data):
         raise RuntimeError(f"{rec.class_id} is not a static sfnt")
     digest = sha256_hex(data)
     if rec.file_sha256 and digest != rec.file_sha256:
         raise RuntimeError(f"{rec.class_id} sha256 {digest} != manifest")
-    partial.write_bytes(data)
-    os.replace(partial, dest)
-    _sidecar(dest, digest)
+    store_bytes(digest, data, root)
     return digest
-
-
-def _sidecar(dest: Path, digest: str) -> None:
-    dest.with_suffix(".sha256").write_text(digest + "\n", encoding="utf-8")
 
 
 def _stamp(digests: dict[str, str]) -> None:

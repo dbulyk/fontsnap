@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from train.model import BASE_CLASSES, EXPANDED_CLASSES, expand_classifier
+from train.model import BASE_CLASSES, expand_classifier, expanded_classes
 from train.paths import ROOT, assert_under_out
 
 
@@ -22,6 +23,7 @@ class TrainConfig:
     checkpoint_dir: Path
     distill_weight: float
     distill_dir: str
+    use_synth: bool
 
 
 def _checkpoint_dir() -> Path:
@@ -40,11 +42,40 @@ def recipe(name: str) -> TrainConfig:
         checkpoint_dir=_checkpoint_dir(),
         distill_weight=0.0,
         distill_dir="",
+        use_synth=False,
     )
     if name == "smoke":
         return TrainConfig(recipe="smoke", amp=False, num_classes=BASE_CLASSES, **common)
+    if name == "calibrate":
+        return TrainConfig(
+            recipe="calibrate",
+            steps=8,
+            batch_size=8,
+            lr=1e-4,
+            weight_decay=0.0,
+            amp=True,
+            num_classes=BASE_CLASSES,
+            device="cuda",
+            checkpoint_dir=_checkpoint_dir(),
+            distill_weight=0.0,
+            distill_dir="",
+            use_synth=True,
+        )
     if name == "ofl-v1":
-        return TrainConfig(recipe="ofl-v1", amp=True, num_classes=EXPANDED_CLASSES, **common)
+        return TrainConfig(
+            recipe="ofl-v1",
+            steps=1,
+            batch_size=1,
+            lr=1e-4,
+            weight_decay=0.0,
+            amp=True,
+            num_classes=expanded_classes(),
+            device="cpu",
+            checkpoint_dir=_checkpoint_dir(),
+            distill_weight=0.0,
+            distill_dir="",
+            use_synth=False,
+        )
     raise ValueError(f"unknown recipe {name}")
 
 
@@ -62,14 +93,17 @@ def assert_distill_source(distill_dir: str) -> None:
 def checkpoint_path(cfg: TrainConfig) -> Path:
     directory = assert_under_out(cfg.checkpoint_dir)
     name = "smoke.pt" if cfg.recipe == "smoke" else f"ckpt-{cfg.steps}.pt"
+    if cfg.recipe == "calibrate":
+        name = "calibrate.pt"
     return directory / name
 
 
 def train(cfg: TrainConfig) -> Path:
+    target = expanded_classes()
     if cfg.device != "cpu" and os.environ.get("FONTSNAP_ALLOW_GPU") != "1":
         raise SystemExit(2)
-    if cfg.num_classes not in (BASE_CLASSES, EXPANDED_CLASSES):
-        raise ValueError(f"num_classes must be {BASE_CLASSES} or {EXPANDED_CLASSES}")
+    if cfg.num_classes not in (BASE_CLASSES, target):
+        raise ValueError(f"num_classes must be {BASE_CLASSES} or {target}")
     if cfg.distill_weight > 0:
         assert_distill_source(cfg.distill_dir)
     dest = checkpoint_path(cfg)
@@ -79,23 +113,38 @@ def train(cfg: TrainConfig) -> Path:
     from train.port import load_efficientnet_b3_from_onnx
 
     model = load_efficientnet_b3_from_onnx(MODEL, num_classes=BASE_CLASSES)
-    if cfg.num_classes == EXPANDED_CLASSES:
-        model = expand_classifier(model, BASE_CLASSES, EXPANDED_CLASSES)
+    if cfg.num_classes == target:
+        model = expand_classifier(model, BASE_CLASSES, target)
     elif cfg.num_classes != BASE_CLASSES:
         raise ValueError(cfg.num_classes)
     device = torch.device(cfg.device)
+    if cfg.device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("cuda requested but not available")
     model.train()
     model.module.to(device)
     opt = torch.optim.AdamW(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     use_amp = cfg.amp and cfg.device == "cuda"
     scaler = torch.amp.GradScaler(device="cuda", enabled=True) if use_amp else None
     torch.manual_seed(0)
+    batches = list(_batches(cfg, device, limit=cfg.steps))
+    if len(batches) < cfg.steps:
+        raise RuntimeError(f"loader produced {len(batches)} batches, need {cfg.steps}")
     completed = 0
-    for _ in range(cfg.steps):
+    samples = 0
+    # Warm one step off-clock so the measured window is GPU compute, not setup.
+    warm_x, warm_y = batches[0]
+    if use_amp:
+        with torch.autocast(device_type="cuda", enabled=True):
+            _ = torch.nn.functional.cross_entropy(model(warm_x), warm_y)
+    else:
+        _ = torch.nn.functional.cross_entropy(model(warm_x), warm_y)
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+    started = time.perf_counter()
+    for inputs, labels in batches:
         completed += 1
+        samples += int(labels.shape[0])
         opt.zero_grad(set_to_none=True)
-        inputs = torch.randn(cfg.batch_size, 3, 320, 320, device=device)
-        labels = torch.zeros(cfg.batch_size, dtype=torch.long, device=device)
         if use_amp:
             with torch.autocast(device_type="cuda", enabled=True):
                 loss = torch.nn.functional.cross_entropy(model(inputs), labels)
@@ -106,6 +155,11 @@ def train(cfg: TrainConfig) -> Path:
             loss = torch.nn.functional.cross_entropy(model(inputs), labels)
             loss.backward()
             opt.step()
+    if device.type == "cuda":
+        torch.cuda.synchronize()
+    elapsed = max(time.perf_counter() - started, 1e-9)
+    if cfg.recipe == "calibrate":
+        print(f"samples/sec {samples / elapsed:.6f}", flush=True)
     dest.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
         {
@@ -120,11 +174,49 @@ def train(cfg: TrainConfig) -> Path:
     return dest
 
 
+def _batches(cfg: TrainConfig, device, *, limit: int):
+    import torch
+
+    if not cfg.use_synth:
+        for _ in range(limit):
+            yield (
+                torch.randn(cfg.batch_size, 3, 320, 320, device=device),
+                torch.zeros(cfg.batch_size, dtype=torch.long, device=device),
+            )
+        return
+    from train.cache import cache_root
+    from train.dataset import make_loader
+    from train.fetch import _fetch_one
+    from train.registry import load_manifest
+
+    # Calibrate on a small fetched slice so the pod does not need the full catalog.
+    records = load_manifest()[: max(cfg.batch_size, 8)]
+    root = cache_root()
+    for rec in records:
+        _fetch_one(rec, root)
+    loader = make_loader(
+        n_classes=len(records),
+        split="train",
+        per_class=max(2, (limit * cfg.batch_size + len(records) - 1) // len(records)),
+        batch_size=cfg.batch_size,
+        records=records,
+        num_workers=0,
+    )
+    produced = 0
+    while produced < limit:
+        for inputs, labels in loader:
+            yield inputs.to(device), labels.to(device)
+            produced += 1
+            if produced >= limit:
+                return
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     name = "smoke"
     dry_run = False
     steps: int | None = None
+    device: str | None = None
     index = 0
     while index < len(argv):
         flag = argv[index]
@@ -134,6 +226,10 @@ def main(argv: list[str] | None = None) -> int:
             continue
         if flag == "--steps" and index + 1 < len(argv):
             steps = int(argv[index + 1])
+            index += 2
+            continue
+        if flag == "--device" and index + 1 < len(argv):
+            device = argv[index + 1]
             index += 2
             continue
         if flag == "--dry-run":
@@ -147,19 +243,20 @@ def main(argv: list[str] | None = None) -> int:
     except ValueError as err:
         print(err, file=sys.stderr)
         return 2
-    if steps is not None:
+    if steps is not None or device is not None:
         cfg = TrainConfig(
             recipe=cfg.recipe,
-            steps=steps,
+            steps=cfg.steps if steps is None else steps,
             batch_size=cfg.batch_size,
             lr=cfg.lr,
             weight_decay=cfg.weight_decay,
             amp=cfg.amp,
             num_classes=cfg.num_classes,
-            device=cfg.device,
+            device=cfg.device if device is None else device,
             checkpoint_dir=cfg.checkpoint_dir,
             distill_weight=cfg.distill_weight,
             distill_dir=cfg.distill_dir,
+            use_synth=cfg.use_synth,
         )
     path = checkpoint_path(cfg)
     if dry_run:

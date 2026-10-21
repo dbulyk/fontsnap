@@ -238,7 +238,6 @@ def test_script_subsets_follow_the_family():
     assert latin.subsets == ("latin",)
 
 
-
 def test_manifest_pins_full_fonts_with_sha256():
     records = load_manifest()
     assert len(records) == PHASE1_CLASSES

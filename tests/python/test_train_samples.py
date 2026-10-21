@@ -298,6 +298,71 @@ def test_getitem_returns_a_tensor_when_torch_is_installed():
     assert labels.tolist() == [SHIPPED_CLASS_COUNT, SHIPPED_CLASS_COUNT + 1]
 
 
+def test_make_loader_passes_records_so_cyrillic_appears():
+    from collections import Counter
+
+    from train.dataset import make_loader
+    from train.registry import load_manifest
+
+    records = load_manifest()
+    loader = make_loader(n_classes=len(records), split="train", per_class=50, batch_size=4, records=records)
+    scripts = Counter(TEXT_BY_ID[spec.text_id].script for spec in loader.dataset.specs)
+    assert scripts["cyrillic"] > 0
+    assert scripts["latin"] > 0
+    assert scripts["cjk"] > 0
+    assert scripts["hangul"] > 0
+
+
+def test_fetch_stores_cas_bytes_the_loader_can_read(monkeypatch):
+    from dataclasses import replace
+
+    from train.cache import cache_path
+    from train.dataset import _font_of
+    from train.fetch import _fetch_one
+    from train.registry import load_manifest
+
+    base = next(r for r in load_manifest() if r.class_id == "AMDAL-Regular")
+    root = OUT / "font-cache-pytest" / f"fetch-{os.getpid()}"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(root))
+    payload = b"\x00\x01\x00\x00" + b"fake-sfnt-bytes"
+    digest = hashlib.sha256(payload).hexdigest()
+    rec = replace(base, file_sha256=digest)
+    monkeypatch.setattr("train.fetch.read_font_bytes", lambda _url: payload)
+    try:
+        assert _fetch_one(rec, root) == digest
+        assert cache_path(digest, root).is_file()
+        assert read_verified(digest, root) == payload
+        data, _instance = _font_of(rec)
+        assert data == payload
+        report = verify((digest,), root)
+        assert report == {"catalog": 1, "missing": 0, "mismatched": 0}
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_adwaita_weight_instances_render_distinct_glyphs(monkeypatch):
+    from train.inventory import read_font_bytes
+    from train.registry import load_manifest
+
+    records = load_manifest()
+    thin = next(r for r in records if r.class_id == "AdwaitaSans-Thin")
+    black = next(r for r in records if r.class_id == "AdwaitaSans-Black")
+    assert thin.file_sha256 == black.file_sha256
+    assert thin.instance == (("wght", 100.0),)
+    assert black.instance == (("wght", 900.0),)
+    root = OUT / "font-cache-pytest" / f"adwaita-{os.getpid()}"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(root))
+    store_bytes(thin.file_sha256, read_font_bytes(thin.download.url), root)
+    spec = build_specs(n_classes=1, split=Split.TRAIN, per_class=1)[0]
+    thin_img = prepared_chw(spec, read_verified(thin.file_sha256), instance=thin.instance)
+    black_img = prepared_chw(spec, read_verified(black.file_sha256), instance=black.instance)
+    assert thin_img.tobytes() != black_img.tobytes()
+
+
 def test_cache_stores_bytes_only_when_the_hash_matches(tmp_path):
     payload = b"font-bytes"
     digest = hashlib.sha256(payload).hexdigest()

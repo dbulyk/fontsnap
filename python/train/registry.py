@@ -196,6 +196,9 @@ FONTSOURCE_FACES = {
     "win95fa": 1,
 }
 
+# Variable fonts published as one file per style; weight classes need fvar instances.
+VF_WEIGHT_FAMILIES = frozenset({"adwaita-sans"})
+
 # Measured from cmap of the cached full fonts. CJK is U+4E00..U+9FFF. Hangul is U+AC00..U+D7AF.
 CJK_FAMILIES = frozenset(
     {
@@ -472,6 +475,13 @@ class FontClassRecord:
     @property
     def subsets(self) -> tuple[str, ...]:
         return subsets_for(self.family_id)
+
+    @property
+    def instance(self) -> tuple[tuple[str, float], ...]:
+        """Named axis coords for shared variable-font files (one file, many weights)."""
+        if self.family_id not in VF_WEIGHT_FAMILIES or self.weight is None:
+            return ()
+        return (("wght", float(self.weight)),)
 
 
 @dataclass(frozen=True)
@@ -774,6 +784,19 @@ def check() -> list[str]:
     fusion_ids = {r.family_id for r in records if r.family_id.startswith("fusion-")}
     if fusion_ids != FUSION_KEEP:
         errors.append(f"fusion classes kept {sorted(fusion_ids)}")
+
+    by_digest_instance: dict[tuple[str, tuple[tuple[str, float], ...]], str] = {}
+    for rec in records:
+        if not rec.file_sha256:
+            continue
+        key = (rec.file_sha256, rec.instance)
+        prev = by_digest_instance.get(key)
+        if prev is not None:
+            errors.append(f"{rec.class_id} shares file+instance with {prev}")
+        else:
+            by_digest_instance[key] = rec.class_id
+        if rec.family_id in VF_WEIGHT_FAMILIES and rec.weight is not None and not rec.instance:
+            errors.append(f"{rec.class_id} is a variable weight without an instance")
 
     sums = {
         ExcludeReason.UNSUITABLE: 97,

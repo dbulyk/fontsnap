@@ -7,10 +7,12 @@ The secure hourly price is price.secure from GET https://api.runpod.io/v2/catalo
 CreatePodRequest sends name, image, cloud SECURE, gpu id and count, disk, and the container
 start command as entrypoint and cmd. v1 called that command dockerStartCmd. v2 stores it as args.
 
-The pod command runs the work under timeout, prints samples/sec for calibrate, then runs
-runpodctl remove pod $RUNPOD_POD_ID. The client stops and deletes the pod on every exit,
-including SIGINT, SIGTERM, and SIGHUP. A failed delete prints the pod id and a manual DELETE
-command, records DELETE FAILED, and exits nonzero.
+The pod clones this repository at a pinned commit, installs train deps, runs the work under
+timeout on the GPU, prints samples/sec only when calibrate exits 0, sleeps so the client can
+scrape logs, then runs runpodctl pod delete $RUNPOD_POD_ID. The client stops and deletes the
+pod in a finally block on every exit, including SIGINT, SIGTERM, SIGHUP, and unexpected
+exceptions while polling. A failed delete prints the pod id and a manual DELETE command,
+records DELETE FAILED, and exits nonzero.
 
 Free-phase command:
 
@@ -24,10 +26,12 @@ It refuses a price that would pass $1 in 20 minutes.
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import re
 import signal
+import subprocess
 import sys
 import time
 import urllib.error
@@ -40,7 +44,7 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import quote
 
-from train.paths import assert_under_out
+from train.paths import ROOT, assert_under_out
 
 API = "https://api.runpod.io/v2"
 PLAN_CALIBRATE = "python -m train.runpod plan --mode calibrate"
@@ -225,19 +229,55 @@ def parse_pod(payload: dict, *, status_code: int) -> RemotePod:
     )
 
 
-def container_script(spec: RunPodJobSpec) -> str:
-    limit = spec.max_runtime_seconds
-    if spec.mode is JobMode.CALIBRATE:
-        steps = spec.samples
-        work = (
-            "start=$(date +%s)\n"
-            f"timeout {limit} python -m train.loop --recipe smoke --steps {steps}\n"
-            "end=$(date +%s)\n"
-            f"python -c \"print('samples/sec %.6f' % ({steps} / max($end - $start, 1)), flush=True)\"\n"
+def pinned_commit() -> str:
+    override = os.environ.get("FONTSNAP_RUNPOD_COMMIT", "").strip()
+    if re.fullmatch(r"[0-9a-f]{7,40}", override):
+        return override
+    try:
+        out = subprocess.check_output(
+            ["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
         )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise RuntimeError("cannot pin repository commit for the pod script") from exc
+    sha = out.strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise RuntimeError(f"unexpected git rev-parse output: {sha!r}")
+    return sha
+
+
+def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
+    limit = spec.max_runtime_seconds
+    sha = commit if commit is not None else pinned_commit()
+    if not re.fullmatch(r"[0-9a-f]{7,40}", sha):
+        raise ValueError(f"bad commit pin: {sha!r}")
+    if spec.mode is JobMode.CALIBRATE:
+        train_cmd = f"timeout {limit} python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
     else:
-        work = f"timeout {limit} python -m train.loop --recipe ofl-v1\n"
-    return work + 'runpodctl remove pod "$RUNPOD_POD_ID"\n'
+        train_cmd = f"timeout {limit} python -m train.loop --recipe ofl-v1 --device cuda"
+    # Clone + install inside the stock pytorch image; loop prints samples/sec only on
+    # success. Sleep before self-delete so the client can scrape SSE logs while RUNNING.
+    return (
+        "set -u\n"
+        "export DEBIAN_FRONTEND=noninteractive\n"
+        "apt-get update -qq >/dev/null\n"
+        "apt-get install -y -qq git git-lfs >/dev/null\n"
+        "git lfs install --skip-repo >/dev/null\n"
+        "rm -rf /tmp/fontsnap\n"
+        "GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/dbulyk/fontsnap.git /tmp/fontsnap\n"
+        "cd /tmp/fontsnap\n"
+        f"git checkout --force {sha}\n"
+        "git lfs pull --include='model/**'\n"
+        "python -m pip install -q -r python/requirements.txt -r python/train/requirements.txt\n"
+        "export FONTSNAP_ALLOW_GPU=1\n"
+        "export PYTHONPATH=/tmp/fontsnap/python\n"
+        f"{train_cmd}\n"
+        "status=$?\n"
+        'if [ "$status" -eq 0 ]; then sleep 45; fi\n'
+        'runpodctl pod delete "$RUNPOD_POD_ID"\n'
+        "exit $status\n"
+    )
 
 
 def create_body(spec: RunPodJobSpec) -> dict:
@@ -362,31 +402,50 @@ def plan(spec: RunPodJobSpec, journal: Path | None = None) -> str:
     return text
 
 
-def _read_all(response) -> bytes:
+def _read_all(response, *, limit: int = 1_000_000, stop_when: re.Pattern[str] | None = None) -> bytes:
     chunks: list[bytes] = []
     total = 0
-    while total < 1_000_000:
+    while total < limit:
         try:
-            block = response.read(8192)
-        except (TimeoutError, OSError):
+            block = response.read(1024 if stop_when is not None else 8192)
+        except (TimeoutError, OSError, http.client.HTTPException):
             break
         if not block:
             break
         chunks.append(block)
         total += len(block)
+        if stop_when is not None:
+            try:
+                text = b"".join(chunks).decode(errors="replace")
+            except Exception:
+                continue
+            if stop_when.search(text):
+                break
     return b"".join(chunks)
 
 
-def _http_raw(method: str, path: str, key: str, body: dict | None = None, *, timeout: float = 30) -> tuple[int, bytes]:
+def _http_raw(
+    method: str,
+    path: str,
+    key: str,
+    body: dict | None = None,
+    *,
+    timeout: float = 30,
+    stop_when: re.Pattern[str] | None = None,
+) -> tuple[int, bytes]:
     data = None if body is None else json.dumps(body).encode()
     request = urllib.request.Request(API + path, data=data, method=method)
     request.add_header("Authorization", "Bearer " + key)
     request.add_header("Content-Type", "application/json")
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            return response.status, _read_all(response)
+            return response.status, _read_all(response, stop_when=stop_when)
     except urllib.error.HTTPError as err:
-        return err.code, err.read()
+        try:
+            raw = err.read()
+        except (TimeoutError, OSError, http.client.HTTPException):
+            raw = b""
+        return err.code, raw
 
 
 def _http_json(method: str, path: str, key: str, body: dict | None = None) -> tuple[int, dict]:
@@ -444,7 +503,7 @@ def get_pod(pod_id: str, key: str) -> RemotePod:
     path = "/pods/" + quote(pod_id, safe="")
     try:
         status, payload = _http_json("GET", path, key)
-    except (urllib.error.URLError, TimeoutError, OSError):
+    except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException, ValueError):
         return _held(pod_id, PodState.UNKNOWN, 0)
     if status == 404:
         return _held(pod_id, PodState.ABSENT, 404)
@@ -540,13 +599,14 @@ def parse_samples_per_sec(text: str) -> Decimal | None:
 def _latest_rate(pod_id: str, key: str, prior: Decimal | None) -> Decimal | None:
     path = "/pods/" + quote(pod_id, safe="") + "/logs?source=container&tail=200"
     try:
-        status, raw = _http_raw("GET", path, key, timeout=5)
-    except (urllib.error.URLError, TimeoutError, OSError):
+        # SSE stays open; read in small chunks and stop once samples/sec appears.
+        status, raw = _http_raw("GET", path, key, timeout=2.5, stop_when=_SAMPLES_PER_SEC)
+    except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException):
         return prior
     if status != 200:
         return prior
     try:
-        text = raw.decode()
+        text = raw.decode(errors="replace")
     except UnicodeDecodeError:
         return prior
     parsed = parse_samples_per_sec(text)
@@ -594,8 +654,8 @@ def _poll(pod_id: str, key: str, spec: RunPodJobSpec, deadline: float) -> tuple[
             time.sleep(_POLL_SECONDS)
             continue
         if pod.state in _DONE_STATES:
-            if pod.http_status == 200:
-                rate = _latest_rate(pod_id, key, rate)
+            # ABSENT (self-delete) and EXITED both keep trying logs once.
+            rate = _latest_rate(pod_id, key, rate)
             if spec.mode is JobMode.CALIBRATE and rate is None:
                 return 4, rate, state
             return 0, rate, state
@@ -669,12 +729,24 @@ def _watch(spec: RunPodJobSpec) -> int:
                 recorded = _read_active()
                 if recorded is not None:
                     pod_id = str(recorded["id"])
-        if rate is not None and spec.mode is JobMode.CALIBRATE:
-            _print_projection(rate, hourly)
-        if pod_id is not None:
-            holder["cleaning"] = True
-            if not _teardown(pod_id, key, mode=spec.mode.value, hourly=hourly, started=started, state=state):
-                code = 4
+        except Exception:
+            code = 4
+            if pod_id is None:
+                recorded = _read_active()
+                if recorded is not None:
+                    pod_id = str(recorded["id"])
+        finally:
+            # Projection only on a clean calibrate that actually measured throughput.
+            if code == 0 and rate is not None and spec.mode is JobMode.CALIBRATE:
+                _print_projection(rate, hourly)
+            if pod_id is not None:
+                holder["cleaning"] = True
+                try:
+                    if not _teardown(pod_id, key, mode=spec.mode.value, hourly=hourly, started=started, state=state):
+                        code = 4
+                except Exception:
+                    code = 4
+                    _report_delete_failed(pod_id)
     finally:
         _restore_signals(previous)
     return code

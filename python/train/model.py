@@ -1,7 +1,19 @@
 from __future__ import annotations
 
 BASE_CLASSES = 3665
-EXPANDED_CLASSES = 4271
+
+
+def expanded_classes() -> int:
+    """Shipped head size plus every OFL phase-1 class in the manifest."""
+    from train.registry import PHASE1_CLASSES
+
+    return BASE_CLASSES + PHASE1_CLASSES
+
+
+def __getattr__(name: str) -> int:
+    if name == "EXPANDED_CLASSES":
+        return expanded_classes()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 class EfficientNetB3Classifier:
@@ -46,8 +58,9 @@ class EfficientNetB3Classifier:
 
 
 def expand_classifier(model: EfficientNetB3Classifier, old: int, new: int) -> EfficientNetB3Classifier:
-    if (old, new) != (BASE_CLASSES, EXPANDED_CLASSES):
-        raise ValueError(f"expand_classifier only grows {BASE_CLASSES} to {EXPANDED_CLASSES}, got {old} to {new}")
+    target = expanded_classes()
+    if old != BASE_CLASSES or new != target:
+        raise ValueError(f"expand_classifier only grows {BASE_CLASSES} to {target}, got {old} to {new}")
     if model.num_classes != old:
         raise ValueError(f"model head is {model.num_classes}, expected {old}")
     import torch

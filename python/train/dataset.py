@@ -92,6 +92,6 @@ def make_loader(
 ):
     from torch.utils.data import DataLoader
 
-    specs = build_specs(n_classes=n_classes, split=split, per_class=per_class)
+    specs = build_specs(n_classes=n_classes, split=split, per_class=per_class, records=records)
     dataset = FontSnapSynth(specs, records)
     return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)

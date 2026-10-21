@@ -219,14 +219,23 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert body["disk"] == 20
     assert body["entrypoint"] == ["/bin/bash", "-lc"]
     assert set(body) == {"name", "image", "cloud", "gpu", "disk", "entrypoint", "cmd"}
-    assert f"timeout {CALIBRATE.max_runtime_seconds} python -m train.loop --recipe smoke --steps {CALIBRATE.samples}" in script
-    assert "samples/sec" in script
-    assert 'runpodctl remove pod "$RUNPOD_POD_ID"' in script
+    assert "git clone" in script
+    assert "git checkout --force" in script
+    assert "git lfs pull" in script
+    assert "pip install" in script
+    assert (
+        f"timeout {CALIBRATE.max_runtime_seconds} python -m train.loop --recipe calibrate --steps {CALIBRATE.samples} --device cuda"
+        in script
+    )
+    assert "FONTSNAP_ALLOW_GPU=1" in script
+    assert "sleep 45" in script
+    assert 'runpodctl pod delete "$RUNPOD_POD_ID"' in script
+    assert "runpodctl remove pod" not in script
     assert "RUNPOD_API_KEY" not in json.dumps(body)
     assert "env" not in body
     train = create_body(TRAIN)["cmd"][0]
-    assert f"timeout {TRAIN.max_runtime_seconds} python -m train.loop --recipe ofl-v1" in train
-    assert 'runpodctl remove pod "$RUNPOD_POD_ID"' in train
+    assert f"timeout {TRAIN.max_runtime_seconds} python -m train.loop --recipe ofl-v1 --device cuda" in train
+    assert 'runpodctl pod delete "$RUNPOD_POD_ID"' in train
 
 
 def test_calibrate_spend_cap_exits_3_above_one_dollar():
@@ -640,3 +649,84 @@ def urlopen(request, timeout=30):
 urllib.request.urlopen = urlopen
 raise SystemExit(runpod.main(["watch", "--mode", "calibrate"]))
 """
+
+
+def test_bad_status_line_during_poll_still_deletes(monkeypatch, tmp_path, capsys):
+    import http.client
+
+    arm(monkeypatch, tmp_path)
+
+    def urlopen(request, timeout=30):
+        method = request.get_method()
+        path = request.full_url.split("/v2", 1)[-1]
+        if method == "GET" and path.startswith("/catalog/gpus/"):
+            return Resp(200, json.dumps({"price": {"secure": "0.89"}}).encode())
+        if method == "POST" and path == "/pods":
+            return Resp(201, json.dumps(pod_payload("PROVISIONING")).encode())
+        if method == "GET" and path.startswith(f"/pods/{POD}") and "/logs" not in path:
+            raise http.client.BadStatusLine("HTTP/1.1 ABC Garbage")
+        if method == "POST" and path.endswith("/action"):
+            return Resp(200, b"{}")
+        if method == "DELETE":
+            return Resp(204, b"")
+        raise AssertionError((method, path))
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    code = main(["watch", "--mode", "calibrate"])
+    assert code != 0
+    err = capsys.readouterr().err
+    assert KEY not in err
+    notes = journal_notes(tmp_path)
+    assert "deleted" in notes
+    assert not (tmp_path / "runpod-active-pod.json").exists()
+
+
+def test_sse_chunked_logs_still_yield_samples_per_sec(monkeypatch, tmp_path, capsys):
+    arm(monkeypatch, tmp_path)
+
+    class SlowSSE(Resp):
+        def __init__(self):
+            prefix = b"data: samples/sec 9.25\n\n"
+            # Trailing chunk never arrives; read must stop early on the rate line.
+            super().__init__(200, prefix)
+            self._reads = 0
+
+        def read(self, n=-1):
+            self._reads += 1
+            if self._reads == 1:
+                return super().read(n)
+            raise TimeoutError("sse still open")
+
+    def urlopen(request, timeout=30):
+        method = request.get_method()
+        path = request.full_url.split("/v2", 1)[-1]
+        if method == "GET" and path.startswith("/catalog/gpus/"):
+            return Resp(200, json.dumps({"price": {"secure": "0.89"}}).encode())
+        if method == "POST" and path == "/pods":
+            return Resp(201, json.dumps(pod_payload("PROVISIONING")).encode())
+        if method == "GET" and "/logs" in path:
+            return SlowSSE()
+        if method == "GET" and path.startswith(f"/pods/{POD}"):
+            return Resp(200, json.dumps(pod_payload("EXITED")).encode())
+        if method == "POST" and path.endswith("/action"):
+            return Resp(200, b"{}")
+        if method == "DELETE":
+            return Resp(204, b"")
+        raise AssertionError((method, path))
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    assert main(["watch", "--mode", "calibrate"]) == 0
+    out = capsys.readouterr().out
+    assert "samples/sec 9.25" in out
+    assert "main train 100000 samples:" in out
+
+
+def test_container_script_does_not_print_rate_on_train_failure():
+    from train.runpod import container_script
+
+    script = container_script(CALIBRATE, commit="a" * 40)
+    assert "samples/sec" not in script or "print(" not in script
+    assert "status=$?" in script
+    assert "exit $status" in script
+    assert "--recipe calibrate" in script
+    assert "runpodctl pod delete" in script
