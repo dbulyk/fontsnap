@@ -1,9 +1,25 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { PNG } from 'pngjs';
 import { describe, expect, it } from 'vitest';
 
 const LOCALES = readdirSync('public/_locales').sort();
 const GRAPHICS = 'store/graphics';
+
+/** What every language uploads to the store: five screenshots and two promo tiles. */
+const LISTING_IMAGES = [
+  'marquee_1400x560.png',
+  'promo_small_440x280.png',
+  'screenshot_1_1280x800.png',
+  'screenshot_2_1280x800.png',
+  'screenshot_3_1280x800.png',
+  'screenshot_4_1280x800.png',
+  'screenshot_5_1280x800.png',
+];
+const ROOT_IMAGES = [...LISTING_IMAGES, 'icon128_store_96in128.png', 'logo512.png'].sort();
+
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+const IEND_CHUNK = Buffer.from([0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]);
 
 // Words the Chrome Web Store policy and our listing rules keep out of every language's listing.
 const FORBIDDEN =
@@ -34,6 +50,20 @@ function pngSize(path: string): [number, number] {
   return [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
 }
 
+/** Why the store could not show this file as an image, or undefined when it is a whole PNG. */
+function pngDefect(path: string): string | undefined {
+  const bytes = readFileSync(path);
+  if (!bytes.subarray(0, 8).equals(PNG_SIGNATURE)) return 'not a PNG: no PNG signature';
+  if (bytes.toString('latin1', 12, 16) !== 'IHDR') return 'broken: first chunk is not IHDR';
+  if (!bytes.subarray(-12).equals(IEND_CHUNK)) return 'cut off: does not end with IEND';
+  try {
+    PNG.sync.read(bytes);
+  } catch (error) {
+    return `does not decode: ${String(error)}`;
+  }
+  return undefined;
+}
+
 /** `name_1280x800.png` → 1280×800; a square asset such as `logo512.png` or `icon128_….png` → 512×512. */
 function sizeInName(name: string): [number, number] | undefined {
   const pair = /_(\d+)x(\d+)\.png$/.exec(name);
@@ -60,6 +90,30 @@ describe('Chrome Web Store listing', () => {
       .flatMap((name) => /^description_(.+)\.txt$/.exec(name)?.[1] ?? [])
       .sort();
     expect(described).toEqual(LOCALES);
+  });
+
+  it('has a graphics folder for every locale the package has, and no others', () => {
+    const folders = readdirSync(GRAPHICS, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    expect(folders).toEqual(LOCALES);
+  });
+
+  it.each(LOCALES)('%s has exactly the 7 listing images and nothing else', (locale) => {
+    expect(readdirSync(join(GRAPHICS, locale)).sort()).toEqual(LISTING_IMAGES);
+  });
+
+  it('the shared root set has the 7 listing images, the icon and the logo, and nothing else', () => {
+    const files = readdirSync(GRAPHICS, { withFileTypes: true })
+      .filter((entry) => !entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+    expect(files).toEqual(ROOT_IMAGES);
+  });
+
+  it.each(pngs(GRAPHICS))('%s is a whole PNG that decodes', (path) => {
+    expect(pngDefect(path)).toBeUndefined();
   });
 
   it.each(pngs(GRAPHICS))('%s has its size in the name and is under 800 KB', (path) => {
