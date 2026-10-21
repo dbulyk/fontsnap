@@ -31,7 +31,18 @@ class EfficientNetB3Classifier:
         return self.module.state_dict()
 
     def load_state_dict(self, state, strict: bool = True):
+        if not any(key.endswith("running_mean") for key in state):
+            _prepare_folded_modules(self.module)
         return self.module.load_state_dict(state, strict=strict)
+
+    def absorb_folded_batchnorm(self) -> None:
+        import torch
+
+        pairs = _conv_norm_pairs(self.module)
+        with torch.no_grad():
+            for parent, name, conv, norm in pairs:
+                _fold_conv_batchnorm(conv, norm)
+                _swap_norm_for_activation(parent, name, norm)
 
 
 def expand_classifier(model: EfficientNetB3Classifier, old: int, new: int) -> EfficientNetB3Classifier:
@@ -52,3 +63,62 @@ def expand_classifier(model: EfficientNetB3Classifier, old: int, new: int) -> Ef
     model.module.classifier = new_linear
     model.num_classes = new
     return model
+
+
+def _conv_norm_pairs(module):
+    from torch import nn
+
+    pairs = []
+    for parent in module.modules():
+        children = list(parent.named_children())
+        for index, (name, child) in enumerate(children):
+            if not isinstance(child, nn.modules.batchnorm._BatchNorm):
+                continue
+            if index == 0 or not isinstance(children[index - 1][1], nn.Conv2d):
+                raise ValueError(f"{name} does not follow a conv")
+            conv = children[index - 1][1]
+            if conv.out_channels != child.num_features:
+                raise ValueError(f"{name} has {child.num_features} features and the conv has {conv.out_channels}")
+            pairs.append((parent, name, conv, child))
+    return pairs
+
+
+def _swap_norm_for_activation(parent, name, norm) -> None:
+    from torch import nn
+
+    drop = getattr(norm, "drop", None)
+    if drop is not None and not isinstance(drop, nn.Identity):
+        raise ValueError(f"{name} applies {type(drop).__name__} inside the norm")
+    act = getattr(norm, "act", None)
+    setattr(parent, name, act if act is not None else nn.Identity())
+
+
+def _fold_conv_batchnorm(conv, norm) -> None:
+    import torch
+    from torch import nn
+
+    gamma = norm.weight
+    beta = norm.bias
+    mean = norm.running_mean
+    var = norm.running_var
+    if gamma is None or beta is None or mean is None or var is None:
+        raise ValueError("batch-norm is missing affine weights or running stats")
+    scale = gamma / torch.sqrt(var + norm.eps)
+    weight = conv.weight
+    weight.mul_(scale.reshape((-1,) + (1,) * (weight.ndim - 1)))
+    bias = conv.bias if conv.bias is not None else torch.zeros(conv.out_channels, dtype=weight.dtype, device=weight.device)
+    fused = (bias - mean) * scale + beta
+    if conv.bias is None:
+        conv.bias = nn.Parameter(fused.detach().clone())
+    else:
+        conv.bias.copy_(fused)
+
+
+def _prepare_folded_modules(module) -> None:
+    import torch
+    from torch import nn
+
+    for parent, name, conv, norm in _conv_norm_pairs(module):
+        if conv.bias is None:
+            conv.bias = nn.Parameter(torch.zeros(conv.out_channels, dtype=conv.weight.dtype, device=conv.weight.device))
+        _swap_norm_for_activation(parent, name, norm)

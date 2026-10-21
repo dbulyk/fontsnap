@@ -87,6 +87,7 @@ def load_efficientnet_b3_from_onnx(
     if unexpected:
         raise ValueError(f"timm parameters missing from the name map: {unexpected[:8]}")
     model.load_state_dict(state, strict=True)
+    model.absorb_folded_batchnorm()
     model.eval()
     return model
 
