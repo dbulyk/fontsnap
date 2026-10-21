@@ -1927,7 +1927,6 @@ describe('the style of the code that runs in the web page cannot load a file', (
     ['a link element', "doc.head.append(doc.createElement('link'));"],
     ['animate with keyframes', "box.animate([{ backgroundImage: ['ur', 'l(x)'].join('') }], 1);"],
     ['attributeStyleMap', "box.attributeStyleMap.set('background-image', 'x');"],
-    ['getComputedStyle', 'void getComputedStyle(box);'],
     // .style as a value
     ['an alias of style', 'const s = box.style;\n  void s;'],
     ['style passed on', 'use(box.style);'],
@@ -2003,6 +2002,16 @@ describe('the style of the code that runs in the web page cannot load a file', (
     for (const file of [OVERLAY, NEW_FILE]) {
       expect(await either(file, inStart(`  ${code}`)), `${file}: ${code}`).not.toEqual([]);
     }
+  });
+
+  it('accepts a read of computed opacity and background in the overlay', async () => {
+    const code = `const paint = getComputedStyle(box);
+  void paint.opacity;
+  void paint.backgroundColor;
+  void paint.backgroundImage;`;
+    expect(await either(OVERLAY, inStart(`  ${code}`))).toEqual([]);
+    expect(await domMembers(OVERLAY, inStart(`  ${code}`))).toEqual([]);
+    expect(await either(NEW_FILE, inStart(`  ${code}`))).not.toEqual([]);
   });
 
   it('accepts every style the overlay really writes, and left/top/width/height as templates', async () => {
@@ -2339,13 +2348,26 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   it('accepts everything the overlay does, and a statement of Object.assign', async () => {
     const code = `
   let sx = 0;
-  const tw = doc.createTreeWalker(box, NodeFilter.SHOW_TEXT);
+  const tw = doc.createTreeWalker(box, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
   const range = doc.createRange();
   for (let node = tw.nextNode(); node; node = tw.nextNode()) {
     const value = node.nodeValue ?? '';
     range.selectNodeContents(node);
-    const b = range.getBoundingClientRect();
-    if (b.right < 0 || b.left > 1 || b.bottom < 0 || b.top > 1 || !value) continue;
+    const owner = node.parentElement;
+    if (!value || owner === null || owner.matches('textarea *') || !owner.checkVisibility({ checkOpacity: true })) continue;
+    if (node instanceof HTMLTextAreaElement || node instanceof HTMLInputElement) {
+      void node.value;
+      void node.selectionStart;
+      void node.selectionEnd;
+      if (node instanceof HTMLInputElement && node.type !== 'text') continue;
+    }
+    for (const b of range.getClientRects()) {
+      const hit = doc.elementsFromPoint(b.left, b.top)[0];
+      const paint = hit === undefined ? undefined : getComputedStyle(hit);
+      if (b.right < 0 || b.left > 1 || b.bottom < 0 || b.top > 1 || hit === undefined || paint === undefined || paint.opacity === '0' || !hit.contains(owner)) continue;
+      void paint.backgroundColor;
+      void paint.backgroundImage;
+    }
   }
   Object.assign(box.style, { position: 'fixed', background: 'rgba(0,0,0,0.15)', cursor: 'crosshair', left: \`\${sx}px\`, width: '0', top: '12px' });
   box.textContent = u;
@@ -2354,7 +2376,8 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   box.addEventListener('mousedown', (e) => { e.preventDefault(); sx = e.clientX; });
   win.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') box.remove(); });
   if (!box.isConnected) return;
-  const text = win.getSelection()?.toString();
+  const selection = win.getSelection();
+  const text = selection && !selection.isCollapsed && selection.rangeCount > 0 ? selection.getRangeAt(0).getClientRects() && selection.toString() : '';
   void text;`;
     expect(await verdict(OVERLAY, inStart(code)), code).toEqual([]);
   });

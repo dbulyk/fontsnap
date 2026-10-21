@@ -222,11 +222,16 @@ describe('selection message: screenshot → crop → session → result tab', ()
     ]);
   });
 
-  it('caps the preview text at 80 characters', async () => {
+  it('drops preview text longer than 100 graphemes and keeps 100', async () => {
     setup();
-    await stub.dispatch({ ...rectMessage, text: 'x'.repeat(200) });
-    const { entry } = await openedResult();
-    expect(entry?.['text']).toBe('x'.repeat(80));
+    await stub.dispatch({ ...rectMessage, text: 'x'.repeat(100) });
+    expect((await openedResult()).entry?.['text']).toBe('x'.repeat(100));
+    await stub.dispatch({ ...rectMessage, text: 'x'.repeat(101) });
+    expect((await openedResult()).entry?.['text']).toBe('');
+    await stub.dispatch({ ...rectMessage, text: '👍'.repeat(100) });
+    expect((await openedResult()).entry?.['text']).toBe('👍'.repeat(100));
+    await stub.dispatch({ ...rectMessage, text: '👍'.repeat(101) });
+    expect((await openedResult()).entry?.['text']).toBe('');
   });
 
   it('re-encodes a crop that is too big for session storage as JPEG, walking the quality ladder', async () => {

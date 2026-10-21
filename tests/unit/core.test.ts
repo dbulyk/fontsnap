@@ -251,28 +251,39 @@ describe('resize', () => {
 
 describe('Python reference parity on realset3 samples', () => {
   const imagePath = (name: string) => join(ROOT, 'data', 'realset3', 'images', name);
+  // These walk every realset3 sample. Under a full `npm test` they share the machine with
+  // store PNG checks and can exceed the default 30s budget even when the assertions pass.
+  const parityMs = 90_000;
 
-  it('textcrop lines match the Python reference', () => {
-    for (const e of FX.images) {
-      expect(textLines(loadPng(imagePath(e.image))).lines, e.image).toEqual(e.lines);
-    }
-  });
-
-  it('crop_normalize + prep match the Python reference (shape and stats)', () => {
-    for (const e of FX.images) {
-      const img = loadPng(imagePath(e.image));
-      const pre = textLines(img);
-      for (const v of ['pack', 'crop'] as const) {
-        const c = cropNormalize(img, v, 96, 6, pre);
-        const ref = e[v];
-        expect([c.h, c.w], `${e.image} ${v} shape`).toEqual(ref.shape);
-        expect(Math.abs(mean(c.data) - ref.mean), `${e.image} ${v} mean`).toBeLessThan(0.5);
-        expect(Math.abs(mean(prep(c)) - ref.prepMean), `${e.image} ${v} prep mean`).toBeLessThan(
-          0.01,
-        );
+  it(
+    'textcrop lines match the Python reference',
+    () => {
+      for (const e of FX.images) {
+        expect(textLines(loadPng(imagePath(e.image))).lines, e.image).toEqual(e.lines);
       }
-    }
-  });
+    },
+    parityMs,
+  );
+
+  it(
+    'crop_normalize + prep match the Python reference (shape and stats)',
+    () => {
+      for (const e of FX.images) {
+        const img = loadPng(imagePath(e.image));
+        const pre = textLines(img);
+        for (const v of ['pack', 'crop'] as const) {
+          const c = cropNormalize(img, v, 96, 6, pre);
+          const ref = e[v];
+          expect([c.h, c.w], `${e.image} ${v} shape`).toEqual(ref.shape);
+          expect(Math.abs(mean(c.data) - ref.mean), `${e.image} ${v} mean`).toBeLessThan(0.5);
+          expect(Math.abs(mean(prep(c)) - ref.prepMean), `${e.image} ${v} prep mean`).toBeLessThan(
+            0.01,
+          );
+        }
+      }
+    },
+    parityMs,
+  );
 });
 
 describe('prep and crop fallbacks', () => {

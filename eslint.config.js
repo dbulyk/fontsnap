@@ -253,6 +253,7 @@ const DOM_MEMBERS = [
       left: 'r',
       style: 'r',
       SHOW_TEXT: 'r',
+      SHOW_ELEMENT: 'r',
       createElement: 'c',
       createRange: 'c',
       createTreeWalker: 'c',
@@ -262,9 +263,52 @@ const DOM_MEMBERS = [
       addEventListener: 'c',
       preventDefault: 'c',
       selectNodeContents: 'c',
-      getBoundingClientRect: 'c',
+      getClientRects: 'c',
       nextNode: 'c',
+      // visible text in the rectangle: the stack above it, its box, and a field's value
+      isCollapsed: 'r',
+      rangeCount: 'r',
+      getRangeAt: 'c',
+      parentElement: 'r',
+      matches: 'c',
+      checkVisibility: 'c',
+      elementsFromPoint: 'c',
+      getBoundingClientRect: 'c',
+      getPropertyValue: 'c',
+      getPropertyPriority: 'c',
+      setProperty: 'c',
+      removeProperty: 'c',
+      hasAttribute: 'c',
+      getAttribute: 'c',
+      removeAttribute: 'c',
+      contains: 'c',
+      length: 'r',
+      tagName: 'r',
+      opacity: 'r',
+      visibility: 'r',
+      overflow: 'r',
+      overflowX: 'r',
+      overflowY: 'r',
+      clipPath: 'r',
+      pointerEvents: 'r',
+      backgroundColor: 'r',
+      backgroundImage: 'r',
+      position: 'r',
+      transform: 'r',
+      translate: 'r',
+      rotate: 'r',
+      scale: 'r',
+      filter: 'r',
+      perspective: 'r',
+      contain: 'r',
+      willChange: 'r',
+      value: 'r',
+      selectionStart: 'r',
+      selectionEnd: 'r',
+      type: 'r',
       toString: 'c',
+      setStart: 'c',
+      setEnd: 'c',
       textContent: 'w',
     },
   },
@@ -366,7 +410,7 @@ const GLOBAL_ACCESS = {
     createImageBitmap: true,
     encodeURIComponent: true,
     navigator: ['clipboard.writeText', 'hardwareConcurrency'],
-    NodeFilter: ['SHOW_TEXT'],
+    NodeFilter: ['SHOW_TEXT', 'SHOW_ELEMENT'],
     OffscreenCanvas: true,
     setInterval: true,
     setTimeout: true,
@@ -376,7 +420,16 @@ const GLOBAL_ACCESS = {
     // the page of the selection overlay is a content script: its Window is the web page's, not the extension's
     // the window is only handed to startSelection(window) (a bare use: no member of it is read here)
     'src/select/index.ts': { window: [''] },
-    'src/select/overlay.ts': { Object: ['assign'] },
+    'src/select/overlay.ts': {
+      Object: ['assign'],
+      getComputedStyle: true,
+      HTMLElement: true,
+      SVGElement: true,
+      HTMLInputElement: true,
+      HTMLTextAreaElement: true,
+    },
+    'src/select/graphemes.ts': { Intl: ['Segmenter'] },
+    'src/shared/graphemes.ts': { Intl: ['Segmenter'] },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
     // the timeout of a page script that does not answer
     // the tab of the click is asked whether it is still in front before its screenshot
@@ -1187,6 +1240,9 @@ const importSelectors = (valueFrom) =>
   ].map((selector) => ({ selector, message: IMPORT_MESSAGE }));
 const selectImportSelectors = importSelectors(`:not([source.value=${SELECT_SIBLING}])`);
 const measureImportSelectors = importSelectors('');
+// pe:none probe: removeAttribute('style') only when the probe created a style attribute that was not there
+const STYLE_ATTR_RESTORE_REMOVE =
+  "CallExpression[callee.property.name='removeAttribute'][arguments.length=1][arguments.0.type='Literal'][arguments.0.value='style']";
 const pageProcessSelectorSources = [
   // no key that is computed at run time (a numeric index is fine), in access, destructuring, literals, classes
   "MemberExpression[computed=true]:not([property.type='Literal'][property.raw=/^[0-9]+$/])",
@@ -1214,6 +1270,8 @@ const pageProcessSelectorSources = [
   "CallExpression[callee.property.name='createElement']:not([arguments.0.type='Literal'][arguments.0.value='div'])",
   `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`,
   `CallExpression[callee.property.name=${LOADING_CALLS}]`,
+  // removeAttribute only to drop a style attribute the pe:none probe created
+  `CallExpression[callee.property.name='removeAttribute']:not(${STYLE_ATTR_RESTORE_REMOVE})`,
   `Property[key.name=${LOADING_NAMES}]`,
   // strings: nothing that loads (CSS_LOADING_SOURCE), and no backslash at all (a CSS escape hides `url(`; JS escapes like \n are no backslash)
   `Literal[value=/${CSS_LOADING_SOURCE}|expression\\s*\\(|javascript:/i]`,
@@ -1267,8 +1325,11 @@ const loadImageSelectors = [
 // else (no spread, no computed or string key, no method). Of those keys only `cursor` and `background` accept a url(): their value
 // is a string literal that is a keyword, a hex colour or rgb()/rgba() of numbers - nothing else. The others cannot hold a url() by
 // their grammar; they take string literals too, and left/top/width/height a literal or a template (`${x}px`). Everything else about
-// style is refused: .style as a value or an alias, setProperty, cssText, attributeStyleMap, adoptedStyleSheets, insertRule,
+// style is refused: .style as a value or an alias, cssText, attributeStyleMap, adoptedStyleSheets, insertRule,
 // animate (keyframes can carry a url), setAttribute('style'), createElement('style' | 'link') (div only).
+// Narrow exception (pe:none hit probe): el.style.setProperty/getPropertyValue/getPropertyPriority/removeProperty only for the
+// literals `pointer-events` and `transition-behavior` (neither accepts url()); removeAttribute('style') only when the
+// probe created an attribute that was absent.
 const STYLE_KEYS = [
   'position',
   'inset',
@@ -1294,7 +1355,11 @@ const ASSIGN = "CallExpression[callee.object.name='Object'][callee.property.name
 const URL_KEYS = '/^(cursor|background)$/';
 const SAFE_URL_KEY_VALUE = '/^(?:[a-z-]+|\\x23[0-9a-f]{3,8}|rgba?\\([0-9., %]+\\))$/i';
 const STYLE_NAMES =
-  '/^(setProperty|removeProperty|getPropertyValue|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem|getComputedStyle)$/';
+  '/^(setProperty|removeProperty|getPropertyValue|getPropertyPriority|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem)$/';
+const STYLE_PROBE_METHODS = '/^(setProperty|getPropertyValue|getPropertyPriority|removeProperty)$/';
+const STYLE_PROBE_PROPS = '/^(pointer-events|transition-behavior)$/';
+const STYLE_PROBE_CALL = `CallExpression[callee.type='MemberExpression'][callee.property.name=${STYLE_PROBE_METHODS}][callee.object.type='MemberExpression'][callee.object.property.name='style'][arguments.0.type='Literal'][arguments.0.value=${STYLE_PROBE_PROPS}]`;
+const STYLE_PROBE_STYLE_OBJ = `${STYLE_PROBE_CALL} > MemberExpression.callee > MemberExpression.object`;
 const styleObject = `${ASSIGN} > ObjectExpression`;
 const styleSelectors = [
   // Object.assign(el.style, { ... }) is a statement of its own: its result - the style declaration itself - is never kept, passed
@@ -1305,12 +1370,16 @@ const styleSelectors = [
   "Property[key.name='style']",
   // left/top/width/height: 0, auto, a length or a percentage as a literal (or `${number}px`, checked by fontsnap/dom-members)
   "Property[key.name=/^(left|top|width|height)$/][value.type='Literal']:not([value.value=/^(?:0|auto|-?[0-9]+(?:[.][0-9]+)?(?:px|%))$/])",
-  // style appears only as the first argument of Object.assign
-  `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child)`,
+  // style appears only as Object.assign's first argument, the pe:none probe methods, or `.style.length` (CSP-blocked attr)
+  `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child):not(${STYLE_PROBE_STYLE_OBJ}):not(MemberExpression[property.name='length'] > MemberExpression.object)`,
   "ObjectPattern > Property[key.name='style']",
   "Property[key.value='style']",
-  `Identifier[name=${STYLE_NAMES}]`,
+  // getPropertyValue is a read of computed clip and -webkit-text-security; probe methods are allowed only as .style calls above.
+  `Identifier[name=${STYLE_NAMES}]:not([name='getPropertyValue']):not(CallExpression[callee.object.property.name='style'][arguments.0.value=${STYLE_PROBE_PROPS}] > MemberExpression.callee > Identifier.property)`,
+  `Identifier[name='getPropertyValue']:not(CallExpression > MemberExpression.callee > Identifier.property)`,
   `Literal[value=${STYLE_NAMES}]`,
+  // Probe calls must use the literal property names pointer-events | transition-behavior (no url() in those grammars).
+  `CallExpression[callee.property.name=${STYLE_PROBE_METHODS}][callee.object.property.name='style']:not([arguments.0.type='Literal'][arguments.0.value=${STYLE_PROBE_PROPS}])`,
   // Object.assign(el.style, { ... }): exactly two arguments, the second an object literal of plain `key: value` properties
   `${ASSIGN}:not([arguments.length=2])`,
   `${ASSIGN}:not([arguments.1.type='ObjectExpression'])`,

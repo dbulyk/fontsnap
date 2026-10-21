@@ -1,4 +1,6 @@
 // Small pure helpers for the result page (unit-tested in tests/unit/ui.test.ts).
+import { fitsPreview } from './graphemes';
+
 export const DEFAULT_PREVIEW = 'The quick brown fox jumps over the lazy dog';
 
 // CSS generic fallback per Google Fonts category. Display faces are mostly decorative/script-like
@@ -22,8 +24,8 @@ export function previewText(
 ): string {
   const t = (typed ?? '').trim();
   if (t) return t;
-  const s = (selected ?? '').replace(/\s+/g, ' ').trim();
-  return s ? s.slice(0, 80) : DEFAULT_PREVIEW;
+  const s = fitsPreview((selected ?? '').replace(/\s+/g, ' ').trim());
+  return s === '' ? DEFAULT_PREVIEW : s;
 }
 
 // Display filter. The ranker always returns k candidates (needed for the top-5 metric), but when the
