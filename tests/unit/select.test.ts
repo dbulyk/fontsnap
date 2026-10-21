@@ -710,7 +710,7 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('world');
   });
 
-  it('never reads a password field', () => {
+  it('does not read .value of a password field (masks are what is painted)', () => {
     document.body.innerHTML =
       '<input id="f" type="password" value="SecretPass"><p id="v">visible</p>';
     setRange('f', 0, 6);
@@ -721,76 +721,7 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('visible');
   });
 
-  it.each([
-    ['type=PASSWORD', 'f', '<input id="f" type="PASSWORD" value="SecretPass">'],
-    [
-      'autocomplete=current-password',
-      'f',
-      '<input id="f" type="text" autocomplete="username current-password" value="SecretPass">',
-    ],
-    [
-      'autocomplete=new-password',
-      'f',
-      '<input id="f" type="text" autocomplete="new-password" value="SecretPass">',
-    ],
-    [
-      'autocomplete=one-time-code',
-      'f',
-      '<input id="f" type="text" autocomplete="one-time-code" value="SecretPass">',
-    ],
-    [
-      'autocomplete=cc-number',
-      'f',
-      '<input id="f" type="text" autocomplete="cc-number" value="4111111111111111">',
-    ],
-    [
-      'a name with password token',
-      'f',
-      '<input id="f" type="text" name="user_password" value="SecretPass">',
-    ],
-    ['an id that is pwd', 'pwd', '<input id="pwd" type="text" value="SecretPass">'],
-    ['an id that is pw', 'pw', '<input id="pw" type="text" value="SecretPass">'],
-    ['a name that is пароль', 'f', '<input id="f" type="text" name="пароль" value="SecretPass">'],
-    [
-      'camelCase userPassword',
-      'f',
-      '<input id="f" type="text" name="userPassword" value="SecretPass">',
-    ],
-    ['name=pin', 'f', '<input id="f" type="text" name="pin" value="1234">'],
-    ['name=otp_code', 'f', '<input id="f" type="text" name="otp_code" value="123456">'],
-    ['maxlength 6 on a text input', 'f', '<input id="f" type="text" maxlength="6" value="123456">'],
-    ['maxlength 1 OTP cell', 'f', '<input id="f" type="text" maxlength="1" value="9">'],
-  ])('never reads a password-like field (%s)', (_name, id, html) => {
-    document.body.innerHTML = `${html}<p id="v">visible</p>`;
-    layout({
-      [id]: { left: 10, top: 10, right: 80, bottom: 40 },
-      v: { left: 10, top: 50, right: 60, bottom: 70 },
-    });
-    expect(textInRect(document, frame)).toBe('visible');
-  });
-
-  it('never reads a field whose aria-label names a pin', () => {
-    document.body.innerHTML = '<input id="f" type="text" value="1234"><p id="v">visible</p>';
-    // happy-dom does not reflect aria-label onto ariaLabel; Chromium does.
-    el('f').ariaLabel = 'PIN code';
-    layout({
-      f: { left: 10, top: 10, right: 80, bottom: 40 },
-      v: { left: 10, top: 50, right: 60, bottom: 70 },
-    });
-    expect(textInRect(document, frame)).toBe('visible');
-  });
-
-  it('never reads a field whose associated label names CVV', () => {
-    document.body.innerHTML =
-      '<label for="f">CVV</label><input id="f" type="text" value="123"><p id="v">visible</p>';
-    layout({
-      f: { left: 10, top: 10, right: 80, bottom: 40 },
-      v: { left: 10, top: 50, right: 60, bottom: 70 },
-    });
-    expect(textInRect(document, frame)).toBe('visible');
-  });
-
-  it('never reads a text field whose computed text security is not none', () => {
+  it('does not read .value when text-security paints masks', () => {
     document.body.innerHTML =
       '<input id="f" type="text" value="MaskedBankPass"><p id="v">visible</p>';
     layout(
@@ -817,50 +748,10 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('visible');
   });
 
-  it('reads a username field with autocomplete off', () => {
-    document.body.innerHTML =
-      '<input id="f" type="text" name="username" autocomplete="off" value="ada">';
+  it('reads an email field when it sits inside the frame', () => {
+    document.body.innerHTML = '<input id="f" type="email" value="ada@example.com">';
     layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('ada');
-  });
-
-  it('does not read a field with autocomplete=username', () => {
-    document.body.innerHTML =
-      '<input id="f" type="text" name="username" autocomplete="username" value="ada"><p id="v">visible</p>';
-    layout({
-      f: { left: 10, top: 10, right: 80, bottom: 40 },
-      v: { left: 10, top: 50, right: 60, bottom: 70 },
-    });
-    expect(textInRect(document, frame)).toBe('visible');
-  });
-
-  it('reads a text input named Typing test (pin is not a substring match)', () => {
-    document.body.innerHTML = '<input id="f" type="text" name="Typing test" value="safe words">';
-    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('safe words');
-  });
-
-  it('reads fields whose names only contain sensitive substrings', () => {
-    document.body.innerHTML = '<input id="f" type="text" name="passage" value="passage words">';
-    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('passage words');
-  });
-
-  it('does not treat Senha as a sensitive label', () => {
-    document.body.innerHTML =
-      '<label for="f">Senha</label><input id="f" type="text" value="plain words">';
-    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('plain words');
-  });
-
-  it('does not read an email field', () => {
-    document.body.innerHTML =
-      '<input id="f" type="email" value="ada@example.com"><p id="v">visible</p>';
-    layout({
-      f: { left: 10, top: 10, right: 80, bottom: 40 },
-      v: { left: 10, top: 50, right: 60, bottom: 70 },
-    });
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame)).toBe('ada@example.com');
   });
 
   it('reads a search input', () => {

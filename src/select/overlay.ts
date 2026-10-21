@@ -14,21 +14,6 @@ function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
 const NOT_SHOWN_TAGS = 'textarea, input, select, option, script, style, noscript, template';
 const NOT_SHOWN = `${NOT_SHOWN_TAGS}, :is(${NOT_SHOWN_TAGS}) *`;
 
-/** Whole-token names that mark a field as sensitive. Substrings like "Typing" must not match. */
-const SENSITIVE = new Set([
-  'pass',
-  'pwd',
-  'pw',
-  'pin',
-  'cvv',
-  'cvc',
-  'csc',
-  'otp',
-  'card',
-  'password',
-  'пароль',
-]);
-
 type FlowMode = 'fixed' | 'absolute' | 'inflow';
 
 /** The part of `line` inside the rectangle, or null when they do not overlap. */
@@ -262,69 +247,17 @@ function clean(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
-/** Label copy via text nodes only: reading `textContent` stays refused (O66). */
-function labelText(doc: Document, el: HTMLInputElement | HTMLTextAreaElement): string {
-  const parts: string[] = [];
-  const list = el.labels;
-  if (list === null) return '';
-  for (const label of list) {
-    const tw = doc.createTreeWalker(label, NodeFilter.SHOW_TEXT);
-    for (let node = tw.nextNode(); node; node = tw.nextNode()) {
-      parts.push(node.nodeValue ?? '');
-    }
-  }
-  return parts.join(' ');
-}
-
-/** Split on non-letters, then on camelCase boundaries (userPassword → user, password). */
-function tokensOf(raw: string): string[] {
-  const out: string[] = [];
-  for (const run of raw.split(/[^\p{L}]+/u)) {
-    if (run === '') continue;
-    for (const part of run.split(/(?<=\p{Ll})(?=\p{Lu})|(?<=\p{Lu})(?=\p{Lu}\p{Ll})/u)) {
-      if (part !== '') out.push(part);
-    }
-  }
-  return out;
-}
-
-function hasSensitiveToken(raw: string): boolean {
-  for (const token of tokensOf(raw)) {
-    if (SENSITIVE.has(token.toLowerCase())) return true;
-  }
-  return false;
-}
-
-function allowedInputType(el: HTMLInputElement): boolean {
-  const kind = el.type.toLowerCase();
-  return kind === 'text' || kind === 'search';
-}
-
 /**
- * Only plain text/search inputs and textareas with no sensitive markers.
- * Autocomplete other than empty/off, short maxlength, and whole sensitive tokens all refuse.
+ * Capture what the field paints. A password (or text-security) control paints masks, not `.value`,
+ * so the plaintext is never read. No type / autocomplete / label filters: everything is local.
  */
-function fieldAllowed(doc: Document, el: HTMLTextAreaElement | HTMLInputElement): boolean {
-  if (el instanceof HTMLInputElement) {
-    if (!allowedInputType(el)) return false;
-  } else if (!(el instanceof HTMLTextAreaElement)) {
-    return false;
-  }
-  if (masked(getComputedStyle(el))) return false;
-  const ac = el.autocomplete.trim().toLowerCase();
-  if (ac !== '' && ac !== 'off') return false;
-  if (el.maxLength >= 0 && el.maxLength <= 8) return false;
-  if (hasSensitiveToken(el.name) || hasSensitiveToken(el.id)) return false;
-  if (hasSensitiveToken(el.ariaLabel ?? '') || hasSensitiveToken(labelText(doc, el))) return false;
-  return true;
-}
-
 function fieldPiece(
   doc: Document,
   el: HTMLTextAreaElement | HTMLInputElement,
   frame: Rect,
 ): string {
-  if (!fieldAllowed(doc, el)) return '';
+  if (el instanceof HTMLInputElement && el.type.toLowerCase() === 'password') return '';
+  if (masked(getComputedStyle(el))) return '';
   if (!styleVisible(el)) return '';
   let boxes = 0;
   let crossed = false;
@@ -435,7 +368,7 @@ function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string
   for (let i = from; i <= to; i++) {
     range.setStart(node, i);
     range.setEnd(node, i + 1);
-    if (charMeetsLines(range.getBoundingClientRect(), visibleLines)) out += value[i] ?? '';
+    if (charMeetsLines(range.getBoundingClientRect(), visibleLines)) out += value.slice(i, i + 1);
   }
   return out === '' ? '' : clean(out);
 }

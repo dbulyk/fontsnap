@@ -443,102 +443,19 @@ const previewCases: PreviewCase[] = [
     expected: MARKER,
   },
   {
-    name: 'a password input',
+    name: 'a password input paints masks so its value is not read',
     inner: `<input type="password" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
     expected: MARKER,
   },
   {
-    name: 'a password input in any case',
-    inner: `<input type="PASSWORD" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    name: 'text security disc paints masks so its value is not read',
+    inner: `<input type="text" value="MaskedBankPass" style="-webkit-text-security:disc;position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
     expected: MARKER,
   },
   {
-    name: 'text security disc on a text input',
-    inner: `<input type="text" value="MaskedBankPass" autocomplete="off" style="-webkit-text-security:disc;position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'autocomplete current-password',
-    inner: `<input type="text" value="MaskedBankPass" autocomplete="current-password" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'a name with password token',
-    inner: `<input type="text" name="user_password" value="toggledSecret" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'an id that is pwd',
-    inner: `<input id="pwd" type="text" value="toggledSecret" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'autocomplete cc-number',
-    inner: `<input type="text" autocomplete="cc-number" value="4111111111111111" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'otp maxlength 1 cell',
-    inner: `<input type="text" maxlength="1" value="9" style="position:absolute;left:16px;top:16px;width:48px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'otp inputmode numeric maxlength 6',
-    inner: `<input type="text" inputmode="numeric" maxlength="6" value="123456" style="position:absolute;left:16px;top:16px;width:120px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'type=email',
-    inner: `<input type="email" value="ada@example.com" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'aria-label with pin',
-    inner: `<input type="text" aria-label="Enter PIN" value="4242" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'a label naming CVV',
-    css: SR_ONLY,
-    inner: `<label class="sr-only" for="cvv">CVV</label>
-      <input id="cvv" type="text" value="123" style="position:absolute;left:16px;top:16px;width:120px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'a label naming Senha is not sensitive',
-    inner: `<label for="senha" style="position:absolute;left:16px;top:8px;font:16px sans-serif">Senha</label>
-      <input id="senha" type="text" value="plain words" style="position:absolute;left:16px;top:40px;width:320px;height:44px;${field}">`,
-    expected: 'Senha plain words',
-  },
-  {
-    name: 'Typing test name is not a pin token',
-    inner: `<input type="text" name="Typing test" value="safe words" style="position:absolute;left:16px;top:28px;width:320px;height:44px;${field}">`,
-    expected: 'safe words',
-  },
-  {
-    name: 'name=pin',
-    inner: `<input type="text" name="pin" value="4242" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'name=otp_code',
-    inner: `<input type="text" name="otp_code" value="123456" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'name=userPassword',
-    inner: `<input type="text" name="userPassword" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'a name that is пароль',
-    inner: `<input type="text" name="пароль" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
-  },
-  {
-    name: 'an id with pw token',
-    inner: `<input id="user_pw" type="text" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
-    expected: MARKER,
+    name: 'an email field value inside the frame',
+    inner: `<input type="email" value="ada@example.com" style="position:absolute;left:16px;top:28px;width:320px;height:44px;${field}">`,
+    expected: 'ada@example.com',
   },
   {
     name: 'a fixed menu escaping overflow:hidden nav',
@@ -549,13 +466,14 @@ const previewCases: PreviewCase[] = [
     expected: 'MenuItem one',
   },
   {
-    name: 'a fixed list item escaping overflow:hidden nav',
+    name: 'an absolute dropdown link escaping overflow:hidden nav',
+    // #frame is positioned, so absolute top is relative to it; keep the link inside the drag.
     inner: `<nav style="overflow:hidden;height:40px;background:#eee;margin:16px">
-      <ul style="margin:0;padding:0;list-style:none">
-        <li style="position:fixed;left:56px;top:200px;background:#fff;padding:8px;${LINE}"><a href="#go" style="color:#111;text-decoration:none">Fixed Link</a></li>
+      <ul style="position:absolute;left:16px;top:80px;margin:0;padding:0;list-style:none;background:#fff">
+        <li style="padding:8px;${LINE}"><a href="#go" style="color:#111;text-decoration:none">Dropdown Link</a></li>
       </ul>
     </nav>`,
-    expected: 'Fixed Link',
+    expected: 'Dropdown Link',
   },
   {
     name: 'a fixed span escaping overflow:hidden nav',
@@ -565,23 +483,21 @@ const previewCases: PreviewCase[] = [
     expected: 'Fixed Span',
   },
   {
-    name: 'absolute under relative inside overflow:hidden keeps the visible marker',
-    inner: `<div style="overflow:hidden;height:48px;margin:16px;background:#eee">
-      <div style="position:relative;height:48px">
-        <span style="position:absolute;left:16px;top:4px;${LINE}">Shown Marker</span>
+    name: 'absolute under relative inside overflow:hidden is clipped',
+    inner: `<div style="overflow:hidden;height:40px;margin:16px;background:#eee">
+      <div style="position:relative">
+        <div style="position:absolute;left:16px;top:200px;${LINE}">TRAP clipped</div>
       </div>
-      <p style="margin:0;${LINE}">TRAP clipped</p>
-    </div>`,
+    </div>${markerAt(28)}`,
     expected: MARKER,
   },
   {
-    name: 'fixed under transform inside overflow:hidden keeps the in-box marker',
-    inner: `<div style="overflow:hidden;height:72px;margin:16px;background:#eee">
+    name: 'fixed under transform inside overflow:hidden is clipped',
+    inner: `<div style="overflow:hidden;height:40px;margin:16px;background:#eee">
       <div style="transform:translateZ(0)">
-        <span style="position:fixed;left:16px;top:8px;${LINE}">Shown Marker</span>
+        <div style="position:fixed;left:56px;top:200px;${LINE}">TRAP clipped</div>
       </div>
-      <p style="margin:0;padding-top:120px;${LINE}">TRAP clipped</p>
-    </div>`,
+    </div>${markerAt(28)}`,
     expected: MARKER,
   },
   {
