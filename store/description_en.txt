@@ -41,7 +41,7 @@ Web tools make you save, upload and crop a picture. FontSnap skips that:
 It is a font identifier from image that fits into the browser, not a detour away from it.
 
 📊 Font detector vs. CSS checker
-A CSS checker reads live web text but cannot see text in a JPG or a canvas. An image-based font detector fills that gap.
+A CSS checker reads live web text but cannot see text in a JPG or a canvas. A font detector from image fills that gap.
 
 🔒 Privacy first
 ▸ Image analysis runs on-device with WebAssembly.
@@ -57,9 +57,9 @@ A CSS checker reads live web text but cannot see text in a JPG or a canvas. An i
 
 ❓ FAQ
 📍 What is FontSnap?
-It is a Chrome extension and AI font identifier that recognizes typefaces in a selected area of the screen, in an image on a web page or in an uploaded picture.
+It is a font finder extension for Chrome that recognizes typefaces in a selected area of the screen, in an image on a web page or in an uploaded picture.
 
-📍 How do I identify font from image files?
+📍 How do I detect font from image files?
 Open FontSnap on any page, switch to upload mode and paste, drop or choose a picture with text.
 
 📍 Can I check a picture on a website without saving it?
@@ -69,7 +69,7 @@ Yes. Right-click the image and choose Identify font in this image.
 Recognition runs on your device, and your images are not sent to us or to any server. The internet is used to show previews from Google Fonts, and after a right-click the browser may load the clicked image again from the site it is already on.
 
 📍 Can FontSnap recognize commercial typefaces?
-FontSnap matches against Google Fonts families. For a commercial typeface it shows the closest Google Fonts alternatives, which is often what you need for a web project.
+FontSnap matches against Google Fonts families. For a commercial typeface this google font finder shows the closest alternatives, which is often what you need for a web project.
 
 📍 Which languages are supported?
 Latin, Cyrillic and Arabic scripts give the most accurate results. Chinese and Japanese support is still limited.
