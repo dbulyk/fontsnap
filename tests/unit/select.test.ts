@@ -67,11 +67,34 @@ interface StackPaint {
   clipPath?: string;
   pointerEvents?: string;
   textSecurity?: string;
+  position?: string;
+  transform?: string;
+  filter?: string;
+  contain?: string;
+  willChange?: string;
+}
+
+type BoxSpec = Partial<DOMRect> | Partial<DOMRect>[];
+
+function asLines(spec: BoxSpec | undefined): Partial<DOMRect>[] {
+  if (spec === undefined) return [];
+  if (Array.isArray(spec)) {
+    const lines: Partial<DOMRect>[] = [];
+    for (const box of spec) lines.push(box);
+    return lines;
+  }
+  return [spec];
+}
+
+function firstBox(spec: BoxSpec | undefined): Partial<DOMRect> | undefined {
+  const lines = asLines(spec);
+  return lines[0];
 }
 
 /**
  * Layout for happy-dom, which does not place boxes.
  * `boxes` are the line boxes of each element's text (and the border box of a field with that id).
+ * A value may be one box or several line boxes; character ranges map into those lines.
  * `bounds` are border boxes for clipping; a placed element uses its line box when no bound is given.
  * `stack`, top to bottom, is what `elementsFromPoint` returns.
  * `noBox` elements have no CSS box, as `display: contents` does.
@@ -79,7 +102,7 @@ interface StackPaint {
  * and a transparent color, so the style spy speaks Chromium and then applies `paint`.
  */
 function layout(
-  boxes: Record<string, Partial<DOMRect>>,
+  boxes: Record<string, BoxSpec>,
   onTop?: (x: number, y: number) => Element | null,
   options?: {
     stack?: (x: number, y: number) => readonly Element[];
@@ -88,15 +111,45 @@ function layout(
     bounds?: Record<string, Partial<DOMRect>>;
   },
 ): void {
+  const ownerId = (node: Node): string => {
+    if (node instanceof Element) return node.id;
+    return node.parentElement?.id ?? '';
+  };
+  const charBox = (id: string, index: number): DOMRect => {
+    const lines = asLines(boxes[id]);
+    const text = document.getElementById(id)?.textContent ?? '';
+    if (lines.length === 0) {
+      return { left: 0, right: 0, top: 0, bottom: 0 } as DOMRect;
+    }
+    if (lines.length === 1) {
+      return { left: 0, right: 0, top: 0, bottom: 0, ...lines[0] } as DOMRect;
+    }
+    const per = Math.max(1, Math.ceil(text.length / lines.length));
+    const line = lines[Math.min(lines.length - 1, Math.floor(index / per))] ?? lines[0];
+    return { left: 0, right: 0, top: 0, bottom: 0, ...line } as DOMRect;
+  };
   const realRange = document.createRange.bind(document);
   vi.spyOn(document, 'createRange').mockImplementation(() => {
     const range = realRange();
     range.getClientRects = () => {
-      const id = range.startContainer.parentElement?.id ?? '';
-      const box = boxes[id];
-      return (box
-        ? [{ left: 0, right: 0, top: 0, bottom: 0, ...box }]
-        : []) as unknown as DOMRectList;
+      const id = ownerId(range.startContainer);
+      const lines = asLines(boxes[id]);
+      return lines.map((box) => ({
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0,
+        ...box,
+      })) as unknown as DOMRectList;
+    };
+    range.getBoundingClientRect = () => {
+      const id = ownerId(range.startContainer);
+      if (range.startContainer === range.endContainer && range.endOffset === range.startOffset + 1) {
+        return charBox(id, range.startOffset);
+      }
+      const lines = asLines(boxes[id]);
+      const box = lines[0];
+      return { left: 0, right: 0, top: 0, bottom: 0, ...(box ?? {}) } as DOMRect;
     };
     return range;
   });
@@ -108,9 +161,10 @@ function layout(
       return hit === null ? [] : [hit];
     }
     const ids = Object.keys(boxes).filter((id) => {
-      const b = boxes[id];
-      if (b === undefined) return false;
-      return x >= (b.left ?? 0) && x <= (b.right ?? 0) && y >= (b.top ?? 0) && y <= (b.bottom ?? 0);
+      const lines = asLines(boxes[id]);
+      return lines.some((b) => {
+        return x >= (b.left ?? 0) && x <= (b.right ?? 0) && y >= (b.top ?? 0) && y <= (b.bottom ?? 0);
+      });
     });
     const hits: Element[] = [];
     for (const id of ids.reverse()) {
@@ -144,6 +198,11 @@ function layout(
       overflowY: pick(paint.overflowY, real.overflowY, overflow),
       clipPath: pick(paint.clipPath, real.clipPath, 'none'),
       pointerEvents: pick(paint.pointerEvents, real.pointerEvents, 'auto'),
+      position: pick(paint.position, real.position, 'static'),
+      transform: pick(paint.transform, real.transform, 'none'),
+      filter: pick(paint.filter, real.filter, 'none'),
+      contain: pick(paint.contain, real.contain, 'none'),
+      willChange: pick(paint.willChange, real.willChange, 'auto'),
       getPropertyValue: (property: string) => {
         if (property === '-webkit-text-security') return security === '' ? 'none' : security;
         if (property === 'clip') return clip;
@@ -153,7 +212,7 @@ function layout(
   });
   const bounds = options?.bounds ?? {};
   vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-    const box = bounds[this.id] ?? boxes[this.id];
+    const box = bounds[this.id] ?? firstBox(boxes[this.id]);
     return {
       left: 0,
       top: 0,
@@ -165,13 +224,18 @@ function layout(
   const noBox = new Set(options?.noBox ?? []);
   vi.spyOn(Element.prototype, 'getClientRects').mockImplementation(function (this: Element) {
     if (noBox.has(this.id)) return [] as unknown as DOMRectList;
-    const box = boxes[this.id];
+    const lines = asLines(boxes[this.id]);
     // happy-dom's own getClientRects is one zero rect. Keep that for elements the test did not place.
-    return [
-      box === undefined
-        ? { left: 0, right: 0, top: 0, bottom: 0 }
-        : { left: 0, right: 0, top: 0, bottom: 0, ...box },
-    ] as unknown as DOMRectList;
+    if (lines.length === 0) {
+      return [{ left: 0, right: 0, top: 0, bottom: 0 }] as unknown as DOMRectList;
+    }
+    return lines.map((box) => ({
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      ...box,
+    })) as unknown as DOMRectList;
   });
 }
 
@@ -465,10 +529,18 @@ describe('textInRect', () => {
 
   it('skips text covered by another element', () => {
     document.body.innerHTML = '<p id="t">covered</p><div id="cover"></div><p id="v">visible</p>';
-    layout({ t: { right: 50, bottom: 10 }, v: { top: 20, right: 50, bottom: 30 } }, undefined, {
-      stack: (_x, y) => (y < 15 ? [el('cover'), el('t')] : [el('v')]),
-      paint: (hit) => (hit.id === 'cover' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
-    });
+    layout(
+      {
+        t: { right: 50, bottom: 10 },
+        cover: { left: 0, right: 50, top: 0, bottom: 10 },
+        v: { top: 20, right: 50, bottom: 30 },
+      },
+      undefined,
+      {
+        stack: (_x, y) => (y < 15 ? [el('cover'), el('t')] : [el('v')]),
+        paint: (hit) => (hit.id === 'cover' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
+      },
+    );
     expect(textInRect(document, frame)).toBe('visible');
   });
 
@@ -534,6 +606,7 @@ describe('textInRect', () => {
     layout(
       {
         t: { left: 10, right: 80, top: 10, bottom: 28 },
+        cover: { left: 10, right: 80, top: 10, bottom: 28 },
         v: { left: 10, right: 80, top: 40, bottom: 58 },
       },
       undefined,
@@ -647,16 +720,53 @@ describe('textInRect', () => {
       '<input id="f" type="text" autocomplete="one-time-code" value="SecretPass">',
     ],
     [
+      'autocomplete=cc-number',
+      'f',
+      '<input id="f" type="text" autocomplete="cc-number" value="4111111111111111">',
+    ],
+    [
       'a name containing password',
       'f',
       '<input id="f" type="text" name="user_password" value="SecretPass">',
     ],
     ['an id containing pass', 'show-pass', '<input id="show-pass" type="text" value="SecretPass">'],
     ['an id containing pwd', 'pwd', '<input id="pwd" type="text" value="SecretPass">'],
+    ['an id containing pw', 'pw', '<input id="pw" type="text" value="SecretPass">'],
+    [
+      'a name containing пароль',
+      'f',
+      '<input id="f" type="text" name="пароль" value="SecretPass">',
+    ],
+    [
+      'inputmode numeric with maxlength 6',
+      'f',
+      '<input id="f" type="text" inputmode="numeric" maxlength="6" value="123456">',
+    ],
   ])('never reads a password-like field (%s)', (_name, id, html) => {
     document.body.innerHTML = `${html}<p id="v">visible</p>`;
     layout({
       [id]: { left: 10, top: 10, right: 80, bottom: 40 },
+      v: { left: 10, top: 50, right: 60, bottom: 70 },
+    });
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('never reads a field whose aria-label names a pin', () => {
+    document.body.innerHTML = '<input id="f" type="text" value="1234"><p id="v">visible</p>';
+    // happy-dom does not reflect aria-label onto ariaLabel; Chromium does.
+    el('f').ariaLabel = 'PIN code';
+    layout({
+      f: { left: 10, top: 10, right: 80, bottom: 40 },
+      v: { left: 10, top: 50, right: 60, bottom: 70 },
+    });
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('never reads a field whose associated label names CVV', () => {
+    document.body.innerHTML =
+      '<label for="f">CVV</label><input id="f" type="text" value="123"><p id="v">visible</p>';
+    layout({
+      f: { left: 10, top: 10, right: 80, bottom: 40 },
       v: { left: 10, top: 50, right: 60, bottom: 70 },
     });
     expect(textInRect(document, frame)).toBe('visible');
@@ -731,6 +841,7 @@ describe('textInRect', () => {
     layout(
       {
         f: { left: 10, top: 10, right: 80, bottom: 40 },
+        cover: { left: 10, top: 10, right: 80, bottom: 40 },
         v: { left: 10, top: 60, right: 70, bottom: 80 },
       },
       undefined,
@@ -823,6 +934,7 @@ describe('textInRect', () => {
     layout(
       {
         t: { left: 10, top: 10, right: 80, bottom: 28 },
+        cover: { left: 10, top: 10, right: 80, bottom: 28 },
         v: { left: 10, top: 40, right: 70, bottom: 58 },
       },
       undefined,
@@ -904,5 +1016,83 @@ describe('textInRect', () => {
       return range;
     });
     expect(textInRect(document, { x: 0, y: 0, w: 10, h: 10 })).toBe('');
+  });
+
+  it('keeps only the framed line of a multi-line text node', () => {
+    document.body.innerHTML = '<p id="t">AAAAABBBBBCCCCC</p>';
+    layout(
+      {
+        t: [
+          { left: 10, right: 90, top: 0, bottom: 16 },
+          { left: 10, right: 90, top: 20, bottom: 36 },
+          { left: 10, right: 90, top: 40, bottom: 56 },
+        ],
+      },
+      undefined,
+      { stack: () => [el('t')] },
+    );
+    expect(textInRect(document, { x: 0, y: 18, w: 100, h: 20 })).toBe('BBBBB');
+  });
+
+  it('does not skip cover when pointer-events:none is only inherited from body', () => {
+    document.body.innerHTML =
+      '<p id="t">Article text</p><div id="cover"></div><p id="v">Sign in</p>';
+    layout(
+      {
+        t: { left: 10, right: 90, top: 10, bottom: 30 },
+        cover: { left: 0, right: 100, top: 0, bottom: 100 },
+        v: { left: 20, right: 80, top: 40, bottom: 60 },
+      },
+      undefined,
+      {
+        stack: (_x, y) => (y < 35 ? [el('cover'), el('t')] : [el('v')]),
+        paint: (hit) => {
+          if (hit === document.body) return { pointerEvents: 'none' };
+          if (hit.id === 't') return { pointerEvents: 'none' };
+          if (hit.id === 'cover') {
+            return { pointerEvents: 'auto', backgroundColor: 'rgba(0, 0, 0, 0.5)' };
+          }
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, frame)).toBe('Sign in');
+  });
+
+  it('takes fixed text that escapes an overflow:hidden ancestor without a containing block', () => {
+    document.body.innerHTML =
+      '<nav id="nav"><div id="t" style="position:fixed">MenuItem one</div></nav>';
+    layout(
+      { t: { left: 10, right: 120, top: 50, bottom: 70 } },
+      undefined,
+      {
+        bounds: { nav: { left: 0, top: 0, right: 200, bottom: 40 } },
+        paint: (hit) => {
+          if (hit.id === 'nav') return { overflow: 'hidden' };
+          if (hit.id === 't') return { position: 'fixed' };
+          return {};
+        },
+        stack: () => [el('t')],
+      },
+    );
+    expect(textInRect(document, { x: 0, y: 40, w: 200, h: 40 })).toBe('MenuItem one');
+  });
+
+  it('takes a heading when a painted stretched link only covers its own box', () => {
+    document.body.innerHTML =
+      '<div id="card"><h2 id="title">Card Title Here</h2><a id="link" href="#">Go</a></div>';
+    layout(
+      {
+        title: { left: 10, right: 200, top: 10, bottom: 40 },
+        link: { left: 10, right: 80, top: 50, bottom: 70 },
+      },
+      undefined,
+      {
+        stack: () => [el('link'), el('title')],
+        paint: (hit) =>
+          hit.id === 'link' ? { backgroundColor: 'rgb(13, 110, 253)' } : {},
+      },
+    );
+    expect(textInRect(document, { x: 0, y: 0, w: 220, h: 45 })).toBe('Card Title Here');
   });
 });

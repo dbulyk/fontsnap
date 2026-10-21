@@ -454,6 +454,64 @@ const previewCases: PreviewCase[] = [
     inner: `<input id="pwd" type="text" value="toggledSecret" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
     expected: MARKER,
   },
+  {
+    name: 'autocomplete cc-number',
+    inner: `<input type="text" autocomplete="cc-number" value="4111111111111111" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'otp inputmode numeric maxlength 6',
+    inner: `<input type="text" inputmode="numeric" maxlength="6" value="123456" style="position:absolute;left:16px;top:16px;width:120px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'aria-label with pin',
+    inner: `<input type="text" aria-label="Enter PIN" value="4242" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a label naming CVV',
+    css: SR_ONLY,
+    inner: `<label class="sr-only" for="cvv">CVV</label>
+      <input id="cvv" type="text" value="123" style="position:absolute;left:16px;top:16px;width:120px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a name containing пароль',
+    inner: `<input type="text" name="пароль" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'an id containing pw',
+    inner: `<input id="user_pw" type="text" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a fixed menu escaping overflow:hidden nav',
+    inner: `<nav style="overflow:hidden;height:40px;background:#eee;margin:16px">
+      <button type="button">Menu</button>
+      <div style="position:fixed;left:56px;top:200px;background:#fff;padding:8px;${LINE}">MenuItem one</div>
+    </nav>`,
+    expected: 'MenuItem one',
+  },
+  {
+    name: 'a heading under a painted stretched-link button',
+    css: `.card{position:relative;width:520px;margin:24px 16px;padding:20px;border:1px solid #ccc}
+.btn{display:inline-block;padding:8px 12px;background:#0d6efd;color:#fff;text-decoration:none}
+.stretched-link::after{content:"";position:absolute;inset:0}`,
+    inner: `<div class="card"><h2 style="margin:0 0 16px;${LINE}">Card Title Here</h2>
+      <a class="btn stretched-link" href="#go">Go somewhere</a></div>`,
+    expected: 'Card Title Here',
+  },
+  {
+    name: 'body pointer-events:none under a modal cover',
+    css: 'html,body{pointer-events:none}',
+    inner: `<p style="position:absolute;left:16px;top:28px;${LINE}">Article text</p>
+      <div style="position:absolute;left:0;top:0;width:640px;height:200px;background:rgba(0,0,0,.5);pointer-events:auto">
+        <p style="position:absolute;left:16px;top:100px;color:#fff;${LINE}">Sign in</p>
+      </div>`,
+    expected: 'Sign in',
+  },
 ];
 
 for (const item of previewCases) {
@@ -465,3 +523,217 @@ for (const item of previewCases) {
     expect(text).toBe(item.expected);
   });
 }
+
+async function previewAround(
+  context: BrowserContext,
+  extensionId: string,
+  serve: (routes: ReadonlyMap<string, Route>) => Promise<string>,
+  body: string,
+  target: string,
+  options?: { prepare?: (site: Page) => Promise<void> },
+): Promise<string> {
+  const origin = await serve(
+    new Map([['/', { type: 'text/html; charset=utf-8', body }]]),
+  );
+  const site = await context.newPage();
+  await site.goto(`${origin}/`);
+  if (options?.prepare !== undefined) await options.prepare(site);
+  const box = await site.locator(target).boundingBox();
+  expect(box, `${target} has a box`).not.toBeNull();
+  const { x = 0, y = 0, width = 0, height = 0 } = box ?? {};
+  await clickToolbarIcon(context, extensionId, site);
+  await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
+  const opened = context.waitForEvent('page', {
+    predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
+  });
+  await site.mouse.move(x - 8, y - 8);
+  await site.mouse.down();
+  await site.mouse.move(x + width + 8, y + height + 8, { steps: 4 });
+  await site.mouse.up();
+  const result = await opened;
+  await expect(result.locator('#shot')).toBeVisible();
+  await expect(result.locator('#results li').first()).toBeVisible();
+  return result.locator('#pvText').inputValue();
+}
+
+test('the preview takes below-fold text when html/body are height 100% with overflow-x hidden', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const text = await previewAround(
+    context,
+    extensionId,
+    serve,
+    `<!doctype html><html><head><meta charset="utf-8"><style>
+      html,body{height:100%;margin:0}body{overflow-x:hidden}
+    </style></head><body>
+      <div style="height:1800px"></div>
+      <p id="t" style="font:32px sans-serif;margin:40px">Below Fold Text</p>
+      <div style="height:400px"></div>
+    </body></html>`,
+    '#t',
+    {
+      prepare: async (site) => {
+        await site.evaluate(() => {
+          window.scrollTo(0, 1800);
+        });
+      },
+    },
+  );
+  expect(text).toBe('Below Fold Text');
+});
+
+test('the preview takes dialog showModal text over an overflow clipper', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const text = await previewAround(
+    context,
+    extensionId,
+    serve,
+    `<!doctype html><html><head><meta charset="utf-8"></head><body>
+      <div style="overflow:hidden;height:20px">
+        <dialog id="d"><p id="t" style="font:24px sans-serif;margin:16px">DlgText here</p></dialog>
+      </div>
+    </body></html>`,
+    '#t',
+    {
+      prepare: async (site) => {
+        await site.locator('#d').evaluate((node) => {
+          if (!(node instanceof HTMLDialogElement)) throw new Error('dialog');
+          node.showModal();
+        });
+      },
+    },
+  );
+  expect(text).toBe('DlgText here');
+});
+
+test('the preview still reaches a target after many spacer text nodes', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const text = await previewAround(
+    context,
+    extensionId,
+    serve,
+    `<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>`,
+    '#t',
+    {
+      prepare: async (site) => {
+        await site.evaluate(() => {
+          const root = document.body;
+          for (let i = 0; i < 12000; i++) {
+            const spacer = document.createElement('div');
+            spacer.textContent = ' ';
+            root.append(spacer);
+          }
+          const target = document.createElement('p');
+          target.id = 't';
+          target.style.cssText = 'font:32px sans-serif;margin:40px';
+          target.textContent = 'Target heading';
+          root.append(target);
+        });
+      },
+    },
+  );
+  expect(text).toBe('Target heading');
+});
+
+test('the preview keeps only the framed line of a tall paragraph', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const origin = await serve(
+    new Map([
+      [
+        '/',
+        {
+          type: 'text/html; charset=utf-8',
+          body: `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="margin:40px">
+  <p id="tall" style="margin:0;width:420px;font:28px/40px sans-serif;color:#111">Line Alpha Words<br>Line Bravo Words<br>Line Charlie Words</p>
+</body></html>`,
+        },
+      ],
+    ]),
+  );
+  const site = await context.newPage();
+  await site.goto(`${origin}/`);
+  const middle = await site.evaluate(() => {
+    const tall = document.getElementById('tall');
+    if (tall === null) throw new Error('tall');
+    const walker = document.createTreeWalker(tall, NodeFilter.SHOW_TEXT);
+    walker.nextNode();
+    const bravo = walker.nextNode();
+    if (bravo === null) throw new Error('bravo');
+    const range = document.createRange();
+    range.selectNodeContents(bravo);
+    const line = range.getClientRects()[0];
+    if (line === undefined) throw new Error('line');
+    return {
+      x: line.left,
+      y: line.top,
+      w: line.width,
+      h: line.height,
+      text: bravo.nodeValue ?? '',
+    };
+  });
+  expect(middle.text.trim()).toBe('Line Bravo Words');
+  await clickToolbarIcon(context, extensionId, site);
+  await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
+  const opened = context.waitForEvent('page', {
+    predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
+  });
+  await site.mouse.move(middle.x - 4, middle.y + 2);
+  await site.mouse.down();
+  await site.mouse.move(middle.x + middle.w + 4, middle.y + middle.h - 2, { steps: 4 });
+  await site.mouse.up();
+  const result = await opened;
+  await expect(result.locator('#pvText')).toHaveValue('Line Bravo Words');
+});
+
+test('the preview stays empty when framed lines exceed 100 graphemes', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const long = 'Word '.repeat(40).trim();
+  expect(long.length).toBeGreaterThan(100);
+  const text = await previewAround(
+    context,
+    extensionId,
+    serve,
+    `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="margin:40px"><p id="t" style="font:24px/32px sans-serif;max-width:480px;color:#111">${long}</p></body></html>`,
+    '#t',
+  );
+  // Empty capture leaves the result page on its default pangram.
+  expect(text).toBe('The quick brown fox jumps over the lazy dog');
+});
+
+test('framing the article under a body pe:none modal does not take article text', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const text = await previewAround(
+    context,
+    extensionId,
+    serve,
+    `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="pointer-events:none;margin:0">
+  <p id="t" style="font:28px sans-serif;margin:40px">Article text</p>
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,.5);pointer-events:auto;display:flex;align-items:center;justify-content:center">
+    <div style="background:#fff;padding:24px;font:24px sans-serif">Sign in</div>
+  </div>
+</body></html>`,
+    '#t',
+  );
+  expect(text).not.toContain('Article');
+  expect(text === 'Sign in' || text === 'The quick brown fox jumps over the lazy dog').toBe(true);
+});

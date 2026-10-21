@@ -14,6 +14,10 @@ function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
 const NOT_SHOWN_TAGS = 'textarea, input, select, option, script, style, noscript, template';
 const NOT_SHOWN = `${NOT_SHOWN_TAGS}, :is(${NOT_SHOWN_TAGS}) *`;
 
+/** Name / id / label tokens that mark a field as sensitive. When in doubt, skip. */
+const SENSITIVE_TOKEN =
+  /pass|pwd|pw|pin|cvv|cvc|csc|otp|card|password|пароль/i;
+
 /** The part of `line` inside the rectangle, or null when they do not overlap. */
 function overlap(line: DOMRect, r: Rect): Rect | null {
   const x = Math.max(line.left, r.x);
@@ -104,13 +108,67 @@ function clipLimit(el: Element): Rect | null {
   return clip === 'auto' ? border : applyClip(clip, border);
 }
 
-/** The part of `line` inside the frame and every ancestor clip, or null when that area is empty. */
-function visiblePart(line: DOMRect, frame: Rect, owner: Element): Rect | null {
+/** html/body scroll the viewport; their overflow is not an ancestor clip for framed text. */
+function isViewportClipper(el: Element, doc: Document): boolean {
+  return el === doc.documentElement || el === doc.body;
+}
+
+/**
+ * Whether `ancestor` is a containing block that can clip `owner` via overflow.
+ * Fixed: transform/filter/contain/will-change. Absolute: positioned or transform/filter. Else: all.
+ */
+function containingBlockFor(ancestor: Element, owner: Element): boolean {
+  const pos = getComputedStyle(owner).position;
+  if (pos === 'fixed') {
+    const style = getComputedStyle(ancestor);
+    return (
+      style.transform !== 'none' ||
+      style.filter !== 'none' ||
+      style.contain === 'paint' ||
+      style.contain === 'strict' ||
+      style.willChange.includes('transform')
+    );
+  }
+  if (pos === 'absolute') {
+    const style = getComputedStyle(ancestor);
+    return style.position !== 'static' || style.transform !== 'none' || style.filter !== 'none';
+  }
+  return true;
+}
+
+/** Walk parents with :modal / :popover-open. No closest (refused). */
+function inTopLayer(el: Element): boolean {
+  let current: Element | null = el;
+  while (current !== null) {
+    try {
+      if (current.matches(':modal') || current.matches(':popover-open')) return true;
+    } catch {
+      return false;
+    }
+    current = current.parentElement;
+  }
+  return false;
+}
+
+/**
+ * The part of `line` inside the frame and the clips that actually contain `owner`.
+ * The owner's own clip always applies. Top-layer owners skip ancestor clip.
+ */
+function visiblePart(line: DOMRect, frame: Rect, owner: Element, doc: Document): Rect | null {
   let part = overlap(line, frame);
-  let current: Element | null = owner;
+  if (part === null) return null;
+  const own = clipLimit(owner);
+  if (own !== null) {
+    part = intersect(part, own);
+    if (part === null) return null;
+  }
+  if (inTopLayer(owner)) return part;
+  let current: Element | null = owner.parentElement;
   while (part !== null && current !== null) {
-    const limit = clipLimit(current);
-    if (limit !== null) part = intersect(part, limit);
+    if (!isViewportClipper(current, doc) && containingBlockFor(current, owner)) {
+      const limit = clipLimit(current);
+      if (limit !== null) part = intersect(part, limit);
+    }
     current = current.parentElement;
   }
   return part;
@@ -140,21 +198,44 @@ function paints(el: Element): boolean {
   return style.backgroundImage !== 'none' || colorAlpha(style.backgroundColor) > 0;
 }
 
+/** Paint only counts when the hit point lies in the element's own client rects (not a stretched ::after). */
+function paintsAtPoint(el: Element, cx: number, cy: number): boolean {
+  for (const box of el.getClientRects()) {
+    if (cx >= box.left && cx <= box.right && cy >= box.top && cy <= box.bottom) return paints(el);
+  }
+  return false;
+}
+
 /**
- * Hit-testing skips an element with `pointer-events: none`, so the stack would blame the layer under a
+ * `pointer-events: none` skips cover only when set on the element itself: computed none while the parent is
+ * not none. Inherited none from body (parent also none) must not skip cover. Inline style is not read here
+ * (page-process code may not read `.style`); an inline none still shows up in the computed style.
+ */
+function peOwn(el: Element): boolean {
+  const own = getComputedStyle(el).pointerEvents;
+  if (own !== 'none') return false;
+  const parent = el.parentElement;
+  if (parent === null) return true;
+  return getComputedStyle(parent).pointerEvents !== 'none';
+}
+
+/**
+ * Hit-testing skips an element with its own `pointer-events: none`, so the stack would blame the layer under a
  * floating label or a hero caption. Those elements are not checked for covering.
  */
 function covered(doc: Document, owner: Element, part: Rect): boolean {
-  if (getComputedStyle(owner).pointerEvents === 'none') return false;
-  const stack = doc.elementsFromPoint(part.x + part.w / 2, part.y + part.h / 2);
+  if (peOwn(owner)) return false;
+  const cx = part.x + part.w / 2;
+  const cy = part.y + part.h / 2;
+  const stack = doc.elementsFromPoint(cx, cy);
   for (const hit of stack) {
     if (hit === owner) return false;
     if (owner.contains(hit)) {
-      if (paints(hit)) return true;
+      if (paintsAtPoint(hit, cx, cy)) return true;
       continue;
     }
     if (hit.contains(owner)) continue;
-    if (paints(hit)) return true;
+    if (paintsAtPoint(hit, cx, cy)) return true;
   }
   return false;
 }
@@ -163,11 +244,33 @@ function clean(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
-function isPasswordField(el: HTMLTextAreaElement | HTMLInputElement): boolean {
+function labelText(el: HTMLInputElement | HTMLTextAreaElement): string {
+  const parts: string[] = [];
+  const list = el.labels;
+  if (list === null) return '';
+  for (const label of list) {
+    parts.push(label.textContent);
+  }
+  return parts.join(' ');
+}
+
+/** Fields that must never enter the preview (passwords, cards, OTP, and lookalikes). */
+function sensitiveField(el: HTMLTextAreaElement | HTMLInputElement): boolean {
   if (el instanceof HTMLInputElement && el.type.toLowerCase() === 'password') return true;
   if (masked(getComputedStyle(el))) return true;
   if (/(?:current-password|new-password|one-time-code)/i.test(el.autocomplete)) return true;
-  return /pass|pwd/i.test(el.name) || /pass|pwd/i.test(el.id);
+  if (/(?:^|\s)cc-/i.test(el.autocomplete)) return true;
+  if (SENSITIVE_TOKEN.test(el.name) || SENSITIVE_TOKEN.test(el.id)) return true;
+  if (SENSITIVE_TOKEN.test(el.ariaLabel ?? '') || SENSITIVE_TOKEN.test(labelText(el))) return true;
+  if (el instanceof HTMLInputElement) {
+    const kind = el.type.toLowerCase();
+    const numeric =
+      el.inputMode.toLowerCase() === 'numeric' || kind === 'number' || kind === 'tel';
+    if (numeric && el.maxLength >= 0 && el.maxLength <= 8) return true;
+  } else if (el.inputMode.toLowerCase() === 'numeric' && el.maxLength >= 0 && el.maxLength <= 8) {
+    return true;
+  }
+  return false;
 }
 
 function fieldPiece(
@@ -176,14 +279,14 @@ function fieldPiece(
   frame: Rect,
 ): string {
   if (el instanceof HTMLInputElement && el.type.toLowerCase() !== 'text') return '';
-  if (isPasswordField(el)) return '';
+  if (sensitiveField(el)) return '';
   if (!styleVisible(el)) return '';
   let boxes = 0;
   let crossed = false;
   let inside = true;
   for (const box of el.getClientRects()) {
     boxes += 1;
-    const part = visiblePart(box, frame, el);
+    const part = visiblePart(box, frame, el, doc);
     const shown = part !== null && !covered(doc, el, part);
     if (shown) crossed = true;
     if (
@@ -206,6 +309,35 @@ function fieldPiece(
   return inside ? clean(el.value) : '';
 }
 
+/** Character offsets `[from, to)` whose boxes meet `line`, or null when none do. */
+function lineOffsets(range: Range, node: Node, line: DOMRect): [number, number] | null {
+  const value = node.nodeValue ?? '';
+  let from = -1;
+  let to = -1;
+  for (let i = 0; i < value.length; i++) {
+    range.setStart(node, i);
+    range.setEnd(node, i + 1);
+    const box = range.getBoundingClientRect();
+    const midY = (box.top + box.bottom) / 2;
+    const midX = (box.left + box.right) / 2;
+    const hit =
+      midY >= line.top &&
+      midY <= line.bottom &&
+      midX >= line.left &&
+      midX <= line.right;
+    if (hit) {
+      if (from < 0) from = i;
+      to = i + 1;
+    } else if (from >= 0) {
+      break;
+    }
+  }
+  return from < 0 || to < 0 ? null : [from, to];
+}
+
+/**
+ * Text of the node whose line boxes meet the frame. Only those lines are kept (not the whole nodeValue).
+ */
 function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string {
   const value = node.nodeValue ?? '';
   const owner = node.parentElement;
@@ -213,11 +345,18 @@ function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string
   if (owner.matches(NOT_SHOWN)) return '';
   if (!styleVisible(owner)) return '';
   range.selectNodeContents(node);
-  for (const line of range.getClientRects()) {
-    const part = visiblePart(line, frame, owner);
-    if (part !== null && !covered(doc, owner, part)) return clean(value);
+  const lines: DOMRect[] = [];
+  for (const line of range.getClientRects()) lines.push(line);
+  const parts: string[] = [];
+  for (const line of lines) {
+    const part = visiblePart(line, frame, owner, doc);
+    if (part === null || covered(doc, owner, part)) continue;
+    const offsets = lineOffsets(range, node, line);
+    if (offsets === null) continue;
+    const slice = value.slice(offsets[0], offsets[1]);
+    if (slice.trim()) parts.push(slice);
   }
-  return '';
+  return parts.length === 0 ? '' : clean(parts.join(' '));
 }
 
 // visible text of the page under the dragged rectangle (used as the preview sample when no selection is in it)
@@ -227,17 +366,22 @@ export function textInRect(doc: Document, r: Rect): string {
   const root = bodyOrRoot(doc.body, doc.documentElement);
   const tw = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
   let count = 0;
-  let n = 0;
+  let textNodes = 0;
   try {
     for (
       let node = tw.nextNode();
-      node && count <= MAX_PREVIEW_GRAPHEMES && n < 20000;
-      node = tw.nextNode(), n++
+      node && count <= MAX_PREVIEW_GRAPHEMES && textNodes < 20000;
+      node = tw.nextNode()
     ) {
-      const piece =
-        node instanceof HTMLTextAreaElement || node instanceof HTMLInputElement
-          ? fieldPiece(doc, node, r)
-          : textPiece(doc, range, node, r);
+      let piece = '';
+      if (node instanceof HTMLTextAreaElement || node instanceof HTMLInputElement) {
+        piece = fieldPiece(doc, node, r);
+      } else if (node.nodeValue !== null) {
+        textNodes += 1;
+        piece = textPiece(doc, range, node, r);
+      } else {
+        continue;
+      }
       if (!piece) continue;
       count += (out.length === 0 ? 0 : 1) + graphemeCount(piece);
       if (count > MAX_PREVIEW_GRAPHEMES) return '';
