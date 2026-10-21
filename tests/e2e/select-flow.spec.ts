@@ -1144,11 +1144,20 @@ test('pe:none capture restores style attributes and fires no pointer-events tran
     document.addEventListener('transitionend', (ev) => {
       note('end', ev);
     });
+    interface StyleSnap {
+      had: boolean;
+      value: string | null;
+    }
     (
       globalThis as unknown as {
         __peProbe: {
           counts: typeof counts;
-          before: Record<string, { had: boolean; value: string | null }>;
+          before: {
+            owner: StyleSnap;
+            kid: StyleSnap;
+            longhand: StyleSnap;
+            nostyle: StyleSnap;
+          };
         };
       }
     ).__peProbe = {
@@ -1173,17 +1182,26 @@ test('pe:none capture restores style attributes and fires no pointer-events tran
   const result = await opened;
   await expect(result.locator('#pvText')).toHaveValue('Hero Caption Echo');
   const after = await site.evaluate(() => {
+    interface StyleSnap {
+      had: boolean;
+      value: string | null;
+    }
     const probe = (
       globalThis as unknown as {
         __peProbe: {
           counts: { run: number; start: number; cancel: number; end: number };
-          before: Record<string, { had: boolean; value: string | null }>;
+          before: {
+            owner: StyleSnap;
+            kid: StyleSnap;
+            longhand: StyleSnap;
+            nostyle: StyleSnap;
+          };
         };
       }
     ).__peProbe;
-    const snap = (id: string) => {
+    const snap = (id: string): StyleSnap => {
       const el = document.getElementById(id);
-      if (el === null) return { had: false, value: null as string | null };
+      if (el === null) return { had: false, value: null };
       return { had: el.hasAttribute('style'), value: el.getAttribute('style') };
     };
     return {
@@ -1206,10 +1224,99 @@ test('pe:none capture restores style attributes and fires no pointer-events tran
     };
   });
   expect(after.counts).toEqual({ run: 0, start: 0, cancel: 0, end: 0 });
-  expect(after.now).toEqual(after.before);
+  expect(after.now.kid).toEqual({ had: false, value: null });
   expect(after.now.nostyle).toEqual({ had: false, value: null });
+  expect(after.now.longhand.had).toBe(true);
+  expect(after.now.owner.had).toBe(after.before.owner.had);
+  expect(after.now.longhand.value ?? '').toMatch(/transition-property:\s*opacity/i);
+  expect(after.now.longhand.value ?? '').toMatch(/transition-duration:\s*2s/i);
+  expect(after.now.longhand.value ?? '').not.toMatch(/pointer-events:\s*auto/i);
+  expect(after.now.owner.value ?? '').not.toMatch(/pointer-events:\s*auto/i);
+  expect(after.now.owner.value ?? '').not.toMatch(/transition-behavior:\s*normal/i);
   expect(after.longhandTransition).toBe('opacity');
   expect(after.longhandDuration).toBe('2s');
+});
+
+// Isolated-world setAttribute('style') used to activate CSP-blocked markup; CSSOM restore must not.
+test('pe:none capture does not activate CSP-blocked inline styles', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const leaked: string[] = [];
+  context.on('request', (req) => {
+    if (req.url().includes('/leak')) leaked.push(req.url());
+  });
+  const origin = await serve(
+    new Map([
+      [
+        '/s.css',
+        {
+          type: 'text/css',
+          body: 'html,body{margin:0;background:#fff;color:#111}.sheet{pointer-events:none}p{font:24px/32px sans-serif;margin:0}',
+        },
+      ],
+      ['/leak', { type: 'image/gif', body: '' }],
+      [
+        '/',
+        {
+          type: 'text/html; charset=utf-8',
+          headers: { 'Content-Security-Policy': "style-src 'self'" },
+          body: `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="/s.css"></head>
+<body>
+  <div style="margin:30px 40px;width:700px">
+    <p id="x" class="sheet" style="background-image:url(/leak?from=style-attr);color:#ff0000">Xray injected</p>
+    <p id="y" class="sheet" style="position:fixed;inset:0;background:#000;color:#fff;z-index:9;pointer-events:none;font:24px/32px sans-serif">Yankee overlay</p>
+    <p id="z" class="sheet">Zulu control</p>
+  </div>
+</body></html>`,
+        },
+      ],
+    ]),
+  );
+  const site = await context.newPage();
+  await site.setViewportSize({ width: 1000, height: 700 });
+  await site.goto(`${origin}/`);
+  const before = await site.evaluate(() => {
+    const snap = (id: string) => {
+      const el = document.getElementById(id);
+      if (el === null) return { color: '', position: '', backgroundImage: '' };
+      const cs = getComputedStyle(el);
+      return { color: cs.color, position: cs.position, backgroundImage: cs.backgroundImage };
+    };
+    return { x: snap('x'), y: snap('y'), z: snap('z') };
+  });
+  expect(before.x.color).not.toBe('rgb(255, 0, 0)');
+  expect(before.y.position).toBe('static');
+  await clickToolbarIcon(context, extensionId, site);
+  await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
+  const opened = context.waitForEvent('page', {
+    predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
+  });
+  await site.mouse.move(30, 20);
+  await site.mouse.down();
+  await site.mouse.move(760, 200, { steps: 4 });
+  await site.mouse.up();
+  const result = await opened;
+  await expect(result.locator('#results li').first()).toBeVisible();
+  await site.bringToFront();
+  await expect.poll(() => leaked.length, { timeout: 2000 }).toBe(0);
+  const after = await site.evaluate(() => {
+    const snap = (id: string) => {
+      const el = document.getElementById(id);
+      if (el === null) return { color: '', position: '', backgroundImage: '' };
+      const cs = getComputedStyle(el);
+      return { color: cs.color, position: cs.position, backgroundImage: cs.backgroundImage };
+    };
+    return { x: snap('x'), y: snap('y'), z: snap('z') };
+  });
+  expect(leaked).toEqual([]);
+  expect(after.x).toEqual(before.x);
+  expect(after.y).toEqual(before.y);
+  expect(after.z).toEqual(before.z);
+  expect(after.x.color).not.toBe('rgb(255, 0, 0)');
+  expect(after.y.position).toBe('static');
+  expect(after.x.backgroundImage === 'none' || after.x.backgroundImage === '').toBe(true);
 });
 
 test('the preview still reaches a target after many spacer text nodes', async ({

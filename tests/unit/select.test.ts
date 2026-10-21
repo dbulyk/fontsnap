@@ -1159,7 +1159,7 @@ describe('textInRect', () => {
     expect(el('t').hasAttribute('style')).toBe(false);
   });
 
-  it('restores inline transition longhands after the pe:auto probe', () => {
+  it('keeps untouched transition longhands after the pe:auto probe', () => {
     const style = 'pointer-events:none;transition-property:opacity;transition-duration:2s';
     document.body.innerHTML = `<div id="group"><div id="bg"></div><p id="t" style="${style}">Echo</p></div>`;
     layout(
@@ -1180,7 +1180,10 @@ describe('textInRect', () => {
       },
     );
     expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Echo');
-    expect(el('t').getAttribute('style')).toBe(style);
+    const after = el('t').getAttribute('style') ?? '';
+    expect(after).toMatch(/transition-property:\s*opacity/i);
+    expect(after).toMatch(/transition-duration:\s*2s/i);
+    expect(after).not.toMatch(/pointer-events:\s*auto/i);
   });
 
   it('takes pe:none SVG text over an earlier absolute backdrop', () => {

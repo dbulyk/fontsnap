@@ -232,11 +232,20 @@ function asStyleHost(node: Node): StyleHost | null {
 }
 
 /**
- * pe:none omits the owner from the hit stack. Snapshot each touched style attribute, set
- * transition-behavior:normal !important (does not cancel running transitions) on the owner and on
- * descendants that would discrete-animate pointer-events, then pointer-events:auto !important on the
- * owner only. Clear pointer-events before putting attributes back so restore does not start a discrete
- * transition; then restore every style attribute byte-for-byte (or remove it if it was absent).
+ * Markup style present but CSSOM empty: the page CSP blocked the attribute. Patching would
+ * overwrite it from the isolated world and bypass that CSP.
+ */
+function styleAttrBlocked(el: StyleHost): boolean {
+  if (!el.hasAttribute('style')) return false;
+  const raw = el.getAttribute('style');
+  return el.style.length === 0 && raw !== null && raw.trim() !== '';
+}
+
+/**
+ * pe:none omits the owner from the hit stack. Temporarily set transition-behavior:normal !important
+ * (owner and discrete descendants) and pointer-events:auto !important (owner only) via CSSOM, then
+ * restore only those properties. No setAttribute: rewriting the style attribute bypasses page CSP.
+ * Skip owners whose style attribute is CSP-blocked (non-empty attr, empty CSSOM).
  */
 function elementsFromPointWithOwner(
   doc: Document,
@@ -246,47 +255,64 @@ function elementsFromPointWithOwner(
 ): Element[] {
   if (getComputedStyle(owner).pointerEvents !== 'none') return doc.elementsFromPoint(cx, cy);
   const host = asStyleHost(owner);
-  if (host === null) return doc.elementsFromPoint(cx, cy);
+  if (host === null || styleAttrBlocked(host)) return doc.elementsFromPoint(cx, cy);
 
-  const hosts: StyleHost[] = [];
-  const hadStyle: boolean[] = [];
-  const savedStyle: (string | null)[] = [];
-  const remember = (el: StyleHost): void => {
-    hosts.push(el);
-    hadStyle.push(el.hasAttribute('style'));
-    savedStyle.push(el.getAttribute('style'));
-  };
-
-  remember(host);
+  const hostHadAttr = host.hasAttribute('style');
+  const hostPe = host.style.getPropertyValue('pointer-events');
+  const hostPePri = host.style.getPropertyPriority('pointer-events');
+  let hostBeh: string | null = null;
+  let hostBehPri = '';
   if (discretePointerTransition(host)) {
+    hostBeh = host.style.getPropertyValue('transition-behavior');
+    hostBehPri = host.style.getPropertyPriority('transition-behavior');
     host.style.setProperty('transition-behavior', 'normal', 'important');
   }
+
+  const kids: StyleHost[] = [];
+  const kidsHadAttr: boolean[] = [];
+  const kidsBeh: string[] = [];
+  const kidsBehPri: string[] = [];
   const walker = doc.createTreeWalker(host, NodeFilter.SHOW_ELEMENT);
   for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
     const child = asStyleHost(node);
-    if (child === null || !discretePointerTransition(child)) continue;
-    remember(child);
+    if (child === null || styleAttrBlocked(child) || !discretePointerTransition(child)) continue;
+    kids.push(child);
+    kidsHadAttr.push(child.hasAttribute('style'));
+    kidsBeh.push(child.style.getPropertyValue('transition-behavior'));
+    kidsBehPri.push(child.style.getPropertyPriority('transition-behavior'));
     child.style.setProperty('transition-behavior', 'normal', 'important');
   }
+
   // Recalc so the pe write sees transition-behavior:normal (same-frame batch would still animate).
   void host.getBoundingClientRect();
   host.style.setProperty('pointer-events', 'auto', 'important');
   try {
     return doc.elementsFromPoint(cx, cy);
   } finally {
-    // Put pe back to none under still-suppressed discrete behavior so attribute restore does not animate.
-    host.style.setProperty('pointer-events', 'none', 'important');
+    // pe first while behavior is still suppressed, then behavior, then drop a probe-only style attr.
+    if (hostPe === '' && hostPePri === '') host.style.removeProperty('pointer-events');
+    else host.style.setProperty('pointer-events', hostPe, hostPePri);
     void host.getBoundingClientRect();
-    // Owner first so inherited pe is already final before descendant behavior is restored.
-    while (hosts.length > 0) {
-      const el = hosts.shift();
-      const had = hadStyle.shift();
-      const saved = savedStyle.shift();
-      if (el === undefined || had === undefined) break;
-      // Flush pending CSSOM writes; otherwise removeAttribute can leave style="".
-      void el.getAttribute('style');
-      if (had && typeof saved === 'string') el.setAttribute('style', saved);
-      else el.removeAttribute('style');
+    if (hostBeh !== null) {
+      if (hostBeh === '' && hostBehPri === '') host.style.removeProperty('transition-behavior');
+      else host.style.setProperty('transition-behavior', hostBeh, hostBehPri);
+    }
+    if (!hostHadAttr) {
+      void host.getAttribute('style');
+      host.removeAttribute('style');
+    }
+    while (kids.length > 0) {
+      const el = kids.shift();
+      const had = kidsHadAttr.shift();
+      const beh = kidsBeh.shift();
+      const behPri = kidsBehPri.shift();
+      if (el === undefined || had === undefined || beh === undefined || behPri === undefined) break;
+      if (beh === '' && behPri === '') el.style.removeProperty('transition-behavior');
+      else el.style.setProperty('transition-behavior', beh, behPri);
+      if (!had) {
+        void el.getAttribute('style');
+        el.removeAttribute('style');
+      }
     }
   }
 }

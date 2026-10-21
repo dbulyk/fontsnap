@@ -280,7 +280,6 @@ const DOM_MEMBERS = [
       removeProperty: 'c',
       hasAttribute: 'c',
       getAttribute: 'c',
-      setAttribute: 'c',
       removeAttribute: 'c',
       contains: 'c',
       length: 'r',
@@ -1241,9 +1240,7 @@ const importSelectors = (valueFrom) =>
   ].map((selector) => ({ selector, message: IMPORT_MESSAGE }));
 const selectImportSelectors = importSelectors(`:not([source.value=${SELECT_SIBLING}])`);
 const measureImportSelectors = importSelectors('');
-// pe:none probe restore: only setAttribute('style', <identifier from getAttribute>) / removeAttribute('style')
-const STYLE_ATTR_RESTORE_SET =
-  "CallExpression[callee.property.name='setAttribute'][arguments.length=2][arguments.0.type='Literal'][arguments.0.value='style'][arguments.1.type='Identifier']";
+// pe:none probe: removeAttribute('style') only when the probe created a style attribute that was not there
 const STYLE_ATTR_RESTORE_REMOVE =
   "CallExpression[callee.property.name='removeAttribute'][arguments.length=1][arguments.0.type='Literal'][arguments.0.value='style']";
 const pageProcessSelectorSources = [
@@ -1272,9 +1269,8 @@ const pageProcessSelectorSources = [
   // elements: div only; nothing that loads or navigates
   "CallExpression[callee.property.name='createElement']:not([arguments.0.type='Literal'][arguments.0.value='div'])",
   `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`,
-  // setAttribute is loading except the pe:none probe's setAttribute('style', savedIdentifier)
-  `CallExpression[callee.property.name=${LOADING_CALLS}]:not(${STYLE_ATTR_RESTORE_SET})`,
-  // removeAttribute only to put back a missing style attribute after the pe:none probe
+  `CallExpression[callee.property.name=${LOADING_CALLS}]`,
+  // removeAttribute only to drop a style attribute the pe:none probe created
   `CallExpression[callee.property.name='removeAttribute']:not(${STYLE_ATTR_RESTORE_REMOVE})`,
   `Property[key.name=${LOADING_NAMES}]`,
   // strings: nothing that loads (CSS_LOADING_SOURCE), and no backslash at all (a CSS escape hides `url(`; JS escapes like \n are no backslash)
@@ -1330,10 +1326,10 @@ const loadImageSelectors = [
 // is a string literal that is a keyword, a hex colour or rgb()/rgba() of numbers - nothing else. The others cannot hold a url() by
 // their grammar; they take string literals too, and left/top/width/height a literal or a template (`${x}px`). Everything else about
 // style is refused: .style as a value or an alias, cssText, attributeStyleMap, adoptedStyleSheets, insertRule,
-// animate (keyframes can carry a url), setAttribute('style') with a non-restored value, createElement('style' | 'link') (div only).
+// animate (keyframes can carry a url), setAttribute('style'), createElement('style' | 'link') (div only).
 // Narrow exception (pe:none hit probe): el.style.setProperty/getPropertyValue/getPropertyPriority/removeProperty only for the
-// literals `pointer-events` and `transition-behavior` (neither accepts url()); style attribute restored only via
-// setAttribute('style', <identifier>) / removeAttribute('style') after a getAttribute snapshot.
+// literals `pointer-events` and `transition-behavior` (neither accepts url()); removeAttribute('style') only when the
+// probe created an attribute that was absent.
 const STYLE_KEYS = [
   'position',
   'inset',
@@ -1374,8 +1370,8 @@ const styleSelectors = [
   "Property[key.name='style']",
   // left/top/width/height: 0, auto, a length or a percentage as a literal (or `${number}px`, checked by fontsnap/dom-members)
   "Property[key.name=/^(left|top|width|height)$/][value.type='Literal']:not([value.value=/^(?:0|auto|-?[0-9]+(?:[.][0-9]+)?(?:px|%))$/])",
-  // style appears only as Object.assign's first argument or as the object of the pe:none probe methods
-  `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child):not(${STYLE_PROBE_STYLE_OBJ})`,
+  // style appears only as Object.assign's first argument, the pe:none probe methods, or `.style.length` (CSP-blocked attr)
+  `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child):not(${STYLE_PROBE_STYLE_OBJ}):not(MemberExpression[property.name='length'] > MemberExpression.object)`,
   "ObjectPattern > Property[key.name='style']",
   "Property[key.value='style']",
   // getPropertyValue is a read of computed clip and -webkit-text-security; probe methods are allowed only as .style calls above.
@@ -1384,8 +1380,6 @@ const styleSelectors = [
   `Literal[value=${STYLE_NAMES}]`,
   // Probe calls must use the literal property names pointer-events | transition-behavior (no url() in those grammars).
   `CallExpression[callee.property.name=${STYLE_PROBE_METHODS}][callee.object.property.name='style']:not([arguments.0.type='Literal'][arguments.0.value=${STYLE_PROBE_PROPS}])`,
-  // setAttribute('style', ...) only as the pe:none restore of a getAttribute snapshot (identifier); literals stay refused
-  `CallExpression[callee.property.name='setAttribute'][arguments.0.type='Literal'][arguments.0.value='style']:not(${STYLE_ATTR_RESTORE_SET})`,
   // Object.assign(el.style, { ... }): exactly two arguments, the second an object literal of plain `key: value` properties
   `${ASSIGN}:not([arguments.length=2])`,
   `${ASSIGN}:not([arguments.1.type='ObjectExpression'])`,
