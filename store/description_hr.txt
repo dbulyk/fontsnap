@@ -66,7 +66,7 @@ Otvorite FontSnap na bilo kojoj stranici, prebacite se na način učitavanja te 
 Da. Desnom tipkom miša kliknite sliku i odaberite prepoznaj font na ovoj slici.
 
 📍 Radi li FontSnap izvan mreže?
-Samo prepoznavanje radi lokalno. Internetska veza koristi se jedino za učitavanje pregleda s Google Fonts.
+Prepoznavanje radi na vašem uređaju, a vaše se slike ne šalju nama niti bilo kojem poslužitelju. Internet se koristi za prikaz pregleda s Google Fonts, a nakon desnog klika preglednik može ponovno učitati sliku na koju ste kliknuli s web-mjesta na kojem se već nalazi.
 
 📍 Može li FontSnap prepoznati komercijalne fontove?
 FontSnap uspoređuje s obiteljima Google Fonts. Za komercijalni font prikazuje najbliže alternative iz Google Fonts, što je za web-projekt često upravo ono što trebate.

@@ -66,7 +66,7 @@ Odprite FontSnap na kateri koli strani, preklopite na način nalaganja in prilep
 Da. Z desno tipko miške kliknite sliko in izberite prepoznaj pisavo na tej sliki.
 
 📍 Ali FontSnap deluje brez povezave?
-Samo prepoznavanje poteka lokalno. Internetna povezava se uporablja le za nalaganje predogledov iz Google Fonts.
+Prepoznavanje poteka na vaši napravi, vaše slike pa se ne pošiljajo nam ali kateremu koli strežniku. Internet se uporablja za prikaz predogledov iz Google Fonts, po desnem kliku pa lahko brskalnik kliknjeno sliko znova naloži s spletnega mesta, na katerem že je.
 
 📍 Ali FontSnap prepozna komercialne pisave?
 FontSnap primerja z družinami Google Fonts. Pri komercialni pisavi pokaže najbližje nadomestke iz Google Fonts, kar je za spletni projekt pogosto tisto, kar potrebujete.

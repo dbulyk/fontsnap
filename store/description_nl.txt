@@ -66,7 +66,7 @@ Open FontSnap op een willekeurige pagina, schakel over naar de uploadmodus en pl
 Ja. Klik met de rechtermuisknop op de afbeelding en kies lettertype in deze afbeelding herkennen.
 
 📍 Werkt FontSnap offline?
-De herkenning zelf draait lokaal. Een internetverbinding wordt alleen gebruikt om voorbeelden van Google Fonts te laden.
+De herkenning draait op uw apparaat en uw afbeeldingen worden niet naar ons of naar een server gestuurd. Internet wordt gebruikt om voorbeelden van Google Fonts te tonen, en na een rechtsklik kan de browser de aangeklikte afbeelding opnieuw laden van de site waarop die al staat.
 
 📍 Kan FontSnap commerciële lettertypen herkennen?
 FontSnap vergelijkt met families uit Google Fonts. Voor een commercieel lettertype toont het de dichtstbijzijnde alternatieven van Google Fonts, wat vaak precies is wat je nodig hebt voor een webproject.

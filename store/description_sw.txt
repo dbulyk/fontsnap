@@ -66,7 +66,7 @@ Fungua FontSnap kwenye ukurasa wowote, badilisha hadi hali ya kupakia na ubandik
 Ndiyo. Bofya kulia picha na uchague tambua fonti kwenye picha hii.
 
 📍 Je, FontSnap inafanya kazi bila mtandao?
-Utambuzi wenyewe hufanyika kwenye kifaa. Muunganisho wa intaneti hutumika tu kupakia maonyesho kutoka Google Fonts.
+Utambuzi hufanyika kwenye kifaa chako, na picha zako hazitumwi kwetu wala kwa seva yoyote. Intaneti hutumika kuonyesha maonyesho kutoka Google Fonts, na baada ya kubofya kulia, kivinjari kinaweza kupakia tena picha uliyobofya kutoka kwenye tovuti ambayo tayari ipo.
 
 📍 Je, FontSnap inaweza kutambua fonti za kibiashara?
 FontSnap hulinganisha na familia za Google Fonts. Kwa aina ya kibiashara huonyesha mbadala wa karibu zaidi wa Google Fonts, ambao mara nyingi ndio unaohitajika kwa mradi wa wavuti.

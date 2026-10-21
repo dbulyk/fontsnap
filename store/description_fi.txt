@@ -66,7 +66,7 @@ Avaa FontSnap millä tahansa sivulla, vaihda lataustilaan ja liitä, pudota tai 
 Kyllä. Napsauta kuvaa hiiren kakkospainikkeella ja valitse tunnista tämän kuvan fontti.
 
 📍 Toimiiko FontSnap offline-tilassa?
-Tunnistus toimii paikallisesti. Internet-yhteyttä käytetään vain esikatseluiden lataamiseen Google Fontsista.
+Tunnistus toimii laitteellasi, eikä kuviasi lähetetä meille eikä millekään palvelimelle. Internetiä käytetään esikatseluiden näyttämiseen Google Fontsista, ja hiiren kakkospainikkeella napsauttamisen jälkeen selain voi ladata napsautetun kuvan uudelleen sivustolta, jolla se jo on.
 
 📍 Tunnistaako FontSnap kaupallisia kirjaintyyppejä?
 FontSnap vertaa Google Fonts -perheisiin. Kaupallisen kirjaintyypin kohdalla se näyttää lähimmät Google Fonts -vaihtoehdot, mikä on usein juuri se, mitä verkkoprojektiin tarvitaan.

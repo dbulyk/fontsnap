@@ -66,7 +66,7 @@ Abra o FontSnap em qualquer página, mude para o modo de envio e cole, solte ou 
 Sim. Clique com o botão direito na imagem e escolha Identificar a fonte desta imagem.
 
 📍 O FontSnap funciona offline?
-O reconhecimento em si roda localmente. A internet só é usada para carregar as visualizações do Google Fonts.
+O reconhecimento roda no seu dispositivo, e suas imagens não são enviadas para nós nem para nenhum servidor. A internet é usada para mostrar as visualizações do Google Fonts e, depois de um clique com o botão direito, o navegador pode carregar novamente a imagem clicada a partir do site em que ela já está.
 
 📍 O FontSnap reconhece fontes comerciais?
 O FontSnap compara com as famílias do Google Fonts. Para uma fonte comercial, mostra as alternativas mais próximas do Google Fonts, o que muitas vezes é exatamente o que você precisa em um projeto web.

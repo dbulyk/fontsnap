@@ -66,7 +66,7 @@ Abre FontSnap en cualquier página, cambia al modo de carga y pega, suelta o eli
 Sí. Haz clic derecho sobre la imagen y elige Identificar la fuente de esta imagen.
 
 📍 ¿Funciona sin conexión?
-El reconocimiento se ejecuta en local. La conexión a internet solo se usa para cargar las vistas previas de Google Fonts.
+El reconocimiento se ejecuta en tu dispositivo y tus imágenes no se envían a nosotros ni a ningún servidor. Internet se usa para mostrar las vistas previas de Google Fonts y, tras hacer clic con el botón derecho, el navegador puede volver a cargar la imagen seleccionada desde el sitio en el que ya está.
 
 📍 ¿Reconoce tipografías comerciales?
 FontSnap compara con las familias de Google Fonts. Para una tipografía comercial muestra las alternativas más cercanas de Google Fonts, que suele ser lo que se necesita en un proyecto web.

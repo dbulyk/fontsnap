@@ -66,7 +66,7 @@ Det er en Chrome-udvidelse og et AI-værktøj til at finde skrifttype fra billed
 Ja. Højreklik på billedet, og vælg genkend skrifttypen i dette billede.
 
 📍 Virker FontSnap offline?
-Selve genkendelsen kører lokalt. En internetforbindelse bruges kun til at hente eksempler fra Google Fonts.
+Genkendelsen kører på din enhed, og dine billeder sendes ikke til os eller til nogen server. Internettet bruges til at vise eksempler fra Google Fonts, og efter et højreklik kan browseren indlæse det billede, du klikkede på, igen fra det websted, det allerede ligger på.
 
 📍 Kan FontSnap genkende kommercielle skrifttyper?
 FontSnap sammenligner med Google Fonts-familier. For en kommerciel skrifttype viser den de tætteste Google Fonts-alternativer, og det er ofte netop det, et webprojekt har brug for.

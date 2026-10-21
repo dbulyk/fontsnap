@@ -66,7 +66,7 @@ Ava FontSnap mis tahes lehel, lülitu üleslaadimisrežiimi ning kleebi, lohista
 Jah. Tee pildil paremklõps ja vali tuvasta selle pildi font.
 
 📍 Kas FontSnap töötab võrguühenduseta?
-Tuvastamine ise toimub lokaalselt. Internetiühendust kasutatakse ainult eelvaadete laadimiseks Google Fontsist.
+Tuvastamine toimub teie seadmes ja teie pilte ei saadeta meile ega ühelegi serverisse. Internetti kasutatakse eelvaadete kuvamiseks Google Fontsist ning pärast paremklõpsu võib brauser klõpsatud pildi uuesti laadida saidilt, kus see juba asub.
 
 📍 Kas FontSnap tunneb ära kommertskirjatüüpe?
 FontSnap võrdleb Google Fontsi perekondadega. Kommertskirjatüübi puhul näitab ta lähimaid Google Fontsi alternatiive, mis on veebiprojekti jaoks tihti just see, mida vaja.

@@ -66,7 +66,7 @@ Otwórz FontSnap na dowolnej stronie, przełącz się na tryb przesyłania i wkl
 Tak. Kliknij obraz prawym przyciskiem myszy i wybierz rozpoznaj czcionkę na tym obrazie.
 
 📍 Czy FontSnap działa offline?
-Samo rozpoznawanie działa lokalnie. Połączenie z internetem służy tylko do wczytywania podglądów z Google Fonts.
+Rozpoznawanie działa na Twoim urządzeniu, a Twoje obrazy nie są wysyłane do nas ani na żaden serwer. Internet służy do wyświetlania podglądów z Google Fonts, a po kliknięciu prawym przyciskiem myszy przeglądarka może ponownie wczytać klikniętą grafikę ze strony, na której już się znajduje.
 
 📍 Czy FontSnap rozpozna czcionki komercyjne?
 FontSnap dopasowuje wyniki do rodzin Google Fonts. Dla czcionki komercyjnej pokazuje najbliższe alternatywy z Google Fonts, a to często dokładnie to, czego potrzeba w projekcie webowym.

@@ -66,7 +66,7 @@ Apri FontSnap su qualsiasi pagina, passa alla modalità caricamento e incolla, t
 Sì. Fai clic con il tasto destro sull'immagine e scegli riconosci il font in questa immagine.
 
 📍 FontSnap funziona offline?
-Il riconoscimento avviene in locale. La connessione a internet serve solo per caricare le anteprime da Google Fonts.
+Il riconoscimento avviene sul tuo dispositivo e le tue immagini non vengono inviate a noi né ad alcun server. Internet serve per mostrare le anteprime da Google Fonts e, dopo un clic destro, il browser può caricare di nuovo l'immagine selezionata dal sito in cui si trova già.
 
 📍 FontSnap riconosce i caratteri commerciali?
 FontSnap confronta con le famiglie di Google Fonts. Per un carattere commerciale mostra le alternative Google Fonts più vicine, spesso ciò che serve per un progetto web.

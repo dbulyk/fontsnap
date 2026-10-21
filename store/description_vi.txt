@@ -66,7 +66,7 @@ Mở FontSnap trên bất kỳ trang nào, chuyển sang chế độ tải lên 
 Có. Nhấp chuột phải vào ảnh và chọn nhận diện font trong ảnh này.
 
 📍 FontSnap có hoạt động ngoại tuyến không?
-Bản thân việc nhận dạng chạy cục bộ. Kết nối internet chỉ dùng để tải bản xem trước từ Google Fonts.
+Việc nhận dạng chạy trên thiết bị của bạn, và hình ảnh của bạn không được gửi cho chúng tôi hay bất kỳ máy chủ nào. Internet được dùng để hiển thị bản xem trước từ Google Fonts, và sau khi nhấp chuột phải, trình duyệt có thể tải lại hình ảnh đã nhấp từ trang web mà hình ảnh đó vốn đang nằm trên.
 
 📍 FontSnap có nhận ra kiểu chữ thương mại không?
 FontSnap đối chiếu với các họ font trên Google Fonts. Với kiểu chữ thương mại, công cụ hiển thị các lựa chọn thay thế gần nhất trên Google Fonts, thường đúng là thứ bạn cần cho dự án web.

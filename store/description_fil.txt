@@ -66,7 +66,7 @@ Buksan ang FontSnap sa anumang pahina, lumipat sa upload mode at i-paste, i-drop
 Oo. I-right-click ang larawan at piliin ang tukuyin ang font sa larawang ito.
 
 📍 Gumagana ba ang FontSnap offline?
-Lokal na tumatakbo mismo ang pagkilala. Internet connection lang ang ginagamit para mag-load ng mga preview mula sa Google Fonts.
+Tumatakbo ang pagkilala sa iyong device, at hindi ipinapadala ang iyong mga larawan sa amin o sa anumang server. Ginagamit ang internet para ipakita ang mga preview mula sa Google Fonts, at pagkatapos mag-right-click, maaaring i-load muli ng browser ang na-click na larawan mula sa site kung nasaan na ito.
 
 📍 Nakakakilala ba ang FontSnap ng mga komersyal na typeface?
 Itinutugma ng FontSnap ang mga pamilya ng Google Fonts. Para sa komersyal na typeface, ipinapakita nito ang pinakamalapit na alternatibo mula sa Google Fonts, na madalas ang kailangan mo sa web project.
