@@ -10,8 +10,8 @@ start command as entrypoint and cmd. v1 called that command dockerStartCmd. v2 s
 The pod fetches this repository at the commit git rev-parse HEAD returned when the plan was
 built, installs train deps, and runs the work under timeout on the GPU. Calibrate prints
 samples/sec only when that command exits 0, sleeps so the client can scrape logs, then runs
-runpodctl pod delete $RUNPOD_POD_ID. A nonzero train exits before that delete and does not
-print samples/sec. The client stops and deletes the pod in a finally block on every exit,
+runpodctl pod delete $RUNPOD_POD_ID. A nonzero train still self-deletes but never prints
+samples/sec. The client stops and deletes the pod in a finally block on every exit,
 including SIGINT, SIGTERM, SIGHUP, and unexpected exceptions while polling. A failed delete
 prints the pod id and a manual DELETE command, records DELETE FAILED, and exits nonzero.
 
@@ -257,14 +257,15 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
         raise ValueError(f"bad commit pin: {sha!r}")
     if spec.mode is JobMode.CALIBRATE:
         train = f"timeout {limit} python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
-        settle = f"sleep {_LOG_SETTLE_SECONDS}\n"
+        on_ok = f"  cat /tmp/fontsnap-train.out\n  sleep {_LOG_SETTLE_SECONDS}\n"
     else:
         train = f"timeout {limit} python -m train.loop --recipe ofl-v1 --device cuda"
-        settle = ""
+        on_ok = "  cat /tmp/fontsnap-train.out\n"
     # Fetch the pinned sha. A clone of the default branch does not contain other commits.
     # Stdout stays in a file until exit 0 so a failed train cannot emit samples/sec.
+    # Self-delete always runs so a dead client cannot leave a billing pod behind.
     return (
-        "set -eu\n"
+        "set -u\n"
         "export DEBIAN_FRONTEND=noninteractive\n"
         "apt-get update -qq >/dev/null\n"
         "apt-get install -y -qq git git-lfs >/dev/null\n"
@@ -280,17 +281,14 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
         "python -m pip install -q -r python/requirements.txt -r python/train/requirements.txt\n"
         "export FONTSNAP_ALLOW_GPU=1\n"
         "export PYTHONPATH=/tmp/fontsnap/python\n"
-        "set +e\n"
         f"{train} >/tmp/fontsnap-train.out 2>/tmp/fontsnap-train.err\n"
         "status=$?\n"
-        "set -e\n"
         "cat /tmp/fontsnap-train.err >&2\n"
-        'if [ "$status" -ne 0 ]; then\n'
-        '  exit "$status"\n'
+        'if [ "$status" -eq 0 ]; then\n'
+        f"{on_ok}"
         "fi\n"
-        "cat /tmp/fontsnap-train.out\n"
-        f"{settle}"
         'runpodctl pod delete "$RUNPOD_POD_ID"\n'
+        'exit "$status"\n'
     )
 
 

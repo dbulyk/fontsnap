@@ -230,7 +230,7 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert "python/requirements.txt" in script
     assert "python/train/requirements.txt" in script
     assert "x-access-token" not in script
-    assert script.index('exit "$status"') < script.index('runpodctl pod delete "$RUNPOD_POD_ID"')
+    assert script.index('runpodctl pod delete "$RUNPOD_POD_ID"') < script.index('exit "$status"')
     assert "pip install" in script
     assert (
         f"timeout {CALIBRATE.max_runtime_seconds} python -m train.loop --recipe calibrate --steps {CALIBRATE.samples} --device cuda"
@@ -794,7 +794,8 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
         assert proc.returncode != 0
         assert "samples/sec" not in proc.stdout
         assert "main train" not in proc.stdout
-        assert removed == ""
+        assert f"pod delete {POD}" in removed
+        assert "slept" not in removed
     finally:
         for leftover in (Path("/tmp/fontsnap"), Path("/tmp/fontsnap-train.out"), Path("/tmp/fontsnap-train.err")):
             if leftover.is_file():
