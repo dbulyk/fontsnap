@@ -275,6 +275,9 @@ const DOM_MEMBERS = [
       elementsFromPoint: 'c',
       getBoundingClientRect: 'c',
       getPropertyValue: 'c',
+      getPropertyPriority: 'c',
+      setProperty: 'c',
+      removeProperty: 'c',
       contains: 'c',
       length: 'r',
       tagName: 'r',
@@ -417,6 +420,7 @@ const GLOBAL_ACCESS = {
     'src/select/overlay.ts': {
       Object: ['assign'],
       getComputedStyle: true,
+      HTMLElement: true,
       HTMLInputElement: true,
       HTMLTextAreaElement: true,
     },
@@ -1209,7 +1213,7 @@ export function cssUnescape(text) {
   );
 }
 const PAGE_PROCESS_MESSAGE =
-  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div/style elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_GLOBS in eslint.config.js.";
+  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_GLOBS in eslint.config.js.";
 // what makes an element load something or navigate
 const LOADING_NAMES =
   '/^(src|srcset|srcdoc|href|action|formAction|ping|poster|data|location|innerHTML|outerHTML|cssText|adoptedStyleSheets)$/';
@@ -1255,8 +1259,8 @@ const pageProcessSelectorSources = [
   // Object only as Object.assign(el.style, ...) (the rule above); never as a value or with another member
   "MemberExpression[object.name='Object']:not([property.name='assign'])",
   "Identifier[name='Object']:not(MemberExpression[computed=false] > Identifier.object)",
-  // elements: div (overlay UI) or style (temporary pe:auto probe for hit-testing); nothing that loads or navigates
-  "CallExpression[callee.property.name='createElement']:not([arguments.0.type='Literal'][arguments.0.value=/^(div|style)$/])",
+  // elements: div only; nothing that loads or navigates
+  "CallExpression[callee.property.name='createElement']:not([arguments.0.type='Literal'][arguments.0.value='div'])",
   `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`,
   `CallExpression[callee.property.name=${LOADING_CALLS}]`,
   `Property[key.name=${LOADING_NAMES}]`,
@@ -1312,8 +1316,10 @@ const loadImageSelectors = [
 // else (no spread, no computed or string key, no method). Of those keys only `cursor` and `background` accept a url(): their value
 // is a string literal that is a keyword, a hex colour or rgb()/rgba() of numbers - nothing else. The others cannot hold a url() by
 // their grammar; they take string literals too, and left/top/width/height a literal or a template (`${x}px`). Everything else about
-// style is refused: .style as a value or an alias, setProperty, cssText, attributeStyleMap, adoptedStyleSheets, insertRule,
+// style is refused: .style as a value or an alias, cssText, attributeStyleMap, adoptedStyleSheets, insertRule,
 // animate (keyframes can carry a url), setAttribute('style'), createElement('style' | 'link') (div only).
+// Narrow exception (pe:none hit probe): el.style.setProperty/getPropertyValue/getPropertyPriority/removeProperty only for the
+// literals `pointer-events` and `transition` (neither accepts url()).
 const STYLE_KEYS = [
   'position',
   'inset',
@@ -1339,7 +1345,11 @@ const ASSIGN = "CallExpression[callee.object.name='Object'][callee.property.name
 const URL_KEYS = '/^(cursor|background)$/';
 const SAFE_URL_KEY_VALUE = '/^(?:[a-z-]+|\\x23[0-9a-f]{3,8}|rgba?\\([0-9., %]+\\))$/i';
 const STYLE_NAMES =
-  '/^(setProperty|removeProperty|getPropertyValue|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem)$/';
+  '/^(setProperty|removeProperty|getPropertyValue|getPropertyPriority|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem)$/';
+const STYLE_PROBE_METHODS = '/^(setProperty|getPropertyValue|getPropertyPriority|removeProperty)$/';
+const STYLE_PROBE_PROPS = '/^(pointer-events|transition)$/';
+const STYLE_PROBE_CALL = `CallExpression[callee.type='MemberExpression'][callee.property.name=${STYLE_PROBE_METHODS}][callee.object.type='MemberExpression'][callee.object.property.name='style'][arguments.0.type='Literal'][arguments.0.value=${STYLE_PROBE_PROPS}]`;
+const STYLE_PROBE_STYLE_OBJ = `${STYLE_PROBE_CALL} > MemberExpression.callee > MemberExpression.object`;
 const styleObject = `${ASSIGN} > ObjectExpression`;
 const styleSelectors = [
   // Object.assign(el.style, { ... }) is a statement of its own: its result - the style declaration itself - is never kept, passed
@@ -1350,16 +1360,16 @@ const styleSelectors = [
   "Property[key.name='style']",
   // left/top/width/height: 0, auto, a length or a percentage as a literal (or `${number}px`, checked by fontsnap/dom-members)
   "Property[key.name=/^(left|top|width|height)$/][value.type='Literal']:not([value.value=/^(?:0|auto|-?[0-9]+(?:[.][0-9]+)?(?:px|%))$/])",
-  // style appears only as the first argument of Object.assign
-  `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child)`,
+  // style appears only as Object.assign's first argument or as the object of the pe:none probe methods
+  `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child):not(${STYLE_PROBE_STYLE_OBJ})`,
   "ObjectPattern > Property[key.name='style']",
   "Property[key.value='style']",
-  // getPropertyValue is a read of computed clip and -webkit-text-security (clip is deprecated as a
-  // property, and the security longhand is not declared in lib.dom). A call is allowed; naming it as a
-  // value is not, so it cannot be used to write a style.
-  `Identifier[name=${STYLE_NAMES}]:not([name='getPropertyValue'])`,
+  // getPropertyValue is a read of computed clip and -webkit-text-security; probe methods are allowed only as .style calls above.
+  `Identifier[name=${STYLE_NAMES}]:not([name='getPropertyValue']):not(CallExpression[callee.object.property.name='style'][arguments.0.value=${STYLE_PROBE_PROPS}] > MemberExpression.callee > Identifier.property)`,
   `Identifier[name='getPropertyValue']:not(CallExpression > MemberExpression.callee > Identifier.property)`,
   `Literal[value=${STYLE_NAMES}]`,
+  // Probe calls must use the literal property names pointer-events | transition (no url() in those grammars).
+  `CallExpression[callee.property.name=${STYLE_PROBE_METHODS}][callee.object.property.name='style']:not([arguments.0.type='Literal'][arguments.0.value=${STYLE_PROBE_PROPS}])`,
   // Object.assign(el.style, { ... }): exactly two arguments, the second an object literal of plain `key: value` properties
   `${ASSIGN}:not([arguments.length=2])`,
   `${ASSIGN}:not([arguments.1.type='ObjectExpression'])`,

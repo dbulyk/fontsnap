@@ -521,6 +521,35 @@ const previewCases: PreviewCase[] = [
     expected: `Line Alpha Words ${MARKER}`,
   },
   {
+    name: 'Bootstrap pe-none !important floating label over an input',
+    css: '.pe-none{pointer-events:none!important}',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:64px">
+      <label class="pe-none" style="position:absolute;left:12px;top:12px;${LINE}">Email address</label>
+      <input style="width:560px;height:64px;${field}">
+    </div>`,
+    expected: 'Email address',
+  },
+  {
+    name: 'Bootstrap pe-none !important hero over an absolute backdrop',
+    css: '.pe-none{pointer-events:none!important}',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <div class="pe-none" style="position:relative;padding:16px 12px">
+        <h1 style="margin:0;color:#fff;${LINE}">Hero Caption</h1>
+      </div>
+    </div>`,
+    expected: 'Hero Caption',
+  },
+  {
+    name: 'decorative pe:none grain does not cover a pe:none floating label',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:64px">
+      <label style="position:absolute;left:12px;top:12px;pointer-events:none;${LINE}">Email address</label>
+      <input style="width:560px;height:64px;${field}">
+    </div>
+    <div style="position:fixed;left:40px;top:160px;width:640px;height:200px;z-index:9999;pointer-events:none;background:rgba(0,0,0,.03)"></div>`,
+    expected: 'Email address',
+  },
+  {
     name: 'a textarea fully inside the frame',
     inner: `<textarea style="position:absolute;left:16px;top:24px;width:480px;height:80px;${field}">full field value</textarea>`,
     expected: 'full field value',
@@ -1043,6 +1072,77 @@ test('a pe:none label in a higher modal stays above a sticky header', async ({
     { viaOverlay: true },
   );
   expect(text).toBe('Email address');
+});
+
+// Inline pe:auto probe must not fire discrete pointer-events transitions (Tailwind v4 allow-discrete).
+test('pe:none capture does not fire pointer-events transition events', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const origin = await serve(
+    new Map([
+      [
+        '/',
+        {
+          type: 'text/html; charset=utf-8',
+          body: `<!doctype html><html><head><meta charset="utf-8">
+<style>.pe{transition:all .3s allow-discrete;pointer-events:none}</style>
+</head><body style="margin:0;background:#fff">
+  <div id="frame" style="position:absolute;left:40px;top:160px;width:640px;height:200px">
+    <div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <h1 class="pe" style="position:relative;margin:0;padding:16px 12px;color:#fff;font:32px/40px sans-serif">Hero Caption</h1>
+    </div>
+  </div>
+</body></html>`,
+        },
+      ],
+    ]),
+  );
+  const site = await context.newPage();
+  await site.goto(`${origin}/`);
+  await site.evaluate(() => {
+    const counts = { run: 0, start: 0, cancel: 0, end: 0 };
+    const note = (key: 'run' | 'start' | 'cancel' | 'end', ev: Event) => {
+      if (!(ev instanceof TransitionEvent)) return;
+      if (ev.propertyName !== 'pointer-events') return;
+      counts[key] += 1;
+    };
+    document.addEventListener('transitionrun', (ev) => {
+      note('run', ev);
+    });
+    document.addEventListener('transitionstart', (ev) => {
+      note('start', ev);
+    });
+    document.addEventListener('transitioncancel', (ev) => {
+      note('cancel', ev);
+    });
+    document.addEventListener('transitionend', (ev) => {
+      note('end', ev);
+    });
+    (globalThis as unknown as { __peTransitions: typeof counts }).__peTransitions = counts;
+  });
+  await clickToolbarIcon(context, extensionId, site);
+  await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
+  const opened = context.waitForEvent('page', {
+    predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
+  });
+  await site.mouse.move(32, 152);
+  await site.mouse.down();
+  await site.mouse.move(688, 368, { steps: 4 });
+  await site.mouse.up();
+  const result = await opened;
+  await expect(result.locator('#pvText')).toHaveValue('Hero Caption');
+  const counts = await site.evaluate(
+    () =>
+      (
+        globalThis as unknown as {
+          __peTransitions: { run: number; start: number; cancel: number; end: number };
+        }
+      ).__peTransitions,
+  );
+  expect(counts).toEqual({ run: 0, start: 0, cancel: 0, end: 0 });
 });
 
 test('the preview still reaches a target after many spacer text nodes', async ({

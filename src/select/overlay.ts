@@ -214,27 +214,41 @@ function paintsAtPoint(el: Element, cx: number, cy: number): boolean {
 }
 
 /**
- * pe:none omits the owner from the hit stack, so a hand-rolled paint-order model diverges from
- * real stacking (contexts, top layer, transforms). Briefly force pe:auto via a stylesheet, let the
- * browser order the stack, then remove it. pointer-events does not affect layout; no mouse events fire.
+ * pe:none omits the owner from the hit stack. Briefly set inline transition:none !important then
+ * pointer-events:auto !important on the owner only (beats class/@layer !important; no document-wide
+ * style). Flush computed style between those writes so allow-discrete transitions do not start; restore
+ * pointer-events while transition is still none, then restore transition.
  */
-const PE_AUTO_PROBE = '*{pointer-events:auto!important}';
-
-function elementsFromPointWithOwner(doc: Document, owner: Element, cx: number, cy: number): Element[] {
+function elementsFromPointWithOwner(
+  doc: Document,
+  owner: Element,
+  cx: number,
+  cy: number,
+): Element[] {
   if (getComputedStyle(owner).pointerEvents !== 'none') return doc.elementsFromPoint(cx, cy);
-  const style = doc.createElement('style');
-  style.textContent = PE_AUTO_PROBE;
-  doc.documentElement.appendChild(style);
+  if (!(owner instanceof HTMLElement)) return doc.elementsFromPoint(cx, cy);
+  const prevPe = owner.style.getPropertyValue('pointer-events');
+  const prevPePri = owner.style.getPropertyPriority('pointer-events');
+  const prevTr = owner.style.getPropertyValue('transition');
+  const prevTrPri = owner.style.getPropertyPriority('transition');
+  owner.style.setProperty('transition', 'none', 'important');
+  // Force recalc so the pe write below sees transition:none (same-frame batch would still animate).
+  void owner.getBoundingClientRect();
+  owner.style.setProperty('pointer-events', 'auto', 'important');
   try {
     return doc.elementsFromPoint(cx, cy);
   } finally {
-    style.remove();
+    if (prevPe === '' && prevPePri === '') owner.style.removeProperty('pointer-events');
+    else owner.style.setProperty('pointer-events', prevPe, prevPePri);
+    void owner.getBoundingClientRect();
+    if (prevTr === '' && prevTrPri === '') owner.style.removeProperty('transition');
+    else owner.style.setProperty('transition', prevTr, prevTrPri);
   }
 }
 
 /**
- * A painting hit above the owner covers it. For pe:none owners the stack is taken with a temporary
- * pe:auto probe so the browser supplies stacking contexts and the top layer.
+ * A painting hit above the owner covers it. For pe:none owners the stack includes the owner via the
+ * inline probe; hits that are themselves pe:none (decorative grain/dimmers) are ignored.
  */
 function covered(doc: Document, owner: Element, part: Rect): boolean {
   const cx = part.x + part.w / 2;
@@ -247,6 +261,7 @@ function covered(doc: Document, owner: Element, part: Rect): boolean {
       continue;
     }
     if (hit.contains(owner)) continue;
+    if (getComputedStyle(hit).pointerEvents === 'none') continue;
     if (paintsAtPoint(hit, cx, cy)) return true;
   }
   return false;
@@ -347,11 +362,7 @@ function lastIndexMeetingY(range: Range, node: Node, length: number, yMax: numbe
  * True when the character centre lies in `line` and its vertical centre lies in that line's
  * visible uncovered intersection with the frame (not in the frame alone).
  */
-function charMeetsVisible(
-  box: DOMRect,
-  line: DOMRect,
-  part: Rect,
-): boolean {
+function charMeetsVisible(box: DOMRect, line: DOMRect, part: Rect): boolean {
   const midX = (box.left + box.right) / 2;
   const midY = (box.top + box.bottom) / 2;
   if (midX < line.left || midX > line.right || midY < line.top || midY > line.bottom) return false;

@@ -1156,7 +1156,7 @@ describe('textInRect', () => {
       },
     );
     expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Hero Caption');
-    expect(document.querySelectorAll('style')).toHaveLength(0);
+    expect(el('t').getAttribute('style') ?? '').not.toMatch(/pointer-events:\s*auto/i);
   });
 
   it('keeps cover from a later cookie wall under a shared SPA root', () => {
@@ -1224,8 +1224,7 @@ describe('textInRect', () => {
           if (y >= 50) return [el('v')];
           return [el('t')];
         },
-        paint: (hit) =>
-          hit.id === 'banner' ? { backgroundColor: 'rgb(255, 255, 255)' } : {},
+        paint: (hit) => (hit.id === 'banner' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
       },
     );
     expect(textInRect(document, { x: 0, y: 0, w: 100, h: 70 })).toBe('AAAAA Shown Marker');
