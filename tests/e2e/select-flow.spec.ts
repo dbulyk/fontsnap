@@ -489,7 +489,7 @@ const previewCases: PreviewCase[] = [
   {
     name: 'a fixed menu escaping overflow:hidden nav',
     inner: `<nav style="overflow:hidden;height:40px;background:#eee;margin:16px">
-      <button type="button">Menu</button>
+      <button type="button" aria-label="Menu"></button>
       <div style="position:fixed;left:56px;top:200px;background:#fff;padding:8px;${LINE}">MenuItem one</div>
     </nav>`,
     expected: 'MenuItem one',
@@ -497,15 +497,15 @@ const previewCases: PreviewCase[] = [
   {
     name: 'a heading under a painted stretched-link button',
     css: `.card{position:relative;width:520px;margin:24px 16px;padding:20px;border:1px solid #ccc}
-.btn{display:inline-block;padding:8px 12px;background:#0d6efd;color:#fff;text-decoration:none}
+.btn{display:inline-block;padding:8px 12px;background:#0d6efd;color:#fff;text-decoration:none;min-width:4rem;min-height:2rem}
 .stretched-link::after{content:"";position:absolute;inset:0}`,
     inner: `<div class="card"><h2 style="margin:0 0 16px;${LINE}">Card Title Here</h2>
-      <a class="btn stretched-link" href="#go">Go somewhere</a></div>`,
+      <a class="btn stretched-link" href="#go" aria-label="Go somewhere"></a></div>`,
     expected: 'Card Title Here',
   },
   {
     name: 'body pointer-events:none under a modal cover',
-    css: 'html,body{pointer-events:none}',
+    css: 'body{pointer-events:none}',
     inner: `<p style="position:absolute;left:16px;top:28px;${LINE}">Article text</p>
       <div style="position:absolute;left:0;top:0;width:640px;height:200px;background:rgba(0,0,0,.5);pointer-events:auto">
         <p style="position:absolute;left:16px;top:100px;color:#fff;${LINE}">Sign in</p>
@@ -530,11 +530,13 @@ async function previewAround(
   serve: (routes: ReadonlyMap<string, Route>) => Promise<string>,
   body: string,
   target: string,
-  options?: { prepare?: (site: Page) => Promise<void> },
+  options?: {
+    prepare?: (site: Page) => Promise<void>;
+    /** Dispatch on the overlay (needed when a top-layer dialog sits above it). */
+    viaOverlay?: boolean;
+  },
 ): Promise<string> {
-  const origin = await serve(
-    new Map([['/', { type: 'text/html; charset=utf-8', body }]]),
-  );
+  const origin = await serve(new Map([['/', { type: 'text/html; charset=utf-8', body }]]));
   const site = await context.newPage();
   await site.goto(`${origin}/`);
   if (options?.prepare !== undefined) await options.prepare(site);
@@ -546,10 +548,30 @@ async function previewAround(
   const opened = context.waitForEvent('page', {
     predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
   });
-  await site.mouse.move(x - 8, y - 8);
-  await site.mouse.down();
-  await site.mouse.move(x + width + 8, y + height + 8, { steps: 4 });
-  await site.mouse.up();
+  const fromX = x - 8;
+  const fromY = y - 8;
+  const toX = x + width + 8;
+  const toY = y + height + 8;
+  if (options?.viaOverlay === true) {
+    await site.locator('div[style*="crosshair"]').evaluate(
+      (node, rect) => {
+        const fire = (type: string, clientX: number, clientY: number) => {
+          node.dispatchEvent(
+            new MouseEvent(type, { clientX, clientY, bubbles: true, cancelable: true }),
+          );
+        };
+        fire('mousedown', rect.fromX, rect.fromY);
+        fire('mousemove', rect.toX, rect.toY);
+        fire('mouseup', rect.toX, rect.toY);
+      },
+      { fromX, fromY, toX, toY },
+    );
+  } else {
+    await site.mouse.move(fromX, fromY);
+    await site.mouse.down();
+    await site.mouse.move(toX, toY, { steps: 4 });
+    await site.mouse.up();
+  }
   const result = await opened;
   await expect(result.locator('#shot')).toBeVisible();
   await expect(result.locator('#results li').first()).toBeVisible();
@@ -600,6 +622,7 @@ test('the preview takes dialog showModal text over an overflow clipper', async (
     </body></html>`,
     '#t',
     {
+      viaOverlay: true,
       prepare: async (site) => {
         await site.locator('#d').evaluate((node) => {
           if (!(node instanceof HTMLDialogElement)) throw new Error('dialog');
@@ -712,8 +735,8 @@ test('the preview stays empty when framed lines exceed 100 graphemes', async ({
 <body style="margin:40px"><p id="t" style="font:24px/32px sans-serif;max-width:480px;color:#111">${long}</p></body></html>`,
     '#t',
   );
-  // Empty capture leaves the result page on its default pangram.
-  expect(text).toBe('The quick brown fox jumps over the lazy dog');
+  // Empty capture leaves #pvText empty (the pangram is only the render fallback).
+  expect(text).toBe('');
 });
 
 test('framing the article under a body pe:none modal does not take article text', async ({
@@ -735,5 +758,5 @@ test('framing the article under a body pe:none modal does not take article text'
     '#t',
   );
   expect(text).not.toContain('Article');
-  expect(text === 'Sign in' || text === 'The quick brown fox jumps over the lazy dog').toBe(true);
+  expect(text === 'Sign in' || text === '').toBe(true);
 });

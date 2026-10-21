@@ -144,7 +144,10 @@ function layout(
     };
     range.getBoundingClientRect = () => {
       const id = ownerId(range.startContainer);
-      if (range.startContainer === range.endContainer && range.endOffset === range.startOffset + 1) {
+      if (
+        range.startContainer === range.endContainer &&
+        range.endOffset === range.startOffset + 1
+      ) {
         return charBox(id, range.startOffset);
       }
       const lines = asLines(boxes[id]);
@@ -163,7 +166,9 @@ function layout(
     const ids = Object.keys(boxes).filter((id) => {
       const lines = asLines(boxes[id]);
       return lines.some((b) => {
-        return x >= (b.left ?? 0) && x <= (b.right ?? 0) && y >= (b.top ?? 0) && y <= (b.bottom ?? 0);
+        return (
+          x >= (b.left ?? 0) && x <= (b.right ?? 0) && y >= (b.top ?? 0) && y <= (b.bottom ?? 0)
+        );
       });
     });
     const hits: Element[] = [];
@@ -1062,19 +1067,15 @@ describe('textInRect', () => {
   it('takes fixed text that escapes an overflow:hidden ancestor without a containing block', () => {
     document.body.innerHTML =
       '<nav id="nav"><div id="t" style="position:fixed">MenuItem one</div></nav>';
-    layout(
-      { t: { left: 10, right: 120, top: 50, bottom: 70 } },
-      undefined,
-      {
-        bounds: { nav: { left: 0, top: 0, right: 200, bottom: 40 } },
-        paint: (hit) => {
-          if (hit.id === 'nav') return { overflow: 'hidden' };
-          if (hit.id === 't') return { position: 'fixed' };
-          return {};
-        },
-        stack: () => [el('t')],
+    layout({ t: { left: 10, right: 120, top: 50, bottom: 70 } }, undefined, {
+      bounds: { nav: { left: 0, top: 0, right: 200, bottom: 40 } },
+      paint: (hit) => {
+        if (hit.id === 'nav') return { overflow: 'hidden' };
+        if (hit.id === 't') return { position: 'fixed' };
+        return {};
       },
-    );
+      stack: () => [el('t')],
+    });
     expect(textInRect(document, { x: 0, y: 40, w: 200, h: 40 })).toBe('MenuItem one');
   });
 
@@ -1089,8 +1090,7 @@ describe('textInRect', () => {
       undefined,
       {
         stack: () => [el('link'), el('title')],
-        paint: (hit) =>
-          hit.id === 'link' ? { backgroundColor: 'rgb(13, 110, 253)' } : {},
+        paint: (hit) => (hit.id === 'link' ? { backgroundColor: 'rgb(13, 110, 253)' } : {}),
       },
     );
     expect(textInRect(document, { x: 0, y: 0, w: 220, h: 45 })).toBe('Card Title Here');

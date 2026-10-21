@@ -15,8 +15,7 @@ const NOT_SHOWN_TAGS = 'textarea, input, select, option, script, style, noscript
 const NOT_SHOWN = `${NOT_SHOWN_TAGS}, :is(${NOT_SHOWN_TAGS}) *`;
 
 /** Name / id / label tokens that mark a field as sensitive. When in doubt, skip. */
-const SENSITIVE_TOKEN =
-  /pass|pwd|pw|pin|cvv|cvc|csc|otp|card|password|пароль/i;
+const SENSITIVE_TOKEN = /pass|pwd|pw|pin|cvv|cvc|csc|otp|card|password|пароль/i;
 
 /** The part of `line` inside the rectangle, or null when they do not overlap. */
 function overlap(line: DOMRect, r: Rect): Rect | null {
@@ -264,8 +263,7 @@ function sensitiveField(el: HTMLTextAreaElement | HTMLInputElement): boolean {
   if (SENSITIVE_TOKEN.test(el.ariaLabel ?? '') || SENSITIVE_TOKEN.test(labelText(el))) return true;
   if (el instanceof HTMLInputElement) {
     const kind = el.type.toLowerCase();
-    const numeric =
-      el.inputMode.toLowerCase() === 'numeric' || kind === 'number' || kind === 'tel';
+    const numeric = el.inputMode.toLowerCase() === 'numeric' || kind === 'number' || kind === 'tel';
     if (numeric && el.maxLength >= 0 && el.maxLength <= 8) return true;
   } else if (el.inputMode.toLowerCase() === 'numeric' && el.maxLength >= 0 && el.maxLength <= 8) {
     return true;
@@ -320,11 +318,7 @@ function lineOffsets(range: Range, node: Node, line: DOMRect): [number, number] 
     const box = range.getBoundingClientRect();
     const midY = (box.top + box.bottom) / 2;
     const midX = (box.left + box.right) / 2;
-    const hit =
-      midY >= line.top &&
-      midY <= line.bottom &&
-      midX >= line.left &&
-      midX <= line.right;
+    const hit = midY >= line.top && midY <= line.bottom && midX >= line.left && midX <= line.right;
     if (hit) {
       if (from < 0) from = i;
       to = i + 1;
