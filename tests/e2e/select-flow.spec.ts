@@ -91,3 +91,57 @@ test('on a page where scripts cannot run, the icon opens the result page in uplo
   });
   expect(result.url()).toBe(`chrome-extension://${extensionId}/${EXTENSION_PAGES.result}`);
 });
+
+// The case from a user report: the frame was over "TT Polihaus…", but the preview showed text from elsewhere on the page
+// (a selection outside the frame, text that is hidden, transparent, covered or inside a <textarea>). Only the visible text counts.
+test('the preview takes only the visible text inside the frame, not a selection or hidden text', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const visible = 'TT Polihaus — экспериментальный гротеск';
+  const trap = 'БУКВОПЕЧАТАЮЩЕЙ СВЯЗИ';
+  const at = 'position:absolute;left:0;top:0;margin:0;font:32px/40px sans-serif';
+  const origin = await serve(
+    new Map([
+      [
+        '/',
+        {
+          type: 'text/html; charset=utf-8',
+          body: `<!doctype html><html lang="ru"><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#fff">
+  <p id="elsewhere" style="margin:20px 40px;font:20px sans-serif">${trap} selected</p>
+  <div id="frame" style="position:absolute;left:40px;top:200px;width:700px;height:200px">
+    <p style="${at};visibility:hidden">${trap} hidden</p>
+    <p style="${at};opacity:0">${trap} transparent</p>
+    <textarea style="position:absolute;left:0;top:60px;width:300px;height:40px;opacity:0.01">${trap} textarea</textarea>
+    <p style="${at};top:120px">${trap} covered</p>
+    <div style="position:absolute;left:0;top:110px;width:700px;height:60px;background:#fff"></div>
+    <p id="visible" style="${at};color:#111">${visible}</p>
+  </div>
+</body></html>`,
+        },
+      ],
+    ]),
+  );
+  const site = await context.newPage();
+  await site.goto(`${origin}/`);
+  await site.evaluate(() => {
+    const range = document.createRange();
+    const elsewhere = document.getElementById('elsewhere');
+    if (elsewhere === null) throw new Error('no #elsewhere');
+    range.selectNodeContents(elsewhere);
+    document.getSelection()?.addRange(range);
+  });
+  await clickToolbarIcon(context, extensionId, site);
+  await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
+  const opened = context.waitForEvent('page', {
+    predicate: (page) => isExtensionPage(page.url(), EXTENSION_PAGES.result),
+  });
+  await site.mouse.move(30, 190);
+  await site.mouse.down();
+  await site.mouse.move(760, 390, { steps: 4 });
+  await site.mouse.up();
+  const result = await opened;
+  await expect(result.locator('#pvText')).toHaveValue(visible);
+});
