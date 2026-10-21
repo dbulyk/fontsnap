@@ -80,7 +80,21 @@
     "message": "Preview na teksto"
   },
   "previewPh": {
-    "message": "Mag-type ng sariling teksto (default: The quick brown fox…)"
+    "message": "Mag-type ng sariling teksto"
+  },
+  "identifying": {
+    "message": "Tinutukoy ang font…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relatibong marka sa top 5"

@@ -32,9 +32,7 @@ describe('applyI18n', () => {
       '<p data-i18n="loading"></p><input data-i18n-ph="previewPh"><b data-i18n-title="scoreTitle"></b>';
     applyI18n(document);
     expect(document.querySelector('p')?.textContent).toBe('Загрузка модели…');
-    expect(document.querySelector('input')?.placeholder).toBe(
-      'Введите свой текст (по умолчанию: The quick brown fox…)',
-    );
+    expect(document.querySelector('input')?.placeholder).toBe('Введите свой текст');
     expect(document.querySelector('b')?.title).toBe('Относительная оценка среди первых 5');
   });
 

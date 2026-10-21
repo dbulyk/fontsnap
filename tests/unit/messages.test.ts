@@ -41,6 +41,23 @@ describe('parseRequest', () => {
     expect(parsed.ok && parsed.request.text).toBe('');
     expect(parsed.ok && Number.isNaN(parsed.request.dpr)).toBe(true);
   });
+
+  it('rejects zalgo text over 2000 code units as empty (never truncates)', () => {
+    const huge = `a${'\u0301'.repeat(3_000_000)}`;
+    const parsed = parseRequest({ ...message, text: huge });
+    expect(parsed).toEqual({
+      ok: true,
+      request: { ...message, text: '' },
+    });
+  });
+
+  it('rejects text that would split a surrogate pair at the 2000-unit boundary', () => {
+    // 'a' + 1998 combining marks + 😀 is 2001 units; a slice(0, 2000) leaves a lone high surrogate.
+    const raw = `a${'\u0301'.repeat(1998)}\u{1F600}`;
+    expect(raw.length).toBe(2001);
+    const parsed = parseRequest({ ...message, text: raw });
+    expect(parsed.ok && parsed.request.text).toBe('');
+  });
 });
 
 describe('isKnownType', () => {

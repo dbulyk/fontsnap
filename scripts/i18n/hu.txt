@@ -19,7 +19,9 @@ A rögzítés sikertelen: $ERR$ – próbálja újra, vagy illesszen be egy kép
 A modell betöltése sikertelen: $ERR$
 Hiba: $ERR$
 Előnézeti szöveg
-Írjon saját szöveget (alapértelmezés: The quick brown fox…)
+Írjon saját szöveget
+Betűtípus azonosítása…
+$USED$/$MAX$
 Relatív pontszám az első 5 között
 nincs a Google Fontsban
 CSS másolása

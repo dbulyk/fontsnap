@@ -87,15 +87,96 @@ summary {
 }
 .pv {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  flex-direction: column;
+  gap: 6px;
   margin-bottom: 10px;
 }
+.pv-label {
+  font-weight: 600;
+}
+.pv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .pv input {
-  flex: 1;
+  width: 100%;
   padding: 6px 8px;
   border: 1px solid #ccd;
   border-radius: 6px;
+}
+.pv-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pv-limit {
+  font-size: 12px;
+  color: #556;
+  font-variant-numeric: tabular-nums;
+  min-width: 3.5em;
+}
+.pv-limit.warn {
+  color: #a15c00;
+}
+.pv-limit.limit {
+  color: #b42318;
+  font-weight: 600;
+}
+.pv-limit-bar {
+  flex: 1;
+  height: 3px;
+  background: #e8ebf3;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pv-limit-bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: #4f7cff;
+  border-radius: 2px;
+}
+.pv-limit-bar.warn i {
+  /* ≥3:1 against track #e8ebf3 (WCAG 1.4.11 non-text); #d97706 was 2.7:1 */
+  background: #b45309;
+}
+.pv-limit-bar.limit i {
+  background: #b42318;
+}
+.loader {
+  margin-bottom: 10px;
+}
+.loader-skel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.skel {
+  height: 72px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #eef1f7 0%, #e3e7f2 40%, #eef1f7 80%);
+  background-size: 200% 100%;
+  animation: skel 1.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation: none;
+    background: #eef1f7;
+  }
+}
+@keyframes skel {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+.loader-label {
+  margin: 8px 0 0;
+  color: #556;
+  font-size: 13px;
 }
 ol {
   list-style: none;
@@ -140,6 +221,7 @@ li {
   line-height: 1.25;
   overflow-wrap: anywhere;
   margin-top: 4px;
+  white-space: pre-line;
 }
 a {
   color: #4f7cff;

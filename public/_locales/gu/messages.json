@@ -80,7 +80,21 @@
     "message": "પૂર્વાવલોકન ટેક્સ્ટ"
   },
   "previewPh": {
-    "message": "તમારું ટેક્સ્ટ લખો (ડિફોલ્ટ: The quick brown fox…)"
+    "message": "તમારું ટેક્સ્ટ લખો"
+  },
+  "identifying": {
+    "message": "ફોન્ટ ઓળખાઈ રહ્યો છે…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "ટોપ 5 માં સાપેક્ષ સ્કોર"

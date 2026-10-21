@@ -80,7 +80,21 @@
     "message": "Voorbeeldtekst"
   },
   "previewPh": {
-    "message": "Typ je eigen tekst (standaard: The quick brown fox…)"
+    "message": "Typ je eigen tekst"
+  },
+  "identifying": {
+    "message": "Lettertype wordt herkend…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relatieve score binnen de top 5"

@@ -1,4 +1,10 @@
-import { validRect, type Rect } from './capture';
+import { parseHint, parseLangTag, validRect, type Rect } from './capture';
+import { graphemeCount } from './graphemes';
+
+/** Hostile-input ceiling for fontsnap-rect.text (graphemes). Above the product gate of 100. */
+const MESSAGE_TEXT_CAP = 500;
+/** Hostile-input size bound in UTF-16 code units (a single grapheme can be arbitrarily long). */
+const MESSAGE_TEXT_UNITS = 2000;
 
 /**
  * Every request any context can send. Add a member here, then `tsc` points at the
@@ -11,8 +17,15 @@ export interface Request {
   rect: Rect;
   /** window.devicePixelRatio; NaN when the sender did not send a number (the handler falls back to 1). */
   dpr: number;
-  /** Text of the page under the selection (preview sample); not validated for length here. */
+  /**
+   * Text of the page under the selection (preview sample). Hostile input: length is gated on the
+   * result page (100 graphemes); a safety cap applies here.
+   */
   text: string;
+  /** Optional BCP 47 language from the page. */
+  lang?: string;
+  /** Optional script hint (not shown as preview text). */
+  hint?: string;
 }
 
 export type RequestType = Request['type'];
@@ -57,15 +70,26 @@ const validators = {
     // payload is hostile input (a page can fake what its own script sends, never who the sender is):
     // it only ever triggers a screenshot of the tab the user invoked FontSnap on and a result tab.
     from: ['content-script'],
-    parse: (raw) =>
-      validRect(raw['rect'])
-        ? {
-            type: 'fontsnap-rect',
-            rect: raw['rect'],
-            dpr: typeof raw['dpr'] === 'number' ? raw['dpr'] : NaN,
-            text: typeof raw['text'] === 'string' ? raw['text'] : '',
-          }
-        : undefined,
+    parse: (raw) => {
+      if (!validRect(raw['rect'])) return undefined;
+      // Hostile input: over the unit or grapheme bound → empty (automatic sample). Never truncate
+      // (slice would split surrogates / zalgo clusters and leak a fragment into the field).
+      const rawText = typeof raw['text'] === 'string' ? raw['text'] : '';
+      const text =
+        rawText.length > MESSAGE_TEXT_UNITS || graphemeCount(rawText) > MESSAGE_TEXT_CAP
+          ? ''
+          : rawText;
+      const lang = parseLangTag(raw['lang']);
+      const hint = parseHint(raw['hint']);
+      return {
+        type: 'fontsnap-rect',
+        rect: raw['rect'],
+        dpr: typeof raw['dpr'] === 'number' ? raw['dpr'] : NaN,
+        text,
+        ...(lang ? { lang } : {}),
+        ...(hint ? { hint } : {}),
+      };
+    },
     isData: (raw): raw is { opened: true } => isRecord(raw) && raw['opened'] === true,
   },
 } satisfies { [T in RequestType]: Validator<T> };

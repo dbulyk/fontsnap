@@ -80,7 +80,21 @@
     "message": "Κείμενο προεπισκόπησης"
   },
   "previewPh": {
-    "message": "Γράψτε δικό σας κείμενο (προεπιλογή: The quick brown fox…)"
+    "message": "Γράψτε δικό σας κείμενο"
+  },
+  "identifying": {
+    "message": "Προσδιορισμός γραμματοσειράς…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Σχετική βαθμολογία στις 5 πρώτες"

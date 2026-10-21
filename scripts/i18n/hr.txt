@@ -19,7 +19,9 @@ Snimanje nije uspjelo: $ERR$ – pokušajte ponovno ili zalijepite snimku zaslon
 Učitavanje modela nije uspjelo: $ERR$
 Pogreška: $ERR$
 Tekst pregleda
-Upišite vlastiti tekst (zadano: The quick brown fox…)
+Upišite vlastiti tekst
+Određivanje fonta…
+$USED$/$MAX$
 Relativni rezultat među prvih 5
 nije na Google Fonts
 Kopiraj CSS

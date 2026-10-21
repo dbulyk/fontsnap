@@ -19,7 +19,9 @@ Chụp thất bại: $ERR$ — hãy thử lại hoặc dán ảnh chụp màn h�
 Không tải được mô hình: $ERR$
 Lỗi: $ERR$
 Văn bản xem trước
-Nhập văn bản của bạn (mặc định: The quick brown fox…)
+Nhập văn bản của bạn
+Đang nhận dạng phông chữ…
+$USED$/$MAX$
 Điểm tương đối trong top 5
 không có trên Google Fonts
 Sao chép CSS

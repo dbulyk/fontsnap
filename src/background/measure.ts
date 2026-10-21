@@ -26,6 +26,10 @@ export interface MeasuredImage {
    * client box gives the border on the right and at the bottom too; `kind 'image'`: the same as `box`.
    */
   outer: Rect;
+  /** Nearest ancestor lang or html lang (images only). */
+  lang?: string;
+  /** Image alt or title, for script hinting only (never preview text). */
+  hint?: string;
 }
 
 /**
@@ -104,11 +108,32 @@ export async function measureImage(
       : { x: el.clientLeft, y: el.clientTop, w: el.clientWidth, h: el.clientHeight };
   const outer: Rect =
     kind === 'image' ? box : { x: 0, y: 0, w: el.offsetWidth, h: el.offsetHeight };
-  return {
+  const result: MeasuredImage = {
     rect: { x: b.left, y: b.top, w: b.width, h: b.height },
     dpr: window.devicePixelRatio || 1,
     saved: before,
     box,
     outer,
   };
+  if (kind === 'image') {
+    const attr = (name: string): string => {
+      const value = el.getAttribute(name);
+      return value ?? '';
+    };
+    const alt = attr('alt');
+    const title = attr('title');
+    const hint = (alt !== '' ? alt : title).trim().slice(0, 80);
+    let lang = '';
+    for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+      const value = node.lang;
+      if (value) {
+        lang = value;
+        break;
+      }
+    }
+    if (!lang) lang = document.documentElement.lang;
+    if (lang) result.lang = lang;
+    if (hint) result.hint = hint;
+  }
+  return result;
 }

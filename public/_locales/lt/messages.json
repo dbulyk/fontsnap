@@ -80,7 +80,21 @@
     "message": "Peržiūros tekstas"
   },
   "previewPh": {
-    "message": "Įveskite savo tekstą (numatytasis: The quick brown fox…)"
+    "message": "Įveskite savo tekstą"
+  },
+  "identifying": {
+    "message": "Nustatomas šriftas…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Santykinis įvertinimas tarp pirmų 5"

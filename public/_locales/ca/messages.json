@@ -80,7 +80,21 @@
     "message": "Text de previsualització"
   },
   "previewPh": {
-    "message": "Escriu el teu text (per defecte: The quick brown fox…)"
+    "message": "Escriu el teu text"
+  },
+  "identifying": {
+    "message": "S'està identificant la tipografia…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Puntuació relativa entre les 5 primeres"

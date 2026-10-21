@@ -16,7 +16,6 @@ import {
 } from '../shared/capture';
 import { dataUrlToBlob } from '../shared/data-url';
 import { errorMessage } from '../shared/errors';
-import { fitsPreview } from '../shared/graphemes';
 import { EXTENSION_PAGES } from '../shared/constants';
 import type { RequestOf } from '../shared/messages';
 
@@ -124,14 +123,19 @@ export async function openResult(entry: CaptureEntry, index: number | undefined)
 }
 
 export async function handleRect(
-  msg: Pick<RequestOf<'fontsnap-rect'>, 'rect' | 'dpr' | 'text'>,
+  msg: Pick<RequestOf<'fontsnap-rect'>, 'rect' | 'dpr' | 'text' | 'lang' | 'hint'>,
   tab: chrome.tabs.Tab,
 ): Promise<void> {
   let entry: CaptureEntry;
   try {
     const dpr = Number.isFinite(msg.dpr) && msg.dpr > 0 ? msg.dpr : 1;
     const shot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
-    entry = { dataUrl: await cropToDataUrl(shot, msg.rect, dpr), text: fitsPreview(msg.text) };
+    entry = {
+      dataUrl: await cropToDataUrl(shot, msg.rect, dpr),
+      text: msg.text,
+      ...(msg.lang ? { lang: msg.lang } : {}),
+      ...(msg.hint ? { hint: msg.hint } : {}),
+    };
   } catch (e) {
     entry = { error: errorMessage(e) };
   }

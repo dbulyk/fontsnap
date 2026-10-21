@@ -5,7 +5,14 @@
 //   2. a crop of a screenshot, by the box of the image × devicePixelRatio, with the scroll position put back (measureImage);
 //   3. the whole visible area, with a hint on the result page.
 // The pixels reach nobody but this worker (the result of executeScript); every address handed to a page is the srcUrl of the click.
-import { frameRect, validRect, type CaptureEntry, type Rect } from '../shared/capture';
+import {
+  frameRect,
+  parseHint,
+  parseLangTag,
+  validRect,
+  type CaptureEntry,
+  type Rect,
+} from '../shared/capture';
 import { errorMessage } from '../shared/errors';
 import { t } from '../shared/i18n';
 import { loadImagePixels } from './load-image';
@@ -93,7 +100,7 @@ async function croppedFromScreenshot(
   measureFrameInTop: Measure,
   shoot: () => Promise<string>,
   { srcUrl, frameId, frameUrl }: { srcUrl: string; frameId: number; frameUrl: string | undefined },
-): Promise<string> {
+): Promise<CaptureEntry> {
   const find = async (measure: Measure, target: string) => {
     const found = await measure(target, null);
     return found === true ? null : found;
@@ -103,7 +110,7 @@ async function croppedFromScreenshot(
     restores.push(async () => (await measure(target, saved)) === true);
   };
   let restored = true;
-  let crop: string;
+  let entry: CaptureEntry;
   try {
     let frame: MeasuredImage | null = null;
     if (frameId !== 0) {
@@ -126,13 +133,20 @@ async function croppedFromScreenshot(
     }
     if (!validRect(rect)) throw new Error('Could not access this image');
     const shot = await shoot();
-    crop = await cropToDataUrl(shot, rect, image.dpr);
+    const lang = parseLangTag(image.lang);
+    const hint = parseHint(image.hint);
+    entry = {
+      dataUrl: await cropToDataUrl(shot, rect, image.dpr),
+      text: '',
+      ...(lang ? { lang } : {}),
+      ...(hint ? { hint } : {}),
+    };
   } finally {
     for (const back of restores.reverse()) restored = (await back().catch(() => false)) && restored;
   }
   // the page is not where the user left it: that is not passed over, and the ladder goes on to the whole visible area with the hint
   if (!restored) throw new Error('The scroll position of the page could not be put back');
-  return crop;
+  return entry;
 }
 
 /**
@@ -140,6 +154,18 @@ async function croppedFromScreenshot(
  * that the listener of the context menu read from the click (the tab is undefined when the click has none); the targets and the
  * arguments of executeScript are made of these parameters and nothing else (fontsnap/execute-script).
  */
+function withHints(
+  entry: CaptureEntry,
+  lang: string | undefined,
+  hint: string | undefined,
+): CaptureEntry {
+  return {
+    ...entry,
+    ...(lang && !entry.lang ? { lang } : {}),
+    ...(hint && !entry.hint ? { hint } : {}),
+  };
+}
+
 export async function clickedImage(
   srcUrl: string,
   frameId: number,
@@ -147,64 +173,84 @@ export async function clickedImage(
   tabId: number | undefined,
   windowId: number | undefined,
 ): Promise<CaptureEntry> {
+  let pageLang: string | undefined;
+  let pageHint: string | undefined;
+
+  if (tabId !== undefined && windowId !== undefined) {
+    const shoot = () => capture(tabId, windowId);
+    const measureInClickFrame: Measure = async (target, saved) => {
+      const [first] = await within(
+        chrome.scripting.executeScript({
+          target: { tabId, frameIds: [frameId] },
+          args: [target, 'image', saved],
+          func: measureImage,
+        }),
+        MEASURE_TIMEOUT_MS,
+      );
+      return first?.result ?? null;
+    };
+    // the offset of an <iframe>: the one thing measured in the top frame (Q1)
+    const measureFrameInTop: Measure = async (target, saved) => {
+      const [first] = await within(
+        chrome.scripting.executeScript({
+          target: { tabId, frameIds: [0] },
+          args: [target, 'frame', saved],
+          func: measureImage,
+        }),
+        MEASURE_TIMEOUT_MS,
+      );
+      return first?.result ?? null;
+    };
+    try {
+      // the target and the arguments of this call are fixed by lint (fontsnap/execute-script) and by verify-dist: one frame, and the srcUrl
+      const [first] = await within(
+        chrome.scripting.executeScript({
+          target: { tabId, frameIds: [frameId] },
+          args: [srcUrl],
+          func: loadImagePixels,
+        }),
+        LOAD_TIMEOUT_MS,
+      );
+      const loaded = first?.result;
+      if (loaded && typeof loaded === 'object' && !Array.isArray(loaded)) {
+        pageLang = parseLangTag(loaded.lang);
+        pageHint = parseHint(loaded.hint);
+        const png = loaded.png;
+        if (typeof png === 'string' && BASE64.test(png)) {
+          return {
+            dataUrl: await reencodeWithinQuota(base64ToDataUrl(png, 'image/png')),
+            text: '',
+            ...(pageLang ? { lang: pageLang } : {}),
+            ...(pageHint ? { hint: pageHint } : {}),
+          };
+        }
+      }
+    } catch {
+      // the page refused the script, the image is not readable, or it did not decode: data:/screenshot next
+    }
+    const decoded = await decodeDataImage(srcUrl);
+    if (decoded !== undefined) {
+      return withHints({ dataUrl: decoded, text: '' }, pageLang, pageHint);
+    }
+    try {
+      const click = { srcUrl, frameId, frameUrl };
+      return await croppedFromScreenshot(measureInClickFrame, measureFrameInTop, shoot, click);
+    } catch {
+      // not found, not scriptable, outside the screenshot: the whole visible area is next
+    }
+    try {
+      const shot = await shoot();
+      return withHints(
+        { dataUrl: await reencodeWithinQuota(shot), text: '', note: 'whole-view' },
+        pageLang,
+        pageHint,
+      );
+    } catch (e) {
+      return { error: errorMessage(e) };
+    }
+  }
+
   const decoded = await decodeDataImage(srcUrl);
   if (decoded !== undefined) return { dataUrl: decoded, text: '' };
-  if (tabId === undefined || windowId === undefined)
-    return { error: 'Could not access this image' };
-  const shoot = () => capture(tabId, windowId);
-  const measureInClickFrame: Measure = async (target, saved) => {
-    const [first] = await within(
-      chrome.scripting.executeScript({
-        target: { tabId, frameIds: [frameId] },
-        args: [target, 'image', saved],
-        func: measureImage,
-      }),
-      MEASURE_TIMEOUT_MS,
-    );
-    return first?.result ?? null;
-  };
-  // the offset of an <iframe>: the one thing measured in the top frame (Q1)
-  const measureFrameInTop: Measure = async (target, saved) => {
-    const [first] = await within(
-      chrome.scripting.executeScript({
-        target: { tabId, frameIds: [0] },
-        args: [target, 'frame', saved],
-        func: measureImage,
-      }),
-      MEASURE_TIMEOUT_MS,
-    );
-    return first?.result ?? null;
-  };
-  try {
-    // the target and the arguments of this call are fixed by lint (fontsnap/execute-script) and by verify-dist: one frame, and the srcUrl
-    const [first] = await within(
-      chrome.scripting.executeScript({
-        target: { tabId, frameIds: [frameId] },
-        args: [srcUrl],
-        func: loadImagePixels,
-      }),
-      LOAD_TIMEOUT_MS,
-    );
-    const pixels = first?.result;
-    if (typeof pixels === 'string' && BASE64.test(pixels)) {
-      return { dataUrl: await reencodeWithinQuota(base64ToDataUrl(pixels, 'image/png')), text: '' };
-    }
-  } catch {
-    // the page refused the script, the image is not readable, or it did not decode: the screenshot is next
-  }
-  try {
-    const click = { srcUrl, frameId, frameUrl };
-    return {
-      dataUrl: await croppedFromScreenshot(measureInClickFrame, measureFrameInTop, shoot, click),
-      text: '',
-    };
-  } catch {
-    // not found, not scriptable, outside the screenshot: the whole visible area is next
-  }
-  try {
-    const shot = await shoot();
-    return { dataUrl: await reencodeWithinQuota(shot), text: '', note: 'whole-view' };
-  } catch (e) {
-    return { error: errorMessage(e) };
-  }
+  return { error: 'Could not access this image' };
 }

@@ -80,7 +80,21 @@
     "message": "نص المعاينة"
   },
   "previewPh": {
-    "message": "اكتب نصك الخاص (الافتراضي: The quick brown fox…)"
+    "message": "اكتب نصك الخاص"
+  },
+  "identifying": {
+    "message": "جارٍ تحديد الخط…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "الدرجة النسبية بين أفضل 5"

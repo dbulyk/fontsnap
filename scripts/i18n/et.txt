@@ -19,7 +19,9 @@ Jäädvustamine ebaõnnestus: $ERR$ – proovi uuesti või kleebi ekraanipilt.
 Mudeli laadimine ebaõnnestus: $ERR$
 Viga: $ERR$
 Eelvaate tekst
-Sisesta oma tekst (vaikimisi: The quick brown fox…)
+Sisesta oma tekst
+Kirjatüübi tuvastamine…
+$USED$/$MAX$
 Suhteline skoor esimese 5 seas
 pole Google Fontsis
 Kopeeri CSS

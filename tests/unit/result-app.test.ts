@@ -37,6 +37,9 @@ const META: Meta = {
   classFam: [0, 0, 1, 2, 3, 4, 5, 6],
   merge: { intertight: 'inter', notosansdisplay: 'notosans' },
   keepNoto: ['notosansjp'],
+  subsetNames: ['latin', 'cyrillic', 'arabic', 'japanese'],
+  script: ['', '', '', '', '', '', ''],
+  subsets: [1, 1, 1, 1, 1, 3, 1],
 };
 /** A confident prediction: the best family takes ~96%, so the tail rounds below 1% and is hidden. */
 const CONFIDENT = Float64Array.from([0.96, 0.02, 0.005, 0.005, 0.004, 0.003, 0.002, 0.001]);
@@ -102,7 +105,7 @@ beforeEach(() => {
   scene = textScene();
   bitmapClose = vi.fn();
   probs = vi.fn(() => Promise.resolve(CONFIDENT));
-  const model: Model = { ranker: makeRanker(META), probs };
+  const model: Model = { ranker: makeRanker(META), probs, subsetNames: META.subsetNames };
   modelMock.loadModel.mockReset().mockResolvedValue(model);
   vi.stubGlobal(
     'createImageBitmap',
@@ -128,8 +131,8 @@ describe('loading', () => {
     await start();
     expect(status().textContent).toBe('Loading model…');
     expect(document.title).toBe('FontSnap — results');
-    expect(field('pvText').placeholder).toBe('Type your own text (default: The quick brown fox…)');
-    release({ ranker: makeRanker(META), probs });
+    expect(field('pvText').placeholder).toBe('Type your own text');
+    release({ ranker: makeRanker(META), probs, subsetNames: META.subsetNames });
     await vi.waitFor(() => {
       expect(status().textContent).toBe('Ready. Paste, drop or choose an image.');
     });
@@ -150,7 +153,7 @@ describe('loading', () => {
     await vi.waitFor(() => {
       expect(status().textContent).toBe('Could not read this image.');
     });
-    release({ ranker: makeRanker(META), probs });
+    release({ ranker: makeRanker(META), probs, subsetNames: META.subsetNames });
     for (let tick = 0; tick < 30; tick++) await Promise.resolve();
     expect(status().textContent).toBe('Could not read this image.');
     expect(status().className).toBe('status err');
@@ -176,7 +179,7 @@ describe('loading', () => {
     await vi.waitFor(() => {
       expect(status().textContent).toBe('Analyzing…');
     });
-    release({ ranker: makeRanker(META), probs });
+    release({ ranker: makeRanker(META), probs, subsetNames: META.subsetNames });
     await vi.waitFor(() => {
       expect(names().length).toBeGreaterThan(0);
     });
@@ -190,7 +193,7 @@ describe('loading', () => {
     modelMock.loadModel.mockReturnValue(new Promise<Model>((r) => (release = r)));
     await start();
     expect(status().textContent).toBe('Loading model…');
-    release({ ranker: makeRanker(META), probs });
+    release({ ranker: makeRanker(META), probs, subsetNames: META.subsetNames });
     await vi.waitFor(() => {
       expect(status().textContent).toMatch(/^Ready/);
     });
@@ -253,7 +256,11 @@ describe('identifying an image', () => {
   it('ranks exactly as the evaluation does: both crops, popularity prior alpha 0.5, family merge, top 5', async () => {
     const ranker = makeRanker(META);
     const rank = vi.fn(ranker.rank);
-    modelMock.loadModel.mockResolvedValue({ ranker: { ...ranker, rank }, probs });
+    modelMock.loadModel.mockResolvedValue({
+      ranker: { ...ranker, rank },
+      probs,
+      subsetNames: META.subsetNames,
+    });
     await start();
     pick(new Blob(['png']));
     await vi.waitFor(() => {
@@ -417,6 +424,101 @@ describe('identifying an image', () => {
     expect(probs.mock.calls.length).toBe(calls);
   });
 
+  it('accepts exactly 100 graphemes and clips longer input; long captures leave the field empty', async () => {
+    await start();
+    pick(new Blob(['png']));
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    const input = field('pvText');
+    input.value = 'a'.repeat(100);
+    input.dispatchEvent(new win.Event('input') as unknown as Event);
+    expect(input.value).toHaveLength(100);
+    expect($('pvLimit').textContent).toBe('100/100');
+    expect($('pvLimit').className).toContain('limit');
+    input.value = 'a'.repeat(101);
+    input.dispatchEvent(new win.Event('input') as unknown as Event);
+    expect(input.value).toHaveLength(100);
+    stub.session.set('cap_long', {
+      dataUrl: 'data:image/png;base64,cG5n',
+      text: 'x'.repeat(101),
+    });
+    await start({ hash: '#cap_long' });
+    expect(field('pvText').value).toBe('');
+  });
+
+  it('rejects mid-string typing at 100/100 via beforeinput without eating the tail', async () => {
+    await start();
+    pick(new Blob(['png']));
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    const input = field('pvText');
+    input.value = 'abcdefghij'.repeat(10);
+    input.setSelectionRange(10, 10);
+    input.dispatchEvent(new win.Event('input') as unknown as Event);
+    const before = new win.InputEvent('beforeinput', {
+      bubbles: true,
+      cancelable: true,
+      data: 'X',
+      inputType: 'insertText',
+    });
+    const prevented = !input.dispatchEvent(before as unknown as Event);
+    expect(prevented || before.defaultPrevented).toBe(true);
+    expect(input.value).toBe('abcdefghij'.repeat(10));
+    expect(input.selectionStart).toBe(10);
+  });
+
+  it('does not trim during IME composition and restores the snapshot when the commit exceeds the limit', async () => {
+    await start();
+    pick(new Blob(['png']));
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    const input = field('pvText');
+    const base = 'abcdefghij'.repeat(10);
+    input.value = base;
+    input.setSelectionRange(10, 10);
+    input.dispatchEvent(new win.Event('input') as unknown as Event);
+    input.dispatchEvent(new win.CompositionEvent('compositionstart') as unknown as Event);
+    // Simulated composition draft over the limit (browser would insert composition text).
+    input.value = `${base.slice(0, 10)}か${base.slice(10)}x`;
+    input.setSelectionRange(11, 11);
+    const composing = new win.InputEvent('input', {
+      bubbles: true,
+      inputType: 'insertCompositionText',
+    });
+    Object.defineProperty(composing, 'isComposing', { value: true });
+    input.dispatchEvent(composing as unknown as Event);
+    // Must not have sliced the tail during composition.
+    expect(input.value.endsWith('x')).toBe(true);
+    expect(input.value.length).toBeGreaterThan(100);
+    input.dispatchEvent(new win.CompositionEvent('compositionend') as unknown as Event);
+    expect(input.value).toBe(base);
+    expect(input.selectionStart).toBe(10);
+    expect(input.selectionEnd).toBe(10);
+  });
+
+  it('restores the composition snapshot on input when a commit skips compositionend', async () => {
+    await start();
+    pick(new Blob(['png']));
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    const input = field('pvText');
+    const base = 'abcdefghij'.repeat(10);
+    input.value = base;
+    input.setSelectionRange(10, 10);
+    input.dispatchEvent(new win.Event('input') as unknown as Event);
+    input.dispatchEvent(new win.CompositionEvent('compositionstart') as unknown as Event);
+    // CDP Input.insertText often lands as a normal input over the limit with no compositionend.
+    input.value = `${base.slice(0, 10)}か${base.slice(10)}`;
+    input.setSelectionRange(11, 11);
+    input.dispatchEvent(new win.Event('input') as unknown as Event);
+    expect(input.value).toBe(base);
+    expect(input.selectionStart).toBe(10);
+  });
+
   it('ignores typing before there is anything to show', async () => {
     await start();
     $('pvText').dispatchEvent(new win.Event('input') as unknown as Event);
@@ -442,6 +544,62 @@ describe('paste and drop', () => {
     await vi.waitFor(() => {
       expect($('results').children.length).toBeGreaterThan(0);
     });
+  });
+
+  it('analyses an image paste even when the preview field is focused', async () => {
+    await start();
+    pick(new Blob(['png']));
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    const callsBefore = (createImageBitmap as ReturnType<typeof vi.fn>).mock.calls.length;
+    field('pvText').focus();
+    expect(document.activeElement).toBe(field('pvText'));
+    const event = new win.Event('paste', { cancelable: true });
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        items: [{ type: 'image/png', getAsFile: () => new Blob(['png2'], { type: 'image/png' }) }],
+        getData: () => '',
+      },
+    });
+    document.dispatchEvent(event as unknown as Event);
+    await vi.waitFor(() => {
+      expect((createImageBitmap as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
+        callsBefore,
+      );
+    });
+  });
+
+  it('pastes text only when the clipboard has text and an image and the preview is focused', async () => {
+    stub.session.set('cap_hint', {
+      dataUrl: 'data:image/png;base64,cG5n',
+      text: '',
+      lang: 'ru',
+      hint: 'Пример',
+    });
+    await start({ hash: '#cap_hint' });
+    await vi.waitFor(() => {
+      expect($('results').children.length).toBeGreaterThan(0);
+    });
+    const callsBefore = (createImageBitmap as ReturnType<typeof vi.fn>).mock.calls.length;
+    const input = field('pvText');
+    input.focus();
+    input.value = '';
+    const event = new win.Event('paste', { cancelable: true, bubbles: true });
+    Object.defineProperty(event, 'clipboardData', {
+      value: {
+        items: [
+          { type: 'text/plain', getAsFile: () => null },
+          { type: 'image/png', getAsFile: () => new Blob(['png2'], { type: 'image/png' }) },
+        ],
+        getData: (type: string) => (type === 'text' || type === 'text/plain' ? 'TXT' : ''),
+      },
+    });
+    // Target the focused field (bubbles to document): same path as a real Excel/Word paste.
+    input.dispatchEvent(event as unknown as Event);
+    await Promise.resolve();
+    expect((createImageBitmap as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsBefore);
+    expect(input.value).toBe('TXT');
   });
 
   it('highlights the drop zone while dragging over it', async () => {

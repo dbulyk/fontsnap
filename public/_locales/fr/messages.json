@@ -80,7 +80,21 @@
     "message": "Texte d'aperçu"
   },
   "previewPh": {
-    "message": "Saisissez votre texte (par défaut : The quick brown fox…)"
+    "message": "Saisissez votre texte"
+  },
+  "identifying": {
+    "message": "Identification de la police…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Score relatif parmi les 5 premiers"

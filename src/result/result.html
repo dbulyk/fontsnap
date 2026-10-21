@@ -42,16 +42,34 @@
             better result click the FontSnap icon and drag over the text.
           </p>
         </div>
-        <label class="pv"
-          ><span data-i18n="previewLabel">Preview text</span>
-          <input
-            id="pvText"
-            data-i18n-ph="previewPh"
-            placeholder="Type your own text (default: The quick brown fox…)"
-            maxlength="80"
-          />
-        </label>
-        <ol id="results"></ol>
+        <div class="pv">
+          <label class="pv-label" for="pvText" data-i18n="previewLabel">Preview text</label>
+          <div class="pv-field">
+            <input
+              id="pvText"
+              data-i18n-ph="previewPh"
+              placeholder="Type your own text"
+              aria-describedby="pvLimit"
+            />
+            <div class="pv-meter">
+              <span id="pvLimit" class="pv-limit" aria-live="polite"></span>
+              <span id="pvLimitBar" class="pv-limit-bar" aria-hidden="true"><i></i></span>
+            </div>
+          </div>
+        </div>
+        <div id="resultsPanel">
+          <div id="loader" class="loader" hidden>
+            <div class="loader-skel" aria-hidden="true">
+              <div class="skel"></div>
+              <div class="skel"></div>
+              <div class="skel"></div>
+            </div>
+            <p id="loaderLabel" class="loader-label" role="status" data-i18n="identifying">
+              Identifying font…
+            </p>
+          </div>
+          <ol id="results"></ol>
+        </div>
         <p class="note" data-i18n="note">
           Matches Google Fonts families. Latin, Cyrillic, Arabic work best; Chinese/Japanese are
           still weak. Images never leave your computer; font previews are loaded from Google Fonts.

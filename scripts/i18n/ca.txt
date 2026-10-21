@@ -19,7 +19,9 @@ Ha fallat la captura: $ERR$. Torna-ho a provar o enganxa una captura de pantalla
 No s'ha pogut carregar el model: $ERR$
 Error: $ERR$
 Text de previsualització
-Escriu el teu text (per defecte: The quick brown fox…)
+Escriu el teu text
+S'està identificant la tipografia…
+$USED$/$MAX$
 Puntuació relativa entre les 5 primeres
 no és a Google Fonts
 Copia el CSS

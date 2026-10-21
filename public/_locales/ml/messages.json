@@ -80,7 +80,21 @@
     "message": "പ്രിവ്യൂ ടെക്സ്റ്റ്"
   },
   "previewPh": {
-    "message": "നിങ്ങളുടെ ടെക്സ്റ്റ് ടൈപ്പ് ചെയ്യുക (ഡിഫോൾട്ട്: The quick brown fox…)"
+    "message": "നിങ്ങളുടെ ടെക്സ്റ്റ് ടൈപ്പ് ചെയ്യുക"
+  },
+  "identifying": {
+    "message": "ഫോണ്ട് തിരിച്ചറിയുന്നു…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "മികച്ച 5-ൽ ആപേക്ഷിക സ്കോർ"

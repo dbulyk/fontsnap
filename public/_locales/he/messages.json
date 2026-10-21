@@ -80,7 +80,21 @@
     "message": "טקסט לתצוגה מקדימה"
   },
   "previewPh": {
-    "message": "הקלידו טקסט משלכם (ברירת מחדל: The quick brown fox…)"
+    "message": "הקלידו טקסט משלכם"
+  },
+  "identifying": {
+    "message": "מזהה גופן…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "ציון יחסי בין 5 המובילים"

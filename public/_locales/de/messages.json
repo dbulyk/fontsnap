@@ -80,7 +80,21 @@
     "message": "Vorschautext"
   },
   "previewPh": {
-    "message": "Eigenen Text eingeben (Standard: The quick brown fox…)"
+    "message": "Eigenen Text eingeben"
+  },
+  "identifying": {
+    "message": "Schriftart wird ermittelt…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relative Bewertung unter den Top 5"

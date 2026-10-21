@@ -19,7 +19,9 @@ Captura a eșuat: $ERR$ — încercați din nou sau lipiți o captură de ecran.
 Modelul nu s-a putut încărca: $ERR$
 Eroare: $ERR$
 Text de previzualizare
-Scrieți propriul text (implicit: The quick brown fox…)
+Scrieți propriul text
+Se identifică fontul…
+$USED$/$MAX$
 Scor relativ între primele 5
 nu este pe Google Fonts
 Copiază CSS

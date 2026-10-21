@@ -19,7 +19,9 @@ AI 字体识别 · 在您的设备上运行
 模型加载失败:$ERR$
 错误:$ERR$
 预览文字
-输入自定义文字(默认:The quick brown fox…)
+输入自定义文字
+正在识别字体…
+$USED$/$MAX$
 在前 5 名中的相对得分
 不在 Google Fonts 中
 复制 CSS

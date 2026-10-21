@@ -19,7 +19,9 @@ Optagelse mislykkedes: $ERR$ – prøv igen, eller indsæt et skærmbillede.
 Modellen kunne ikke indlæses: $ERR$
 Fejl: $ERR$
 Eksempeltekst
-Skriv din egen tekst (standard: The quick brown fox…)
+Skriv din egen tekst
+Identificerer skrifttype…
+$USED$/$MAX$
 Relativ score blandt top 5
 findes ikke på Google Fonts
 Kopiér CSS

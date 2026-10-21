@@ -80,7 +80,21 @@
     "message": "متن پیش‌نمایش"
   },
   "previewPh": {
-    "message": "متن دلخواه خود را بنویسید (پیش‌فرض: The quick brown fox…)"
+    "message": "متن دلخواه خود را بنویسید"
+  },
+  "identifying": {
+    "message": "در حال شناسایی قلم…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "امتیاز نسبی در میان ۵ مورد برتر"

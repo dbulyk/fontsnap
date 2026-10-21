@@ -80,7 +80,21 @@
     "message": "Eksempeltekst"
   },
   "previewPh": {
-    "message": "Skriv din egen tekst (standard: The quick brown fox…)"
+    "message": "Skriv din egen tekst"
+  },
+  "identifying": {
+    "message": "Identificerer skrifttype…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relativ score blandt top 5"

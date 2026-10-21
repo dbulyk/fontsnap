@@ -13,6 +13,7 @@ OUT = HERE.parent.parent / "public" / "_locales"
 KEYS = (
     "appName appDesc actionTitle ctxImage ctxSelect selectHint resTitle tagline dropHint chooseImage dropTip "
     "modelSees loading analyzing ready noLines readFail captureFail modelFail errorMsg previewLabel previewPh "
+    "identifying previewLimit "
     "scoreTitle notOnGF copyCss copied note wTitle wPinH wPin1 wPin2 wPin3 wPinned wUseH "
     "wUse1 wUse2 wUse3 wUse4 wTry wShowPin wPrivacy wholeNote tabNotInFront tabClosed"
 ).split()
@@ -20,6 +21,7 @@ PLACEHOLDERS = {
     "captureFail": ["err"],
     "modelFail": ["err"],
     "errorMsg": ["err"],
+    "previewLimit": ["used", "max"],
 }
 DESCRIPTIONS = {"appName": "Extension name (Chrome Web Store, max 75 chars)", "appDesc": "Short description (max 132 chars)"}
 ALIASES = {"en_GB": "en", "en_AU": "en", "en_US": "en"}

@@ -80,7 +80,21 @@
     "message": "ಪೂರ್ವವೀಕ್ಷಣೆ ಪಠ್ಯ"
   },
   "previewPh": {
-    "message": "ನಿಮ್ಮ ಪಠ್ಯ ಟೈಪ್ ಮಾಡಿ (ಡೀಫಾಲ್ಟ್: The quick brown fox…)"
+    "message": "ನಿಮ್ಮ ಪಠ್ಯ ಟೈಪ್ ಮಾಡಿ"
+  },
+  "identifying": {
+    "message": "ಫಾಂಟ್ ಗುರುತಿಸಲಾಗುತ್ತಿದೆ…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "ಟಾಪ್ 5 ರಲ್ಲಿ ಸಾಪೇಕ್ಷ ಅಂಕ"

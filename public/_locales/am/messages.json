@@ -80,7 +80,21 @@
     "message": "የቅድመ እይታ ጽሑፍ"
   },
   "previewPh": {
-    "message": "የራስዎን ጽሑፍ ይተይቡ (ነባሪ፦ The quick brown fox…)"
+    "message": "የራስዎን ጽሑፍ ይተይቡ"
+  },
+  "identifying": {
+    "message": "ቅርጸ-ቁምፊ በመለየት ላይ…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "ከምርጥ 5 መካከል አንጻራዊ ነጥብ"

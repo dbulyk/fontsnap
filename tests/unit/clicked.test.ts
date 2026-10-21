@@ -32,7 +32,7 @@ let calls: Call[];
  * measureImage with saved positions (true by default: they were put back).
  */
 function script(options: {
-  load?: () => string | null | Error;
+  load?: () => { png: string | null; lang?: string; hint?: string } | null | Error;
   restore?: () => true | null | Error;
   measure?: (
     target: string,
@@ -62,6 +62,11 @@ function script(options: {
     return answer instanceof Error ? Promise.reject(answer) : Promise.resolve([{ result: answer }]);
   });
 }
+
+const loaded = (
+  png: string | null = PIXELS,
+  extra: { lang?: string; hint?: string } = {},
+): { png: string | null; lang?: string; hint?: string } => ({ png, ...extra });
 
 const measured = (extra: Partial<MeasuredImage> = {}): MeasuredImage => ({
   rect: { x: 30, y: 40, w: 100, h: 50 },
@@ -124,12 +129,21 @@ const dataUrl = (type: string, bytes: Uint8Array) =>
   `data:${type};base64,${Buffer.from(bytes).toString('base64')}`;
 
 describe('data: images', () => {
-  it('are decoded in the worker: no injection, no screenshot', async () => {
+  it('are decoded in the worker when the page has no matching element', async () => {
     const src = dataUrl('image/png', new Uint8Array(1000).fill(7));
+    script({ load: () => null });
     const entry = await clickOn({ srcUrl: src, frameId: 0 }, tab);
     expect(entry).toEqual({ dataUrl: src, text: '' });
-    expect(stub.chrome.scripting.executeScript).not.toHaveBeenCalled();
     expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
+  });
+
+  it('keeps lang/hint from the page element on a data: image', async () => {
+    const src = dataUrl('image/png', new Uint8Array(1000).fill(7));
+    script({ load: () => loaded(null, { lang: 'ru', hint: 'Пример шрифта' }) });
+    const entry = await clickOn({ srcUrl: src, frameId: 0 }, tab);
+    expect(entry.dataUrl).toBe(src);
+    expect(entry.lang).toBe('ru');
+    expect(entry.hint).toBe('Пример шрифта');
   });
 
   it.each([
@@ -138,7 +152,7 @@ describe('data: images', () => {
     ['too large', () => dataUrl('image/png', new Uint8Array(MAX_IMAGE_BYTES))],
     ['malformed', () => 'data:image/png;base64,@@@@'],
   ])('go down the ladder when the data: URL is %s', async (_what, url) => {
-    script({ load: () => PIXELS });
+    script({ load: () => loaded() });
     const entry = await clickOn({ srcUrl: url(), frameId: 0 }, tab);
     expect(entry.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(calls.map((c) => c.fn)).toEqual(['load']);
@@ -147,7 +161,7 @@ describe('data: images', () => {
 
 describe('step 1: the pixels are loaded in the frame of the click', () => {
   it('injects loadImagePixels into that frame with the address and nothing else', async () => {
-    script({ load: () => PIXELS });
+    script({ load: () => loaded() });
     const entry = await clickOn({ srcUrl: SRC, frameId: 7, frameUrl: 'https://f.example/' }, tab);
     expect(entry.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(entry.text).toBe('');
@@ -162,13 +176,13 @@ describe('step 1: the pixels are loaded in the frame of the click', () => {
   });
 
   it('uses the top frame when the click has no frame', async () => {
-    script({ load: () => PIXELS });
+    script({ load: () => loaded() });
     await clickOn({ srcUrl: SRC }, tab);
     expect(calls[0]?.frame).toBe(0);
   });
 
   it('re-encodes the pixels within the session quota (they are decoded, so they must be an image)', async () => {
-    script({ load: () => PIXELS });
+    script({ load: () => loaded() });
     await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
     expect(images.createImageBitmap).toHaveBeenCalledTimes(1);
     expect(images.encodes[0]).toEqual({ type: 'image/png', quality: undefined });
@@ -176,7 +190,7 @@ describe('step 1: the pixels are loaded in the frame of the click', () => {
 
   it.each([
     ['null', () => null],
-    ['not base64', () => 'https://example.invalid/x'],
+    ['not base64', () => loaded('https://example.invalid/x')],
     ['a refused injection', () => new Error('Cannot access contents of the page')],
   ])('goes to step 2 when the loader answers %s', async (_what, load) => {
     script({ load, measure: () => measured() });
@@ -184,6 +198,15 @@ describe('step 1: the pixels are loaded in the frame of the click', () => {
     expect(entry.dataUrl).toMatch(/^data:image\/png;base64,/);
     expect(entry.note).toBeUndefined();
     expect(images.draws).toEqual([[60, 80, 200, 100, 0, 0, 200, 100]]);
+  });
+
+  it('keeps lang/hint when loadImagePixels returns pixels', async () => {
+    script({ load: () => loaded(PIXELS, { lang: 'ar', hint: 'مثال على الخط' }) });
+    const entry = await clickOn({ srcUrl: SRC, frameId: 0 }, tab);
+    expect(entry.dataUrl).toMatch(/^data:image\/png;base64,/);
+    expect(entry.lang).toBe('ar');
+    expect(entry.hint).toBe('مثال على الخط');
+    expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
   });
 });
 

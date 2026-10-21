@@ -19,7 +19,9 @@ Pengambilan gagal: $ERR$ — coba lagi atau tempel tangkapan layar.
 Model gagal dimuat: $ERR$
 Kesalahan: $ERR$
 Teks pratinjau
-Ketik teks Anda sendiri (bawaan: The quick brown fox…)
+Ketik teks Anda sendiri
+Mengidentifikasi font…
+$USED$/$MAX$
 Skor relatif di antara 5 teratas
 tidak ada di Google Fonts
 Salin CSS

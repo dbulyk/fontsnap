@@ -1,6 +1,6 @@
 import { Window } from 'happy-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createRenderer, GOOGLE_FONTS_LABEL } from '../../src/result/render';
+import { createRenderer, GOOGLE_FONTS_LABEL, type PreviewContext } from '../../src/result/render';
 import type { RankedFont } from '../../src/shared/core/ranker';
 import { createChromeStub } from './helpers/chrome-stub';
 import { must } from './helpers/dom';
@@ -12,12 +12,21 @@ const font = (over: Partial<RankedFont> = {}): RankedFont => ({
   category: 'Sans Serif',
   score: 0.6,
   conf: 0.593,
+  script: '',
+  subsets: 1,
   ...over,
 });
 
 let win: Window;
 let document: Document;
 let ol: HTMLElement;
+
+const ctx = (typed: string): PreviewContext => ({
+  typed,
+  uiLang: 'en',
+  subsetNames: ['latin', 'latin-ext', 'cyrillic', 'arabic', 'japanese'],
+});
+
 let render: ReturnType<typeof createRenderer>;
 let writeText: ReturnType<typeof vi.fn>;
 
@@ -41,7 +50,7 @@ afterEach(() => {
 
 describe('a result card', () => {
   it('has the same structure as before: name, score, bar, sample, category and actions', () => {
-    render([font()], 'Sample');
+    render([font()], ctx('Sample'));
     const li = ol.querySelector('li');
     expect(ol.children).toHaveLength(1);
     const rows = li?.querySelectorAll(':scope > .row');
@@ -65,7 +74,7 @@ describe('a result card', () => {
         font({ name: 'Lato', key: 'lato', conf: 0.2049 }),
         font({ name: 'Inter', key: 'inter', conf: 0.2004 }),
       ],
-      'x',
+      ctx('x'),
     );
     expect([...ol.querySelectorAll('.name')].map((e) => e.textContent)).toEqual([
       '1. Roboto',
@@ -80,7 +89,7 @@ describe('a result card', () => {
   });
 
   it('keeps the bar visible even for a tiny score (at least 2% wide)', () => {
-    render([font({ conf: 0.6 }), font({ name: 'One', conf: 0.012 })], 'x');
+    render([font({ conf: 0.6 }), font({ name: 'One', conf: 0.012 })], ctx('x'));
     const bars = [...ol.querySelectorAll<HTMLElement>('.bar i')].map((e) => e.style.width);
     expect(bars).toEqual(['60%', '2%']);
   });
@@ -88,16 +97,16 @@ describe('a result card', () => {
   it('hides results below 1% but always keeps the best one', () => {
     render(
       [font({ conf: 0.99 }), font({ name: 'A', conf: 0.004 }), font({ name: 'B', conf: 0.002 })],
-      'x',
+      ctx('x'),
     );
     expect(ol.children).toHaveLength(1);
-    render([font({ conf: 0.004 }), font({ name: 'A', conf: 0.003 })], 'x');
+    render([font({ conf: 0.004 }), font({ name: 'A', conf: 0.003 })], ctx('x'));
     expect(ol.children).toHaveLength(1);
   });
 
   it('replaces the previous results on every render', () => {
-    render([font(), font({ name: 'Lato' })], 'x');
-    render([font({ name: 'Inter' })], 'y');
+    render([font(), font({ name: 'Lato' })], ctx('x'));
+    render([font({ name: 'Inter' })], ctx('y'));
     expect([...ol.querySelectorAll('.name')].map((e) => e.textContent)).toEqual(['1. Inter']);
   });
 
@@ -111,7 +120,7 @@ describe('a result card', () => {
       ['', 'sans-serif'],
     ];
     for (const [category, generic] of cases) {
-      render([font({ category })], 'Hi');
+      render([font({ category })], ctx('Hi'));
       const sample = ol.querySelector<HTMLElement>('.sample');
       // happy-dom may drop the quotes around the family name when it normalizes the value
       expect(sample?.style.fontFamily, category).toMatch(new RegExp(`^'?Roboto'?, ${generic}$`));
@@ -119,21 +128,21 @@ describe('a result card', () => {
   });
 
   it('shows "not on Google Fonts" only for families outside Google Fonts without a category', () => {
-    render([font({ inGF: false, category: '' })], 'x');
+    render([font({ inGF: false, category: '' })], ctx('x'));
     const metas = ol.querySelectorAll('.meta');
     expect(metas[1]?.textContent).toBe('not on Google Fonts');
     expect(ol.querySelector('.acts a')).toBeNull();
     expect(document.head.querySelector('link')).toBeNull();
-    render([font({ inGF: true, category: '' })], 'x');
+    render([font({ inGF: true, category: '' })], ctx('x'));
     expect(ol.querySelectorAll('.meta')[1]?.textContent).toBe('');
-    render([font({ inGF: false, category: 'Display' })], 'x');
+    render([font({ inGF: false, category: 'Display' })], ctx('x'));
     expect(ol.querySelectorAll('.meta')[1]?.textContent).toBe('Display');
   });
 });
 
 describe('links and fonts', () => {
   it('links to the Google Fonts specimen, safely', () => {
-    render([font({ name: 'Open Sans' })], 'x');
+    render([font({ name: 'Open Sans' })], ctx('x'));
     const a = must(ol.querySelector<HTMLAnchorElement>('.acts a'), 'link');
     expect(a.getAttribute('href')).toBe('https://fonts.google.com/specimen/Open+Sans');
     expect(a.target).toBe('_blank');
@@ -143,8 +152,11 @@ describe('links and fonts', () => {
   });
 
   it('loads each Google Fonts family once, by name only (never the preview text)', () => {
-    render([font({ name: 'Open Sans' }), font({ name: 'Roboto', key: 'r2' })], 'secret page text');
-    render([font({ name: 'Open Sans' })], 'other text');
+    render(
+      [font({ name: 'Open Sans' }), font({ name: 'Roboto', key: 'r2' })],
+      ctx('secret page text'),
+    );
+    render([font({ name: 'Open Sans' })], ctx('other text'));
     const hrefs = [...document.head.querySelectorAll('link')].map((l) => l.getAttribute('href'));
     expect(hrefs).toEqual([
       'https://fonts.googleapis.com/css2?family=Open+Sans&display=swap',
@@ -155,7 +167,7 @@ describe('links and fonts', () => {
   });
 
   it('encodes unusual family names', () => {
-    render([font({ name: 'Press Start 2P & Co' })], 'x');
+    render([font({ name: 'Press Start 2P & Co' })], ctx('x'));
     expect(document.head.querySelector('link')?.getAttribute('href')).toBe(
       'https://fonts.googleapis.com/css2?family=Press+Start+2P+%26+Co&display=swap',
     );
@@ -164,7 +176,7 @@ describe('links and fonts', () => {
 
 describe('copy CSS', () => {
   it('copies the font-family declaration and flashes "Copied" for 1.2 s', async () => {
-    render([font({ name: "Fo'o", category: 'Serif' })], 'x');
+    render([font({ name: "Fo'o", category: 'Serif' })], ctx('x'));
     const button = must(ol.querySelector('button'), 'button');
     expect(button.textContent).toBe('Copy CSS');
     button.click();

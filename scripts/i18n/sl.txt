@@ -19,7 +19,9 @@ Zajem ni uspel: $ERR$ – poskusite znova ali prilepite posnetek zaslona.
 Modela ni bilo mogoče naložiti: $ERR$
 Napaka: $ERR$
 Besedilo predogleda
-Vnesite svoje besedilo (privzeto: The quick brown fox…)
+Vnesite svoje besedilo
+Prepoznavanje pisave…
+$USED$/$MAX$
 Relativna ocena med prvimi 5
 ni v Google Fonts
 Kopiraj CSS

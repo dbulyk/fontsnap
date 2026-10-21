@@ -19,7 +19,9 @@ Przechwycenie nie powiodło się: $ERR$ — spróbuj ponownie lub wklej zrzut ek
 Nie udało się załadować modelu: $ERR$
 Błąd: $ERR$
 Tekst podglądu
-Wpisz własny tekst (domyślnie: The quick brown fox…)
+Wpisz własny tekst
+Rozpoznawanie czcionki…
+$USED$/$MAX$
 Względny wynik w pierwszej piątce
 brak w Google Fonts
 Kopiuj CSS

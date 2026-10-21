@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadImagePixels } from '../../src/background/load-image';
 import { measureImage } from '../../src/background/measure';
@@ -40,6 +41,7 @@ function page(options: {
   const frames: (() => void)[] = [];
   vi.stubGlobal('document', {
     images: options.images ?? [],
+    documentElement: { lang: '' },
     getElementsByTagName: (name: string) => (name === 'iframe' ? (options.frames ?? []) : []),
   });
   vi.stubGlobal('window', {
@@ -58,9 +60,11 @@ const SRC = 'https://x/y.png';
 const element = (extra: Record<string, unknown> = {}) => ({
   currentSrc: SRC,
   src: '',
+  lang: '',
   scrollIntoView: vi.fn(),
   getBoundingClientRect: () => ({ left: 3, top: 4, width: 50, height: 60 }),
   parentElement: null,
+  getAttribute: (name: string) => (name === 'alt' || name === 'title' ? '' : null),
   ...extra,
 });
 
@@ -225,6 +229,18 @@ describe('measureImage', () => {
 });
 
 describe('loadImagePixels', () => {
+  // chrome.scripting.executeScript({ func }) serializes only that function. A module-level helper is a
+  // ReferenceError in the page (step 1 silent-fails → screenshot crop). Keep every helper inside the body.
+  it('keeps helpers inside the serialized function body', () => {
+    const source = readFileSync(
+      new URL('../../src/background/load-image.ts', import.meta.url),
+      'utf8',
+    );
+    expect(source.match(/^function\s+\w+/gm) ?? []).toEqual([]);
+    expect(source.match(/^async function\s+\w+/gm) ?? []).toEqual([]);
+    expect(loadImagePixels.toString()).toMatch(/getAttribute/);
+  });
+
   const PNG_BYTES = [137, 80, 78, 71];
   const PNG = btoa(String.fromCharCode(...PNG_BYTES));
   const constructed: FakeImage[] = [];
@@ -277,7 +293,7 @@ describe('loadImagePixels', () => {
     calls = 0;
     decodeFails = false;
     naturalWidth = 40;
-    vi.stubGlobal('document', { images });
+    vi.stubGlobal('document', { images, documentElement: { lang: '' } });
     vi.stubGlobal('Image', FakeImage);
     vi.stubGlobal('OffscreenCanvas', FakeCanvas);
   };
@@ -287,26 +303,29 @@ describe('loadImagePixels', () => {
     complete: true,
     naturalWidth: 40,
     naturalHeight: 20,
+    lang: '',
+    parentElement: null as { lang: string; parentElement: null } | null,
+    getAttribute: () => '',
     ...extra,
   });
 
   it('draws the image that is on the page as it is: no second request', async () => {
     setup([shown()]);
-    await expect(loadImagePixels(SRC)).resolves.toBe(PNG);
+    await expect(loadImagePixels(SRC)).resolves.toEqual({ png: PNG });
     expect(constructed).toHaveLength(0);
     expect(canvases).toEqual([expect.objectContaining({ width: 40, height: 20 })]);
   });
 
   it('loads the clicked URL again with CORS when the first draw is tainted', async () => {
     setup([shown()], 'tainted', 'ok');
-    await expect(loadImagePixels(SRC)).resolves.toBe(PNG);
+    await expect(loadImagePixels(SRC)).resolves.toEqual({ png: PNG });
     expect(constructed).toHaveLength(1);
     expect(constructed[0]).toMatchObject({ crossOrigin: 'anonymous', src: SRC });
   });
 
   it('loads the URL when the page has no such element (a lazy or CSS image)', async () => {
     setup([]);
-    await expect(loadImagePixels(SRC)).resolves.toBe(PNG);
+    await expect(loadImagePixels(SRC)).resolves.toEqual({ png: PNG });
     expect(constructed[0]).toMatchObject({ crossOrigin: 'anonymous', src: SRC });
   });
 
@@ -331,5 +350,28 @@ describe('loadImagePixels', () => {
     setup([shown({ naturalWidth: 5000, naturalHeight: 1000 })]);
     await loadImagePixels(SRC);
     expect(canvases).toEqual([expect.objectContaining({ width: 2400, height: 480 })]);
+  });
+
+  it('returns lang and hint from the page image even when the canvas is tainted', async () => {
+    const el = {
+      ...shown(),
+      getAttribute: (name: string) => (name === 'alt' ? 'Пример' : name === 'title' ? '' : null),
+      lang: '',
+      parentElement: { lang: 'ru', parentElement: null },
+    };
+    constructed.length = 0;
+    canvases.length = 0;
+    outcomes = ['tainted'];
+    calls = 0;
+    decodeFails = false;
+    naturalWidth = 40;
+    vi.stubGlobal('document', { images: [el], documentElement: { lang: 'en' } });
+    vi.stubGlobal('Image', FakeImage);
+    vi.stubGlobal('OffscreenCanvas', FakeCanvas);
+    await expect(loadImagePixels(SRC)).resolves.toEqual({
+      png: null,
+      lang: 'ru',
+      hint: 'Пример',
+    });
   });
 });

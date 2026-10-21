@@ -19,7 +19,9 @@ Vastleggen mislukt: $ERR$ — probeer het opnieuw of plak een screenshot.
 Model laden mislukt: $ERR$
 Fout: $ERR$
 Voorbeeldtekst
-Typ je eigen tekst (standaard: The quick brown fox…)
+Typ je eigen tekst
+Lettertype wordt herkend…
+$USED$/$MAX$
 Relatieve score binnen de top 5
 niet op Google Fonts
 CSS kopiëren

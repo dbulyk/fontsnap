@@ -80,7 +80,21 @@
     "message": "Önizleme metni"
   },
   "previewPh": {
-    "message": "Kendi metninizi yazın (varsayılan: The quick brown fox…)"
+    "message": "Kendi metninizi yazın"
+  },
+  "identifying": {
+    "message": "Yazı tipi belirleniyor…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "İlk 5 içindeki göreli puan"

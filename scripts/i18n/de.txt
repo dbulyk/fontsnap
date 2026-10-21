@@ -19,7 +19,9 @@ Aufnahme fehlgeschlagen: $ERR$ – erneut versuchen oder einen Screenshot einfü
 Modell konnte nicht geladen werden: $ERR$
 Fehler: $ERR$
 Vorschautext
-Eigenen Text eingeben (Standard: The quick brown fox…)
+Eigenen Text eingeben
+Schriftart wird ermittelt…
+$USED$/$MAX$
 Relative Bewertung unter den Top 5
 nicht bei Google Fonts
 CSS kopieren

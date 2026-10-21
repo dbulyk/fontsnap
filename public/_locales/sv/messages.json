@@ -80,7 +80,21 @@
     "message": "Förhandsgranskningstext"
   },
   "previewPh": {
-    "message": "Skriv egen text (standard: The quick brown fox…)"
+    "message": "Skriv egen text"
+  },
+  "identifying": {
+    "message": "Identifierar typsnitt…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relativ poäng bland topp 5"

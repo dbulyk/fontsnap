@@ -251,9 +251,8 @@ describe('resize', () => {
 
 describe('Python reference parity on realset3 samples', () => {
   const imagePath = (name: string) => join(ROOT, 'data', 'realset3', 'images', name);
-  // These walk every realset3 sample. Under a full `npm test` they share the machine with
-  // store PNG checks and can exceed the default 30s budget even when the assertions pass.
-  const parityMs = 90_000;
+  // These walk every realset3 fixture; under CI load they can exceed the default 30s.
+  const parityTimeoutMs = 60_000;
 
   it(
     'textcrop lines match the Python reference',
@@ -262,7 +261,7 @@ describe('Python reference parity on realset3 samples', () => {
         expect(textLines(loadPng(imagePath(e.image))).lines, e.image).toEqual(e.lines);
       }
     },
-    parityMs,
+    parityTimeoutMs,
   );
 
   it(
@@ -282,7 +281,7 @@ describe('Python reference parity on realset3 samples', () => {
         }
       }
     },
-    parityMs,
+    parityTimeoutMs,
   );
 });
 
@@ -332,6 +331,9 @@ const META: Meta = {
   classFam: [0, 0, 1, 2, 3, 4, 5, 6],
   merge: { intertight: 'inter', notosansdisplay: 'notosans' },
   keepNoto: ['notosansjp'],
+  subsetNames: ['latin', 'cyrillic', 'arabic', 'japanese'],
+  script: ['Arab', 'Latn', 'Latn', 'Latn', 'Jpan', 'Cyrl', ''],
+  subsets: [4, 1, 2, 2, 8, 3, -1],
 };
 
 describe('ranker', () => {
@@ -377,6 +379,9 @@ describe('ranker', () => {
     });
     expect(top.map((o) => o.key)).toEqual(['inter', 'notosansjp', 'roboto', 'rare', 'notosans']);
     expect(top[0]?.name).toBe('Inter');
+    // intertight merged into inter, so the card carries inter's script and mask, not intertight's.
+    expect(top[0]).toMatchObject({ script: 'Arab', subsets: 4 });
+    expect(top.find((row) => row.key === 'roboto')).toMatchObject({ script: 'Cyrl', subsets: 3 });
   });
 
   it('names inherited from Object.prototype are plain families, not table hits', () => {
@@ -397,6 +402,16 @@ describe('ranker', () => {
   it('works with all default options', () => {
     const R = makeRanker(META);
     expect(R.rank([[0, 0, 0, 0, 0, 0, 1, 0]])[0]?.key).toBe('roboto');
+  });
+
+  it('copies script and subset mask from the family the result is shown as', () => {
+    const R = makeRanker(META);
+    const merged = R.rank([[0, 0, 1, 0, 0, 0, 0, 0]], { alpha: 0, merge: true, k: 1 });
+    expect(merged[0]).toMatchObject({ key: 'inter', script: 'Arab', subsets: 4 });
+    const raw = R.rank([[0, 0, 1, 0, 0, 0, 0, 0]], { alpha: 0, merge: false, k: 1 });
+    expect(raw[0]).toMatchObject({ key: 'intertight', script: 'Latn', subsets: 1 });
+    const unknown = R.rank([[0, 0, 0, 0, 0, 0, 0, 1]], { alpha: 0, merge: false, k: 1 });
+    expect(unknown[0]).toMatchObject({ key: 'rare', script: '', subsets: -1 });
   });
 });
 

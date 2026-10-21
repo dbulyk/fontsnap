@@ -80,7 +80,21 @@
     "message": "Esikatseluteksti"
   },
   "previewPh": {
-    "message": "Kirjoita oma teksti (oletus: The quick brown fox…)"
+    "message": "Kirjoita oma teksti"
+  },
+  "identifying": {
+    "message": "Tunnistetaan fonttia…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Suhteellinen pistemäärä 5 parhaan joukossa"

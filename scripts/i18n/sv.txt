@@ -19,7 +19,9 @@ Skärmbilden misslyckades: $ERR$ – försök igen eller klistra in en skärmbil
 Modellen kunde inte läsas in: $ERR$
 Fel: $ERR$
 Förhandsgranskningstext
-Skriv egen text (standard: The quick brown fox…)
+Skriv egen text
+Identifierar typsnitt…
+$USED$/$MAX$
 Relativ poäng bland topp 5
 finns inte på Google Fonts
 Kopiera CSS

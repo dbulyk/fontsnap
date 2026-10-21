@@ -19,7 +19,9 @@ Imeshindwa kupiga picha: $ERR$ — jaribu tena au bandika picha ya skrini.
 Imeshindwa kupakia modeli: $ERR$
 Hitilafu: $ERR$
 Maandishi ya onyesho
-Andika maandishi yako (chaguomsingi: The quick brown fox…)
+Andika maandishi yako
+Inatambua fonti…
+$USED$/$MAX$
 Alama linganishi kati ya 5 bora
 haipo kwenye Google Fonts
 Nakili CSS

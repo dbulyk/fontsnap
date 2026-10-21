@@ -19,7 +19,9 @@ Nepavyko užfiksuoti: $ERR$ – bandykite dar kartą arba įklijuokite ekrano ko
 Nepavyko įkelti modelio: $ERR$
 Klaida: $ERR$
 Peržiūros tekstas
-Įveskite savo tekstą (numatytasis: The quick brown fox…)
+Įveskite savo tekstą
+Nustatomas šriftas…
+$USED$/$MAX$
 Santykinis įvertinimas tarp pirmų 5
 nėra Google Fonts
 Kopijuoti CSS

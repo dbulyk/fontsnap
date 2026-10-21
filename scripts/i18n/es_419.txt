@@ -19,7 +19,9 @@ Error de captura: $ERR$. Inténtalo de nuevo o pega una captura de pantalla.
 No se pudo cargar el modelo: $ERR$
 Error: $ERR$
 Texto de vista previa
-Escribe tu propio texto (por defecto: The quick brown fox…)
+Escribe tu propio texto
+Identificando la fuente…
+$USED$/$MAX$
 Puntuación relativa entre los 5 primeros
 no está en Google Fonts
 Copiar CSS

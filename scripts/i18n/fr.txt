@@ -19,7 +19,9 @@ Impossible de lire cette image.
 Échec du chargement du modèle : $ERR$
 Erreur : $ERR$
 Texte d'aperçu
-Saisissez votre texte (par défaut : The quick brown fox…)
+Saisissez votre texte
+Identification de la police…
+$USED$/$MAX$
 Score relatif parmi les 5 premiers
 absente de Google Fonts
 Copier le CSS
