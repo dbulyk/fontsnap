@@ -2,8 +2,11 @@ import io
 import json
 import os
 import signal
+import socket
 import subprocess
 import sys
+import threading
+import time
 import urllib.error
 import urllib.request
 from decimal import Decimal
@@ -21,6 +24,7 @@ from train.runpod import (
     create_body,
     main,
     parse_pod,
+    pinned_commit,
     plan,
     projected_spend,
     watch,
@@ -219,9 +223,14 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert body["disk"] == 20
     assert body["entrypoint"] == ["/bin/bash", "-lc"]
     assert set(body) == {"name", "image", "cloud", "gpu", "disk", "entrypoint", "cmd"}
-    assert "git clone" in script
-    assert "git checkout --force" in script
-    assert "git lfs pull" in script
+    sha = pinned_commit()
+    assert "https://github.com/dbulyk/fontsnap.git" in script
+    assert f"git fetch --depth 1 origin {sha}" in script
+    assert "git lfs pull --include='model/**'" in script
+    assert "python/requirements.txt" in script
+    assert "python/train/requirements.txt" in script
+    assert "x-access-token" not in script
+    assert script.index('exit "$status"') < script.index('runpodctl pod delete "$RUNPOD_POD_ID"')
     assert "pip install" in script
     assert (
         f"timeout {CALIBRATE.max_runtime_seconds} python -m train.loop --recipe calibrate --steps {CALIBRATE.samples} --device cuda"
@@ -689,11 +698,9 @@ def test_sse_chunked_logs_still_yield_samples_per_sec(monkeypatch, tmp_path, cap
             prefix = b"data: samples/sec 9.25\n\n"
             # Trailing chunk never arrives; read must stop early on the rate line.
             super().__init__(200, prefix)
-            self._reads = 0
 
         def read(self, n=-1):
-            self._reads += 1
-            if self._reads == 1:
+            if self._body:
                 return super().read(n)
             raise TimeoutError("sse still open")
 
@@ -721,12 +728,375 @@ def test_sse_chunked_logs_still_yield_samples_per_sec(monkeypatch, tmp_path, cap
     assert "main train 100000 samples:" in out
 
 
-def test_container_script_does_not_print_rate_on_train_failure():
+def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
     from train.runpod import container_script
 
-    script = container_script(CALIBRATE, commit="a" * 40)
-    assert "samples/sec" not in script or "print(" not in script
-    assert "status=$?" in script
-    assert "exit $status" in script
-    assert "--recipe calibrate" in script
-    assert "runpodctl pod delete" in script
+    sha = "a" * 40
+    script = container_script(CALIBRATE, commit=sha)
+    bind = tmp_path / "bin"
+    bind.mkdir()
+    git_log = tmp_path / "git.log"
+    fetched = tmp_path / "fetched.txt"
+    fetched.write_text("", encoding="utf-8")
+    py_log = tmp_path / "python.log"
+    deleted = tmp_path / "deleted.txt"
+    (bind / "git").write_text(
+        "#!/bin/sh\n"
+        'printf "%s\\n" "$*" >> "$GIT_LOG"\n'
+        'if [ "$1" = fetch ]; then\n'
+        "  last=\n"
+        "  for last; do :; done\n"
+        '  printf "%s\\n" "$last" >> "$GIT_FETCHED"\n'
+        "  exit 0\n"
+        "fi\n"
+        'if [ "$1" = checkout ]; then\n'
+        '  case " $* " in\n'
+        '    *" FETCH_HEAD "*) [ -s "$GIT_FETCHED" ] && exit 0 ;;\n'
+        "  esac\n"
+        '  echo "not our commit" >&2\n'
+        "  exit 1\n"
+        "fi\n"
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    (bind / "python").write_text(
+        "#!/bin/sh\n"
+        'printf "%s\\n" "$*" >> "$PY_LOG"\n'
+        'if [ "$1 $2" = "-m pip" ]; then exit 0; fi\n'
+        'echo "samples/sec 8.000000"\n'
+        'echo "No module named train" >&2\n'
+        "exit 1\n",
+        encoding="utf-8",
+    )
+    (bind / "apt-get").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bind / "runpodctl").write_text(
+        '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\nexit 0\n',
+        encoding="utf-8",
+    )
+    (bind / "sleep").write_text('#!/bin/sh\necho slept >> "$DELETED"\nexit 0\n', encoding="utf-8")
+    for path in bind.iterdir():
+        path.chmod(0o755)
+    env = os.environ.copy()
+    env["PATH"] = f"{bind}:/usr/bin:/bin"
+    env["GIT_LOG"] = str(git_log)
+    env["GIT_FETCHED"] = str(fetched)
+    env["PY_LOG"] = str(py_log)
+    env["DELETED"] = str(deleted)
+    env["RUNPOD_POD_ID"] = POD
+    proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
+    try:
+        logged = git_log.read_text(encoding="utf-8") if git_log.is_file() else ""
+        py = py_log.read_text(encoding="utf-8") if py_log.is_file() else ""
+        removed = deleted.read_text(encoding="utf-8") if deleted.is_file() else ""
+        assert sha in logged
+        assert "fetch --depth 1 origin " + sha in logged
+        assert "train.loop" in py
+        assert proc.returncode != 0
+        assert "samples/sec" not in proc.stdout
+        assert "main train" not in proc.stdout
+        assert removed == ""
+    finally:
+        for leftover in (Path("/tmp/fontsnap"), Path("/tmp/fontsnap-train.out"), Path("/tmp/fontsnap-train.err")):
+            if leftover.is_file():
+                leftover.unlink()
+            elif leftover.is_dir():
+                subprocess.run(["rm", "-rf", str(leftover)], check=False)
+
+
+def _read_http(conn: socket.socket) -> tuple[str, str]:
+    conn.settimeout(5)
+    buf = b""
+    while b"\r\n\r\n" not in buf:
+        chunk = conn.recv(4096)
+        if not chunk:
+            break
+        buf += chunk
+    head, _, rest = buf.partition(b"\r\n\r\n")
+    lines = head.decode("iso-8859-1").split("\r\n")
+    method, target, _proto = lines[0].split(" ", 2)
+    length = 0
+    for line in lines[1:]:
+        if line.lower().startswith("content-length:"):
+            length = int(line.split(":", 1)[1].strip())
+    while len(rest) < length:
+        chunk = conn.recv(4096)
+        if not chunk:
+            break
+        rest += chunk
+    path = target.split("?", 1)[0]
+    if path.startswith("/v2"):
+        path = path[3:] or "/"
+    return method, path
+
+
+def _http_bytes(status: int, reason: str, body: bytes, *, content_type: str = "application/json") -> bytes:
+    return (
+        f"HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {len(body)}\r\nConnection: close\r\n\r\n"
+    ).encode() + body
+
+
+class _FakeRunpod:
+    def __init__(self, handler):
+        self.handler = handler
+        self.calls: list[tuple[str, str]] = []
+        self.errors: list[str] = []
+        self._stop = threading.Event()
+        self._srv = socket.socket()
+        self._srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self._srv.bind(("127.0.0.1", 0))
+        self._srv.listen(32)
+        self.port = self._srv.getsockname()[1]
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
+
+    def _loop(self) -> None:
+        self._srv.settimeout(0.2)
+        while not self._stop.is_set():
+            try:
+                conn, _addr = self._srv.accept()
+            except TimeoutError:
+                continue
+            try:
+                method, path = _read_http(conn)
+                self.calls.append((method, path))
+                self.handler(method, path, conn)
+            except Exception as exc:
+                self.errors.append(repr(exc))
+            finally:
+                try:
+                    conn.close()
+                except OSError:
+                    pass
+
+    def close(self) -> None:
+        self._stop.set()
+        self._thread.join(timeout=2)
+        self._srv.close()
+
+
+def _price_body() -> bytes:
+    return json.dumps({"id": "NVIDIA GeForce RTX 4090", "price": {"secure": "0.89", "community": "0.30"}}).encode()
+
+
+def _pod_body(status: str) -> bytes:
+    return json.dumps(pod_payload(status)).encode()
+
+
+def test_fake_server_garbage_status_line_deletes_the_pod(monkeypatch, tmp_path, capsys):
+    def handler(method, path, conn):
+        if method == "GET" and path.startswith("/catalog/gpus/"):
+            conn.sendall(_http_bytes(200, "OK", _price_body()))
+            return
+        if method == "POST" and path == "/pods":
+            conn.sendall(_http_bytes(201, "Created", _pod_body("PROVISIONING")))
+            return
+        if method == "GET" and path.startswith(f"/pods/{POD}") and "/logs" not in path:
+            conn.sendall(b"HTTP/1.1 ABC Garbage\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+            return
+        if method == "POST" and path.endswith("/action"):
+            conn.sendall(_http_bytes(200, "OK", b"{}"))
+            return
+        if method == "DELETE" and path == f"/pods/{POD}":
+            conn.sendall(_http_bytes(204, "No Content", b""))
+            return
+        conn.sendall(_http_bytes(404, "No", b"{}"))
+
+    server = _FakeRunpod(handler)
+    arm(monkeypatch, tmp_path)
+    monkeypatch.setattr("train.runpod.API", f"http://127.0.0.1:{server.port}/v2")
+    try:
+        code = main(["watch", "--mode", "calibrate"])
+    finally:
+        server.close()
+    captured = capsys.readouterr()
+    assert server.errors == []
+    assert ("DELETE", f"/pods/{POD}") in server.calls
+    assert code != 0
+    assert "main train" not in captured.out
+    assert "samples/sec" not in captured.out
+    assert KEY not in captured.err
+    assert journal_notes(tmp_path)
+
+
+def test_fake_server_chunked_sse_parses_samples_per_sec(monkeypatch, tmp_path, capsys):
+    released = []
+
+    def handler(method, path, conn):
+        if method == "GET" and path.startswith("/catalog/gpus/"):
+            conn.sendall(_http_bytes(200, "OK", _price_body()))
+            return
+        if method == "POST" and path == "/pods":
+            conn.sendall(_http_bytes(201, "Created", _pod_body("PROVISIONING")))
+            return
+        if method == "GET" and "/logs" in path:
+            payload = b"data: samples/sec 9.25\n\n"
+            chunk = f"{len(payload):x}\r\n".encode() + payload + b"\r\n"
+            conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n" + chunk)
+            conn.settimeout(5)
+            started = time.monotonic()
+            try:
+                while True:
+                    got = conn.recv(1024)
+                    if not got:
+                        break
+            except TimeoutError:
+                pass
+            released.append(time.monotonic() - started)
+            return
+        if method == "GET" and path.startswith(f"/pods/{POD}"):
+            conn.sendall(_http_bytes(200, "OK", _pod_body("EXITED")))
+            return
+        if method == "POST" and path.endswith("/action"):
+            conn.sendall(_http_bytes(200, "OK", b"{}"))
+            return
+        if method == "DELETE":
+            conn.sendall(_http_bytes(204, "No Content", b""))
+            return
+        conn.sendall(_http_bytes(404, "No", b"{}"))
+
+    server = _FakeRunpod(handler)
+    arm(monkeypatch, tmp_path)
+    monkeypatch.setattr("train.runpod.API", f"http://127.0.0.1:{server.port}/v2")
+    try:
+        code = main(["watch", "--mode", "calibrate"])
+    finally:
+        server.close()
+    out = capsys.readouterr().out
+    assert server.errors == []
+    assert code == 0
+    assert "samples/sec 9.25" in out
+    assert "main train 100000 samples:" in out
+    assert released and released[0] < 2.0
+    assert ("DELETE", f"/pods/{POD}") in server.calls
+
+
+def test_fake_server_training_failure_log_has_no_projection(monkeypatch, tmp_path, capsys):
+    def handler(method, path, conn):
+        if method == "GET" and path.startswith("/catalog/gpus/"):
+            conn.sendall(_http_bytes(200, "OK", _price_body()))
+            return
+        if method == "POST" and path == "/pods":
+            conn.sendall(_http_bytes(201, "Created", _pod_body("PROVISIONING")))
+            return
+        if method == "GET" and "/logs" in path:
+            body = b"No module named train\n"
+            conn.sendall(_http_bytes(200, "OK", body, content_type="text/plain"))
+            return
+        if method == "GET" and path.startswith(f"/pods/{POD}"):
+            conn.sendall(_http_bytes(200, "OK", _pod_body("EXITED")))
+            return
+        if method == "POST" and path.endswith("/action"):
+            conn.sendall(_http_bytes(200, "OK", b"{}"))
+            return
+        if method == "DELETE":
+            conn.sendall(_http_bytes(204, "No Content", b""))
+            return
+        conn.sendall(_http_bytes(404, "No", b"{}"))
+
+    server = _FakeRunpod(handler)
+    arm(monkeypatch, tmp_path)
+    monkeypatch.setattr("train.runpod.API", f"http://127.0.0.1:{server.port}/v2")
+    try:
+        code = main(["watch", "--mode", "calibrate"])
+    finally:
+        server.close()
+    captured = capsys.readouterr()
+    assert server.errors == []
+    assert code != 0
+    assert "samples/sec" not in captured.out
+    assert "main train" not in captured.out
+    assert ("DELETE", f"/pods/{POD}") in server.calls
+    assert journal_notes(tmp_path)
+
+
+def test_incomplete_log_read_still_parses_samples_per_sec(monkeypatch, tmp_path, capsys):
+    import http.client
+
+    arm(monkeypatch, tmp_path)
+
+    class Partial(Resp):
+        def __init__(self):
+            super().__init__(200, b"")
+            self._once = False
+
+        def read(self, n=-1):
+            if not self._once:
+                self._once = True
+                raise http.client.IncompleteRead(b"data: samples/sec 4.5\n\n")
+            return b""
+
+    def urlopen(request, timeout=30):
+        method = request.get_method()
+        path = request.full_url.split("/v2", 1)[-1]
+        if method == "GET" and path.startswith("/catalog/gpus/"):
+            return Resp(200, json.dumps({"price": {"secure": "0.89"}}).encode())
+        if method == "POST" and path == "/pods":
+            return Resp(201, json.dumps(pod_payload("PROVISIONING")).encode())
+        if method == "GET" and "/logs" in path:
+            return Partial()
+        if method == "GET" and path.startswith(f"/pods/{POD}"):
+            return Resp(200, json.dumps(pod_payload("EXITED")).encode())
+        if method == "POST" and path.endswith("/action"):
+            return Resp(200, b"{}")
+        if method == "DELETE":
+            return Resp(204, b"")
+        raise AssertionError((method, path))
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    assert main(["watch", "--mode", "calibrate"]) == 0
+    out = capsys.readouterr().out
+    assert "samples/sec 4.5" in out
+    assert "main train" in out
+
+
+def test_runtime_error_after_create_still_deletes(monkeypatch, tmp_path, capsys):
+    arm(monkeypatch, tmp_path)
+
+    def urlopen(request, timeout=30):
+        method = request.get_method()
+        path = request.full_url.split("/v2", 1)[-1]
+        if method == "GET" and path.startswith("/catalog/gpus/"):
+            return Resp(200, json.dumps({"price": {"secure": "0.89"}}).encode())
+        if method == "POST" and path == "/pods":
+            return Resp(201, json.dumps(pod_payload("PROVISIONING")).encode())
+        if method == "GET" and path.startswith(f"/pods/{POD}"):
+            raise RuntimeError("poll exploded")
+        if method == "POST" and path.endswith("/action"):
+            return Resp(200, b"{}")
+        if method == "DELETE":
+            return Resp(204, b"")
+        raise AssertionError((method, path))
+
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    code = main(["watch", "--mode", "calibrate"])
+    captured = capsys.readouterr()
+    assert code != 0
+    assert "main train" not in captured.out
+    assert journal_notes(tmp_path)
+    assert not (tmp_path / "runpod-active-pod.json").exists()
+
+
+def test_absent_pod_still_reads_a_rate(monkeypatch, tmp_path, capsys):
+    arm(monkeypatch, tmp_path)
+
+    def handler(method, path, _body):
+        hit = price_and_create(method, path)
+        if hit:
+            return hit
+        if method == "GET" and "/logs" in path:
+            return 200, b"samples/sec 3.5\n"
+        if method == "GET" and path.startswith(f"/pods/{POD}"):
+            return 404, {"title": "gone"}
+        if method == "POST" and path.endswith("/action"):
+            return 200, {}
+        if method == "DELETE":
+            return 204, {}
+        raise AssertionError((method, path))
+
+    calls = install(monkeypatch, handler)
+    assert main(["watch", "--mode", "calibrate"]) == 0
+    out = capsys.readouterr().out
+    assert any("/logs" in path for _method, path, _body in calls)
+    assert "samples/sec 3.5" in out
+    assert "main train" in out
+    assert deletes(calls) == [f"/pods/{POD}"]
