@@ -9,9 +9,8 @@ function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
   return body ?? root;
 }
 
-/** Text the user does not see as text on the page: form controls, code, templates, and what is hidden from assistive technology. */
-const NOT_SHOWN_TAGS =
-  'textarea, select, option, script, style, noscript, template, [aria-hidden="true"]';
+/** The text walker skips these. textarea and input are read as fields, so their nodes are not counted twice. */
+const NOT_SHOWN_TAGS = 'textarea, input, select, option, script, style, noscript, template';
 const NOT_SHOWN = `${NOT_SHOWN_TAGS}, :is(${NOT_SHOWN_TAGS}) *`;
 
 /** The part of `line` inside the rectangle, or null when they do not overlap. */
@@ -23,18 +22,98 @@ function overlap(line: DOMRect, r: Rect): Rect | null {
   return w > 0 && h > 0 ? { x, y, w, h } : null;
 }
 
+/** Alpha of a computed color. An unparsed color counts as covering. */
+function colorAlpha(color: string): number {
+  if (color === 'transparent') return 0;
+  const match = /^rgba?\(([^)]+)\)$/.exec(color);
+  if (match === null) return 1;
+  const body = match[1];
+  if (body === undefined) return 1;
+  const slash = body.split('/');
+  if (slash.length === 2) return alphaOf(slash[1] ?? '');
+  const parts = body.split(',');
+  if (parts.length === 4) return alphaOf(parts[3] ?? '');
+  return 1;
+}
+
+function alphaOf(raw: string): number {
+  const text = raw.trim();
+  if (text.endsWith('%')) {
+    const n = Number(text.slice(0, -1));
+    return Number.isFinite(n) ? n / 100 : 1;
+  }
+  const n = Number(text);
+  return Number.isFinite(n) ? n : 1;
+}
+
+/** A layer paints when it is not fully transparent and has a background or an image. */
+function paintsOpaque(style: CSSStyleDeclaration): boolean {
+  if (style.opacity === '0') return false;
+  return style.backgroundImage !== 'none' || colorAlpha(style.backgroundColor) > 0;
+}
+
 /**
- * True when one line box of `range` meets the rectangle and, at the centre of that meeting, the topmost element is `owner` or inside it:
- * text that is covered by another element, or is outside the rectangle, is not what the user framed.
+ * `elementFromPoint` is a hit test: `pointer-events: none` lands on an ancestor, and an opaque child of the
+ * text still contains the hit. A layer covers the text only when it paints and is neither the text's box nor
+ * an ancestor of it.
  */
+function visibleThrough(stack: readonly Element[], owner: Element): boolean {
+  for (const hit of stack) {
+    if (hit.contains(owner)) return true;
+    if (paintsOpaque(getComputedStyle(hit))) return false;
+  }
+  return false;
+}
+
 function shownIn(doc: Document, range: Range, owner: Element, r: Rect): boolean {
   for (const line of range.getClientRects()) {
     const part = overlap(line, r);
     if (part === null) continue;
-    const hit = doc.elementFromPoint(part.x + part.w / 2, part.y + part.h / 2);
-    if (hit !== null && owner.contains(hit)) return true;
+    const stack = doc.elementsFromPoint(part.x + part.w / 2, part.y + part.h / 2);
+    if (visibleThrough(stack, owner)) return true;
   }
   return false;
+}
+
+/** `display: contents` has no box of its own. The text is visible when an ancestor box is. */
+function boxVisible(el: Element): boolean {
+  let current: Element | null = el;
+  while (current?.getClientRects().length === 0) current = current.parentElement;
+  return current?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) ?? false;
+}
+
+function fieldPiece(el: HTMLTextAreaElement | HTMLInputElement, r: Rect): string {
+  if (el instanceof HTMLInputElement && el.type !== 'text') return '';
+  if (!boxVisible(el)) return '';
+  let crossed = false;
+  let inside = true;
+  let boxes = 0;
+  for (const box of el.getClientRects()) {
+    boxes += 1;
+    if (overlap(box, r) !== null) crossed = true;
+    if (box.left < r.x || box.top < r.y || box.right > r.x + r.w || box.bottom > r.y + r.h) {
+      inside = false;
+    }
+  }
+  if (boxes === 0) return '';
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  let chosen = '';
+  if (start !== null && end !== null && start !== end)
+    chosen = crossed ? el.value.slice(start, end) : '';
+  else if (inside) chosen = el.value;
+  return chosen.trim().replace(/\s+/g, ' ');
+}
+
+function textPiece(doc: Document, range: Range, node: Node, r: Rect): string {
+  const value = node.nodeValue ?? '';
+  const owner = node.parentElement;
+  if (!value.trim() || owner === null) return '';
+  range.selectNodeContents(node);
+  if (!shownIn(doc, range, owner, r)) return '';
+  if (owner.matches(NOT_SHOWN)) return '';
+  if (!boxVisible(owner)) return '';
+  return value.trim().replace(/\s+/g, ' ');
 }
 
 // visible text of the page under the dragged rectangle (used as the preview sample when no selection is in it)
@@ -42,19 +121,16 @@ export function textInRect(doc: Document, r: Rect): string {
   const out: string[] = [];
   const range = doc.createRange();
   const root = bodyOrRoot(doc.body, doc.documentElement);
-  const tw = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const tw = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
   let len = 0;
   let n = 0;
   try {
     for (let node = tw.nextNode(); node && len < 80 && n < 20000; node = tw.nextNode(), n++) {
-      const value = node.nodeValue ?? '';
-      const owner = node.parentElement;
-      if (!value.trim() || owner === null) continue;
-      if (owner.matches(NOT_SHOWN)) continue;
-      if (!owner.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
-      range.selectNodeContents(node);
-      if (!shownIn(doc, range, owner, r)) continue;
-      const piece = value.trim().replace(/\s+/g, ' ');
+      const piece =
+        node instanceof HTMLTextAreaElement || node instanceof HTMLInputElement
+          ? fieldPiece(node, r)
+          : textPiece(doc, range, node, r);
+      if (!piece) continue;
       out.push(piece);
       len += piece.length + 1;
     }

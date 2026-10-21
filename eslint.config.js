@@ -253,6 +253,7 @@ const DOM_MEMBERS = [
       left: 'r',
       style: 'r',
       SHOW_TEXT: 'r',
+      SHOW_ELEMENT: 'r',
       createElement: 'c',
       createRange: 'c',
       createTreeWalker: 'c',
@@ -264,15 +265,23 @@ const DOM_MEMBERS = [
       selectNodeContents: 'c',
       getClientRects: 'c',
       nextNode: 'c',
-      // visible text in the rectangle (selection, text node owner, its visibility, the element on top)
+      // visible text in the rectangle: the stack above it, its box, and a field's value
       isCollapsed: 'r',
       rangeCount: 'r',
       getRangeAt: 'c',
       parentElement: 'r',
       matches: 'c',
       checkVisibility: 'c',
-      elementFromPoint: 'c',
+      elementsFromPoint: 'c',
       contains: 'c',
+      length: 'r',
+      opacity: 'r',
+      backgroundColor: 'r',
+      backgroundImage: 'r',
+      value: 'r',
+      selectionStart: 'r',
+      selectionEnd: 'r',
+      type: 'r',
       toString: 'c',
       textContent: 'w',
     },
@@ -375,7 +384,7 @@ const GLOBAL_ACCESS = {
     createImageBitmap: true,
     encodeURIComponent: true,
     navigator: ['clipboard.writeText', 'hardwareConcurrency'],
-    NodeFilter: ['SHOW_TEXT'],
+    NodeFilter: ['SHOW_TEXT', 'SHOW_ELEMENT'],
     OffscreenCanvas: true,
     setInterval: true,
     setTimeout: true,
@@ -385,7 +394,12 @@ const GLOBAL_ACCESS = {
     // the page of the selection overlay is a content script: its Window is the web page's, not the extension's
     // the window is only handed to startSelection(window) (a bare use: no member of it is read here)
     'src/select/index.ts': { window: [''] },
-    'src/select/overlay.ts': { Object: ['assign'] },
+    'src/select/overlay.ts': {
+      Object: ['assign'],
+      getComputedStyle: true,
+      HTMLInputElement: true,
+      HTMLTextAreaElement: true,
+    },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
     // the timeout of a page script that does not answer
     // the tab of the click is asked whether it is still in front before its screenshot
@@ -1303,7 +1317,7 @@ const ASSIGN = "CallExpression[callee.object.name='Object'][callee.property.name
 const URL_KEYS = '/^(cursor|background)$/';
 const SAFE_URL_KEY_VALUE = '/^(?:[a-z-]+|\\x23[0-9a-f]{3,8}|rgba?\\([0-9., %]+\\))$/i';
 const STYLE_NAMES =
-  '/^(setProperty|removeProperty|getPropertyValue|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem|getComputedStyle)$/';
+  '/^(setProperty|removeProperty|getPropertyValue|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem)$/';
 const styleObject = `${ASSIGN} > ObjectExpression`;
 const styleSelectors = [
   // Object.assign(el.style, { ... }) is a statement of its own: its result - the style declaration itself - is never kept, passed
