@@ -1,5 +1,3 @@
-"""`python -m train generate --check` validates the committed OFL catalog."""
-
 from __future__ import annotations
 
 import sys

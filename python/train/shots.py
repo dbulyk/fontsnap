@@ -1,5 +1,3 @@
-"""Real-shot labels. Pixels live under out/realshots/images. The CSV in git is a header."""
-
 from __future__ import annotations
 
 import argparse

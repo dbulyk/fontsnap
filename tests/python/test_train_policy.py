@@ -1,5 +1,3 @@
-"""Train-side ranks and merge groups. Product MERGE stays put."""
-
 import enum
 
 import pytest

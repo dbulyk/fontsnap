@@ -1,5 +1,3 @@
-"""Rasterize a SyntheticSampleSpec. With no font bytes the drawing uses Image.new and PIL's default font."""
-
 from __future__ import annotations
 
 import io
@@ -37,7 +35,6 @@ def render_sample(
     turned = canvas.rotate(rotate_deg, resample=Image.Resampling.BICUBIC, fillcolor=bg.rgb)
     if jpeg_quality is None:
         return turned
-    # Quantize the RGB buffer in memory. A JPEG round-trip would call Image.open.
     return _quantize(turned, jpeg_quality)
 
 

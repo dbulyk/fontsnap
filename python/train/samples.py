@@ -1,9 +1,3 @@
-"""Synthetic sample identity. One spec is a class index, text id, background id, seed, and split.
-
-Train, synth hold-out, and replay use disjoint seed ranges and disjoint text and background banks.
-The same call returns the same specs, so a hold-out can be re-rendered without a PNG archive.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -138,7 +132,6 @@ def _subsets(record: object) -> tuple[str, ...] | None:
 
 
 def spec_fits(record: object, spec: SyntheticSampleSpec) -> bool:
-    """True when the spec's script is one of record.subsets and the text and background belong to spec.split."""
     if not known_spec(spec):
         return False
     subsets = _subsets(record)
@@ -154,7 +147,6 @@ def _coerce_split(split: Split | str) -> Split:
 
 
 def build_specs(*, n_classes: int, split: Split | str, per_class: int) -> tuple[SyntheticSampleSpec, ...]:
-    """Latin lines only. Seed is SEED_BASE[split] + class_index * per_class + k, and it must stay inside the split span."""
     split = _coerce_split(split)
     if n_classes < 0 or per_class < 1:
         raise ValueError("n_classes must be >= 0 and per_class must be >= 1")
@@ -180,7 +172,6 @@ def build_specs(*, n_classes: int, split: Split | str, per_class: int) -> tuple[
 
 
 def assert_disjoint(groups: dict[Split, tuple[SyntheticSampleSpec, ...]]) -> None:
-    """Raise when two splits share a seed, a text id, a text string, or a background id."""
     seen_seed: dict[int, Split] = {}
     seen_text: dict[int, Split] = {}
     seen_string: dict[str, Split] = {}

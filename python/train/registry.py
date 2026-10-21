@@ -1,14 +1,3 @@
-"""OFL face registry. The committed TSV is the catalog.
-
-`FontClassRecord` rows are loaded from `data/fonts_manifest_v3.tsv`. This module
-does not list the 606 faces. `file_sha256` stays blank until `python -m train fetch`
-downloads the binary (and `--write-sha256` stamps the column). Font files are not
-committed; the download URL is.
-
-One `OFL.txt` per family lives under `data/licenses/v3/<source>/<family_id>/`.
-`license_sha256` is the sha256 of that file's bytes.
-"""
-
 from __future__ import annotations
 
 import csv
@@ -21,7 +10,6 @@ from pathlib import Path
 
 from train.paths import EXCLUDE_TSV, LICENSE_ROOT, MANIFEST_TSV, ROOT
 
-# Foundry APIs and CDNs throttle a generic client. Both inventory and fetch send this.
 HTTP_USER_AGENT = "FontSnapTrain/0.1 (inventory; +https://github.com/dbulyk/fontsnap)"
 
 OFL_SPDX = "OFL-1.1"
@@ -79,9 +67,6 @@ class ExcludeReason(Enum):
     NOT_A_FONT = "not-a-font"
 
 
-# Phase-1 policy. Face counts are static cuts (one file per weight and style).
-# Inventory checks the live catalogs against these tables and writes the TSV.
-
 WAITING_ON_SITE = frozenset(
     {
         "bianzhidai",
@@ -106,7 +91,6 @@ WAITING_ON_SITE = frozenset(
 FONTSOURCE_ALIAS = frozenset({"firago", "geist-sans", "noto-mono"})
 FONTSOURCE_DUPLICATE = frozenset({"apfel-grotezk"})
 FONTSOURCE_NON_OFL = frozenset({"aileron", "clear-sans", "comic-mono", "metropolis"})
-# Metadata says OFL-1.1. The npm LICENSE file is Bitstream Vera.
 FONTSOURCE_DEJAVU = frozenset({"dejavu-math", "dejavu-mono", "dejavu-sans", "dejavu-serif"})
 FONTSOURCE_UNSUITABLE = frozenset(
     {
@@ -352,8 +336,6 @@ class DownloadRecipe:
 
 @dataclass(frozen=True)
 class LicenseRef:
-    """One OFL file per family. `path` is relative to the repository root."""
-
     path: str
     sha256: str
     spdx: str
@@ -376,7 +358,7 @@ class FontClassRecord:
     weight: int | None
     style: str
     download: DownloadRecipe
-    file_sha256: str  # blank until fetch stamps the binary; fonts are not in git
+    file_sha256: str
     license: LicenseRef
     designer: str
     version: str
@@ -436,7 +418,6 @@ def sha256_hex(data: bytes) -> str:
 
 
 def is_ofl_1_1(data: bytes) -> bool:
-    """True when the file is the SIL OFL 1.1 text, not a metadata claim."""
     text = data.decode("utf-8-sig", errors="replace").lower()
     if "sil open font license" not in text:
         return False
@@ -642,7 +623,6 @@ def _family_count(records: tuple[FontClassRecord, ...], source: Source) -> int:
 
 
 def check() -> list[str]:
-    """Validate the committed catalog. Offline: no network."""
     from fontsnap_ref.pipeline import Families, nz
 
     errors: list[str] = []
@@ -694,7 +674,6 @@ def check() -> list[str]:
     if by_reason[ExcludeReason.NOT_A_FONT] != {p.lower() for p in VELVETYNE_NOT_A_FONT} | COLLLETTTIVO_NOT_FONTS:
         errors.append("not-a-font ids drifted")
 
-    # apfel-grotezk is excluded on Fontsource and kept from Collletttivo. Identity is the pair.
     excluded_keys = {(ex.source, ex.family_id) for ex in exclusions}
     manifest_keys = {(r.source, r.family_id) for r in records}
     overlap = manifest_keys & excluded_keys

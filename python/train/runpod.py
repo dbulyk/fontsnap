@@ -123,7 +123,6 @@ CALIBRATE = RunPodJobSpec(
     env=(),
 )
 
-# Longer than calibrate on purpose. The $1 / 20 minute clamp belongs to CALIBRATE only.
 TRAIN = RunPodJobSpec(
     name="fontsnap-train",
     mode=JobMode.TRAIN,
@@ -139,7 +138,6 @@ TRAIN = RunPodJobSpec(
 
 
 def api_key() -> str:
-    """RUNPOD_API_KEY from the environment. No flag, file, or default."""
     key = os.environ.get("RUNPOD_API_KEY")
     if not key:
         raise SystemExit(2)
@@ -155,7 +153,6 @@ def _text(value: object) -> str:
 
 
 def parse_pod(payload: dict, *, status_code: int) -> RemotePod:
-    """Edge parser. 404 is ABSENT. Any other status string is UNKNOWN."""
     if status_code == 404:
         return RemotePod(
             id="",
@@ -194,7 +191,6 @@ def parse_pod(payload: dict, *, status_code: int) -> RemotePod:
 
 
 def create_body(spec: RunPodJobSpec) -> dict:
-    """v2 create body. The API key is not a field, and the pod env is empty."""
     if spec.env:
         raise ValueError("pod env must be empty")
     return {
@@ -211,7 +207,6 @@ def projected_spend(spec: RunPodJobSpec, hourly_usd: Decimal) -> Decimal:
 
 
 def check_spend(spec: RunPodJobSpec, hourly_usd: Decimal) -> None:
-    """Exit 3 when the quoted hourly price would pass the spec cap inside the time limit."""
     if projected_spend(spec, hourly_usd) > spec.spend_cap_usd:
         raise SystemExit(3)
 
@@ -251,7 +246,6 @@ def _now() -> str:
 
 
 def append_cost(path: Path, line: CostLine, *, scrub_key: bool) -> None:
-    """Append one journal line. scrub_key is for live lines. plan passes False and does not read the key."""
     text = line.as_json()
     if scrub_key:
         key = os.environ.get("RUNPOD_API_KEY", "")
@@ -264,7 +258,6 @@ def append_cost(path: Path, line: CostLine, *, scrub_key: bool) -> None:
 
 
 def plan(spec: RunPodJobSpec, journal: Path | None = None) -> str:
-    """Local text plus a $0 dry-plan journal line. Does not call api_key or urlopen."""
     text = render_plan(spec)
     line = CostLine(
         ts=_now(),
@@ -383,7 +376,6 @@ def _wind_down(pod: RemotePod, key: str, started: float, spec: RunPodJobSpec) ->
 
 
 def watch(spec: RunPodJobSpec) -> None:
-    """Price-check, create, poll, then stop and delete. Refused before any socket when the live flag is off."""
     if not live_enabled():
         raise SystemExit(2)
     key = api_key()

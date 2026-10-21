@@ -1,5 +1,3 @@
-"""One-step CPU smoke and the 4271-way expand path. Checkpoints stay under out/train/."""
-
 from __future__ import annotations
 
 import os
@@ -33,7 +31,6 @@ def _checkpoint_dir() -> Path:
 
 
 def recipe(name: str) -> TrainConfig:
-    """smoke is the 3665-way noise step. ofl-v1 is the only recipe that expands the head."""
     common = dict(
         steps=1,
         batch_size=1,
@@ -52,7 +49,6 @@ def recipe(name: str) -> TrainConfig:
 
 
 def assert_distill_source(distill_dir: str) -> None:
-    """A distill term must name a non-empty directory that is not data/realset3."""
     if distill_dir.strip() == "":
         raise ValueError("distill directory is empty")
     path = Path(distill_dir).expanduser().resolve()
@@ -70,7 +66,6 @@ def checkpoint_path(cfg: TrainConfig) -> Path:
 
 
 def train(cfg: TrainConfig) -> Path:
-    """Noise batch, label 0. AMP only when amp is set and the device is cuda."""
     if cfg.device != "cpu" and os.environ.get("FONTSNAP_ALLOW_GPU") != "1":
         raise SystemExit(2)
     if cfg.num_classes not in (BASE_CLASSES, EXPANDED_CLASSES):

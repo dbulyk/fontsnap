@@ -1,21 +1,3 @@
-"""Build data/fonts_manifest_v3.tsv and data/licenses/v3 from the foundry catalogs.
-
-The phase-1 include and exclude sets live in registry. This command is the lever:
-it reads Fontsource, the Collletttivo GitHub account, and the Velvetyne GitLab
-group, writes one OFL file per kept family, and writes the TSV. Re-running
-replaces those artifacts with a fresh canonical dump.
-
-Open Sauce is the exception on download URLs. jsDelivr serves those families'
-`.ttf` and `.woff2` names as Type 1 PostScript (`%!PS-AdobeFont`), so the
-static faces come from the foundry git tree `fonts/ttf` instead.
-
-Avara on current HEAD ships Bold, BoldItalic, and Black only. Regular is still
-in the same repository at commit bcf69372 as `fonts/Avara.otf` (name ID 6
-Avara-Regular). The repo states OFL and names its authors in FONTINFO.json,
-and it does not ship an OFL.txt. The committed file uses those authors and the
-SIL 1.1 body from another catalog license.
-"""
-
 from __future__ import annotations
 
 import json
@@ -69,7 +51,6 @@ from train.registry import (
     sha256_hex,
 )
 
-# Avara Regular's name table says Avara-Regular. The 2019 cleanup removed this file from HEAD.
 AVARA_REGULAR_COMMIT = "bcf69372"
 AVARA_REGULAR_PATH = "fonts/Avara.otf"
 
@@ -206,7 +187,6 @@ def read_url(url: str, limit: int | None = None, timeout: int = 60, accept: str 
 
 
 def read_prefix(url: str, size: int = 16) -> bytes:
-    # jsDelivr 206 bodies are not the decoded font. A normal GET starts with the sfnt.
     headers = {"User-Agent": HTTP_USER_AGENT, "Accept": "*/*"}
     last: Exception | None = None
     for attempt in range(4):
@@ -260,7 +240,6 @@ def face_class_id(family: str, weight: int, style: str) -> str:
 
 
 def select_static_fonts(paths: list[str]) -> list[str]:
-    """One static face per filename stem. Variable fonts and webfont copies are not classes."""
     best: dict[str, tuple[tuple[int, int, str], str]] = {}
     for path in paths:
         pure = PurePosixPath(path)
@@ -878,8 +857,6 @@ def _gitlab_project(project: dict) -> tuple[str, list[str], bytes | None, str | 
     branch = str(project["default_branch"])
     commit = get_json(f"https://gitlab.com/api/v4/projects/{project_id}/repository/commits/{quote(branch, safe='')}")
     sha = str(commit["id"])
-    # Recursive listing walks fungal's sources/ufos (about 138k files). Those directories
-    # are not classes, so the walk skips the same directory names as select_static_fonts.
     blobs = _gitlab_blobs(int(project_id), sha, str(project["path"]))
     license_path = _pick_license(blobs)
     license_bytes = None

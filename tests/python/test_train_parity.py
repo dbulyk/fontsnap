@@ -1,5 +1,3 @@
-"""Name-map ops and ORT parity on a realset3 prep tensor."""
-
 from pathlib import Path
 
 import numpy as np

@@ -33,7 +33,6 @@ from train.registry import (
     sha256_hex,
 )
 
-# Plan §1.4 slugs. Sixteen families still have no foundry repository.
 PLAN_WAITING = frozenset(
     {
         "bianzhidai",

@@ -1,5 +1,3 @@
-"""Sample specs, render, cache, and the on-the-fly dataset. No font files."""
-
 import hashlib
 import os
 import shutil

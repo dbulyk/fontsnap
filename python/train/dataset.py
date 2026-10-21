@@ -1,8 +1,3 @@
-"""On-the-fly samples. Importing this module does not import torch.
-
-``FontSnapSynth.__getitem__`` renders, runs ``fontsnap_ref.pipeline.prep``, and returns a CHW float32 tensor.
-"""
-
 from __future__ import annotations
 
 from typing import Any
@@ -30,8 +25,6 @@ def prepared_chw(
 
 
 class FontSnapSynth:
-    """Sequence of (tensor, head index). Not a torch Dataset subclass, so import stays free of torch."""
-
     def __init__(self, specs: tuple[SyntheticSampleSpec, ...], records: tuple[Any, ...] | None = None) -> None:
         self.specs = tuple(specs)
         self.records = records

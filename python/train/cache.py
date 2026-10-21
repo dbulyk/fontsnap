@@ -1,5 +1,3 @@
-"""Content-addressed font bytes under out/font-cache. Verify reports gaps and does not download."""
-
 from __future__ import annotations
 
 import argparse
@@ -28,7 +26,7 @@ def _digest(value: str) -> str:
 
 
 class HashMismatch(ValueError):
-    """The file at the cache path is not the requested sha256."""
+    pass
 
 
 def cache_path(sha256: str, root: Path | None = None) -> Path:
@@ -38,7 +36,6 @@ def cache_path(sha256: str, root: Path | None = None) -> Path:
 
 
 def store_bytes(sha256: str, data: bytes, root: Path | None = None) -> Path:
-    """Write data only when it hashes to sha256. A repeat finds the same bytes and leaves them."""
     digest = _digest(sha256)
     if hashlib.sha256(data).hexdigest() != digest:
         raise ValueError("hash mismatch")

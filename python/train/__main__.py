@@ -1,5 +1,3 @@
-"""`python -m train` — dispatch subcommands without importing torch at startup."""
-
 from __future__ import annotations
 
 import sys

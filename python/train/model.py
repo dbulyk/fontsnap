@@ -1,5 +1,3 @@
-"""EfficientNet-B3 classifier. Torch and timm load on first construction."""
-
 from __future__ import annotations
 
 BASE_CLASSES = 3665
@@ -7,11 +5,6 @@ EXPANDED_CLASSES = 4271
 
 
 class EfficientNetB3Classifier:
-    """timm efficientnet_b3 with our head width. Forward returns logits, no softmax.
-
-    pretrained=False is mandatory. The weights come from the ONNX map, not a timm download.
-    """
-
     def __init__(self, num_classes: int = BASE_CLASSES) -> None:
         import timm
 
@@ -42,7 +35,6 @@ class EfficientNetB3Classifier:
 
 
 def expand_classifier(model: EfficientNetB3Classifier, old: int, new: int) -> EfficientNetB3Classifier:
-    """Copy the leading 3665 classifier rows into a 4271-way head. New rows are zero."""
     if (old, new) != (BASE_CLASSES, EXPANDED_CLASSES):
         raise ValueError(f"expand_classifier only grows {BASE_CLASSES} to {EXPANDED_CLASSES}, got {old} to {new}")
     if model.num_classes != old:

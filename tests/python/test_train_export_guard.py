@@ -1,5 +1,3 @@
-"""Export refuses model/ before torch is imported."""
-
 import subprocess
 import sys
 from pathlib import Path
