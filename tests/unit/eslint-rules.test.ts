@@ -2344,8 +2344,12 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   for (let node = tw.nextNode(); node; node = tw.nextNode()) {
     const value = node.nodeValue ?? '';
     range.selectNodeContents(node);
-    const b = range.getBoundingClientRect();
-    if (b.right < 0 || b.left > 1 || b.bottom < 0 || b.top > 1 || !value) continue;
+    const owner = node.parentElement;
+    if (!value || owner === null || owner.matches('textarea *') || !owner.checkVisibility({ checkOpacity: true })) continue;
+    for (const b of range.getClientRects()) {
+      const hit = doc.elementFromPoint(b.left, b.top);
+      if (b.right < 0 || b.left > 1 || b.bottom < 0 || b.top > 1 || hit === null || !owner.contains(hit)) continue;
+    }
   }
   Object.assign(box.style, { position: 'fixed', background: 'rgba(0,0,0,0.15)', cursor: 'crosshair', left: \`\${sx}px\`, width: '0', top: '12px' });
   box.textContent = u;
@@ -2354,7 +2358,8 @@ describe('DOM objects in the code of the web page: an allowlist of members by ty
   box.addEventListener('mousedown', (e) => { e.preventDefault(); sx = e.clientX; });
   win.addEventListener('keydown', (e: KeyboardEvent) => { if (e.key === 'Escape') box.remove(); });
   if (!box.isConnected) return;
-  const text = win.getSelection()?.toString();
+  const selection = win.getSelection();
+  const text = selection && !selection.isCollapsed && selection.rangeCount > 0 ? selection.getRangeAt(0).getClientRects() && selection.toString() : '';
   void text;`;
     expect(await verdict(OVERLAY, inStart(code)), code).toEqual([]);
   });

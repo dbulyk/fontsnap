@@ -9,7 +9,35 @@ function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
   return body ?? root;
 }
 
-// text of the page under the dragged rectangle (used as the preview sample when nothing is selected)
+/** Text the user does not see as text on the page: form controls, code, templates, and what is hidden from assistive technology. */
+const NOT_SHOWN_TAGS =
+  'textarea, select, option, script, style, noscript, template, [aria-hidden="true"]';
+const NOT_SHOWN = `${NOT_SHOWN_TAGS}, :is(${NOT_SHOWN_TAGS}) *`;
+
+/** The part of `line` inside the rectangle, or null when they do not overlap. */
+function overlap(line: DOMRect, r: Rect): Rect | null {
+  const x = Math.max(line.left, r.x);
+  const y = Math.max(line.top, r.y);
+  const w = Math.min(line.right, r.x + r.w) - x;
+  const h = Math.min(line.bottom, r.y + r.h) - y;
+  return w > 0 && h > 0 ? { x, y, w, h } : null;
+}
+
+/**
+ * True when one line box of `range` meets the rectangle and, at the centre of that meeting, the topmost element is `owner` or inside it:
+ * text that is covered by another element, or is outside the rectangle, is not what the user framed.
+ */
+function shownIn(doc: Document, range: Range, owner: Element, r: Rect): boolean {
+  for (const line of range.getClientRects()) {
+    const part = overlap(line, r);
+    if (part === null) continue;
+    const hit = doc.elementFromPoint(part.x + part.w / 2, part.y + part.h / 2);
+    if (hit !== null && owner.contains(hit)) return true;
+  }
+  return false;
+}
+
+// visible text of the page under the dragged rectangle (used as the preview sample when no selection is in it)
 export function textInRect(doc: Document, r: Rect): string {
   const out: string[] = [];
   const range = doc.createRange();
@@ -20,10 +48,12 @@ export function textInRect(doc: Document, r: Rect): string {
   try {
     for (let node = tw.nextNode(); node && len < 80 && n < 20000; node = tw.nextNode(), n++) {
       const value = node.nodeValue ?? '';
-      if (!value.trim()) continue;
+      const owner = node.parentElement;
+      if (!value.trim() || owner === null) continue;
+      if (owner.matches(NOT_SHOWN)) continue;
+      if (!owner.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) continue;
       range.selectNodeContents(node);
-      const b = range.getBoundingClientRect();
-      if (b.right < r.x || b.left > r.x + r.w || b.bottom < r.y || b.top > r.y + r.h) continue;
+      if (!shownIn(doc, range, owner, r)) continue;
       const piece = value.trim().replace(/\s+/g, ' ');
       out.push(piece);
       len += piece.length + 1;
@@ -32,6 +62,17 @@ export function textInRect(doc: Document, r: Rect): string {
     return '';
   }
   return out.join(' ').slice(0, 80);
+}
+
+/** The selected text, only when a line of the selection lies in the rectangle: a selection elsewhere on the page is not what was framed. */
+function selectionIn(selection: Selection | null, r: Rect): string {
+  if (selection === null || selection.isCollapsed) return '';
+  for (let i = 0; i < selection.rangeCount; i++) {
+    for (const line of selection.getRangeAt(i).getClientRects()) {
+      if (overlap(line, r) !== null) return selection.toString().trim().slice(0, 80);
+    }
+  }
+  return '';
 }
 
 /**
@@ -132,8 +173,7 @@ export function startSelection(win: Window): void {
     if (rect.w < 8 || rect.h < 8) return;
     let text = '';
     try {
-      const s = win.getSelection()?.toString();
-      text = (s ?? '').trim().slice(0, 80);
+      text = selectionIn(win.getSelection(), rect);
     } catch {
       // selection text is optional
     }

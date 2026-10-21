@@ -34,6 +34,53 @@ const overlay = () =>
 const mouse = (type: string, x: number, y: number) =>
   new MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true });
 
+/** A selection with the given text whose one line box is `line` (a viewport box). */
+function selectionOf(
+  text: string,
+  line: Partial<DOMRect> = { left: 60, right: 150, top: 70, bottom: 90 },
+  collapsed = text === '',
+): Selection {
+  return {
+    isCollapsed: collapsed,
+    rangeCount: text === '' ? 0 : 1,
+    getRangeAt: () => ({
+      getClientRects: () => [{ left: 0, right: 0, top: 0, bottom: 0, ...line }],
+    }),
+    toString: () => text,
+  } as unknown as Selection;
+}
+
+/** Layout for happy-dom: the line boxes of the text of each element (by id), and the element on top at each point. */
+function layout(
+  boxes: Record<string, Partial<DOMRect>>,
+  onTop?: (x: number, y: number) => Element | null,
+): void {
+  const realRange = document.createRange.bind(document);
+  vi.spyOn(document, 'createRange').mockImplementation(() => {
+    const range = realRange();
+    range.getClientRects = () => {
+      const id = range.startContainer.parentElement?.id ?? '';
+      const box = boxes[id];
+      return (box
+        ? [{ left: 0, right: 0, top: 0, bottom: 0, ...box }]
+        : []) as unknown as DOMRectList;
+    };
+    return range;
+  });
+  vi.spyOn(document, 'elementFromPoint').mockImplementation(
+    onTop ??
+      ((x, y) => {
+        const ids = Object.keys(boxes).filter((id) => {
+          const b = boxes[id] ?? {};
+          return (
+            x >= (b.left ?? 0) && x <= (b.right ?? 0) && y >= (b.top ?? 0) && y <= (b.bottom ?? 0)
+          );
+        });
+        return document.getElementById(ids.at(-1) ?? '');
+      }),
+  );
+}
+
 function drag(from: [number, number], to: [number, number]): void {
   const ov = overlay();
   ov?.dispatchEvent(mouse('mousedown', ...from));
@@ -103,9 +150,7 @@ describe('startSelection', () => {
   });
 
   it('sends the viewport rectangle, device pixel ratio and the selected text after the overlay is gone', () => {
-    vi.spyOn(window, 'getSelection').mockReturnValue({
-      toString: () => '  selected words  ',
-    } as unknown as Selection);
+    vi.spyOn(window, 'getSelection').mockReturnValue(selectionOf('  selected words  '));
     window.devicePixelRatio = 2;
     startSelection(window);
     drag([200, 100], [50, 60]);
@@ -132,9 +177,9 @@ describe('startSelection', () => {
   });
 
   it('caps the selected text at 80 characters', () => {
-    vi.spyOn(window, 'getSelection').mockReturnValue({
-      toString: () => 'y'.repeat(300),
-    } as unknown as Selection);
+    vi.spyOn(window, 'getSelection').mockReturnValue(
+      selectionOf('y'.repeat(300), { right: 50, bottom: 50 }),
+    );
     startSelection(window);
     drag([10, 10], [60, 60]);
     vi.advanceTimersByTime(30);
@@ -146,22 +191,41 @@ describe('startSelection', () => {
   it('uses the text of the page under the rectangle when nothing is selected', () => {
     document.body.innerHTML = '<p id="a">Hello   world</p>';
     const text = document.getElementById('a')?.firstChild as Text;
-    const realRange = document.createRange.bind(document);
-    vi.spyOn(document, 'createRange').mockImplementation(() => {
-      const range = realRange();
-      range.getBoundingClientRect = () =>
-        ({ left: 20, right: 120, top: 20, bottom: 40 }) as DOMRect;
-      return range;
-    });
-    vi.spyOn(window, 'getSelection').mockReturnValue({
-      toString: () => '',
-    } as unknown as Selection);
+    layout({ a: { left: 20, right: 120, top: 20, bottom: 40 } });
+    vi.spyOn(window, 'getSelection').mockReturnValue(selectionOf(''));
     startSelection(window);
     drag([10, 10], [200, 100]);
     vi.advanceTimersByTime(30);
     expect(text.nodeValue).toBe('Hello   world');
     expect(stub.chrome.runtime.sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({ text: 'Hello world' }),
+    );
+  });
+
+  // The user report: the frame was over «TT Polihaus…», the preview showed «БУКВОПЕЧАТАЮЩЕЙ…» selected elsewhere on the page.
+  it('ignores a selection outside the rectangle and takes the visible text under it', () => {
+    document.body.innerHTML = '<p id="a">TT Polihaus — экспериментальный гротеск</p>';
+    layout({ a: { left: 20, right: 180, top: 220, bottom: 260 } });
+    vi.spyOn(window, 'getSelection').mockReturnValue(
+      selectionOf('БУКВОПЕЧАТАЮЩЕЙ СВЯЗИ', { left: 20, right: 300, top: 10, bottom: 30 }),
+    );
+    startSelection(window);
+    drag([10, 200], [200, 300]);
+    vi.advanceTimersByTime(30);
+    expect(stub.chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'TT Polihaus — экспериментальный гротеск' }),
+    );
+  });
+
+  it('ignores a collapsed selection (a caret) inside the rectangle', () => {
+    document.body.innerHTML = '<p id="a">page text</p>';
+    layout({ a: { left: 20, right: 120, top: 20, bottom: 40 } });
+    vi.spyOn(window, 'getSelection').mockReturnValue(selectionOf('caret', undefined, true));
+    startSelection(window);
+    drag([10, 10], [200, 100]);
+    vi.advanceTimersByTime(30);
+    expect(stub.chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'page text' }),
     );
   });
 
@@ -210,38 +274,59 @@ describe('startSelection', () => {
 });
 
 describe('textInRect', () => {
-  const rectOf = (box: Partial<DOMRect>) => () =>
-    ({ left: 0, right: 0, top: 0, bottom: 0, ...box }) as DOMRect;
-  function withBoxes(html: string, boxes: Partial<DOMRect>[]): void {
-    document.body.innerHTML = html;
-    const realRange = document.createRange.bind(document);
-    let i = 0;
-    vi.spyOn(document, 'createRange').mockImplementation(() => {
-      const range = realRange();
-      range.getBoundingClientRect = () => rectOf(boxes[i++] ?? {})();
-      return range;
-    });
-  }
+  const frame = { x: 0, y: 0, w: 100, h: 100 };
 
   it('joins the text nodes that intersect the rectangle, collapsing whitespace', () => {
-    withBoxes('<p>one   two</p><p>far away</p><p>three</p>', [
-      { left: 10, right: 50, top: 10, bottom: 20 },
-      { left: 900, right: 990, top: 10, bottom: 20 },
-      { left: 10, right: 50, top: 30, bottom: 40 },
-    ]);
-    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 100 })).toBe('one two three');
+    document.body.innerHTML = '<p id="a">one   two</p><p id="b">far away</p><p id="c">three</p>';
+    layout({
+      a: { left: 10, right: 50, top: 10, bottom: 20 },
+      b: { left: 900, right: 990, top: 10, bottom: 20 },
+      c: { left: 10, right: 50, top: 30, bottom: 40 },
+    });
+    expect(textInRect(document, frame)).toBe('one two three');
   });
 
   it('skips blank text nodes and stops after 80 characters', () => {
-    withBoxes(`<p>${'a'.repeat(60)}</p><p>${'b'.repeat(60)}</p><p>${'c'.repeat(60)}</p>`, [
-      { right: 10, bottom: 10 },
-      { right: 10, bottom: 10 },
-      { right: 10, bottom: 10 },
-    ]);
-    const text = textInRect(document, { x: 0, y: 0, w: 100, h: 100 });
+    document.body.innerHTML = `<p id="a">${'a'.repeat(60)}</p> <p id="b">${'b'.repeat(60)}</p><p id="c">${'c'.repeat(60)}</p>`;
+    layout({
+      a: { right: 10, bottom: 10 },
+      b: { top: 20, right: 10, bottom: 30 },
+      c: { top: 40, right: 10, bottom: 50 },
+    });
+    const text = textInRect(document, frame);
     expect(text).toHaveLength(80);
     expect(text.startsWith('a'.repeat(60) + ' b')).toBe(true);
     expect(textInRect(document, { x: 5000, y: 5000, w: 1, h: 1 })).toBe('');
+  });
+
+  it.each([
+    ['visibility: hidden', '<p id="t" style="visibility:hidden">secret</p>'],
+    ['opacity: 0', '<div style="opacity:0"><p id="t">secret</p></div>'],
+    ['display: none', '<p id="t" style="display:none">secret</p>'],
+    ['a <textarea> with default text', '<textarea id="t">secret</textarea>'],
+    ['an <option>', '<select><option id="t">secret</option></select>'],
+    ['<noscript>', '<noscript><span id="t">secret</span></noscript>'],
+    ['aria-hidden', '<div aria-hidden="true"><span id="t">secret</span></div>'],
+  ])('skips text the user does not see: %s', (_name, html) => {
+    document.body.innerHTML = `${html}<p id="v">visible</p>`;
+    layout({ t: { right: 50, bottom: 10 }, v: { top: 20, right: 50, bottom: 30 } });
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('skips text covered by another element', () => {
+    document.body.innerHTML = '<p id="t">covered</p><div id="cover"></div><p id="v">visible</p>';
+    const cover = document.getElementById('cover');
+    layout({ t: { right: 50, bottom: 10 }, v: { top: 20, right: 50, bottom: 30 } }, (_x, y) =>
+      y < 15 ? cover : document.getElementById('v'),
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('takes a text node whose top element at the point is a child of its owner', () => {
+    document.body.innerHTML = '<p id="t">outer <b id="inner">bold</b></p>';
+    const inner = document.getElementById('inner');
+    layout({ t: { right: 50, bottom: 10 }, inner: { right: 50, bottom: 10 } }, () => inner);
+    expect(textInRect(document, frame)).toBe('outer bold');
   });
 
   it('walks the root element when the document has no <body> (an SVG or XML page)', () => {
@@ -250,11 +335,13 @@ describe('textInRect', () => {
     const realRange = document.createRange.bind(document);
     vi.spyOn(document, 'createRange').mockImplementation(() => {
       const range = realRange();
-      range.getBoundingClientRect = () => ({ left: 0, right: 10, top: 0, bottom: 10 }) as DOMRect;
+      range.getClientRects = () =>
+        [{ left: 0, right: 10, top: 0, bottom: 10 }] as unknown as DOMRectList;
       return range;
     });
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(document.documentElement);
     expect(document.body).toBeNull();
-    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 100 })).toBe('plain root text');
+    expect(textInRect(document, frame)).toBe('plain root text');
   });
 
   it('answers an empty string when the document cannot be walked', () => {
@@ -262,7 +349,7 @@ describe('textInRect', () => {
     const realRange = document.createRange.bind(document);
     vi.spyOn(document, 'createRange').mockImplementation(() => {
       const range = realRange();
-      range.getBoundingClientRect = () => {
+      range.getClientRects = () => {
         throw new Error('no layout');
       };
       return range;
