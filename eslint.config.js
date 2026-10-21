@@ -278,6 +278,10 @@ const DOM_MEMBERS = [
       getPropertyPriority: 'c',
       setProperty: 'c',
       removeProperty: 'c',
+      hasAttribute: 'c',
+      getAttribute: 'c',
+      setAttribute: 'c',
+      removeAttribute: 'c',
       contains: 'c',
       length: 'r',
       tagName: 'r',
@@ -421,6 +425,7 @@ const GLOBAL_ACCESS = {
       Object: ['assign'],
       getComputedStyle: true,
       HTMLElement: true,
+      SVGElement: true,
       HTMLInputElement: true,
       HTMLTextAreaElement: true,
     },
@@ -1236,6 +1241,11 @@ const importSelectors = (valueFrom) =>
   ].map((selector) => ({ selector, message: IMPORT_MESSAGE }));
 const selectImportSelectors = importSelectors(`:not([source.value=${SELECT_SIBLING}])`);
 const measureImportSelectors = importSelectors('');
+// pe:none probe restore: only setAttribute('style', <identifier from getAttribute>) / removeAttribute('style')
+const STYLE_ATTR_RESTORE_SET =
+  "CallExpression[callee.property.name='setAttribute'][arguments.length=2][arguments.0.type='Literal'][arguments.0.value='style'][arguments.1.type='Identifier']";
+const STYLE_ATTR_RESTORE_REMOVE =
+  "CallExpression[callee.property.name='removeAttribute'][arguments.length=1][arguments.0.type='Literal'][arguments.0.value='style']";
 const pageProcessSelectorSources = [
   // no key that is computed at run time (a numeric index is fine), in access, destructuring, literals, classes
   "MemberExpression[computed=true]:not([property.type='Literal'][property.raw=/^[0-9]+$/])",
@@ -1262,7 +1272,10 @@ const pageProcessSelectorSources = [
   // elements: div only; nothing that loads or navigates
   "CallExpression[callee.property.name='createElement']:not([arguments.0.type='Literal'][arguments.0.value='div'])",
   `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`,
-  `CallExpression[callee.property.name=${LOADING_CALLS}]`,
+  // setAttribute is loading except the pe:none probe's setAttribute('style', savedIdentifier)
+  `CallExpression[callee.property.name=${LOADING_CALLS}]:not(${STYLE_ATTR_RESTORE_SET})`,
+  // removeAttribute only to put back a missing style attribute after the pe:none probe
+  `CallExpression[callee.property.name='removeAttribute']:not(${STYLE_ATTR_RESTORE_REMOVE})`,
   `Property[key.name=${LOADING_NAMES}]`,
   // strings: nothing that loads (CSS_LOADING_SOURCE), and no backslash at all (a CSS escape hides `url(`; JS escapes like \n are no backslash)
   `Literal[value=/${CSS_LOADING_SOURCE}|expression\\s*\\(|javascript:/i]`,
@@ -1317,9 +1330,10 @@ const loadImageSelectors = [
 // is a string literal that is a keyword, a hex colour or rgb()/rgba() of numbers - nothing else. The others cannot hold a url() by
 // their grammar; they take string literals too, and left/top/width/height a literal or a template (`${x}px`). Everything else about
 // style is refused: .style as a value or an alias, cssText, attributeStyleMap, adoptedStyleSheets, insertRule,
-// animate (keyframes can carry a url), setAttribute('style'), createElement('style' | 'link') (div only).
+// animate (keyframes can carry a url), setAttribute('style') with a non-restored value, createElement('style' | 'link') (div only).
 // Narrow exception (pe:none hit probe): el.style.setProperty/getPropertyValue/getPropertyPriority/removeProperty only for the
-// literals `pointer-events` and `transition` (neither accepts url()).
+// literals `pointer-events` and `transition-behavior` (neither accepts url()); style attribute restored only via
+// setAttribute('style', <identifier>) / removeAttribute('style') after a getAttribute snapshot.
 const STYLE_KEYS = [
   'position',
   'inset',
@@ -1347,7 +1361,7 @@ const SAFE_URL_KEY_VALUE = '/^(?:[a-z-]+|\\x23[0-9a-f]{3,8}|rgba?\\([0-9., %]+\\
 const STYLE_NAMES =
   '/^(setProperty|removeProperty|getPropertyValue|getPropertyPriority|cssText|attributeStyleMap|computedStyleMap|styleSheets|adoptedStyleSheets|sheet|animate|Animation|KeyframeEffect|CSSStyleSheet|attributes|getAttributeNode|setNamedItem)$/';
 const STYLE_PROBE_METHODS = '/^(setProperty|getPropertyValue|getPropertyPriority|removeProperty)$/';
-const STYLE_PROBE_PROPS = '/^(pointer-events|transition)$/';
+const STYLE_PROBE_PROPS = '/^(pointer-events|transition-behavior)$/';
 const STYLE_PROBE_CALL = `CallExpression[callee.type='MemberExpression'][callee.property.name=${STYLE_PROBE_METHODS}][callee.object.type='MemberExpression'][callee.object.property.name='style'][arguments.0.type='Literal'][arguments.0.value=${STYLE_PROBE_PROPS}]`;
 const STYLE_PROBE_STYLE_OBJ = `${STYLE_PROBE_CALL} > MemberExpression.callee > MemberExpression.object`;
 const styleObject = `${ASSIGN} > ObjectExpression`;
@@ -1368,8 +1382,10 @@ const styleSelectors = [
   `Identifier[name=${STYLE_NAMES}]:not([name='getPropertyValue']):not(CallExpression[callee.object.property.name='style'][arguments.0.value=${STYLE_PROBE_PROPS}] > MemberExpression.callee > Identifier.property)`,
   `Identifier[name='getPropertyValue']:not(CallExpression > MemberExpression.callee > Identifier.property)`,
   `Literal[value=${STYLE_NAMES}]`,
-  // Probe calls must use the literal property names pointer-events | transition (no url() in those grammars).
+  // Probe calls must use the literal property names pointer-events | transition-behavior (no url() in those grammars).
   `CallExpression[callee.property.name=${STYLE_PROBE_METHODS}][callee.object.property.name='style']:not([arguments.0.type='Literal'][arguments.0.value=${STYLE_PROBE_PROPS}])`,
+  // setAttribute('style', ...) only as the pe:none restore of a getAttribute snapshot (identifier); literals stay refused
+  `CallExpression[callee.property.name='setAttribute'][arguments.0.type='Literal'][arguments.0.value='style']:not(${STYLE_ATTR_RESTORE_SET})`,
   // Object.assign(el.style, { ... }): exactly two arguments, the second an object literal of plain `key: value` properties
   `${ASSIGN}:not([arguments.length=2])`,
   `${ASSIGN}:not([arguments.1.type='ObjectExpression'])`,

@@ -705,6 +705,8 @@ describe('the code of the web page: no network API, no way to load or navigate',
     'if (a.src == b) run(); if (a.href === b) run()',
     'win.addEventListener("keydown", f, true); win.removeEventListener("keydown", f, true)',
     'const opened = isOpen; const reopen = 1; const locations = 2',
+    'e.setAttribute("style", saved); e.removeAttribute("style")',
+    "e.setAttribute('style', saved)",
   ])('lets what the real code does through: %s', (code) => {
     expect(pagePlatformProblems(code), code).toEqual([]);
   });

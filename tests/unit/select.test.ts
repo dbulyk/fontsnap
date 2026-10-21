@@ -1156,7 +1156,57 @@ describe('textInRect', () => {
       },
     );
     expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Hero Caption');
-    expect(el('t').getAttribute('style') ?? '').not.toMatch(/pointer-events:\s*auto/i);
+    expect(el('t').hasAttribute('style')).toBe(false);
+  });
+
+  it('restores inline transition longhands after the pe:auto probe', () => {
+    const style = 'pointer-events:none;transition-property:opacity;transition-duration:2s';
+    document.body.innerHTML = `<div id="group"><div id="bg"></div><p id="t" style="${style}">Echo</p></div>`;
+    layout(
+      {
+        t: { left: 10, right: 120, top: 10, bottom: 40 },
+        bg: { left: 0, right: 200, top: 0, bottom: 50 },
+      },
+      undefined,
+      {
+        stack: () => [el('t'), el('bg')],
+        paint: (hit) => {
+          if (hit.id === 't') return { pointerEvents: 'none' };
+          if (hit.id === 'bg') {
+            return { position: 'absolute', backgroundColor: 'rgb(34, 68, 102)' };
+          }
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Echo');
+    expect(el('t').getAttribute('style')).toBe(style);
+  });
+
+  it('takes pe:none SVG text over an earlier absolute backdrop', () => {
+    document.body.innerHTML =
+      '<div id="group"><div id="bg"></div><svg id="s" style="pointer-events:none"><text id="t">Logo</text></svg></div>';
+    layout(
+      {
+        t: { left: 10, right: 80, top: 10, bottom: 40 },
+        bg: { left: 0, right: 200, top: 0, bottom: 50 },
+      },
+      undefined,
+      {
+        stack: () => [el('t'), el('bg')],
+        paint: (hit) => {
+          if (hit.id === 's') return { position: 'relative', pointerEvents: 'none' };
+          if (hit.id === 't') return { pointerEvents: 'none' };
+          if (hit.id === 'bg') {
+            return { position: 'absolute', backgroundColor: 'rgb(34, 68, 102)' };
+          }
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Logo');
+    expect(el('s').getAttribute('style')).toBe('pointer-events:none');
+    expect(el('t').hasAttribute('style')).toBe(false);
   });
 
   it('keeps cover from a later cookie wall under a shared SPA root', () => {

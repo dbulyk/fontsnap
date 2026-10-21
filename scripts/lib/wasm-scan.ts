@@ -347,8 +347,13 @@ const PAGE_CODE_FORBIDDEN: readonly { pattern: RegExp; what: string }[] = [
   },
   {
     pattern:
-      /\b(?:setAttribute|setAttributeNS|setAttributeNode|insertAdjacentHTML|insertAdjacentElement|createContextualFragment|insertRule|replaceSync)\b/,
-    what: 'setAttribute / insertAdjacentHTML / insertRule',
+      /\b(?:setAttributeNS|setAttributeNode|insertAdjacentHTML|insertAdjacentElement|createContextualFragment|insertRule|replaceSync)\b/,
+    what: 'setAttributeNS / insertAdjacentHTML / insertRule',
+  },
+  // setAttribute only as the pe:none probe restore of a saved style attribute (lint mirrors this)
+  {
+    pattern: /\.setAttribute\s*\(\s*(?!['"]style['"]\s*,)/,
+    what: 'setAttribute (only setAttribute("style", saved) allowed)',
   },
   { pattern: /\bopen\s*\(/, what: 'open(...) (window.open, XMLHttpRequest.open)' },
   { pattern: /\blocation\b/, what: 'location' },

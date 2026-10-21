@@ -550,6 +550,16 @@ const previewCases: PreviewCase[] = [
     expected: 'Email address',
   },
   {
+    name: 'SVG text with pe:none over an absolute backdrop',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <svg style="position:relative;width:560px;height:72px;pointer-events:none">
+        <text x="12" y="48" fill="#fff" font-size="32" font-family="sans-serif">Logo</text>
+      </svg>
+    </div>`,
+    expected: 'Logo',
+  },
+  {
     name: 'a textarea fully inside the frame',
     inner: `<textarea style="position:absolute;left:16px;top:24px;width:480px;height:80px;${field}">full field value</textarea>`,
     expected: 'full field value',
@@ -1074,8 +1084,8 @@ test('a pe:none label in a higher modal stays above a sticky header', async ({
   expect(text).toBe('Email address');
 });
 
-// Inline pe:auto probe must not fire discrete pointer-events transitions (Tailwind v4 allow-discrete).
-test('pe:none capture does not fire pointer-events transition events', async ({
+// Probe must restore style attrs byte-for-byte and not fire discrete pe transitions on owner or descendants.
+test('pe:none capture restores style attributes and fires no pointer-events transitions', async ({
   context,
   extensionId,
   serve,
@@ -1087,12 +1097,18 @@ test('pe:none capture does not fire pointer-events transition events', async ({
         {
           type: 'text/html; charset=utf-8',
           body: `<!doctype html><html><head><meta charset="utf-8">
-<style>.pe{transition:all .3s allow-discrete;pointer-events:none}</style>
+<style>
+.pe{transition:all .3s allow-discrete;pointer-events:none}
+.t{transition:all .3s allow-discrete}
+.sheet{pointer-events:none}
+</style>
 </head><body style="margin:0;background:#fff">
   <div id="frame" style="position:absolute;left:40px;top:160px;width:640px;height:200px">
-    <div style="position:relative;margin:24px 16px;width:560px;height:72px">
+    <div style="position:relative;margin:16px;width:560px;height:168px">
       <div style="position:absolute;inset:0;background:#246"></div>
-      <h1 class="pe" style="position:relative;margin:0;padding:16px 12px;color:#fff;font:32px/40px sans-serif">Hero Caption</h1>
+      <h1 id="owner" class="pe" style="position:relative;margin:0;padding:12px;color:#fff;font:28px/36px sans-serif">Hero <span id="kid" class="t">Caption</span></h1>
+      <p id="longhand" style="pointer-events:none;transition-property:opacity;transition-duration:2s;position:relative;margin:8px 12px;color:#fff;font:24px/32px sans-serif">Echo</p>
+      <p id="nostyle" class="sheet">Placeholder</p>
     </div>
   </div>
 </body></html>`,
@@ -1102,7 +1118,14 @@ test('pe:none capture does not fire pointer-events transition events', async ({
   );
   const site = await context.newPage();
   await site.goto(`${origin}/`);
+  // Clear the empty style="" so "no attribute" is a real case (HTML parsers keep style="").
   await site.evaluate(() => {
+    document.getElementById('nostyle')?.removeAttribute('style');
+    const snap = (id: string) => {
+      const el = document.getElementById(id);
+      if (el === null) return { had: false, value: null as string | null };
+      return { had: el.hasAttribute('style'), value: el.getAttribute('style') };
+    };
     const counts = { run: 0, start: 0, cancel: 0, end: 0 };
     const note = (key: 'run' | 'start' | 'cancel' | 'end', ev: Event) => {
       if (!(ev instanceof TransitionEvent)) return;
@@ -1121,7 +1144,22 @@ test('pe:none capture does not fire pointer-events transition events', async ({
     document.addEventListener('transitionend', (ev) => {
       note('end', ev);
     });
-    (globalThis as unknown as { __peTransitions: typeof counts }).__peTransitions = counts;
+    (
+      globalThis as unknown as {
+        __peProbe: {
+          counts: typeof counts;
+          before: Record<string, { had: boolean; value: string | null }>;
+        };
+      }
+    ).__peProbe = {
+      counts,
+      before: {
+        owner: snap('owner'),
+        kid: snap('kid'),
+        longhand: snap('longhand'),
+        nostyle: snap('nostyle'),
+      },
+    };
   });
   await clickToolbarIcon(context, extensionId, site);
   await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
@@ -1133,16 +1171,45 @@ test('pe:none capture does not fire pointer-events transition events', async ({
   await site.mouse.move(688, 368, { steps: 4 });
   await site.mouse.up();
   const result = await opened;
-  await expect(result.locator('#pvText')).toHaveValue('Hero Caption');
-  const counts = await site.evaluate(
-    () =>
-      (
-        globalThis as unknown as {
-          __peTransitions: { run: number; start: number; cancel: number; end: number };
-        }
-      ).__peTransitions,
-  );
-  expect(counts).toEqual({ run: 0, start: 0, cancel: 0, end: 0 });
+  await expect(result.locator('#pvText')).toHaveValue('Hero Caption Echo');
+  const after = await site.evaluate(() => {
+    const probe = (
+      globalThis as unknown as {
+        __peProbe: {
+          counts: { run: number; start: number; cancel: number; end: number };
+          before: Record<string, { had: boolean; value: string | null }>;
+        };
+      }
+    ).__peProbe;
+    const snap = (id: string) => {
+      const el = document.getElementById(id);
+      if (el === null) return { had: false, value: null as string | null };
+      return { had: el.hasAttribute('style'), value: el.getAttribute('style') };
+    };
+    return {
+      counts: probe.counts,
+      before: probe.before,
+      now: {
+        owner: snap('owner'),
+        kid: snap('kid'),
+        longhand: snap('longhand'),
+        nostyle: snap('nostyle'),
+      },
+      longhandTransition: (() => {
+        const el = document.getElementById('longhand');
+        return el === null ? '' : getComputedStyle(el).transitionProperty;
+      })(),
+      longhandDuration: (() => {
+        const el = document.getElementById('longhand');
+        return el === null ? '' : getComputedStyle(el).transitionDuration;
+      })(),
+    };
+  });
+  expect(after.counts).toEqual({ run: 0, start: 0, cancel: 0, end: 0 });
+  expect(after.now).toEqual(after.before);
+  expect(after.now.nostyle).toEqual({ had: false, value: null });
+  expect(after.longhandTransition).toBe('opacity');
+  expect(after.longhandDuration).toBe('2s');
 });
 
 test('the preview still reaches a target after many spacer text nodes', async ({

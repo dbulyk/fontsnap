@@ -213,11 +213,30 @@ function paintsAtPoint(el: Element, cx: number, cy: number): boolean {
   return false;
 }
 
+/** True when a discrete transition would run for pointer-events (or `all`). */
+function discretePointerTransition(el: Element): boolean {
+  const cs = getComputedStyle(el);
+  if (!cs.getPropertyValue('transition-behavior').includes('allow-discrete')) return false;
+  for (const part of cs.getPropertyValue('transition-property').split(',')) {
+    const p = part.trim();
+    if (p === 'all' || p === 'pointer-events') return true;
+  }
+  return false;
+}
+
+type StyleHost = HTMLElement | SVGElement;
+
+function asStyleHost(node: Node): StyleHost | null {
+  if (node instanceof HTMLElement || node instanceof SVGElement) return node;
+  return null;
+}
+
 /**
- * pe:none omits the owner from the hit stack. Briefly set inline transition:none !important then
- * pointer-events:auto !important on the owner only (beats class/@layer !important; no document-wide
- * style). Flush computed style between those writes so allow-discrete transitions do not start; restore
- * pointer-events while transition is still none, then restore transition.
+ * pe:none omits the owner from the hit stack. Snapshot each touched style attribute, set
+ * transition-behavior:normal !important (does not cancel running transitions) on the owner and on
+ * descendants that would discrete-animate pointer-events, then pointer-events:auto !important on the
+ * owner only. Clear pointer-events before putting attributes back so restore does not start a discrete
+ * transition; then restore every style attribute byte-for-byte (or remove it if it was absent).
  */
 function elementsFromPointWithOwner(
   doc: Document,
@@ -226,23 +245,49 @@ function elementsFromPointWithOwner(
   cy: number,
 ): Element[] {
   if (getComputedStyle(owner).pointerEvents !== 'none') return doc.elementsFromPoint(cx, cy);
-  if (!(owner instanceof HTMLElement)) return doc.elementsFromPoint(cx, cy);
-  const prevPe = owner.style.getPropertyValue('pointer-events');
-  const prevPePri = owner.style.getPropertyPriority('pointer-events');
-  const prevTr = owner.style.getPropertyValue('transition');
-  const prevTrPri = owner.style.getPropertyPriority('transition');
-  owner.style.setProperty('transition', 'none', 'important');
-  // Force recalc so the pe write below sees transition:none (same-frame batch would still animate).
-  void owner.getBoundingClientRect();
-  owner.style.setProperty('pointer-events', 'auto', 'important');
+  const host = asStyleHost(owner);
+  if (host === null) return doc.elementsFromPoint(cx, cy);
+
+  const hosts: StyleHost[] = [];
+  const hadStyle: boolean[] = [];
+  const savedStyle: (string | null)[] = [];
+  const remember = (el: StyleHost): void => {
+    hosts.push(el);
+    hadStyle.push(el.hasAttribute('style'));
+    savedStyle.push(el.getAttribute('style'));
+  };
+
+  remember(host);
+  if (discretePointerTransition(host)) {
+    host.style.setProperty('transition-behavior', 'normal', 'important');
+  }
+  const walker = doc.createTreeWalker(host, NodeFilter.SHOW_ELEMENT);
+  for (let node = walker.nextNode(); node !== null; node = walker.nextNode()) {
+    const child = asStyleHost(node);
+    if (child === null || !discretePointerTransition(child)) continue;
+    remember(child);
+    child.style.setProperty('transition-behavior', 'normal', 'important');
+  }
+  // Recalc so the pe write sees transition-behavior:normal (same-frame batch would still animate).
+  void host.getBoundingClientRect();
+  host.style.setProperty('pointer-events', 'auto', 'important');
   try {
     return doc.elementsFromPoint(cx, cy);
   } finally {
-    if (prevPe === '' && prevPePri === '') owner.style.removeProperty('pointer-events');
-    else owner.style.setProperty('pointer-events', prevPe, prevPePri);
-    void owner.getBoundingClientRect();
-    if (prevTr === '' && prevTrPri === '') owner.style.removeProperty('transition');
-    else owner.style.setProperty('transition', prevTr, prevTrPri);
+    // Put pe back to none under still-suppressed discrete behavior so attribute restore does not animate.
+    host.style.setProperty('pointer-events', 'none', 'important');
+    void host.getBoundingClientRect();
+    // Owner first so inherited pe is already final before descendant behavior is restored.
+    while (hosts.length > 0) {
+      const el = hosts.shift();
+      const had = hadStyle.shift();
+      const saved = savedStyle.shift();
+      if (el === undefined || had === undefined) break;
+      // Flush pending CSSOM writes; otherwise removeAttribute can leave style="".
+      void el.getAttribute('style');
+      if (had && typeof saved === 'string') el.setAttribute('style', saved);
+      else el.removeAttribute('style');
+    }
   }
 }
 
