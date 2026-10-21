@@ -149,188 +149,318 @@ test('the preview takes only the visible text inside the frame, not a selection 
   await expect(result.locator('#pvText')).toHaveValue(visible);
 });
 
-function pageOf(body: string): string {
-  return `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;background:#fff">${body}</body></html>`;
+const MARKER = 'Shown Marker';
+const LINE = 'margin:0;font:32px/40px sans-serif;white-space:nowrap;color:#111';
+const SR_ONLY =
+  '.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);clip-path:inset(50%);white-space:nowrap;border:0}';
+const PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+function markerAt(top: number): string {
+  return `<p style="position:absolute;left:16px;top:${String(top)}px;${LINE}">${MARKER}</p>`;
 }
 
-async function framedPreview(
+function framedPage(inner: string, css = ''): string {
+  return `<!doctype html><html><head><meta charset="utf-8"><style>
+    html,body{margin:0;background:#fff;color:#111}
+    #frame{position:absolute;left:40px;top:160px;width:640px;height:200px}
+    ${css}
+  </style></head><body><div id="frame">${inner}</div></body></html>`;
+}
+
+async function previewInFrame(
   context: BrowserContext,
   extensionId: string,
   serve: (routes: ReadonlyMap<string, Route>) => Promise<string>,
-  body: string,
-  prepare?: (site: Page) => Promise<void>,
+  inner: string,
+  options?: { css?: string; prepare?: (site: Page) => Promise<void> },
 ): Promise<string> {
   const origin = await serve(
-    new Map([['/', { type: 'text/html; charset=utf-8', body: pageOf(body) }]]),
+    new Map([
+      ['/', { type: 'text/html; charset=utf-8', body: framedPage(inner, options?.css ?? '') }],
+    ]),
   );
   const site = await context.newPage();
   await site.goto(`${origin}/`);
-  if (prepare !== undefined) await prepare(site);
-  const box = await site.locator('#t').boundingBox();
-  expect(box, '#t has a box').not.toBeNull();
+  if (options?.prepare !== undefined) await options.prepare(site);
   await clickToolbarIcon(context, extensionId, site);
   await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
   const opened = context.waitForEvent('page', {
     predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
   });
-  const x = Math.max(0, (box?.x ?? 0) - 8);
-  const y = Math.max(0, (box?.y ?? 0) - 8);
-  await site.mouse.move(x, y);
+  await site.mouse.move(32, 152);
   await site.mouse.down();
-  await site.mouse.move(
-    (box?.x ?? 0) + (box?.width ?? 0) + 8,
-    (box?.y ?? 0) + (box?.height ?? 0) + 8,
-    {
-      steps: 4,
-    },
-  );
+  await site.mouse.move(688, 368, { steps: 4 });
   await site.mouse.up();
   const result = await opened;
-  await expect(result.locator('#results li').first()).toBeVisible();
+  await expect(result.locator('#shot')).toBeVisible();
   return result.locator('#pvText').inputValue();
 }
 
-const textStyle = 'margin:80px 40px;font:32px/40px sans-serif;color:#111';
+interface PreviewCase {
+  name: string;
+  inner: string;
+  expected: string;
+  css?: string;
+  prepare?: (site: Page) => Promise<void>;
+}
 
-test('the preview takes text that does not receive pointer events', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    `<p id="t" style="pointer-events:none;${textStyle}">Pointer Free Text</p>`,
-  );
-  expect(text).toBe('Pointer Free Text');
-});
+const field = 'font:24px sans-serif;color:#111';
 
-test('the preview takes text under a transparent click catcher', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    `<p id="t" style="${textStyle}">Under Clear Layer</p><div style="position:fixed;inset:0;background:rgba(0,0,0,0)"></div>`,
-  );
-  expect(text).toBe('Under Clear Layer');
-});
+function selectField(start: number, end: number): (site: Page) => Promise<void> {
+  return async (site) => {
+    await site.locator('#f').evaluate(
+      (node, range) => {
+        if (!(node instanceof HTMLTextAreaElement) && !(node instanceof HTMLInputElement)) {
+          throw new Error('field');
+        }
+        node.setSelectionRange(range.start, range.end);
+      },
+      { start, end },
+    );
+  };
+}
 
-test('the preview takes a heading under a stretched link', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    `<style>.card{position:relative;width:520px;margin:80px 40px}.stretched-link::after{content:"";position:absolute;inset:0}</style>
-<div class="card"><h2 id="t" style="margin:0 0 24px;font:32px/40px sans-serif;color:#111">Card Title Here</h2><a class="stretched-link" href="#read">Read</a></div>`,
-  );
-  expect(text).toBe('Card Title Here');
-});
-
-test('the preview skips text covered by an opaque descendant', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    `<p id="t" style="position:relative;${textStyle};width:420px">Covered Words<span style="position:absolute;inset:0;background:#fff"></span></p>`,
-  );
-  expect(text).toBe('');
-});
-
-test('the preview takes text in an element with no box', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    `<p id="t" style="${textStyle}"><span style="display:contents">Contents Text</span></p>`,
-  );
-  expect(text).toBe('Contents Text');
-});
-
-test('the preview takes visible letters marked aria-hidden', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    `<p id="t" aria-hidden="true" style="${textStyle}">Aria Visible Letters</p>`,
-  );
-  expect(text).toBe('Aria Visible Letters');
-});
-
-test('the preview takes the selected part of a textarea that meets the frame', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    '<textarea id="t" style="margin:80px 40px;width:480px;height:90px;font:24px sans-serif">selected part and the rest</textarea>',
-    async (site) => {
-      await site.locator('#t').evaluate((node) => {
-        if (!(node instanceof HTMLTextAreaElement)) throw new Error('textarea');
-        node.setSelectionRange(0, 13);
+const previewCases: PreviewCase[] = [
+  {
+    name: 'visible text',
+    inner: `<p style="position:absolute;left:16px;top:28px;${LINE}">Visible Frame Text</p>`,
+    expected: 'Visible Frame Text',
+  },
+  {
+    name: 'a selection outside the frame',
+    inner: `<p id="out" style="position:fixed;left:40px;top:24px;margin:0;font:20px sans-serif">TRAP selected</p>
+      <p style="position:absolute;left:16px;top:28px;${LINE}">Visible Frame Text</p>`,
+    expected: 'Visible Frame Text',
+    prepare: async (site) => {
+      await site.locator('#out').evaluate((node) => {
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const selection = document.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
       });
     },
-  );
-  expect(text).toBe('selected part');
-});
+  },
+  {
+    name: 'visibility:hidden',
+    inner: `<p style="visibility:hidden;position:absolute;left:16px;top:16px;${LINE}">TRAP hidden</p>${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'opacity:0',
+    inner: `<p style="opacity:0;position:absolute;left:16px;top:16px;${LINE}">TRAP clear</p>${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'display:none',
+    inner: `<p style="display:none">TRAP none</p>${markerAt(28)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'an opaque sibling',
+    inner: `<p style="position:absolute;left:16px;top:8px;${LINE}">TRAP covered</p>
+      <div style="position:absolute;left:0;top:0;width:640px;height:56px;background:#fff"></div>${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'text that does not receive pointer events',
+    inner: `<p style="pointer-events:none;position:absolute;left:16px;top:28px;${LINE}">Pointer Free Text</p>`,
+    expected: 'Pointer Free Text',
+  },
+  {
+    name: 'a transparent click catcher',
+    inner: `<p style="position:absolute;left:16px;top:28px;${LINE}">Under Clear Layer</p>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0)"></div>`,
+    expected: 'Under Clear Layer',
+  },
+  {
+    name: 'a heading under a stretched link',
+    css: '.card{position:relative;width:520px;margin:24px 16px}.stretched-link::after{content:"";position:absolute;top:0;right:0;bottom:0;left:0}',
+    inner: `<div class="card"><h2 style="${LINE}">Card Title Here</h2><a class="stretched-link" href="#read" style="position:absolute;left:-2000px">Read</a></div>`,
+    expected: 'Card Title Here',
+  },
+  {
+    name: 'an opaque descendant',
+    inner: `<p style="position:relative;margin:16px;width:420px;${LINE}">TRAP child<span style="position:absolute;inset:0;background:#fff"></span></p>${markerAt(100)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'display:contents',
+    inner: `<p style="position:absolute;left:16px;top:28px;${LINE}"><span style="display:contents">Contents Text</span></p>`,
+    expected: 'Contents Text',
+  },
+  {
+    name: 'display:contents and visibility:hidden',
+    inner: `<p style="position:absolute;left:16px;top:16px;${LINE}"><span style="display:contents;visibility:hidden">TRAP secret</span></p>${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'visible aria-hidden text',
+    inner: `<p aria-hidden="true" style="position:absolute;left:16px;top:28px;${LINE}">Aria Visible Letters</p>`,
+    expected: 'Aria Visible Letters',
+  },
+  {
+    name: 'aria-hidden stars beside an sr-only duplicate',
+    css: SR_ONLY,
+    inner: `<p style="position:absolute;left:16px;top:28px;${LINE}"><span aria-hidden="true">4.5 STARS</span><span class="sr-only">TRAP rated</span></p>`,
+    expected: '4.5 STARS',
+  },
+  {
+    name: 'sr-only text alone',
+    css: SR_ONLY,
+    inner: `<p class="sr-only">TRAP sr only</p>${markerAt(28)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a collapsed accordion',
+    inner: `<div style="height:0;overflow:hidden"><p style="${LINE}">TRAP accordion</p></div>${markerAt(28)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'text clipped by overflow',
+    inner: `<div style="height:36px;overflow:hidden"><p style="padding-top:80px;${LINE}">TRAP clipped</p></div>${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'an empty clip rect',
+    inner: `<p style="position:absolute;left:16px;top:16px;width:300px;height:40px;clip:rect(0,0,0,0);${LINE}">TRAP cliprect</p>${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'clip-path inset(100%)',
+    inner: `<p style="position:absolute;left:16px;top:16px;width:300px;clip-path:inset(100%);${LINE}">TRAP inset</p>${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'text under an image',
+    inner: `<p style="position:absolute;left:16px;top:8px;${LINE}">TRAP image</p>
+      <img alt="" src="${PIXEL}" style="position:absolute;left:0;top:0;width:640px;height:56px">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'text under a filled canvas',
+    inner: `<p style="position:absolute;left:16px;top:8px;${LINE}">TRAP canvas</p>
+      <canvas id="c" width="640" height="56" style="position:absolute;left:0;top:0;width:640px;height:56px"></canvas>${markerAt(80)}`,
+    expected: MARKER,
+    prepare: async (site) => {
+      await site.locator('#c').evaluate((node) => {
+        if (!(node instanceof HTMLCanvasElement)) throw new Error('canvas');
+        const ctx = node.getContext('2d');
+        if (ctx === null) throw new Error('context');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, node.width, node.height);
+      });
+    },
+  },
+  {
+    name: 'text under an svg rect',
+    inner: `<p style="position:absolute;left:16px;top:8px;${LINE}">TRAP svg</p>
+      <svg style="position:absolute;left:0;top:0;width:640px;height:56px"><rect width="640" height="56" fill="#fff"/></svg>${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'text under an opaque layer that does not receive pointer events',
+    inner: `<p style="position:absolute;left:16px;top:16px;${LINE}">Under Penone Cover</p>
+      <div style="position:absolute;left:0;top:0;width:640px;height:80px;background:#fff;pointer-events:none"></div>`,
+    expected: 'Under Penone Cover',
+  },
+  {
+    name: 'a floating label over an input',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:64px">
+      <label style="position:absolute;left:12px;top:12px;pointer-events:none;${LINE}">Floating Label</label>
+      <input style="width:560px;height:64px;${field}">
+    </div>`,
+    expected: 'Floating Label',
+  },
+  {
+    name: 'a hero caption over an opaque sibling',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <p style="position:absolute;left:12px;top:16px;pointer-events:none;color:#fff;${LINE}">Hero Caption</p>
+    </div>`,
+    expected: 'Hero Caption',
+  },
+  {
+    name: 'a textarea fully inside the frame',
+    inner: `<textarea style="position:absolute;left:16px;top:24px;width:480px;height:80px;${field}">full field value</textarea>`,
+    expected: 'full field value',
+  },
+  {
+    name: 'a text input fully inside the frame',
+    inner: `<input type="text" value="typed words" style="position:absolute;left:16px;top:28px;width:320px;height:44px;${field}">`,
+    expected: 'typed words',
+  },
+  {
+    name: 'an input with no type',
+    inner: `<input value="missing type" style="position:absolute;left:16px;top:28px;width:320px;height:44px;${field}">`,
+    expected: 'missing type',
+  },
+  {
+    name: 'a textarea that crosses the frame with no selection',
+    inner: `<textarea style="position:absolute;left:16px;top:120px;width:400px;height:140px;${field}">partial value</textarea>${markerAt(16)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'the selection of a textarea that crosses the frame',
+    inner: `<textarea id="f" style="position:absolute;left:16px;top:120px;width:400px;height:140px;${field}">partial value</textarea>`,
+    expected: 'partial',
+    prepare: selectField(0, 7),
+  },
+  {
+    name: 'the selection of an input that crosses the frame',
+    inner: `<input id="f" type="text" value="partial value" style="position:absolute;left:16px;top:150px;width:400px;height:80px;${field}">`,
+    expected: 'partial',
+    prepare: selectField(0, 7),
+  },
+  {
+    name: 'a textarea under an opaque cover',
+    inner: `<textarea style="position:absolute;left:16px;top:16px;width:480px;height:70px;${field}">TRAP field</textarea>
+      <div style="position:absolute;left:0;top:0;width:640px;height:100px;background:#fff"></div>${markerAt(120)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a textarea with no box',
+    inner: `<textarea style="display:none">TRAP hidden field</textarea>${markerAt(28)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a password input',
+    inner: `<input type="password" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a password input in any case',
+    inner: `<input type="PASSWORD" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'text security disc on a text input',
+    inner: `<input type="text" value="MaskedBankPass" autocomplete="off" style="-webkit-text-security:disc;position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'autocomplete current-password',
+    inner: `<input type="text" value="MaskedBankPass" autocomplete="current-password" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a name containing password',
+    inner: `<input type="text" name="user_password" value="toggledSecret" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'an id containing pwd',
+    inner: `<input id="pwd" type="text" value="toggledSecret" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+];
 
-test('the preview takes a textarea value when the field sits inside the frame', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    '<textarea id="t" style="margin:80px 40px;width:480px;height:90px;font:24px sans-serif">full field value</textarea>',
-  );
-  expect(text).toBe('full field value');
-});
-
-test('the preview never reads a password field', async ({ context, extensionId, serve }) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    '<input id="t" type="password" value="SecretPass" style="margin:80px 40px;width:320px;height:44px;font:24px sans-serif">',
-  );
-  expect(text).toBe('');
-});
-
-test('the preview takes a text field value when the field sits inside the frame', async ({
-  context,
-  extensionId,
-  serve,
-}) => {
-  const text = await framedPreview(
-    context,
-    extensionId,
-    serve,
-    '<input id="t" type="text" value="typed words" style="margin:80px 40px;width:320px;height:44px;font:24px sans-serif">',
-  );
-  expect(text).toBe('typed words');
-});
+for (const item of previewCases) {
+  test(`the preview follows visibility: ${item.name}`, async ({ context, extensionId, serve }) => {
+    const text = await previewInFrame(context, extensionId, serve, item.inner, {
+      ...(item.css === undefined ? {} : { css: item.css }),
+      ...(item.prepare === undefined ? {} : { prepare: item.prepare }),
+    });
+    expect(text).toBe(item.expected);
+  });
+}

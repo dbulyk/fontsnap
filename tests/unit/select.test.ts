@@ -51,18 +51,32 @@ function selectionOf(
   } as unknown as Selection;
 }
 
-/** Computed paint at a point. Omitted fields use the values Chromium returns for a transparent element. */
+/**
+ * Computed style on top of what the element already has.
+ * Omitted fields use the values Chromium computes for a transparent element.
+ */
 interface StackPaint {
   opacity?: string;
   backgroundColor?: string;
   backgroundImage?: string;
+  visibility?: string;
+  overflow?: string;
+  overflowX?: string;
+  overflowY?: string;
+  clip?: string;
+  clipPath?: string;
+  pointerEvents?: string;
+  textSecurity?: string;
 }
 
 /**
  * Layout for happy-dom, which does not place boxes.
  * `boxes` are the line boxes of each element's text (and the border box of a field with that id).
- * `stack`, top to bottom, is what `elementsFromPoint` returns; the first entry is `elementFromPoint`.
+ * `bounds` are border boxes for clipping; a placed element uses its line box when no bound is given.
+ * `stack`, top to bottom, is what `elementsFromPoint` returns.
  * `noBox` elements have no CSS box, as `display: contents` does.
+ * happy-dom leaves overflow, clip and background empty. Chromium computes `visible`, `auto`, `none`
+ * and a transparent color, so the style spy speaks Chromium and then applies `paint`.
  */
 function layout(
   boxes: Record<string, Partial<DOMRect>>,
@@ -71,6 +85,7 @@ function layout(
     stack?: (x: number, y: number) => readonly Element[];
     paint?: (el: Element) => StackPaint;
     noBox?: readonly string[];
+    bounds?: Record<string, Partial<DOMRect>>;
   },
 ): void {
   const realRange = document.createRange.bind(document);
@@ -104,30 +119,49 @@ function layout(
     }
     return hits;
   };
-  vi.spyOn(document, 'elementFromPoint').mockImplementation((x, y) => hitsAt(x, y)[0] ?? null);
   document.elementsFromPoint = (x, y) => hitsAt(x, y);
+  const realStyle = window.getComputedStyle.bind(window);
   const paintOf = options?.paint;
-  if (paintOf !== undefined) {
-    const realStyle = window.getComputedStyle.bind(window);
-    vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element) => {
-      const style = realStyle(el);
-      const paint = paintOf(el);
-      if (
-        paint.opacity === undefined &&
-        paint.backgroundColor === undefined &&
-        paint.backgroundImage === undefined
-      ) {
-        return style;
-      }
-      return {
-        opacity: paint.opacity ?? '1',
-        backgroundColor: paint.backgroundColor ?? 'rgba(0, 0, 0, 0)',
-        backgroundImage: paint.backgroundImage ?? 'none',
-        display: style.display,
-        visibility: style.visibility,
-      } as CSSStyleDeclaration;
-    });
-  }
+  vi.spyOn(window, 'getComputedStyle').mockImplementation((el: Element) => {
+    const real = realStyle(el);
+    const paint = paintOf?.(el) ?? {};
+    const pick = (over: string | undefined, value: string, fallback: string): string => {
+      if (over !== undefined && over !== '') return over;
+      if (value !== '') return value;
+      return fallback;
+    };
+    const overflow = pick(paint.overflow, real.overflow, 'visible');
+    const security = paint.textSecurity ?? real.getPropertyValue('-webkit-text-security');
+    const clip = pick(paint.clip, real.getPropertyValue('clip'), 'auto');
+    return {
+      display: real.display === '' ? 'block' : real.display,
+      opacity: pick(paint.opacity, real.opacity, '1'),
+      visibility: pick(paint.visibility, real.visibility, 'visible'),
+      backgroundColor: pick(paint.backgroundColor, real.backgroundColor, 'rgba(0, 0, 0, 0)'),
+      backgroundImage: pick(paint.backgroundImage, real.backgroundImage, 'none'),
+      overflow,
+      overflowX: pick(paint.overflowX, real.overflowX, overflow),
+      overflowY: pick(paint.overflowY, real.overflowY, overflow),
+      clipPath: pick(paint.clipPath, real.clipPath, 'none'),
+      pointerEvents: pick(paint.pointerEvents, real.pointerEvents, 'auto'),
+      getPropertyValue: (property: string) => {
+        if (property === '-webkit-text-security') return security === '' ? 'none' : security;
+        if (property === 'clip') return clip;
+        return real.getPropertyValue(property);
+      },
+    } as CSSStyleDeclaration;
+  });
+  const bounds = options?.bounds ?? {};
+  vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+    const box = bounds[this.id] ?? boxes[this.id];
+    return {
+      left: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      ...(box ?? {}),
+    } as DOMRect;
+  });
   const noBox = new Set(options?.noBox ?? []);
   vi.spyOn(Element.prototype, 'getClientRects').mockImplementation(function (this: Element) {
     if (noBox.has(this.id)) return [] as unknown as DOMRectList;
@@ -251,15 +285,27 @@ describe('startSelection', () => {
     );
   });
 
-  it('caps the selected text at 80 characters', () => {
+  it('drops a selection longer than 100 graphemes', () => {
     vi.spyOn(window, 'getSelection').mockReturnValue(
-      selectionOf('y'.repeat(300), { right: 50, bottom: 50 }),
+      selectionOf('y'.repeat(101), { right: 50, bottom: 50 }),
     );
     startSelection(window);
     drag([10, 10], [60, 60]);
     vi.advanceTimersByTime(30);
     expect(stub.chrome.runtime.sendMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ text: 'y'.repeat(80) }),
+      expect.objectContaining({ text: '' }),
+    );
+  });
+
+  it('keeps a selection of exactly 100 graphemes', () => {
+    vi.spyOn(window, 'getSelection').mockReturnValue(
+      selectionOf('y'.repeat(100), { right: 50, bottom: 50 }),
+    );
+    startSelection(window);
+    drag([10, 10], [60, 60]);
+    vi.advanceTimersByTime(30);
+    expect(stub.chrome.runtime.sendMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ text: 'y'.repeat(100) }),
     );
   });
 
@@ -361,17 +407,47 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('one two three');
   });
 
-  it('skips blank text nodes and stops after 80 characters', () => {
-    document.body.innerHTML = `<p id="a">${'a'.repeat(60)}</p> <p id="b">${'b'.repeat(60)}</p><p id="c">${'c'.repeat(60)}</p>`;
+  it('keeps 100 graphemes and drops a longer capture', () => {
+    document.body.innerHTML = `<p id="a">${'a'.repeat(100)}</p>`;
+    layout({ a: { right: 40, bottom: 20 } });
+    expect(textInRect(document, frame)).toBe('a'.repeat(100));
+  });
+
+  it('drops 101 graphemes, including a join and a multi-code-unit character', () => {
+    document.body.innerHTML = `<p id="a">${'a'.repeat(101)}</p>`;
+    layout({ a: { right: 40, bottom: 20 } });
+    expect(textInRect(document, frame)).toBe('');
+  });
+
+  it('keeps 100 thumbs-up graphemes', () => {
+    document.body.innerHTML = `<p id="a">${'👍'.repeat(100)}</p>`;
+    layout({ a: { right: 40, bottom: 20 } });
+    expect(textInRect(document, frame)).toBe('👍'.repeat(100));
+  });
+
+  it('drops 101 thumbs-up graphemes', () => {
+    document.body.innerHTML = `<p id="a">${'👍'.repeat(101)}</p>`;
+    layout({ a: { right: 40, bottom: 20 } });
+    expect(textInRect(document, frame)).toBe('');
+  });
+
+  it('drops two pieces once the joining space passes 100 graphemes', () => {
+    document.body.innerHTML = `<p id="a">${'a'.repeat(50)}</p><p id="b">${'b'.repeat(50)}</p>`;
     layout({
       a: { right: 10, bottom: 10 },
       b: { top: 20, right: 10, bottom: 30 },
-      c: { top: 40, right: 10, bottom: 50 },
     });
-    const text = textInRect(document, frame);
-    expect(text).toHaveLength(80);
-    expect(text.startsWith('a'.repeat(60) + ' b')).toBe(true);
+    expect(textInRect(document, frame)).toBe('');
     expect(textInRect(document, { x: 5000, y: 5000, w: 1, h: 1 })).toBe('');
+  });
+
+  it('keeps two pieces that join to exactly 100 graphemes', () => {
+    document.body.innerHTML = `<p id="a">${'a'.repeat(50)}</p><p id="b">${'b'.repeat(49)}</p>`;
+    layout({
+      a: { right: 10, bottom: 10 },
+      b: { top: 20, right: 10, bottom: 30 },
+    });
+    expect(textInRect(document, frame)).toBe(`${'a'.repeat(50)} ${'b'.repeat(49)}`);
   });
 
   it.each([
@@ -409,10 +485,12 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('outer bold');
   });
 
-  it('takes text that does not receive pointer events', () => {
-    document.body.innerHTML = '<div id="wrap"><p id="t">pointer free</p></div>';
+  it('takes text that does not receive pointer events over an opaque sibling', () => {
+    document.body.innerHTML =
+      '<div id="slide"></div><p id="t" style="pointer-events:none">pointer free</p>';
     layout({ t: { left: 10, right: 90, top: 10, bottom: 30 } }, undefined, {
-      stack: () => [el('wrap')],
+      stack: () => [el('slide')],
+      paint: (hit) => (hit.id === 'slide' ? { backgroundColor: 'rgb(20, 40, 60)' } : {}),
     });
     expect(textInRect(document, frame)).toBe('pointer free');
   });
@@ -483,6 +561,7 @@ describe('textInRect', () => {
     layout({ t: { left: 10, right: 80, top: 10, bottom: 30 } }, undefined, {
       noBox: ['t'],
       stack: () => [el('p')],
+      paint: (hit) => (hit.id === 'p' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
     });
     expect(textInRect(document, frame)).toBe('shown letters');
   });
@@ -550,6 +629,242 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('visible');
   });
 
+  it.each([
+    ['type=PASSWORD', 'f', '<input id="f" type="PASSWORD" value="SecretPass">'],
+    [
+      'autocomplete=current-password',
+      'f',
+      '<input id="f" type="text" autocomplete="username current-password" value="SecretPass">',
+    ],
+    [
+      'autocomplete=new-password',
+      'f',
+      '<input id="f" type="text" autocomplete="new-password" value="SecretPass">',
+    ],
+    [
+      'autocomplete=one-time-code',
+      'f',
+      '<input id="f" type="text" autocomplete="one-time-code" value="SecretPass">',
+    ],
+    [
+      'a name containing password',
+      'f',
+      '<input id="f" type="text" name="user_password" value="SecretPass">',
+    ],
+    ['an id containing pass', 'show-pass', '<input id="show-pass" type="text" value="SecretPass">'],
+    ['an id containing pwd', 'pwd', '<input id="pwd" type="text" value="SecretPass">'],
+  ])('never reads a password-like field (%s)', (_name, id, html) => {
+    document.body.innerHTML = `${html}<p id="v">visible</p>`;
+    layout({
+      [id]: { left: 10, top: 10, right: 80, bottom: 40 },
+      v: { left: 10, top: 50, right: 60, bottom: 70 },
+    });
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('never reads a text field whose computed text security is not none', () => {
+    document.body.innerHTML =
+      '<input id="f" type="text" value="MaskedBankPass"><p id="v">visible</p>';
+    layout(
+      {
+        f: { left: 10, top: 10, right: 80, bottom: 40 },
+        v: { left: 10, top: 50, right: 60, bottom: 70 },
+      },
+      undefined,
+      { paint: (el) => (el.id === 'f' ? { textSecurity: 'disc' } : {}) },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('skips letters whose owner disguises them with text security', () => {
+    document.body.innerHTML = '<p id="t">TRAP secret</p><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, top: 10, right: 80, bottom: 28 },
+        v: { left: 10, top: 40, right: 70, bottom: 58 },
+      },
+      undefined,
+      { paint: (el) => (el.id === 't' ? { textSecurity: 'disc' } : {}) },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('reads a username field', () => {
+    document.body.innerHTML =
+      '<input id="f" type="text" name="username" autocomplete="username" value="ada">';
+    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
+    expect(textInRect(document, frame)).toBe('ada');
+  });
+
+  it('does not read an email field', () => {
+    document.body.innerHTML =
+      '<input id="f" type="email" value="ada@example.com"><p id="v">visible</p>';
+    layout({
+      f: { left: 10, top: 10, right: 80, bottom: 40 },
+      v: { left: 10, top: 50, right: 60, bottom: 70 },
+    });
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('reads an input with no type and an input with an unknown type', () => {
+    document.body.innerHTML = '<input id="f" value="plain words">';
+    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
+    expect(textInRect(document, frame)).toBe('plain words');
+  });
+
+  it('reads an input whose type is not a real type', () => {
+    document.body.innerHTML = '<input id="f" type="not-a-type" value="odd type">';
+    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
+    expect(textInRect(document, frame)).toBe('odd type');
+  });
+
+  it('does not read a textarea that has no box', () => {
+    document.body.innerHTML =
+      '<textarea id="f" style="display:none">DisplayNoneTextarea</textarea><p id="v">visible</p>';
+    layout({ v: { left: 10, top: 10, right: 60, bottom: 30 } }, undefined, { noBox: ['f'] });
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('skips a textarea covered by an opaque layer', () => {
+    document.body.innerHTML =
+      '<textarea id="f">CoveredFieldValue</textarea><div id="cover"></div><p id="v">visible</p>';
+    layout(
+      {
+        f: { left: 10, top: 10, right: 80, bottom: 40 },
+        v: { left: 10, top: 60, right: 70, bottom: 80 },
+      },
+      undefined,
+      {
+        stack: (_x, y) => (y < 50 ? [el('cover'), el('f')] : [el('v')]),
+        paint: (el) => (el.id === 'cover' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('skips text clipped by an ancestor overflow box', () => {
+    document.body.innerHTML =
+      '<div id="clip" style="overflow:hidden"><p id="t">TRAP clipped</p></div><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, top: 50, right: 80, bottom: 70 },
+        v: { left: 10, top: 80, right: 70, bottom: 96 },
+      },
+      undefined,
+      { bounds: { clip: { left: 0, top: 0, right: 100, bottom: 30 } } },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('skips text clipped only on overflow-x', () => {
+    document.body.innerHTML =
+      '<div id="clip"><p id="t">TRAP clipped</p></div><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, top: 50, right: 80, bottom: 70 },
+        v: { left: 10, top: 80, right: 70, bottom: 96 },
+      },
+      undefined,
+      {
+        bounds: { clip: { left: 0, top: 0, right: 100, bottom: 30 } },
+        paint: (el) =>
+          el.id === 'clip'
+            ? { overflow: 'visible', overflowX: 'hidden', overflowY: 'visible' }
+            : {},
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('skips text clipped to an empty rect()', () => {
+    document.body.innerHTML = '<p id="t">TRAP clip</p><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, top: 10, right: 80, bottom: 28 },
+        v: { left: 10, top: 40, right: 70, bottom: 58 },
+      },
+      undefined,
+      {
+        bounds: { t: { left: 10, top: 10, right: 200, bottom: 80 } },
+        paint: (el) => (el.id === 't' ? { clip: 'rect(0px, 0px, 0px, 0px)' } : {}),
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it.each(['inset(100%)', 'inset(50%)'])('skips text clipped by clip-path %s', (path) => {
+    document.body.innerHTML = '<p id="t">TRAP inset</p><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, top: 10, right: 80, bottom: 28 },
+        v: { left: 10, top: 40, right: 70, bottom: 58 },
+      },
+      undefined,
+      { paint: (el) => (el.id === 't' ? { clipPath: path } : {}) },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('keeps text inside a clip-path that is not an inset', () => {
+    document.body.innerHTML = '<p id="t">inside words</p>';
+    layout({ t: { left: 10, top: 10, right: 80, bottom: 28 } }, undefined, {
+      bounds: { t: { left: 10, top: 10, right: 90, bottom: 40 } },
+      paint: (el) => (el.id === 't' ? { clipPath: 'circle(50%)' } : {}),
+    });
+    expect(textInRect(document, frame)).toBe('inside words');
+  });
+
+  it.each([
+    ['an image', 'img'],
+    ['a canvas', 'canvas'],
+    ['an svg', 'svg'],
+  ])('skips text covered by %s', (_name, tag) => {
+    document.body.innerHTML = `<p id="t">covered</p><${tag} id="cover"></${tag}><p id="v">visible</p>`;
+    layout(
+      {
+        t: { left: 10, top: 10, right: 80, bottom: 28 },
+        v: { left: 10, top: 40, right: 70, bottom: 58 },
+      },
+      undefined,
+      { stack: (_x, y) => (y < 34 ? [el('cover'), el('t')] : [el('v')]) },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('skips display:contents text whose own visibility is hidden', () => {
+    document.body.innerHTML =
+      '<p id="p"><span id="t" style="display:contents;visibility:hidden">TRAP secret</span></p><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, top: 10, right: 80, bottom: 28 },
+        v: { left: 10, top: 40, right: 70, bottom: 58 },
+      },
+      undefined,
+      {
+        noBox: ['t'],
+        stack: (_x, y) => (y < 34 ? [el('p')] : [el('v')]),
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('takes a floating label that does not receive pointer events', () => {
+    document.body.innerHTML =
+      '<label id="t" style="pointer-events:none">Floating Label</label><input id="f">';
+    layout(
+      {
+        t: { left: 10, top: 10, right: 80, bottom: 28 },
+        f: { left: 8, top: 8, right: 90, bottom: 40 },
+      },
+      undefined,
+      {
+        stack: () => [el('f')],
+        paint: (el) => (el.id === 'f' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
+      },
+    );
+    expect(textInRect(document, frame)).toBe('Floating Label');
+  });
+
   it('reads a field once, between the text before it and the text after it', () => {
     document.body.innerHTML =
       '<p id="a">before</p><textarea id="f">field</textarea><p id="b">after</p>';
@@ -565,6 +880,7 @@ describe('textInRect', () => {
     document.body.remove();
     document.documentElement.append(document.createTextNode('plain root text'));
     const realRange = document.createRange.bind(document);
+    layout({});
     vi.spyOn(document, 'createRange').mockImplementation(() => {
       const range = realRange();
       range.getClientRects = () =>
