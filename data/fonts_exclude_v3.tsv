@@ -33,7 +33,6 @@ fontsource	dejavu-serif	DejaVu Serif	non-ofl	4	npm LICENSE is not OFL-1.1; Fonts
 fontsource	metropolis	Metropolis	non-ofl	18	catalog license Unlicense
 fontsource	bravura	Bravura	unsuitable	1	music notation (SMuFL), not text
 fontsource	bravura-text	Bravura Text	unsuitable	1	music notation (SMuFL), not text
-fontsource	cooper-hewitt	cooper-hewitt	unsuitable	16	unsuitable for text recognition
 fontsource	dseg-weather	DSEG Weather	unsuitable	1	segment display, not text
 fontsource	dseg14-classic	DSEG14 Classic	unsuitable	6	segment display, not text
 fontsource	dseg14-classic-mini	DSEG14 Classic Mini	unsuitable	6	segment display, not text
@@ -45,8 +44,6 @@ fontsource	dseg7-modern	DSEG7 Modern	unsuitable	6	segment display, not text
 fontsource	dseg7-modern-mini	DSEG7 Modern Mini	unsuitable	6	segment display, not text
 fontsource	dseg7-segg-chan	DSEG7 SEGG CHAN	unsuitable	1	segment display, not text
 fontsource	dseg7-segg-chan-mini	DSEG7 SEGG CHAN Mini	unsuitable	1	segment display, not text
-fontsource	genjyuu-gothic	genjyuu-gothic	unsuitable	7	unsuitable for text recognition
-fontsource	peace-sans	peace-sans	unsuitable	1	unsuitable for text recognition
 fontsource	unifont	Unifont	unsuitable	1	bitmap coverage font
 fontsource	unifontex	UnifontEX	unsuitable	1	bitmap coverage font
 fontsource	yakuhanjp	YakuHanJP	unsuitable	7	CJK punctuation only

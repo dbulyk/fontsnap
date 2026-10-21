@@ -115,7 +115,7 @@ def test_exclude_pins():
 
     assert dropped(ExcludeReason.NON_OFL) == 55
     assert dropped(ExcludeReason.ALIAS) == 28
-    assert dropped(ExcludeReason.UNSUITABLE) == 121
+    assert dropped(ExcludeReason.UNSUITABLE) == 97
     assert dropped(ExcludeReason.FUSION_MERGED) == 20
     assert dropped(ExcludeReason.DUPLICATE_SOURCE) == 2
     assert {path.lower() for path in VELVETYNE_NON_OFL} <= by_reason[ExcludeReason.NON_OFL]
@@ -180,17 +180,61 @@ def test_upstream_match_prefers_the_full_face_over_a_variant():
     assert match_upstream_path("LXGWWenKai-Light", 300, "normal", lxgw, "lxgw-wenkai") == "fonts/TTF/LXGWWenKai-Light.ttf"
     uncut = ["Static/UncutSans-RegularItalic.otf", "Static/UncutSans-BookItalic.otf"]
     assert match_upstream_path("UncutSans-Italic", 400, "italic", uncut, "uncut-sans") == "Static/UncutSans-RegularItalic.otf"
+    iosevka = ["Iosevka-Regular.ttf", "Iosevka-Heavy.ttf", "Iosevka-ExtraBold.ttf", "Iosevka-Italic.ttf"]
+    assert match_upstream_path("Iosevka-Black", 900, "normal", iosevka, "iosevka") == "Iosevka-Heavy.ttf"
+    assert match_upstream_path("Iosevka-ExtraBold", 800, "normal", iosevka, "iosevka") == "Iosevka-ExtraBold.ttf"
+    assert match_upstream_path("Iosevka-Black", 900, "normal", iosevka + ["Iosevka-Black.ttf"], "iosevka") == "Iosevka-Black.ttf"
+    league = [
+        "LeagueMono-2.300/static/TTF/LeagueMono-Regular.ttf",
+        "LeagueMono-2.300/static/OTF/LeagueMono-UltraLight.otf",
+        "LeagueMono-2.300/static/OTF/LeagueMono-NarrowUltraLight.otf",
+    ]
+    assert (
+        match_upstream_path("LeagueMono-ExtraLight", 200, "normal", league, "league-mono")
+        == "LeagueMono-2.300/static/OTF/LeagueMono-UltraLight.otf"
+    )
+    nebula = ["OTF/NebulaSans-Bold.otf", "OTF/NebulaSans-Book.otf", "TTF/NebulaSans-Book.ttf"]
+    assert match_upstream_path("NebulaSans-Regular", 400, "normal", nebula, "nebula-sans") == "OTF/NebulaSans-Book.otf"
+    nebula_italic = ["OTF/NebulaSans-BoldItalic.otf", "OTF/NebulaSans-BookItalic.otf"]
+    assert match_upstream_path("NebulaSans-Italic", 400, "italic", nebula_italic, "nebula-sans") == "OTF/NebulaSans-BookItalic.otf"
+    redaction = ["Redaction-Regular.otf", "Redaction-Italic.otf", "Redaction-Bold.otf"]
+    assert match_upstream_path("Redaction-BoldItalic", 700, "italic", redaction, "redaction") is None
+    cooper = [
+        "CooperHewitt-OTF-public/CooperHewitt-Book.otf",
+        "CooperHewitt-OTF-public/CooperHewitt-Heavy.otf",
+        "CooperHewitt-OTF-public/CooperHewitt-Bold.otf",
+    ]
+    assert match_upstream_path("CooperHewitt-Regular", 400, "normal", cooper, "cooper-hewitt") == (
+        "CooperHewitt-OTF-public/CooperHewitt-Book.otf"
+    )
+    assert match_upstream_path("CooperHewitt-ExtraBold", 800, "normal", cooper, "cooper-hewitt") == (
+        "CooperHewitt-OTF-public/CooperHewitt-Heavy.otf"
+    )
+
+
+def test_package_member_unquotes_spaces():
+    from train.inventory import split_package_url
+
+    _base, member = split_package_url("https://example.com/Peace-Sans.zip#Peace%20Sans.otf")
+    assert member == "Peace Sans.otf"
 
 
 def test_script_subsets_follow_the_family():
     from train.registry import subsets_for
 
-    lxgw = next(rec for rec in load_manifest() if rec.family_id == "lxgw-wenkai")
-    pretendard = next(rec for rec in load_manifest() if rec.family_id == "pretendard")
-    latin = next(rec for rec in load_manifest() if rec.family_id == "bagnard")
+    records = load_manifest()
+    lxgw = next(rec for rec in records if rec.family_id == "lxgw-wenkai")
+    pretendard = next(rec for rec in records if rec.family_id == "pretendard")
+    latin = next(rec for rec in records if rec.family_id == "bagnard")
+    genjyuu = next(rec for rec in records if rec.family_id == "genjyuu-gothic")
+    peace = next(rec for rec in records if rec.family_id == "peace-sans")
+    pixel = next(rec for rec in records if rec.family_id == "fusion-pixel-8px-monospaced-jp")
     assert subsets_for("lxgw-wenkai") == lxgw.subsets
-    assert "cjk" in lxgw.subsets
+    assert "cjk" in lxgw.subsets and "hangul" in lxgw.subsets
     assert "hangul" in pretendard.subsets
+    assert "cjk" in genjyuu.subsets and "cyrillic" in genjyuu.subsets
+    assert "cyrillic" in peace.subsets
+    assert "cjk" in pixel.subsets and "hangul" in pixel.subsets
     assert latin.subsets == ("latin",)
 
 
@@ -198,9 +242,38 @@ def test_script_subsets_follow_the_family():
 def test_manifest_pins_full_fonts_with_sha256():
     records = load_manifest()
     assert len(records) == PHASE1_CLASSES
+    by_id = {rec.class_id: rec for rec in records}
     for rec in records:
         assert rec.file_sha256 and len(rec.file_sha256) == 64
         assert not ("jsdelivr.net/fontsource" in rec.download.url and "/latin-" in rec.download.url)
+        if rec.family_id.startswith("iosevka") and rec.weight == 900:
+            member = rec.download.url.rsplit("#", 1)[-1]
+            assert "Heavy" in member
+            assert "Regular" not in member
+        if rec.family_id.startswith("redaction"):
+            assert not rec.class_id.endswith("BoldItalic")
+    assert "UltraLight.otf" in by_id["LeagueMono-ExtraLight"].download.url
+    assert by_id["NebulaSans-Regular"].download.url.endswith("OTF/NebulaSans-Book.otf")
+    assert by_id["NebulaSans-Italic"].download.url.endswith("OTF/NebulaSans-BookItalic.otf")
+    assert by_id["LXGWWenKai-Regular"].weight == 400
+    assert by_id["LXGWWenKai-Regular"].download.url.endswith("LXGWWenKai-Regular.ttf")
+    assert "LXGWWenKai-Bold" not in by_id
+    cooper = [rec for rec in records if rec.family_id == "cooper-hewitt"]
+    assert len(cooper) == 14
+    assert all(rec.weight != 200 for rec in cooper)
+    assert by_id["CooperHewitt-Regular"].download.url.endswith("CooperHewitt-Book.otf")
+    assert by_id["CooperHewitt-Italic"].download.url.endswith("CooperHewitt-BookItalic.otf")
+    assert by_id["CooperHewitt-ExtraBold"].download.url.endswith("CooperHewitt-Heavy.otf")
+    genjyuu = {rec.class_id: rec.download.url for rec in records if rec.family_id == "genjyuu-gothic"}
+    assert len(genjyuu) == 7
+    assert genjyuu["GenjyuuGothic-Thin"].endswith("GenJyuuGothic-ExtraLight.ttf")
+    assert genjyuu["GenjyuuGothic-ExtraLight"].endswith("GenJyuuGothic-Light.ttf")
+    assert genjyuu["GenjyuuGothic-Light"].endswith("GenJyuuGothic-Normal.ttf")
+    assert genjyuu["GenjyuuGothic-Black"].endswith("GenJyuuGothic-Heavy.ttf")
+    assert all("Monospace" not in url and "-P-" not in url for url in genjyuu.values())
+    peace = by_id["PeaceSans-Regular"]
+    assert peace.download.url.endswith("#Peace%20Sans.otf")
+    assert peace.download.filename.endswith(".otf")
 
 
 def test_open_sauce_uses_source_ttf_not_cdn():

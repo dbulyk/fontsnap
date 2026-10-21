@@ -13,7 +13,7 @@ from train.paths import EXCLUDE_TSV, LICENSE_ROOT, MANIFEST_TSV, ROOT
 HTTP_USER_AGENT = "FontSnapTrain/0.1 (inventory; +https://github.com/dbulyk/fontsnap)"
 
 OFL_SPDX = "OFL-1.1"
-PHASE1_CLASSES = 582
+PHASE1_CLASSES = 597
 _SHA = re.compile(r"[0-9a-f]{64}")
 _FAMILY_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _CLASS_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -96,7 +96,6 @@ FONTSOURCE_UNSUITABLE = frozenset(
     {
         "bravura",
         "bravura-text",
-        "cooper-hewitt",
         "dseg-weather",
         "dseg14-classic",
         "dseg14-classic-mini",
@@ -108,8 +107,6 @@ FONTSOURCE_UNSUITABLE = frozenset(
         "dseg7-modern-mini",
         "dseg7-segg-chan",
         "dseg7-segg-chan-mini",
-        "genjyuu-gothic",
-        "peace-sans",
         "unifont",
         "unifontex",
         "yakuhanjp",
@@ -142,6 +139,7 @@ FONTSOURCE_FACES = {
     "bluu-next": 2,
     "chunk-five": 1,
     "commit-mono": 12,
+    "cooper-hewitt": 14,
     "fusion-kai-g": 1,
     "fusion-pixel-10px-monospaced-jp": 1,
     "fusion-pixel-10px-proportional-jp": 1,
@@ -149,6 +147,7 @@ FONTSOURCE_FACES = {
     "fusion-pixel-12px-proportional-jp": 1,
     "fusion-pixel-8px-monospaced-jp": 1,
     "fusion-pixel-8px-proportional-jp": 1,
+    "genjyuu-gothic": 7,
     "hauora-sans": 7,
     "ia-writer-duo": 4,
     "ia-writer-mono": 4,
@@ -173,6 +172,7 @@ FONTSOURCE_FACES = {
     "nebula-sans": 12,
     "norwester": 1,
     "open-runde": 4,
+    "peace-sans": 1,
     "open-sauce-one": 14,
     "open-sauce-sans": 14,
     "open-sauce-two": 14,
@@ -183,26 +183,46 @@ FONTSOURCE_FACES = {
     "pitagon-sans-text": 14,
     "pitagon-serif": 18,
     "pretendard": 9,
-    "redaction": 4,
-    "redaction-10": 4,
-    "redaction-100": 4,
-    "redaction-20": 4,
-    "redaction-35": 4,
-    "redaction-50": 4,
-    "redaction-70": 4,
+    "redaction": 3,
+    "redaction-10": 3,
+    "redaction-100": 3,
+    "redaction-20": 3,
+    "redaction-35": 3,
+    "redaction-50": 3,
+    "redaction-70": 3,
     "rubik-one": 1,
     "syne-italic": 1,
     "uncut-sans": 10,
     "win95fa": 1,
 }
 
-# Scripts past Latin that the phase-1 files actually cover. Cyrillic is filled from cmap
-# checks of the downloaded files. CJK and Hangul follow the families in plan section 2.2.
+# Measured from cmap of the cached full fonts. CJK is U+4E00..U+9FFF. Hangul is U+AC00..U+D7AF.
 CJK_FAMILIES = frozenset(
-    family_id for family_id in FONTSOURCE_FACES if family_id.startswith("fusion-") or family_id in {"lxgw-wenkai"}
+    {
+        "fusion-kai-g",
+        "fusion-pixel-10px-monospaced-jp",
+        "fusion-pixel-10px-proportional-jp",
+        "fusion-pixel-12px-monospaced-jp",
+        "fusion-pixel-12px-proportional-jp",
+        "fusion-pixel-8px-monospaced-jp",
+        "fusion-pixel-8px-proportional-jp",
+        "genjyuu-gothic",
+        "lxgw-wenkai",
+    }
 )
-HANGUL_FAMILIES = frozenset({"pretendard"})
-# Measured from cmap of the phase-1 cached full fonts (U+0400..U+04FF).
+HANGUL_FAMILIES = frozenset(
+    {
+        "fusion-pixel-10px-monospaced-jp",
+        "fusion-pixel-10px-proportional-jp",
+        "fusion-pixel-12px-monospaced-jp",
+        "fusion-pixel-12px-proportional-jp",
+        "fusion-pixel-8px-monospaced-jp",
+        "fusion-pixel-8px-proportional-jp",
+        "lxgw-wenkai",
+        "pretendard",
+    }
+)
+# Measured from cmap of the cached full fonts (U+0400..U+04FF).
 CYRILLIC_FAMILIES = frozenset(
     {
         "adwaita-mono",
@@ -214,6 +234,7 @@ CYRILLIC_FAMILIES = frozenset(
         "fusion-pixel-10px-proportional-jp",
         "fusion-pixel-12px-monospaced-jp",
         "fusion-pixel-12px-proportional-jp",
+        "genjyuu-gothic",
         "grotesk",
         "hauora-sans",
         "ia-writer-duo",
@@ -238,6 +259,7 @@ CYRILLIC_FAMILIES = frozenset(
         "open-runde",
         "opendyslexic",
         "ouroboros",
+        "peace-sans",
         "pitagon-sans-mono",
         "pretendard",
         "rubik-one",
@@ -754,7 +776,7 @@ def check() -> list[str]:
         errors.append(f"fusion classes kept {sorted(fusion_ids)}")
 
     sums = {
-        ExcludeReason.UNSUITABLE: 121,
+        ExcludeReason.UNSUITABLE: 97,
         ExcludeReason.ALIAS: 28,
         ExcludeReason.FUSION_MERGED: 20,
         ExcludeReason.DUPLICATE_SOURCE: 2,

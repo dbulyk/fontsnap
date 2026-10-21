@@ -12,7 +12,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path, PurePosixPath
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from train.paths import EXCLUDE_TSV, LICENSE_ROOT, MANIFEST_TSV, ROOT
 from train.registry import (
@@ -262,15 +262,19 @@ def select_static_fonts(paths: list[str]) -> list[str]:
 _FACE_SUFFIXES = (
     "extrabolditalic",
     "extralightitalic",
+    "ultralightitalic",
     "semibolditalic",
     "mediumitalic",
     "lightitalic",
     "thinitalic",
     "blackitalic",
+    "heavyitalic",
     "bolditalic",
     "regularitalic",
+    "bookitalic",
     "extrabold",
     "extralight",
+    "ultralight",
     "semibold",
     "regular",
     "medium",
@@ -283,6 +287,17 @@ _FACE_SUFFIXES = (
     "heavy",
     "book",
 )
+# Foundry names for a CSS face, used only when no file has the CSS face itself.
+_FACE_ALIASES = {
+    "black": ("heavy",),
+    "blackitalic": ("heavyitalic",),
+    "extrabold": ("heavy",),
+    "extrabolditalic": ("heavyitalic",),
+    "extralight": ("ultralight",),
+    "extralightitalic": ("ultralightitalic",),
+    "regular": ("book",),
+    "italic": ("bookitalic",),
+}
 _HARD_SKIP_DIRS = _SKIP_DIRS - {"webfonts", "webfont"}
 _PATH_PENALTY = frozenset(
     {
@@ -379,6 +394,15 @@ def _path_penalty(path: str) -> int:
     return sum(1 for part in PurePosixPath(path).parts if part.lower() in _PATH_PENALTY)
 
 
+def _face_rank(path: str, class_id: str, class_stem: str, file_stem: str, hint: str) -> tuple:
+    stem = PurePosixPath(path).stem
+    ext = 0 if path.lower().endswith(".otf") else 1
+    exact = 0 if stem.lower() == class_id.lower() else 1
+    family_exact = 0 if class_stem == file_stem else 1
+    hint_miss = 0 if hint and hint in _compact_name(path) else 1
+    return (0, family_exact, _path_penalty(path), hint_miss, exact, ext, len(PurePosixPath(path).parts), path.lower())
+
+
 def match_upstream_path(
     class_id: str,
     weight: int | None,
@@ -408,12 +432,17 @@ def match_upstream_path(
             compatible.append(path)
         if not face_hit:
             continue
-        ext = 0 if path.lower().endswith(".otf") else 1
-        exact = 0 if stem.lower() == class_id.lower() else 1
-        family_exact = 0 if class_stem == file_stem else 1
-        hint_miss = 0 if hint and hint in _compact_name(path) else 1
-        rank = (0, family_exact, _path_penalty(path), hint_miss, exact, ext, len(PurePosixPath(path).parts), path.lower())
-        scored.append((rank, path))
+        scored.append((_face_rank(path, class_id, class_stem, file_stem, hint), path))
+    if not scored:
+        for alias in _FACE_ALIASES.get(class_face, ()):
+            for path in paths:
+                if _skipped_font(path):
+                    continue
+                stem = PurePosixPath(path).stem
+                file_stem, file_face = _split_face(_compact_name(stem))
+                if file_face != alias or not _families_compatible(class_stem, file_stem):
+                    continue
+                scored.append((_face_rank(path, class_id, class_stem, file_stem, hint), path))
     if scored:
         scored.sort(key=lambda item: item[0])
         return scored[0][1]
@@ -499,8 +528,10 @@ def split_package_url(url: str) -> tuple[str, str | None]:
     if "#" not in url:
         return url, None
     base, member = url.split("#", 1)
-    member = member.strip()
+    member = unquote(member.strip())
     if not base.startswith("https://") or not member or member.startswith("/") or ".." in member.split("/"):
+        raise ValueError(f"bad package url: {url}")
+    if "\\" in member:
         raise ValueError(f"bad package url: {url}")
     return base, member
 
@@ -541,7 +572,7 @@ def read_font_bytes(url: str, limit: int | None = None) -> bytes:
 
 
 def _package_url(zip_url: str, member: str) -> str:
-    return f"{zip_url}#{member}"
+    return f"{zip_url}#{quote(member, safe='/')}"
 
 
 # Full-font packages for families whose git trees ship no static TTF/OTF (releases or site zips).
@@ -566,6 +597,31 @@ _PACKAGE_ZIPS: dict[str, str] = {
     "fusion-pixel-12px-proportional-jp": "https://github.com/TakWolf/fusion-pixel-font/releases/download/2026.10.16/fusion-pixel-font-12px-proportional-ttf-v2026.10.16.zip",
     "norwester": "https://raw.githubusercontent.com/jamiewilson/norwester/gh-pages/assets/norwester.zip",
     "win95fa": "https://fontsarena.com/wp-content/uploads/2020/01/W95FA.zip",
+    "cooper-hewitt": "https://www.cooperhewitt.org/wp-content/uploads/fonts/CooperHewitt-OTF-public.zip",
+    "genjyuu-gothic": "https://ftp.iij.ad.jp/pub/osdn.jp/users/8/8642/genjyuugothic-20150607.zip",
+    "peace-sans": "https://www.dropbox.com/scl/fi/ru10jnyfka4wsrl2kaxbl/Peace-Sans.zip?rlkey=bd915fp5ietcqqe4clzldm40b&dl=1",
+}
+# CSS cuts the foundry never shipped as their own full font. Phase-1 omits them.
+_NO_BOLD_ITALIC = frozenset({(700, "italic")})
+_UNPUBLISHED_CUTS: dict[str, frozenset[tuple[int, str]]] = {
+    "cooper-hewitt": frozenset({(200, "normal"), (200, "italic")}),
+    "redaction": _NO_BOLD_ITALIC,
+    "redaction-10": _NO_BOLD_ITALIC,
+    "redaction-100": _NO_BOLD_ITALIC,
+    "redaction-20": _NO_BOLD_ITALIC,
+    "redaction-35": _NO_BOLD_ITALIC,
+    "redaction-50": _NO_BOLD_ITALIC,
+    "redaction-70": _NO_BOLD_ITALIC,
+}
+# GenJyuu file names do not match CSS weights. Map by OS/2 usWeightClass of the proportional faces.
+_GENJYUU_FILES = {
+    "GenjyuuGothic-Thin": "GenJyuuGothic-ExtraLight.ttf",
+    "GenjyuuGothic-ExtraLight": "GenJyuuGothic-Light.ttf",
+    "GenjyuuGothic-Light": "GenJyuuGothic-Normal.ttf",
+    "GenjyuuGothic-Regular": "GenJyuuGothic-Regular.ttf",
+    "GenjyuuGothic-Medium": "GenJyuuGothic-Medium.ttf",
+    "GenjyuuGothic-Bold": "GenJyuuGothic-Bold.ttf",
+    "GenjyuuGothic-Black": "GenJyuuGothic-Heavy.ttf",
 }
 
 
@@ -581,28 +637,20 @@ def _zip_font_members(zip_url: str) -> list[str]:
     ]
 
 
-def _match_or_fallback(class_id: str, weight: int | None, style: str, paths: list[str], family_id: str) -> str | None:
-    path = match_upstream_path(class_id, weight, style, paths, family_id)
-    if path is not None:
-        return path
-    # Prefer a same-style Regular/Italic when the exact weight is missing upstream.
-    stem, _face = _split_face(_compact_name(class_id))
-    for fallback_face, fallback_weight in (("regular", 400), ("italic", 400), ("bold", 700), ("bolditalic", 700)):
-        for path in paths:
-            if _skipped_font(path):
-                continue
-            file_stem, file_face = _split_face(_compact_name(PurePosixPath(path).stem))
-            if not _families_compatible(stem, file_stem):
-                continue
-            if file_face == fallback_face or (fallback_face == "regular" and file_face == ""):
-                if style == "italic" and "italic" not in fallback_face and "oblique" not in fallback_face:
-                    continue
-                if style != "italic" and ("italic" in fallback_face or "oblique" in fallback_face):
-                    continue
-                return path
-    if len(paths) == 1 and not _skipped_font(paths[0]):
-        return paths[0]
-    return None
+def _genjyuu_member(class_id: str, paths: list[str]) -> str | None:
+    name = _GENJYUU_FILES.get(class_id)
+    if name is None:
+        return None
+    hits = [path for path in paths if PurePosixPath(path).name == name]
+    if len(hits) != 1:
+        return None
+    return hits[0]
+
+
+def _published_member(class_id: str, weight: int | None, style: str, paths: list[str], family_id: str) -> str | None:
+    if family_id == "genjyuu-gothic":
+        return _genjyuu_member(class_id, paths)
+    return match_upstream_path(class_id, weight, style, paths, family_id)
 
 
 def prefer_package_sources(records: list[FontClassRecord]) -> tuple[list[FontClassRecord], list[str]]:
@@ -632,7 +680,7 @@ def prefer_package_sources(records: list[FontClassRecord]) -> tuple[list[FontCla
         paths = members.get(rec.family_id)
         if not paths:
             continue
-        path = _match_or_fallback(rec.class_id, rec.weight, rec.style, paths, rec.family_id)
+        path = _published_member(rec.class_id, rec.weight, rec.style, paths, rec.family_id)
         if path is None:
             notes.append(f"{rec.class_id}: no member in package zip")
             continue
@@ -689,7 +737,7 @@ def prefer_full_sources(records: list[FontClassRecord]) -> tuple[list[FontClassR
             continue
         sha, paths = index
         for rec in member_recs:
-            path = _match_or_fallback(rec.class_id, rec.weight, rec.style, paths, rec.family_id)
+            path = _published_member(rec.class_id, rec.weight, rec.style, paths, rec.family_id)
             if path is None:
                 notes.append(f"{rec.class_id}: no full ttf/otf in source repo")
                 continue
@@ -823,12 +871,6 @@ def _unsuitable_note(family_id: str) -> str:
         return "CJK punctuation only"
     if family_id.startswith("unifont"):
         return "bitmap coverage font"
-    if family_id == "cooper-hewitt":
-        return "source tree is UFO only; no published full TTF/OTF"
-    if family_id == "genjyuu-gothic":
-        return "no published full TTF/OTF source tree for GenJyuu Gothic"
-    if family_id == "peace-sans":
-        return "no published full TTF/OTF download"
     return "unsuitable for text recognition"
 
 
@@ -892,8 +934,11 @@ def build_fontsource() -> tuple[list[FontClassRecord], list[Exclusion], dict[str
     exclusions: list[Exclusion] = []
     for family_id, fam in sorted(by_id.items()):
         faces = len(fam["weights"]) * len(fam["styles"])
-        if family_id in FONTSOURCE_FACES and faces != FONTSOURCE_FACES[family_id]:
-            raise RuntimeError(f"{family_id} has {faces} faces, plan says {FONTSOURCE_FACES[family_id]}")
+        unpublished = len(_UNPUBLISHED_CUTS.get(family_id, ()))
+        if family_id in FONTSOURCE_FACES and faces - unpublished != FONTSOURCE_FACES[family_id]:
+            raise RuntimeError(
+                f"{family_id} has {faces} fontsource faces ({unpublished} unpublished), plan says {FONTSOURCE_FACES[family_id]}"
+            )
         if family_id in FONTSOURCE_ALIAS:
             exclusions.append(_fs_exclusion(fam, ExcludeReason.ALIAS, _ALIAS_NOTE[family_id]))
         elif family_id in FONTSOURCE_DUPLICATE:
@@ -952,7 +997,7 @@ def build_fontsource() -> tuple[list[FontClassRecord], list[Exclusion], dict[str
         if family_id.startswith("open-sauce-"):
             records.extend(_open_sauce_records(family_id, family, category, designer, ref, sauce_sha, sauce_names, source_url))
             continue
-        made = _cdn_records(detail, family, category, designer, ref, version, source_url)
+        made = [_use_published_cut(rec) for rec in _cdn_records(detail, family, category, designer, ref, version, source_url)]
         if len(made) != FONTSOURCE_FACES[family_id]:
             raise RuntimeError(f"{family_id} produced {len(made)} classes, plan says {FONTSOURCE_FACES[family_id]}")
         records.extend(made)
@@ -1010,6 +1055,19 @@ def _open_sauce_records(
     return records
 
 
+def _use_published_cut(rec: FontClassRecord) -> FontClassRecord:
+    """LXGW WenKai publishes Light, Regular, and Medium. Fontsource's third cut is Bold."""
+    if rec.class_id != "LXGWWenKai-Bold":
+        return rec
+    return replace(
+        rec,
+        class_id="LXGWWenKai-Regular",
+        weight=400,
+        style="normal",
+        download=DownloadRecipe(rec.download.url, "LXGWWenKai-Regular.ttf"),
+    )
+
+
 def _cdn_records(
     detail: dict,
     family: str,
@@ -1024,6 +1082,8 @@ def _cdn_records(
     records = []
     for weight in sorted(int(w) for w in detail["weights"]):
         for style in sorted(str(s) for s in detail["styles"]):
+            if (weight, style) in _UNPUBLISHED_CUTS.get(family_id, frozenset()):
+                continue
             class_id = face_class_id(family, weight, style)
             url = _pin_latest(_variant_url(detail, weight, style), npm)
             ext = Path(url.split("?", 1)[0]).suffix.lower() or ".ttf"
