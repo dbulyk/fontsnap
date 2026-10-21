@@ -306,7 +306,7 @@ const DOM_MEMBERS = [
       toString: 'c',
       setStart: 'c',
       setEnd: 'c',
-      textContent: 'rw',
+      textContent: 'w',
     },
   },
   {

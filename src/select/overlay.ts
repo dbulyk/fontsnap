@@ -243,24 +243,29 @@ function clean(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
 }
 
-function labelText(el: HTMLInputElement | HTMLTextAreaElement): string {
+/** Label copy via text nodes only: reading `textContent` stays refused (O66). */
+function labelText(doc: Document, el: HTMLInputElement | HTMLTextAreaElement): string {
   const parts: string[] = [];
   const list = el.labels;
   if (list === null) return '';
   for (const label of list) {
-    parts.push(label.textContent);
+    const tw = doc.createTreeWalker(label, NodeFilter.SHOW_TEXT);
+    for (let node = tw.nextNode(); node; node = tw.nextNode()) {
+      parts.push(node.nodeValue ?? '');
+    }
   }
   return parts.join(' ');
 }
 
 /** Fields that must never enter the preview (passwords, cards, OTP, and lookalikes). */
-function sensitiveField(el: HTMLTextAreaElement | HTMLInputElement): boolean {
+function sensitiveField(doc: Document, el: HTMLTextAreaElement | HTMLInputElement): boolean {
   if (el instanceof HTMLInputElement && el.type.toLowerCase() === 'password') return true;
   if (masked(getComputedStyle(el))) return true;
   if (/(?:current-password|new-password|one-time-code)/i.test(el.autocomplete)) return true;
   if (/(?:^|\s)cc-/i.test(el.autocomplete)) return true;
   if (SENSITIVE_TOKEN.test(el.name) || SENSITIVE_TOKEN.test(el.id)) return true;
-  if (SENSITIVE_TOKEN.test(el.ariaLabel ?? '') || SENSITIVE_TOKEN.test(labelText(el))) return true;
+  if (SENSITIVE_TOKEN.test(el.ariaLabel ?? '') || SENSITIVE_TOKEN.test(labelText(doc, el)))
+    return true;
   if (el instanceof HTMLInputElement) {
     const kind = el.type.toLowerCase();
     const numeric = el.inputMode.toLowerCase() === 'numeric' || kind === 'number' || kind === 'tel';
@@ -277,7 +282,7 @@ function fieldPiece(
   frame: Rect,
 ): string {
   if (el instanceof HTMLInputElement && el.type.toLowerCase() !== 'text') return '';
-  if (sensitiveField(el)) return '';
+  if (sensitiveField(doc, el)) return '';
   if (!styleVisible(el)) return '';
   let boxes = 0;
   let crossed = false;
