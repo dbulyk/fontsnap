@@ -276,7 +276,6 @@ const DOM_MEMBERS = [
       getBoundingClientRect: 'c',
       getPropertyValue: 'c',
       contains: 'c',
-      compareDocumentPosition: 'c',
       length: 'r',
       tagName: 'r',
       opacity: 'r',
@@ -289,7 +288,6 @@ const DOM_MEMBERS = [
       backgroundColor: 'r',
       backgroundImage: 'r',
       position: 'r',
-      zIndex: 'r',
       transform: 'r',
       translate: 'r',
       rotate: 'r',
@@ -1211,7 +1209,7 @@ export function cssUnescape(text) {
   );
 }
 const PAGE_PROCESS_MESSAGE =
-  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_GLOBS in eslint.config.js.";
+  "In the code that runs in the web page's process (src/select, src/background/measure.ts) the CSP of the extension does not apply: no computed access, no casts (as/<T>), no for...in, no typeof/indexed types, no Object.* but Object.assign(el.style, ...), only div/style elements, no way to load or navigate (src/href/innerHTML/setAttribute/url(...)). See PAGE_PROCESS_GLOBS in eslint.config.js.";
 // what makes an element load something or navigate
 const LOADING_NAMES =
   '/^(src|srcset|srcdoc|href|action|formAction|ping|poster|data|location|innerHTML|outerHTML|cssText|adoptedStyleSheets)$/';
@@ -1257,8 +1255,8 @@ const pageProcessSelectorSources = [
   // Object only as Object.assign(el.style, ...) (the rule above); never as a value or with another member
   "MemberExpression[object.name='Object']:not([property.name='assign'])",
   "Identifier[name='Object']:not(MemberExpression[computed=false] > Identifier.object)",
-  // elements: div only; nothing that loads or navigates
-  "CallExpression[callee.property.name='createElement']:not([arguments.0.type='Literal'][arguments.0.value='div'])",
+  // elements: div (overlay UI) or style (temporary pe:auto probe for hit-testing); nothing that loads or navigates
+  "CallExpression[callee.property.name='createElement']:not([arguments.0.type='Literal'][arguments.0.value=/^(div|style)$/])",
   `AssignmentExpression > MemberExpression.left[property.name=${LOADING_NAMES}]`,
   `CallExpression[callee.property.name=${LOADING_CALLS}]`,
   `Property[key.name=${LOADING_NAMES}]`,

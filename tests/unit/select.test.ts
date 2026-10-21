@@ -595,8 +595,12 @@ describe('textInRect', () => {
     document.body.innerHTML =
       '<div id="slide"></div><p id="t" style="pointer-events:none">pointer free</p>';
     layout({ t: { left: 10, right: 90, top: 10, bottom: 30 } }, undefined, {
-      stack: () => [el('slide')],
-      paint: (hit) => (hit.id === 'slide' ? { backgroundColor: 'rgb(20, 40, 60)' } : {}),
+      stack: () => [el('t'), el('slide')],
+      paint: (hit) => {
+        if (hit.id === 't') return { pointerEvents: 'none' };
+        if (hit.id === 'slide') return { backgroundColor: 'rgb(20, 40, 60)' };
+        return {};
+      },
     });
     expect(textInRect(document, frame)).toBe('pointer free');
   });
@@ -929,7 +933,8 @@ describe('textInRect', () => {
       },
       undefined,
       {
-        stack: () => [el('f')],
+        // With the pe:auto probe the label is on top of the input in the hit stack.
+        stack: () => [el('t'), el('f')],
         paint: (hit) => {
           if (hit.id === 'group') return { position: 'relative' };
           if (hit.id === 't') return { position: 'absolute', pointerEvents: 'none' };
@@ -1127,7 +1132,7 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('visible');
   });
 
-  it('takes pe:none hero over an earlier absolute backdrop (paint order, not DOM parent)', () => {
+  it('takes pe:none hero over an earlier absolute backdrop (browser stack with pe:auto probe)', () => {
     document.body.innerHTML =
       '<div id="group"><div id="bg"></div><div id="wrap"><h1 id="t">Hero Caption</h1></div></div>';
     layout(
@@ -1137,7 +1142,8 @@ describe('textInRect', () => {
       },
       undefined,
       {
-        stack: () => [el('bg'), el('t')],
+        // Probe makes the owner hittable: real paint order puts the hero above the backdrop.
+        stack: () => [el('t'), el('bg')],
         paint: (hit) => {
           if (hit.id === 'group') return { position: 'relative' };
           if (hit.id === 'wrap') return { position: 'relative', pointerEvents: 'none' };
@@ -1150,6 +1156,7 @@ describe('textInRect', () => {
       },
     );
     expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Hero Caption');
+    expect(document.querySelectorAll('style')).toHaveLength(0);
   });
 
   it('keeps cover from a later cookie wall under a shared SPA root', () => {
@@ -1175,6 +1182,53 @@ describe('textInRect', () => {
       },
     );
     expect(textInRect(document, frame)).toBe('Cookie wall');
+  });
+
+  it('skips lines clipped by overflow:hidden even when another line of the node is shown', () => {
+    document.body.innerHTML = '<div id="clip"><p id="t">AAAAABBBBBCCCCC</p></div>';
+    layout(
+      {
+        t: [
+          { left: 10, right: 90, top: 0, bottom: 16 },
+          { left: 10, right: 90, top: 16, bottom: 32 },
+          { left: 10, right: 90, top: 32, bottom: 48 },
+        ],
+      },
+      undefined,
+      {
+        bounds: { clip: { left: 0, top: 0, right: 100, bottom: 16 } },
+        stack: () => [el('t')],
+        paint: (hit) => (hit.id === 'clip' ? { overflow: 'hidden' } : {}),
+      },
+    );
+    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 60 })).toBe('AAAAA');
+  });
+
+  it('skips lines under an opaque banner even when an uncovered line of the node is shown', () => {
+    document.body.innerHTML =
+      '<p id="t">AAAAABBBBBCCCCC</p><div id="banner"></div><p id="v">Shown Marker</p>';
+    layout(
+      {
+        t: [
+          { left: 10, right: 90, top: 0, bottom: 16 },
+          { left: 10, right: 90, top: 16, bottom: 32 },
+          { left: 10, right: 90, top: 32, bottom: 48 },
+        ],
+        banner: { left: 0, right: 100, top: 14, bottom: 60 },
+        v: { left: 10, right: 90, top: 50, bottom: 66 },
+      },
+      undefined,
+      {
+        stack: (_x, y) => {
+          if (y >= 14 && y < 50) return [el('banner'), el('t')];
+          if (y >= 50) return [el('v')];
+          return [el('t')];
+        },
+        paint: (hit) =>
+          hit.id === 'banner' ? { backgroundColor: 'rgb(255, 255, 255)' } : {},
+      },
+    );
+    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 70 })).toBe('AAAAA Shown Marker');
   });
 
   it('clips fixed text when a translate CB sits under overflow:hidden', () => {

@@ -213,66 +213,33 @@ function paintsAtPoint(el: Element, cx: number, cy: number): boolean {
   return false;
 }
 
-function zIndexNum(style: CSSStyleDeclaration): number | null {
-  const raw = style.zIndex;
-  if (raw === 'auto' || raw === '') return null;
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : null;
-}
-
 /**
- * Nearest positioned ancestor of `el` (or `el` itself). pe:none text often sits in a relative
- * wrapper above an earlier absolute backdrop; comparing that proxy matches paint order.
+ * pe:none omits the owner from the hit stack, so a hand-rolled paint-order model diverges from
+ * real stacking (contexts, top layer, transforms). Briefly force pe:auto via a stylesheet, let the
+ * browser order the stack, then remove it. pointer-events does not affect layout; no mouse events fire.
  */
-function stackProxy(el: Element): Element {
-  let current: Element | null = el;
-  while (current !== null) {
-    const style = getComputedStyle(current);
-    if (style.position !== 'static' || zIndexNum(style) !== null) return current;
-    current = current.parentElement;
+const PE_AUTO_PROBE = '*{pointer-events:auto!important}';
+
+function elementsFromPointWithOwner(doc: Document, owner: Element, cx: number, cy: number): Element[] {
+  if (getComputedStyle(owner).pointerEvents !== 'none') return doc.elementsFromPoint(cx, cy);
+  const style = doc.createElement('style');
+  style.textContent = PE_AUTO_PROBE;
+  doc.documentElement.appendChild(style);
+  try {
+    return doc.elementsFromPoint(cx, cy);
+  } finally {
+    style.remove();
   }
-  return el;
 }
 
 /**
- * Whether `hit` paints above `owner` (z-index, then positioned vs in-flow, then document order).
- * Used when pe:none omits the owner from the hit stack so a backdrop must not count as cover.
- */
-function paintsAbove(hit: Element, owner: Element): boolean {
-  if (hit.contains(owner)) return false;
-  const proxy = stackProxy(owner);
-  if (hit === proxy || hit.contains(proxy)) return false;
-  if (proxy.contains(hit) && hit !== owner) {
-    // A painting descendant of the owner's stack proxy is above the backdrop, not a cover.
-    return false;
-  }
-  const hitStyle = getComputedStyle(hit);
-  const proxyStyle = getComputedStyle(proxy);
-  const hitZ = zIndexNum(hitStyle);
-  const proxyZ = zIndexNum(proxyStyle);
-  if (hitZ !== null || proxyZ !== null) {
-    const hz = hitZ ?? 0;
-    const pz = proxyZ ?? 0;
-    if (hz !== pz) return hz > pz;
-  }
-  const hitPos = hitStyle.position !== 'static';
-  const proxyPos = proxyStyle.position !== 'static';
-  // Positioned proxy (absolute label, relative hero wrap) sits above a non-positioned neighbour.
-  if (proxyPos && !hitPos) return false;
-  // Same tier: later in document order paints above (cookie after hero; backdrop before does not).
-  // 4 === Node.DOCUMENT_POSITION_FOLLOWING (no Node global on the page-process allowlist).
-  return (proxy.compareDocumentPosition(hit) & 4) !== 0;
-}
-
-/**
- * Hit-testing skips pe:none text, so the stack shows layers under it. Only hits that paint
- * above the owner count as cover (cookie/modal); earlier backdrops and under-label inputs do not.
+ * A painting hit above the owner covers it. For pe:none owners the stack is taken with a temporary
+ * pe:auto probe so the browser supplies stacking contexts and the top layer.
  */
 function covered(doc: Document, owner: Element, part: Rect): boolean {
-  const peNone = getComputedStyle(owner).pointerEvents === 'none';
   const cx = part.x + part.w / 2;
   const cy = part.y + part.h / 2;
-  const stack = doc.elementsFromPoint(cx, cy);
+  const stack = elementsFromPointWithOwner(doc, owner, cx, cy);
   for (const hit of stack) {
     if (hit === owner) return false;
     if (owner.contains(hit)) {
@@ -280,9 +247,7 @@ function covered(doc: Document, owner: Element, part: Rect): boolean {
       continue;
     }
     if (hit.contains(owner)) continue;
-    if (!paintsAtPoint(hit, cx, cy)) continue;
-    if (peNone && !paintsAbove(hit, owner)) continue;
-    return true;
+    if (paintsAtPoint(hit, cx, cy)) return true;
   }
   return false;
 }
@@ -379,9 +344,23 @@ function lastIndexMeetingY(range: Range, node: Node, length: number, yMax: numbe
 }
 
 /**
- * Text of the node whose line boxes meet the frame. Lines are kept when they intersect and are
- * not covered (no ≥50% height gate). A character is kept when its vertical centre lies in the
- * frame: tight x-height bands still match, dense line-height neighbours stay out.
+ * True when the character centre lies in `line` and its vertical centre lies in that line's
+ * visible uncovered intersection with the frame (not in the frame alone).
+ */
+function charMeetsVisible(
+  box: DOMRect,
+  line: DOMRect,
+  part: Rect,
+): boolean {
+  const midX = (box.left + box.right) / 2;
+  const midY = (box.top + box.bottom) / 2;
+  if (midX < line.left || midX > line.right || midY < line.top || midY > line.bottom) return false;
+  return midY >= part.y && midY <= part.y + part.h;
+}
+
+/**
+ * Text of the node whose line boxes meet the frame. Only uncovered clipped line parts count;
+ * a character is kept when its centre is on such a line and its midY lies in that part.
  */
 function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string {
   const value = node.nodeValue ?? '';
@@ -391,27 +370,33 @@ function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string
   if (!styleVisible(owner)) return '';
   range.selectNodeContents(node);
   if (overlap(range.getBoundingClientRect(), frame) === null) return '';
-  let shown = false;
+  const partByLine = new Map<DOMRect, Rect>();
+  let yMin = Infinity;
+  let yMax = -Infinity;
   for (const line of range.getClientRects()) {
     const part = visiblePart(line, frame, owner, doc);
-    if (part !== null && !covered(doc, owner, part)) {
-      shown = true;
-      break;
-    }
+    if (part === null || covered(doc, owner, part)) continue;
+    partByLine.set(line, part);
+    if (part.y < yMin) yMin = part.y;
+    if (part.y + part.h > yMax) yMax = part.y + part.h;
   }
-  if (!shown) return '';
+  if (partByLine.size === 0) return '';
   const length = value.length;
-  const from = firstIndexMeetingY(range, node, length, frame.y);
-  const to = lastIndexMeetingY(range, node, length, frame.y + frame.h);
+  const from = firstIndexMeetingY(range, node, length, yMin);
+  const to = lastIndexMeetingY(range, node, length, yMax);
   if (from > to || from >= length) return '';
   let out = '';
   for (let i = from; i <= to; i++) {
     range.setStart(node, i);
     range.setEnd(node, i + 1);
     const box = range.getBoundingClientRect();
-    const midY = (box.top + box.bottom) / 2;
-    if (midY < frame.y || midY > frame.y + frame.h) continue;
-    out += value.slice(i, i + 1);
+    for (const line of partByLine.keys()) {
+      const part = partByLine.get(line);
+      if (part !== undefined && charMeetsVisible(box, line, part)) {
+        out += value.slice(i, i + 1);
+        break;
+      }
+    }
   }
   return out === '' ? '' : clean(out);
 }

@@ -172,7 +172,7 @@ async function previewInFrame(
   extensionId: string,
   serve: (routes: ReadonlyMap<string, Route>) => Promise<string>,
   inner: string,
-  options?: { css?: string; prepare?: (site: Page) => Promise<void> },
+  options?: { css?: string; prepare?: (site: Page) => Promise<void>; viaOverlay?: boolean },
 ): Promise<string> {
   const origin = await serve(
     new Map([
@@ -187,10 +187,30 @@ async function previewInFrame(
   const opened = context.waitForEvent('page', {
     predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
   });
-  await site.mouse.move(32, 152);
-  await site.mouse.down();
-  await site.mouse.move(688, 368, { steps: 4 });
-  await site.mouse.up();
+  const fromX = 32;
+  const fromY = 152;
+  const toX = 688;
+  const toY = 368;
+  if (options?.viaOverlay === true) {
+    await site.locator('div[style*="crosshair"]').evaluate(
+      (node, rect) => {
+        const fire = (type: string, clientX: number, clientY: number) => {
+          node.dispatchEvent(
+            new MouseEvent(type, { clientX, clientY, bubbles: true, cancelable: true }),
+          );
+        };
+        fire('mousedown', rect.fromX, rect.fromY);
+        fire('mousemove', rect.toX, rect.toY);
+        fire('mouseup', rect.toX, rect.toY);
+      },
+      { fromX, fromY, toX, toY },
+    );
+  } else {
+    await site.mouse.move(fromX, fromY);
+    await site.mouse.down();
+    await site.mouse.move(toX, toY, { steps: 4 });
+    await site.mouse.up();
+  }
   const result = await opened;
   await expect(result.locator('#shot')).toBeVisible();
   await expect(result.locator('#results li').first()).toBeVisible();
@@ -429,6 +449,76 @@ const previewCases: PreviewCase[] = [
       </div>
     </div>`,
     expected: 'Cookie wall',
+  },
+  {
+    name: 'pe:none hero under a fixed z-1000 cookie shell with a static panel',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <div style="pointer-events:none;position:absolute;left:12px;top:16px">
+        <h1 style="margin:0;color:#fff;${LINE}">Hero Caption</h1>
+      </div>
+    </div>
+    <div style="position:fixed;left:40px;top:160px;width:640px;height:200px;z-index:1000">
+      <div style="width:100%;height:100%;background:#fff;display:flex;align-items:center;justify-content:center">
+        <p style="margin:0;${LINE}">Cookie wall</p>
+      </div>
+    </div>`,
+    expected: 'Cookie wall',
+  },
+  {
+    name: 'pe:none hero under a cookie with lower z than a nested hero wrapper',
+    inner: `<section style="position:relative;z-index:1;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <div style="position:relative;z-index:100;pointer-events:none">
+        <h1 style="margin:0;padding:16px 12px;color:#fff;${LINE}">Hero Caption</h1>
+      </div>
+    </section>
+    <div style="position:fixed;left:40px;top:160px;width:640px;height:200px;z-index:50;background:#fff;display:flex;align-items:center;justify-content:center">
+      <p style="margin:0;${LINE}">Cookie wall</p>
+    </div>`,
+    expected: 'Cookie wall',
+  },
+  {
+    name: 'pe:none hero under a positioned SPA root that contains the cookie',
+    inner: `<div id="app" style="position:relative">
+      <div style="position:relative;margin:24px 16px;width:560px;height:72px">
+        <div style="position:absolute;inset:0;background:#246"></div>
+        <div style="pointer-events:none;position:absolute;left:12px;top:16px">
+          <h1 style="margin:0;color:#fff;${LINE}">Hero Caption</h1>
+        </div>
+      </div>
+      <div style="position:fixed;left:40px;top:160px;width:640px;height:200px;background:#fff;display:flex;align-items:center;justify-content:center">
+        <p style="margin:0;${LINE}">Cookie wall</p>
+      </div>
+    </div>`,
+    expected: 'Cookie wall',
+  },
+  {
+    name: 'earlier fixed modal covers later static pe:none text',
+    inner: `<div style="position:fixed;left:40px;top:160px;width:640px;height:200px;background:#fff">
+      <p style="position:absolute;left:16px;top:28px;${LINE}">${MARKER}</p>
+    </div>
+    <div id="root">
+      <div style="pointer-events:none;margin:80px 60px">
+        <h1 style="margin:0;${LINE}">TRAP hero</h1>
+      </div>
+    </div>`,
+    expected: MARKER,
+  },
+  {
+    name: 'overflow:hidden keeps only the unclipped first line of a paragraph',
+    inner: `<div style="height:40px;overflow:hidden;margin:16px;width:520px">
+      <p style="margin:0;font:32px/40px sans-serif;color:#111">Line Alpha Words<br>Line Bravo Words<br>Line Charlie Words</p>
+    </div>${markerAt(100)}`,
+    expected: `Line Alpha Words ${MARKER}`,
+  },
+  {
+    name: 'a banner over later lines keeps only the uncovered first line',
+    inner: `<p style="position:absolute;left:16px;top:8px;width:520px;margin:0;font:32px/40px sans-serif;color:#111">Line Alpha Words<br>Line Bravo Words<br>Line Charlie Words</p>
+      <div style="position:absolute;left:0;top:48px;width:640px;height:152px;background:#fff">
+        <p style="position:absolute;left:16px;top:28px;${LINE}">${MARKER}</p>
+      </div>`,
+    expected: `Line Alpha Words ${MARKER}`,
   },
   {
     name: 'a textarea fully inside the frame',
@@ -863,6 +953,96 @@ test('the preview takes dialog showModal text over an overflow clipper', async (
     },
   );
   expect(text).toBe('DlgText here');
+});
+
+test('a showModal dialog earlier in the DOM covers later pe:none hero text', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const text = await previewInFrame(
+    context,
+    extensionId,
+    serve,
+    `<dialog id="d" style="position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:none;background:#fff;box-sizing:border-box">
+      <p style="position:absolute;left:56px;top:188px;${LINE}">Accept cookies</p>
+    </dialog>
+    <div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <div style="pointer-events:none;position:absolute;left:12px;top:16px">
+        <h1 style="margin:0;color:#fff;${LINE}">Hero Caption</h1>
+      </div>
+    </div>`,
+    {
+      viaOverlay: true,
+      prepare: async (site) => {
+        await site.locator('#d').evaluate((node) => {
+          if (!(node instanceof HTMLDialogElement)) throw new Error('dialog');
+          node.showModal();
+        });
+      },
+    },
+  );
+  expect(text).toBe('Accept cookies');
+});
+
+test('a popover earlier in the DOM covers later pe:none hero text', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const text = await previewInFrame(
+    context,
+    extensionId,
+    serve,
+    `<div id="pop" popover style="position:fixed;inset:0;width:100vw;height:100vh;margin:0;padding:0;background:#fff;border:none;box-sizing:border-box">
+      <p style="position:absolute;left:56px;top:188px;${LINE}">Accept cookies</p>
+    </div>
+    <div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <div style="pointer-events:none;position:absolute;left:12px;top:16px">
+        <h1 style="margin:0;color:#fff;${LINE}">Hero Caption</h1>
+      </div>
+    </div>`,
+    {
+      viaOverlay: true,
+      prepare: async (site) => {
+        await site.locator('#pop').evaluate((node) => {
+          if (!(node instanceof HTMLElement) || typeof node.showPopover !== 'function') {
+            throw new Error('popover');
+          }
+          node.showPopover();
+        });
+      },
+    },
+  );
+  expect(text).toBe('Accept cookies');
+});
+
+test('a pe:none label in a higher modal stays above a sticky header', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const text = await previewAround(
+    context,
+    extensionId,
+    serve,
+    `<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0">
+      <header style="position:sticky;top:0;z-index:10;height:64px;background:#246;color:#fff">
+        <p style="margin:16px;font:24px sans-serif">Site Header</p>
+      </header>
+      <div style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center">
+        <div style="position:relative;width:360px;height:80px;background:#fff;padding:16px">
+          <label style="position:absolute;left:28px;top:28px;pointer-events:none;font:24px sans-serif;color:#111">Email address</label>
+          <input style="width:100%;height:48px;margin-top:8px">
+        </div>
+      </div>
+    </body></html>`,
+    'label',
+    { viaOverlay: true },
+  );
+  expect(text).toBe('Email address');
 });
 
 test('the preview still reaches a target after many spacer text nodes', async ({
