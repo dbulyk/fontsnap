@@ -213,43 +213,76 @@ function paintsAtPoint(el: Element, cx: number, cy: number): boolean {
   return false;
 }
 
-/**
- * Subtree whose hits are ignored during cover for pe:none text.
- * Prefer the parent of the topmost pe:none wrapper (opaque siblings under a hero/label group).
- * When that parent is html/body, fall back to the wrapper itself — otherwise body.contains would
- * swallow cookie walls and modals. Inherited none from body/html returns null (full cover).
- */
-function peIgnoreRoot(el: Element, doc: Document): Element | null {
-  let top: Element | null = null;
-  let current: Element | null = el;
-  while (current !== null) {
-    if (getComputedStyle(current).pointerEvents === 'none') top = current;
-    current = current.parentElement;
-  }
-  if (top === null || top === doc.body || top === doc.documentElement) return null;
-  const parent = top.parentElement;
-  if (parent === null || parent === doc.body || parent === doc.documentElement) return top;
-  return parent;
+function zIndexNum(style: CSSStyleDeclaration): number | null {
+  const raw = style.zIndex;
+  if (raw === 'auto' || raw === '') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
 }
 
 /**
- * Hit-testing skips pe:none text (floating labels, hero captions), so the stack would blame the layer under
- * them. Ignore hits inside the pe:none wrapper's parent; layers outside that subtree still cover.
+ * Nearest positioned ancestor of `el` (or `el` itself). pe:none text often sits in a relative
+ * wrapper above an earlier absolute backdrop; comparing that proxy matches paint order.
+ */
+function stackProxy(el: Element): Element {
+  let current: Element | null = el;
+  while (current !== null) {
+    const style = getComputedStyle(current);
+    if (style.position !== 'static' || zIndexNum(style) !== null) return current;
+    current = current.parentElement;
+  }
+  return el;
+}
+
+/**
+ * Whether `hit` paints above `owner` (z-index, then positioned vs in-flow, then document order).
+ * Used when pe:none omits the owner from the hit stack so a backdrop must not count as cover.
+ */
+function paintsAbove(hit: Element, owner: Element): boolean {
+  if (hit.contains(owner)) return false;
+  const proxy = stackProxy(owner);
+  if (hit === proxy || hit.contains(proxy)) return false;
+  if (proxy.contains(hit) && hit !== owner) {
+    // A painting descendant of the owner's stack proxy is above the backdrop, not a cover.
+    return false;
+  }
+  const hitStyle = getComputedStyle(hit);
+  const proxyStyle = getComputedStyle(proxy);
+  const hitZ = zIndexNum(hitStyle);
+  const proxyZ = zIndexNum(proxyStyle);
+  if (hitZ !== null || proxyZ !== null) {
+    const hz = hitZ ?? 0;
+    const pz = proxyZ ?? 0;
+    if (hz !== pz) return hz > pz;
+  }
+  const hitPos = hitStyle.position !== 'static';
+  const proxyPos = proxyStyle.position !== 'static';
+  // Positioned proxy (absolute label, relative hero wrap) sits above a non-positioned neighbour.
+  if (proxyPos && !hitPos) return false;
+  // Same tier: later in document order paints above (cookie after hero; backdrop before does not).
+  // 4 === Node.DOCUMENT_POSITION_FOLLOWING (no Node global on the page-process allowlist).
+  return (proxy.compareDocumentPosition(hit) & 4) !== 0;
+}
+
+/**
+ * Hit-testing skips pe:none text, so the stack shows layers under it. Only hits that paint
+ * above the owner count as cover (cookie/modal); earlier backdrops and under-label inputs do not.
  */
 function covered(doc: Document, owner: Element, part: Rect): boolean {
-  const ignoreRoot = peIgnoreRoot(owner, doc);
+  const peNone = getComputedStyle(owner).pointerEvents === 'none';
   const cx = part.x + part.w / 2;
   const cy = part.y + part.h / 2;
   const stack = doc.elementsFromPoint(cx, cy);
   for (const hit of stack) {
     if (hit === owner) return false;
-    if (ignoreRoot?.contains(hit) === true) continue;
     if (owner.contains(hit)) {
       if (paintsAtPoint(hit, cx, cy)) return true;
       continue;
     }
     if (hit.contains(owner)) continue;
-    if (paintsAtPoint(hit, cx, cy)) return true;
+    if (!paintsAtPoint(hit, cx, cy)) continue;
+    if (peNone && !paintsAbove(hit, owner)) continue;
+    return true;
   }
   return false;
 }
@@ -317,21 +350,6 @@ function fieldPiece(
   return inside ? clean(el.value) : '';
 }
 
-/**
- * True when `box`'s center lies inside any of `lines`.
- * Any-overlap would pull dense line-height (≤1) glyphs from the neighbour line into the frame.
- */
-function charMeetsLines(box: DOMRect, lines: readonly DOMRect[]): boolean {
-  const midX = (box.left + box.right) / 2;
-  const midY = (box.top + box.bottom) / 2;
-  for (const line of lines) {
-    if (midX >= line.left && midX <= line.right && midY >= line.top && midY <= line.bottom) {
-      return true;
-    }
-  }
-  return false;
-}
-
 /** First index whose box can meet Y ≥ `yMin` (assumes top-to-bottom index order). */
 function firstIndexMeetingY(range: Range, node: Node, length: number, yMin: number): number {
   let lo = 0;
@@ -361,8 +379,9 @@ function lastIndexMeetingY(range: Range, node: Node, length: number, yMax: numbe
 }
 
 /**
- * Text of the node whose line boxes meet the frame. Characters are kept in document order with no
- * invented separators (RTL, ::first-letter, CJK). The char scan is bounded to the Y span of visible lines.
+ * Text of the node whose line boxes meet the frame. Lines are kept when they intersect and are
+ * not covered (no ≥50% height gate). A character is kept when its vertical centre lies in the
+ * frame: tight x-height bands still match, dense line-height neighbours stay out.
  */
 function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string {
   const value = node.nodeValue ?? '';
@@ -372,39 +391,27 @@ function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string
   if (!styleVisible(owner)) return '';
   range.selectNodeContents(node);
   if (overlap(range.getBoundingClientRect(), frame) === null) return '';
-  const lines: DOMRect[] = [];
-  let anyOverlap = false;
+  let shown = false;
   for (const line of range.getClientRects()) {
-    lines.push(line);
-    if (overlap(line, frame) !== null) anyOverlap = true;
-  }
-  if (!anyOverlap) return '';
-  const visibleLines: DOMRect[] = [];
-  for (const line of lines) {
     const part = visiblePart(line, frame, owner, doc);
-    if (part === null || covered(doc, owner, part)) continue;
-    // Dense line-height (≤1) makes neighbour line boxes nick the frame by a few pixels;
-    // keep a line only when at least half its height sits in the visible part.
-    const lineH = line.bottom - line.top;
-    if (lineH > 0 && part.h * 2 < lineH) continue;
-    visibleLines.push(line);
+    if (part !== null && !covered(doc, owner, part)) {
+      shown = true;
+      break;
+    }
   }
-  if (visibleLines.length === 0) return '';
-  let yMin = Infinity;
-  let yMax = -Infinity;
-  for (const line of visibleLines) {
-    if (line.top < yMin) yMin = line.top;
-    if (line.bottom > yMax) yMax = line.bottom;
-  }
+  if (!shown) return '';
   const length = value.length;
-  const from = firstIndexMeetingY(range, node, length, yMin);
-  const to = lastIndexMeetingY(range, node, length, yMax);
+  const from = firstIndexMeetingY(range, node, length, frame.y);
+  const to = lastIndexMeetingY(range, node, length, frame.y + frame.h);
   if (from > to || from >= length) return '';
   let out = '';
   for (let i = from; i <= to; i++) {
     range.setStart(node, i);
     range.setEnd(node, i + 1);
-    if (charMeetsLines(range.getBoundingClientRect(), visibleLines)) out += value.slice(i, i + 1);
+    const box = range.getBoundingClientRect();
+    const midY = (box.top + box.bottom) / 2;
+    if (midY < frame.y || midY > frame.y + frame.h) continue;
+    out += value.slice(i, i + 1);
   }
   return out === '' ? '' : clean(out);
 }

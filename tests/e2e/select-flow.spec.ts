@@ -400,15 +400,33 @@ const previewCases: PreviewCase[] = [
     expected: 'HeroCaption',
   },
   {
-    name: 'pe:none hero under a cookie wall stays covered',
+    name: 'nested pe:none hero over an earlier absolute backdrop',
     inner: `<div style="position:relative;margin:24px 16px;width:560px;height:72px">
       <div style="position:absolute;inset:0;background:#246"></div>
-      <div style="pointer-events:none;position:absolute;left:12px;top:16px">
-        <h1 style="margin:0;color:#fff;${LINE}">Hero Shop now</h1>
+      <div style="position:relative;padding:16px 12px">
+        <h1 style="pointer-events:none;margin:0;color:#fff;${LINE}">Hero Caption</h1>
       </div>
-    </div>
-    <div style="position:fixed;left:40px;top:160px;width:640px;height:200px;background:#fff;display:flex;align-items:center;justify-content:center">
-      <p style="margin:0;${LINE}">Cookie wall</p>
+    </div>`,
+    expected: 'Hero Caption',
+  },
+  {
+    name: 'pe:none caption in the root over an absolute backdrop',
+    inner: `<div style="position:absolute;left:0;top:0;width:640px;height:200px;background:#246"></div>
+      <p style="position:absolute;left:12px;top:28px;pointer-events:none;color:#fff;${LINE}">Hero Caption</p>`,
+    expected: 'Hero Caption',
+  },
+  {
+    name: 'pe:none hero under a cookie wall in a shared SPA root',
+    inner: `<div id="app">
+      <div style="position:relative;margin:24px 16px;width:560px;height:72px">
+        <div style="position:absolute;inset:0;background:#246"></div>
+        <div style="pointer-events:none;position:absolute;left:12px;top:16px">
+          <h1 style="margin:0;color:#fff;${LINE}">Hero Shop now</h1>
+        </div>
+      </div>
+      <div style="position:fixed;left:40px;top:160px;width:640px;height:200px;background:#fff;display:flex;align-items:center;justify-content:center">
+        <p style="margin:0;${LINE}">Cookie wall</p>
+      </div>
     </div>`,
     expected: 'Cookie wall',
   },
@@ -627,6 +645,69 @@ test('dense line-height keeps only the framed line', async ({ context, extension
   const result = await opened;
   await expect(result.locator('#shot')).toBeVisible();
   await expect(result.locator('#pvText')).toHaveValue('font for every');
+});
+
+// Tight band around x-height (±2px): the old ≥50% line-box rule dropped the line; centres stay in.
+test('tight x-height frame keeps lowercase serif text', async ({ context, extensionId, serve }) => {
+  const origin = await serve(
+    new Map([
+      [
+        '/',
+        {
+          type: 'text/html; charset=utf-8',
+          body: `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#fff">
+  <p id="tight" style="margin:40px;font:64px/1.2 serif;white-space:nowrap;color:#111">common reason</p>
+</body></html>`,
+        },
+      ],
+    ]),
+  );
+  const site = await context.newPage();
+  await site.goto(`${origin}/`);
+  const band = await site.locator('#tight').evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const line = range.getClientRects()[0];
+    if (line === undefined) return null;
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (ctx === null) return null;
+    ctx.font = getComputedStyle(el).font;
+    const m = ctx.measureText(el.textContent || '');
+    const ascent = m.actualBoundingBoxAscent;
+    const descent = m.actualBoundingBoxDescent;
+    const emAscent = m.fontBoundingBoxAscent;
+    if (
+      !Number.isFinite(ascent) ||
+      !Number.isFinite(descent) ||
+      !Number.isFinite(emAscent) ||
+      emAscent === 0
+    ) {
+      return null;
+    }
+    const baseline = line.top + emAscent;
+    return {
+      x: line.left,
+      y: baseline - ascent - 2,
+      w: line.width,
+      h: ascent + descent + 4,
+    };
+  });
+  expect(band, 'x-height band').not.toBeNull();
+  const { x = 0, y = 0, w = 0, h = 0 } = band ?? {};
+  await clickToolbarIcon(context, extensionId, site);
+  await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
+  const opened = context.waitForEvent('page', {
+    predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
+  });
+  await site.mouse.move(x + 4, y);
+  await site.mouse.down();
+  await site.mouse.move(x + w - 4, y + h, { steps: 4 });
+  await site.mouse.up();
+  const result = await opened;
+  await expect(result.locator('#shot')).toBeVisible();
+  await expect(result.locator('#pvText')).toHaveValue('common reason');
 });
 
 test('framing the middle of a large pre finishes quickly', async ({

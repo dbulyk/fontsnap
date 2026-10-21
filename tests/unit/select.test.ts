@@ -68,6 +68,7 @@ interface StackPaint {
   pointerEvents?: string;
   textSecurity?: string;
   position?: string;
+  zIndex?: string;
   transform?: string;
   translate?: string;
   rotate?: string;
@@ -227,6 +228,7 @@ function layout(
       clipPath: pick(paint.clipPath, real.clipPath, 'none'),
       pointerEvents: pick(paint.pointerEvents, real.pointerEvents, 'auto'),
       position: pick(paint.position, real.position, 'static'),
+      zIndex: pick(paint.zIndex, real.zIndex, 'auto'),
       transform: pick(paint.transform, real.transform, 'none'),
       translate: pick(paint.translate, real.translate, 'none'),
       rotate: pick(paint.rotate, real.rotate, 'none'),
@@ -929,7 +931,8 @@ describe('textInRect', () => {
       {
         stack: () => [el('f')],
         paint: (hit) => {
-          if (hit.id === 't') return { pointerEvents: 'none' };
+          if (hit.id === 'group') return { position: 'relative' };
+          if (hit.id === 't') return { position: 'absolute', pointerEvents: 'none' };
           if (hit.id === 'f') return { backgroundColor: 'rgb(255, 255, 255)' };
           return {};
         },
@@ -1124,7 +1127,7 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('visible');
   });
 
-  it('ignores opaque siblings under the pe:none wrapper parent, not the whole document', () => {
+  it('takes pe:none hero over an earlier absolute backdrop (paint order, not DOM parent)', () => {
     document.body.innerHTML =
       '<div id="group"><div id="bg"></div><div id="wrap"><h1 id="t">Hero Caption</h1></div></div>';
     layout(
@@ -1136,9 +1139,12 @@ describe('textInRect', () => {
       {
         stack: () => [el('bg'), el('t')],
         paint: (hit) => {
-          if (hit.id === 'wrap') return { pointerEvents: 'none' };
+          if (hit.id === 'group') return { position: 'relative' };
+          if (hit.id === 'wrap') return { position: 'relative', pointerEvents: 'none' };
           if (hit.id === 't') return { pointerEvents: 'none' };
-          if (hit.id === 'bg') return { backgroundColor: 'rgb(34, 68, 102)' };
+          if (hit.id === 'bg') {
+            return { position: 'absolute', backgroundColor: 'rgb(34, 68, 102)' };
+          }
           return {};
         },
       },
@@ -1146,9 +1152,9 @@ describe('textInRect', () => {
     expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Hero Caption');
   });
 
-  it('keeps cover from a cookie wall outside the pe:none wrapper parent', () => {
+  it('keeps cover from a later cookie wall under a shared SPA root', () => {
     document.body.innerHTML =
-      '<div id="group"><div id="wrap"><h1 id="t">Hero Shop now</h1></div></div><div id="cookie"></div><p id="v">Cookie wall</p>';
+      '<div id="app"><div id="wrap"><h1 id="t">Hero Shop now</h1></div><div id="cookie"></div><p id="v">Cookie wall</p></div>';
     layout(
       {
         t: { left: 10, right: 120, top: 10, bottom: 40 },
@@ -1161,7 +1167,9 @@ describe('textInRect', () => {
         paint: (hit) => {
           if (hit.id === 'wrap') return { pointerEvents: 'none' };
           if (hit.id === 't') return { pointerEvents: 'none' };
-          if (hit.id === 'cookie') return { backgroundColor: 'rgb(255, 255, 255)' };
+          if (hit.id === 'cookie') {
+            return { position: 'fixed', backgroundColor: 'rgb(255, 255, 255)' };
+          }
           return {};
         },
       },
