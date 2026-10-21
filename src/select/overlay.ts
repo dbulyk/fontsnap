@@ -1,5 +1,6 @@
-import { nonEmpty, sendRect } from './chrome';
 import type { Rect } from '../shared/capture';
+import { nonEmpty, sendRect } from './chrome';
+import { MAX_PREVIEW_GRAPHEMES, fitsPreview, graphemeCount } from './graphemes';
 
 /**
  * A document can lack <body> (an SVG or XML page) although the DOM types say otherwise: the element is taken as a parameter
@@ -46,74 +47,177 @@ function alphaOf(raw: string): number {
   return Number.isFinite(n) ? n : 1;
 }
 
-/** A layer paints when it is not fully transparent and has a background or an image. */
-function paintsOpaque(style: CSSStyleDeclaration): boolean {
+const PAINTING_TAG = /^(?:IMG|VIDEO|CANVAS|IFRAME|SVG|OBJECT|EMBED)$/;
+
+function fromDom(rect: DOMRect): Rect {
+  return { x: rect.left, y: rect.top, w: rect.right - rect.left, h: rect.bottom - rect.top };
+}
+
+function intersect(a: Rect, b: Rect): Rect | null {
+  const x = Math.max(a.x, b.x);
+  const y = Math.max(a.y, b.y);
+  const w = Math.min(a.x + a.w, b.x + b.w) - x;
+  const h = Math.min(a.y + a.h, b.y + b.h) - y;
+  return w > 0 && h > 0 ? { x, y, w, h } : null;
+}
+
+/** `rect(top, right, bottom, left)` offsets are from the border box's top-left. `auto` keeps that edge. */
+function applyClip(clip: string, border: Rect): Rect {
+  const body = /^rect\(([^)]*)\)$/i.exec(clip.trim())?.[1] ?? '';
+  const parts = body.split(/[,\s]+/).filter((part) => part !== '');
+  const edge = (raw: string | undefined, start: number, size: number, open: boolean): number => {
+    const token = (raw ?? '').trim().toLowerCase();
+    if (token === '' || token === 'auto') return open ? start : start + size;
+    const n = Number(token.endsWith('px') ? token.slice(0, -2) : token);
+    return Number.isFinite(n) ? start + n : open ? start : start + size;
+  };
+  const x = edge(parts[3], border.x, border.w, true);
+  const y = edge(parts[0], border.y, border.h, true);
+  const right = edge(parts[1], border.x, border.w, false);
+  const bottom = edge(parts[2], border.y, border.h, false);
+  return { x, y, w: right - x, h: bottom - y };
+}
+
+/** inset(50%) and inset(100%) are the sr-only clip-path. Any other clip-path is only the border box. */
+function clipPathEmpties(path: string): boolean {
+  const flat = path.trim().toLowerCase().replace(/\s+/g, '');
+  return flat === 'inset(50%)' || flat === 'inset(100%)';
+}
+
+/** The border box when this element clips, an empty rect for an sr-only clip-path, or null. */
+function clipLimit(el: Element): Rect | null {
+  const style = getComputedStyle(el);
+  const path = style.clipPath;
+  const clip = style.getPropertyValue('clip').trim();
+  if (
+    style.overflow === 'visible' &&
+    style.overflowX === 'visible' &&
+    style.overflowY === 'visible' &&
+    clip === 'auto' &&
+    path === 'none'
+  ) {
+    return null;
+  }
+  if (clipPathEmpties(path)) return { x: 0, y: 0, w: 0, h: 0 };
+  const border = fromDom(el.getBoundingClientRect());
+  if (path !== 'none') return border;
+  return clip === 'auto' ? border : applyClip(clip, border);
+}
+
+/** The part of `line` inside the frame and every ancestor clip, or null when that area is empty. */
+function visiblePart(line: DOMRect, frame: Rect, owner: Element): Rect | null {
+  let part = overlap(line, frame);
+  let current: Element | null = owner;
+  while (part !== null && current !== null) {
+    const limit = clipLimit(current);
+    if (limit !== null) part = intersect(part, limit);
+    current = current.parentElement;
+  }
+  return part;
+}
+
+function masked(style: CSSStyleDeclaration): boolean {
+  const security = style.getPropertyValue('-webkit-text-security').trim().toLowerCase();
+  return security !== '' && security !== 'none';
+}
+
+/**
+ * `display: contents` has no box, so the nearest ancestor that does is what `checkVisibility` can see.
+ * Visibility is read on the owner itself: it is inherited, and a contents box would otherwise be skipped.
+ */
+function styleVisible(owner: Element): boolean {
+  const style = getComputedStyle(owner);
+  if (style.visibility === 'hidden' || masked(style)) return false;
+  let current: Element | null = owner;
+  while (current !== null && current.getClientRects().length === 0) current = current.parentElement;
+  return current?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) ?? false;
+}
+
+function paints(el: Element): boolean {
+  const style = getComputedStyle(el);
   if (style.opacity === '0') return false;
+  if (PAINTING_TAG.test(el.tagName.toUpperCase())) return true;
   return style.backgroundImage !== 'none' || colorAlpha(style.backgroundColor) > 0;
 }
 
 /**
- * `elementFromPoint` is a hit test: `pointer-events: none` lands on an ancestor, and an opaque child of the
- * text still contains the hit. A layer covers the text only when it paints and is neither the text's box nor
- * an ancestor of it.
+ * Hit-testing skips an element with `pointer-events: none`, so the stack would blame the layer under a
+ * floating label or a hero caption. Those elements are not checked for covering.
  */
-function visibleThrough(stack: readonly Element[], owner: Element): boolean {
+function covered(doc: Document, owner: Element, part: Rect): boolean {
+  if (getComputedStyle(owner).pointerEvents === 'none') return false;
+  const stack = doc.elementsFromPoint(part.x + part.w / 2, part.y + part.h / 2);
   for (const hit of stack) {
-    if (hit.contains(owner)) return true;
-    if (paintsOpaque(getComputedStyle(hit))) return false;
+    if (hit === owner) return false;
+    if (owner.contains(hit)) {
+      if (paints(hit)) return true;
+      continue;
+    }
+    if (hit.contains(owner)) continue;
+    if (paints(hit)) return true;
   }
   return false;
 }
 
-function shownIn(doc: Document, range: Range, owner: Element, r: Rect): boolean {
-  for (const line of range.getClientRects()) {
-    const part = overlap(line, r);
-    if (part === null) continue;
-    const stack = doc.elementsFromPoint(part.x + part.w / 2, part.y + part.h / 2);
-    if (visibleThrough(stack, owner)) return true;
-  }
-  return false;
+function clean(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
 }
 
-/** `display: contents` has no box of its own. The text is visible when an ancestor box is. */
-function boxVisible(el: Element): boolean {
-  let current: Element | null = el;
-  while (current?.getClientRects().length === 0) current = current.parentElement;
-  return current?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) ?? false;
+function isPasswordField(el: HTMLTextAreaElement | HTMLInputElement): boolean {
+  if (el instanceof HTMLInputElement && el.type.toLowerCase() === 'password') return true;
+  if (masked(getComputedStyle(el))) return true;
+  if (/(?:current-password|new-password|one-time-code)/i.test(el.autocomplete)) return true;
+  return /pass|pwd/i.test(el.name) || /pass|pwd/i.test(el.id);
 }
 
-function fieldPiece(el: HTMLTextAreaElement | HTMLInputElement, r: Rect): string {
-  if (el instanceof HTMLInputElement && el.type !== 'text') return '';
-  if (!boxVisible(el)) return '';
+function fieldPiece(
+  doc: Document,
+  el: HTMLTextAreaElement | HTMLInputElement,
+  frame: Rect,
+): string {
+  if (el instanceof HTMLInputElement && el.type.toLowerCase() !== 'text') return '';
+  if (isPasswordField(el)) return '';
+  if (!styleVisible(el)) return '';
+  let boxes = 0;
   let crossed = false;
   let inside = true;
-  let boxes = 0;
   for (const box of el.getClientRects()) {
     boxes += 1;
-    if (overlap(box, r) !== null) crossed = true;
-    if (box.left < r.x || box.top < r.y || box.right > r.x + r.w || box.bottom > r.y + r.h) {
+    const part = visiblePart(box, frame, el);
+    const shown = part !== null && !covered(doc, el, part);
+    if (shown) crossed = true;
+    if (
+      !shown ||
+      box.left < frame.x ||
+      box.top < frame.y ||
+      box.right > frame.x + frame.w ||
+      box.bottom > frame.y + frame.h
+    ) {
       inside = false;
     }
   }
+  // No client rect leaves `inside` true. display:none is that case, and a shown parent does not make it visible.
   if (boxes === 0) return '';
   const start = el.selectionStart;
   const end = el.selectionEnd;
-  let chosen = '';
-  if (start !== null && end !== null && start !== end)
-    chosen = crossed ? el.value.slice(start, end) : '';
-  else if (inside) chosen = el.value;
-  return chosen.trim().replace(/\s+/g, ' ');
+  if (start !== null && end !== null && start !== end) {
+    return crossed ? clean(el.value.slice(start, end)) : '';
+  }
+  return inside ? clean(el.value) : '';
 }
 
-function textPiece(doc: Document, range: Range, node: Node, r: Rect): string {
+function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string {
   const value = node.nodeValue ?? '';
   const owner = node.parentElement;
   if (!value.trim() || owner === null) return '';
-  range.selectNodeContents(node);
-  if (!shownIn(doc, range, owner, r)) return '';
   if (owner.matches(NOT_SHOWN)) return '';
-  if (!boxVisible(owner)) return '';
-  return value.trim().replace(/\s+/g, ' ');
+  if (!styleVisible(owner)) return '';
+  range.selectNodeContents(node);
+  for (const line of range.getClientRects()) {
+    const part = visiblePart(line, frame, owner);
+    if (part !== null && !covered(doc, owner, part)) return clean(value);
+  }
+  return '';
 }
 
 // visible text of the page under the dragged rectangle (used as the preview sample when no selection is in it)
@@ -122,22 +226,27 @@ export function textInRect(doc: Document, r: Rect): string {
   const range = doc.createRange();
   const root = bodyOrRoot(doc.body, doc.documentElement);
   const tw = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
-  let len = 0;
+  let count = 0;
   let n = 0;
   try {
-    for (let node = tw.nextNode(); node && len < 80 && n < 20000; node = tw.nextNode(), n++) {
+    for (
+      let node = tw.nextNode();
+      node && count <= MAX_PREVIEW_GRAPHEMES && n < 20000;
+      node = tw.nextNode(), n++
+    ) {
       const piece =
         node instanceof HTMLTextAreaElement || node instanceof HTMLInputElement
-          ? fieldPiece(node, r)
+          ? fieldPiece(doc, node, r)
           : textPiece(doc, range, node, r);
       if (!piece) continue;
+      count += (out.length === 0 ? 0 : 1) + graphemeCount(piece);
+      if (count > MAX_PREVIEW_GRAPHEMES) return '';
       out.push(piece);
-      len += piece.length + 1;
     }
   } catch {
     return '';
   }
-  return out.join(' ').slice(0, 80);
+  return out.join(' ');
 }
 
 /** The selected text, only when a line of the selection lies in the rectangle: a selection elsewhere on the page is not what was framed. */
@@ -145,7 +254,7 @@ function selectionIn(selection: Selection | null, r: Rect): string {
   if (selection === null || selection.isCollapsed) return '';
   for (let i = 0; i < selection.rangeCount; i++) {
     for (const line of selection.getRangeAt(i).getClientRects()) {
-      if (overlap(line, r) !== null) return selection.toString().trim().slice(0, 80);
+      if (overlap(line, r) !== null) return fitsPreview(selection.toString().trim());
     }
   }
   return '';

@@ -273,11 +273,23 @@ const DOM_MEMBERS = [
       matches: 'c',
       checkVisibility: 'c',
       elementsFromPoint: 'c',
+      getBoundingClientRect: 'c',
+      getPropertyValue: 'c',
       contains: 'c',
       length: 'r',
+      tagName: 'r',
       opacity: 'r',
+      visibility: 'r',
+      overflow: 'r',
+      overflowX: 'r',
+      overflowY: 'r',
+      clipPath: 'r',
+      pointerEvents: 'r',
       backgroundColor: 'r',
       backgroundImage: 'r',
+      autocomplete: 'r',
+      name: 'r',
+      id: 'r',
       value: 'r',
       selectionStart: 'r',
       selectionEnd: 'r',
@@ -400,6 +412,8 @@ const GLOBAL_ACCESS = {
       HTMLInputElement: true,
       HTMLTextAreaElement: true,
     },
+    'src/select/graphemes.ts': { Intl: ['Segmenter'] },
+    'src/shared/graphemes.ts': { Intl: ['Segmenter'] },
     'src/background/shot.ts': { btoa: true, String: ['fromCharCode'] },
     // the timeout of a page script that does not answer
     // the tab of the click is asked whether it is still in front before its screenshot
@@ -1332,7 +1346,11 @@ const styleSelectors = [
   `MemberExpression[property.name='style']:not(${ASSIGN} > MemberExpression.arguments:first-child)`,
   "ObjectPattern > Property[key.name='style']",
   "Property[key.value='style']",
-  `Identifier[name=${STYLE_NAMES}]`,
+  // getPropertyValue is a read of computed clip and -webkit-text-security (clip is deprecated as a
+  // property, and the security longhand is not declared in lib.dom). A call is allowed; naming it as a
+  // value is not, so it cannot be used to write a style.
+  `Identifier[name=${STYLE_NAMES}]:not([name='getPropertyValue'])`,
+  `Identifier[name='getPropertyValue']:not(CallExpression > MemberExpression.callee > Identifier.property)`,
   `Literal[value=${STYLE_NAMES}]`,
   // Object.assign(el.style, { ... }): exactly two arguments, the second an object literal of plain `key: value` properties
   `${ASSIGN}:not([arguments.length=2])`,
