@@ -121,9 +121,15 @@ function flowMode(el: Element): FlowMode {
 /** Whether `style` makes this element a containing block for `position: fixed` descendants. */
 function establishesFixedCB(style: CSSStyleDeclaration): boolean {
   if (style.transform !== 'none' || style.filter !== 'none') return true;
+  // Individual transform properties (Tailwind v4 translate-*/rotate-*/scale-*).
+  if (style.translate !== 'none' && style.translate !== '') return true;
+  if (style.rotate !== 'none' && style.rotate !== '') return true;
+  if (style.scale !== 'none' && style.scale !== '') return true;
   if (style.perspective !== 'none' && style.perspective !== '') return true;
   if (/(?:^|\s)(?:paint|layout|strict|content)(?:\s|$)/.test(style.contain)) return true;
-  return /(?:^|,)\s*(?:transform|filter|perspective)\s*(?:,|$)/.test(style.willChange);
+  return /(?:^|,)\s*(?:transform|filter|perspective|translate|rotate|scale)\s*(?:,|$)/.test(
+    style.willChange,
+  );
 }
 
 /** Whether `ancestor` can clip a descendant whose current flow mode is `mode`. */
@@ -208,31 +214,36 @@ function paintsAtPoint(el: Element, cx: number, cy: number): boolean {
 }
 
 /**
- * `pointer-events: none` skips cover when the topmost pe:none ancestor is not html/body.
- * Inherited none from body (top is body) must not skip cover; a label or hero wrapper may.
+ * Subtree whose hits are ignored during cover for pe:none text.
+ * Prefer the parent of the topmost pe:none wrapper (opaque siblings under a hero/label group).
+ * When that parent is html/body, fall back to the wrapper itself — otherwise body.contains would
+ * swallow cookie walls and modals. Inherited none from body/html returns null (full cover).
  */
-function peSkipsCover(el: Element, doc: Document): boolean {
+function peIgnoreRoot(el: Element, doc: Document): Element | null {
   let top: Element | null = null;
   let current: Element | null = el;
   while (current !== null) {
     if (getComputedStyle(current).pointerEvents === 'none') top = current;
     current = current.parentElement;
   }
-  if (top === null) return false;
-  return top !== doc.body && top !== doc.documentElement;
+  if (top === null || top === doc.body || top === doc.documentElement) return null;
+  const parent = top.parentElement;
+  if (parent === null || parent === doc.body || parent === doc.documentElement) return top;
+  return parent;
 }
 
 /**
  * Hit-testing skips pe:none text (floating labels, hero captions), so the stack would blame the layer under
- * them. Those owners are not checked for covering.
+ * them. Ignore hits inside the pe:none wrapper's parent; layers outside that subtree still cover.
  */
 function covered(doc: Document, owner: Element, part: Rect): boolean {
-  if (peSkipsCover(owner, doc)) return false;
+  const ignoreRoot = peIgnoreRoot(owner, doc);
   const cx = part.x + part.w / 2;
   const cy = part.y + part.h / 2;
   const stack = doc.elementsFromPoint(cx, cy);
   for (const hit of stack) {
     if (hit === owner) return false;
+    if (ignoreRoot?.contains(hit) === true) continue;
     if (owner.contains(hit)) {
       if (paintsAtPoint(hit, cx, cy)) return true;
       continue;
@@ -248,15 +259,34 @@ function clean(value: string): string {
 }
 
 /**
- * Capture what the field paints. A password (or text-security) control paints masks, not `.value`,
- * so the plaintext is never read. No type / autocomplete / label filters: everything is local.
+ * Input types whose `.value` is painted as text (or as the control's label). Checkbox, radio, color,
+ * range, date and similar paint widgets, not the string in `.value`.
+ */
+const TEXT_VALUE_TYPES = new Set([
+  'text',
+  'search',
+  'email',
+  'url',
+  'tel',
+  'number',
+  'button',
+  'submit',
+  'reset',
+]);
+
+/**
+ * Capture what the field paints as text. Password and text-security paint masks, so plaintext
+ * `.value` is never read. Non-text widgets (checkbox, radio, color, …) return empty.
  */
 function fieldPiece(
   doc: Document,
   el: HTMLTextAreaElement | HTMLInputElement,
   frame: Rect,
 ): string {
-  if (el instanceof HTMLInputElement && el.type.toLowerCase() === 'password') return '';
+  if (el instanceof HTMLInputElement) {
+    const type = el.type.toLowerCase();
+    if (type === 'password' || !TEXT_VALUE_TYPES.has(type)) return '';
+  }
   if (masked(getComputedStyle(el))) return '';
   if (!styleVisible(el)) return '';
   let boxes = 0;
@@ -287,7 +317,10 @@ function fieldPiece(
   return inside ? clean(el.value) : '';
 }
 
-/** True when `box`'s center lies inside any of `lines` (or the boxes overlap that line). */
+/**
+ * True when `box`'s center lies inside any of `lines`.
+ * Any-overlap would pull dense line-height (≤1) glyphs from the neighbour line into the frame.
+ */
 function charMeetsLines(box: DOMRect, lines: readonly DOMRect[]): boolean {
   const midX = (box.left + box.right) / 2;
   const midY = (box.top + box.bottom) / 2;
@@ -295,7 +328,6 @@ function charMeetsLines(box: DOMRect, lines: readonly DOMRect[]): boolean {
     if (midX >= line.left && midX <= line.right && midY >= line.top && midY <= line.bottom) {
       return true;
     }
-    if (overlap(box, fromDom(line)) !== null) return true;
   }
   return false;
 }
@@ -351,6 +383,10 @@ function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string
   for (const line of lines) {
     const part = visiblePart(line, frame, owner, doc);
     if (part === null || covered(doc, owner, part)) continue;
+    // Dense line-height (≤1) makes neighbour line boxes nick the frame by a few pixels;
+    // keep a line only when at least half its height sits in the visible part.
+    const lineH = line.bottom - line.top;
+    if (lineH > 0 && part.h * 2 < lineH) continue;
     visibleLines.push(line);
   }
   if (visibleLines.length === 0) return '';

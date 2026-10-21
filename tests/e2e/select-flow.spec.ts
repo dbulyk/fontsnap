@@ -400,6 +400,19 @@ const previewCases: PreviewCase[] = [
     expected: 'HeroCaption',
   },
   {
+    name: 'pe:none hero under a cookie wall stays covered',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <div style="pointer-events:none;position:absolute;left:12px;top:16px">
+        <h1 style="margin:0;color:#fff;${LINE}">Hero Shop now</h1>
+      </div>
+    </div>
+    <div style="position:fixed;left:40px;top:160px;width:640px;height:200px;background:#fff;display:flex;align-items:center;justify-content:center">
+      <p style="margin:0;${LINE}">Cookie wall</p>
+    </div>`,
+    expected: 'Cookie wall',
+  },
+  {
     name: 'a textarea fully inside the frame',
     inner: `<textarea style="position:absolute;left:16px;top:24px;width:480px;height:80px;${field}">full field value</textarea>`,
     expected: 'full field value',
@@ -501,6 +514,27 @@ const previewCases: PreviewCase[] = [
     expected: MARKER,
   },
   {
+    name: 'fixed under translate inside overflow:hidden is clipped',
+    inner: `<div style="overflow:hidden;height:40px;margin:16px;background:#eee">
+      <div style="translate:0 0">
+        <div style="position:fixed;left:56px;top:200px;${LINE}">TRAP clipped</div>
+      </div>
+    </div>${markerAt(28)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a checkbox value is not painted as text',
+    inner: `<label style="position:absolute;left:16px;top:28px;${LINE}">
+      <input type="checkbox" checked value="on"> Remember me
+    </label>`,
+    expected: 'Remember me',
+  },
+  {
+    name: 'a date input value is not painted as its ISO string',
+    inner: `<input type="date" value="2026-10-21" style="position:absolute;left:16px;top:28px;width:200px;height:44px;${field}">${markerAt(100)}`,
+    expected: MARKER,
+  },
+  {
     name: 'RTL Hebrew with Latin keeps document order',
     inner: `<p dir="rtl" style="position:absolute;left:16px;top:28px;${LINE}">שלום FontSnap עולם</p>`,
     expected: 'שלום FontSnap עולם',
@@ -550,6 +584,50 @@ for (const item of previewCases) {
     expect(text).toBe(item.expected);
   });
 }
+
+// Dense line-height (≤1): glyph boxes overlap the neighbour line. Framing only line 2 must not
+// glue words from line 1 (QA B1 / review B4).
+test('dense line-height keeps only the framed line', async ({ context, extensionId, serve }) => {
+  const origin = await serve(
+    new Map([
+      [
+        '/',
+        {
+          type: 'text/html; charset=utf-8',
+          body: `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;background:#fff">
+  <h1 id="dense" style="margin:24px 40px;width:420px;font:700 48px/1 sans-serif;color:#111">Find the perfect font for every project</h1>
+</body></html>`,
+        },
+      ],
+    ]),
+  );
+  const site = await context.newPage();
+  await site.goto(`${origin}/`);
+  const line = await site.locator('#dense').evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const boxes = [...range.getClientRects()];
+    const second = boxes[1];
+    if (second === undefined) return null;
+    return { x: second.left, y: second.top, w: second.width, h: second.height };
+  });
+  expect(line, 'heading has a second line box').not.toBeNull();
+  const { x = 0, y = 0, w = 0, h = 0 } = line ?? {};
+  await clickToolbarIcon(context, extensionId, site);
+  await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
+  const opened = context.waitForEvent('page', {
+    predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
+  });
+  // Frame the centre band of line 2 so neighbour line boxes that nick the edges stay out.
+  await site.mouse.move(x + 4, y + h * 0.2);
+  await site.mouse.down();
+  await site.mouse.move(x + w - 4, y + h * 0.8, { steps: 4 });
+  await site.mouse.up();
+  const result = await opened;
+  await expect(result.locator('#shot')).toBeVisible();
+  await expect(result.locator('#pvText')).toHaveValue('font for every');
+});
 
 test('framing the middle of a large pre finishes quickly', async ({
   context,

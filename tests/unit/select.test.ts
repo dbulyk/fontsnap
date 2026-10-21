@@ -69,6 +69,9 @@ interface StackPaint {
   textSecurity?: string;
   position?: string;
   transform?: string;
+  translate?: string;
+  rotate?: string;
+  scale?: string;
   filter?: string;
   perspective?: string;
   contain?: string;
@@ -110,6 +113,8 @@ function layout(
     paint?: (el: Element) => StackPaint;
     noBox?: readonly string[];
     bounds?: Record<string, Partial<DOMRect>>;
+    /** Glyph boxes taller than the line (line-height ≤ 1): extend into the neighbour. */
+    denseGlyphs?: boolean;
   },
 ): void {
   const ownerId = (node: Node): string => {
@@ -126,7 +131,12 @@ function layout(
       return { left: 0, right: 0, top: 0, bottom: 0, ...lines[0] } as DOMRect;
     }
     const per = Math.max(1, Math.ceil(text.length / lines.length));
-    const line = lines[Math.min(lines.length - 1, Math.floor(index / per))] ?? lines[0];
+    const line = lines[Math.min(lines.length - 1, Math.floor(index / per))] ?? lines[0] ?? {};
+    const top = line.top ?? 0;
+    const bottom = line.bottom ?? 0;
+    if (options?.denseGlyphs === true) {
+      return { left: 0, right: 0, ...line, top: top - 6, bottom: bottom + 6 } as DOMRect;
+    }
     return { left: 0, right: 0, top: 0, bottom: 0, ...line } as DOMRect;
   };
   const realRange = document.createRange.bind(document);
@@ -218,6 +228,9 @@ function layout(
       pointerEvents: pick(paint.pointerEvents, real.pointerEvents, 'auto'),
       position: pick(paint.position, real.position, 'static'),
       transform: pick(paint.transform, real.transform, 'none'),
+      translate: pick(paint.translate, real.translate, 'none'),
+      rotate: pick(paint.rotate, real.rotate, 'none'),
+      scale: pick(paint.scale, real.scale, 'none'),
       filter: pick(paint.filter, real.filter, 'none'),
       perspective: pick(paint.perspective, real.perspective, 'none'),
       contain: pick(paint.contain, real.contain, 'none'),
@@ -906,7 +919,7 @@ describe('textInRect', () => {
 
   it('takes a floating label that does not receive pointer events', () => {
     document.body.innerHTML =
-      '<label id="t" style="pointer-events:none">Floating Label</label><input id="f">';
+      '<div id="group"><label id="t" style="pointer-events:none">Floating Label</label><input id="f"></div>';
     layout(
       {
         t: { left: 10, top: 10, right: 80, bottom: 28 },
@@ -915,7 +928,11 @@ describe('textInRect', () => {
       undefined,
       {
         stack: () => [el('f')],
-        paint: (el) => (el.id === 'f' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
+        paint: (hit) => {
+          if (hit.id === 't') return { pointerEvents: 'none' };
+          if (hit.id === 'f') return { backgroundColor: 'rgb(255, 255, 255)' };
+          return {};
+        },
       },
     );
     expect(textInRect(document, frame)).toBe('Floating Label');
@@ -1107,26 +1124,102 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('visible');
   });
 
-  it('skips cover when pe:none is on an ancestor wrapper, not only the text node owner', () => {
+  it('ignores opaque siblings under the pe:none wrapper parent, not the whole document', () => {
     document.body.innerHTML =
-      '<div id="wrap"><h1 id="t">Hero Caption</h1></div><div id="cover"></div>';
+      '<div id="group"><div id="bg"></div><div id="wrap"><h1 id="t">Hero Caption</h1></div></div>';
     layout(
       {
         t: { left: 10, right: 120, top: 10, bottom: 40 },
-        cover: { left: 0, right: 200, top: 0, bottom: 50 },
+        bg: { left: 0, right: 200, top: 0, bottom: 50 },
       },
       undefined,
       {
-        stack: () => [el('cover'), el('t')],
+        stack: () => [el('bg'), el('t')],
         paint: (hit) => {
           if (hit.id === 'wrap') return { pointerEvents: 'none' };
           if (hit.id === 't') return { pointerEvents: 'none' };
-          if (hit.id === 'cover') return { backgroundColor: 'rgb(34, 68, 102)' };
+          if (hit.id === 'bg') return { backgroundColor: 'rgb(34, 68, 102)' };
           return {};
         },
       },
     );
     expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Hero Caption');
+  });
+
+  it('keeps cover from a cookie wall outside the pe:none wrapper parent', () => {
+    document.body.innerHTML =
+      '<div id="group"><div id="wrap"><h1 id="t">Hero Shop now</h1></div></div><div id="cookie"></div><p id="v">Cookie wall</p>';
+    layout(
+      {
+        t: { left: 10, right: 120, top: 10, bottom: 40 },
+        cookie: { left: 0, right: 200, top: 0, bottom: 100 },
+        v: { left: 20, right: 160, top: 50, bottom: 70 },
+      },
+      undefined,
+      {
+        stack: (_x, y) => (y < 45 ? [el('cookie'), el('t')] : [el('v')]),
+        paint: (hit) => {
+          if (hit.id === 'wrap') return { pointerEvents: 'none' };
+          if (hit.id === 't') return { pointerEvents: 'none' };
+          if (hit.id === 'cookie') return { backgroundColor: 'rgb(255, 255, 255)' };
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, frame)).toBe('Cookie wall');
+  });
+
+  it('clips fixed text when a translate CB sits under overflow:hidden', () => {
+    document.body.innerHTML =
+      '<div id="clip"><div id="wrap"><p id="t">TRAP fixed</p></div></div><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, right: 90, top: 50, bottom: 70 },
+        v: { left: 10, right: 70, top: 80, bottom: 96 },
+      },
+      undefined,
+      {
+        bounds: { clip: { left: 0, top: 0, right: 100, bottom: 30 } },
+        paint: (hit) => {
+          if (hit.id === 'clip') return { overflow: 'hidden' };
+          if (hit.id === 'wrap') return { translate: '0px' };
+          if (hit.id === 't') return { position: 'fixed' };
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('does not take a checkbox value (it is not painted as text)', () => {
+    document.body.innerHTML =
+      '<input id="f" type="checkbox" checked value="on"><p id="v">Remember me</p>';
+    layout(
+      {
+        f: { left: 10, right: 30, top: 10, bottom: 30 },
+        v: { left: 40, right: 140, top: 10, bottom: 30 },
+      },
+      undefined,
+      { stack: () => [el('v')] },
+    );
+    expect(textInRect(document, frame)).toBe('Remember me');
+  });
+
+  it('keeps only characters whose center meets the framed line (dense line-height)', () => {
+    // Contiguous line boxes; glyphs taller than the line overlap the neighbour (line-height ≤ 1).
+    document.body.innerHTML = '<p id="t">AAAAABBBBB</p>';
+    layout(
+      {
+        t: [
+          { left: 10, right: 90, top: 0, bottom: 16 },
+          { left: 10, right: 90, top: 16, bottom: 32 },
+        ],
+      },
+      undefined,
+      { stack: () => [el('t')], denseGlyphs: true },
+    );
+    // Frame only the second line; first-line glyphs that overlap it must not join.
+    expect(textInRect(document, { x: 0, y: 16, w: 100, h: 16 })).toBe('BBBBB');
   });
 
   it('takes a heading when a painted stretched link only covers its own box', () => {
