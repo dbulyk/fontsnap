@@ -1,5 +1,3 @@
-"""Apply the reviewed name-map TSV. This module does not walk ONNX nodes."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,7 +9,6 @@ from train.name_map import DEFAULT_TSV, NameMapRow, load_name_map
 
 
 def apply_layout(op: str, raw: np.ndarray, timm_shape: tuple[int, ...]) -> np.ndarray:
-    """copy, transpose_oi, or conv1x1_to_linear. The op comes from the TSV, not from rank guessing."""
     if op == "copy":
         out = raw
     elif op == "transpose_oi":
@@ -31,11 +28,6 @@ def apply_layout(op: str, raw: np.ndarray, timm_shape: tuple[int, ...]) -> np.nd
 
 
 def _folded_bn_leftover(name: str) -> bool:
-    """bn.weight and the running stats are not ONNX initializers.
-
-    timm's reset (scale 1, mean 0, var 1) stands in for the folded norm.
-    The fp16 gap and the 1/sqrt(1+eps) scale are what parity measures.
-    """
     if name.endswith((".running_mean", ".running_var", ".num_batches_tracked")):
         return True
     parts = name.split(".")
@@ -65,7 +57,6 @@ def load_efficientnet_b3_from_onnx(
     num_classes: int = BASE_CLASSES,
     name_map: Path | None = None,
 ) -> EfficientNetB3Classifier:
-    """Read initializer bytes and the TSV. Writes nothing. Downloads nothing."""
     if num_classes != BASE_CLASSES:
         raise ValueError(f"load the {BASE_CLASSES}-way head, then expand_classifier for 4271")
     import onnx

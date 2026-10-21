@@ -1,5 +1,3 @@
-"""RunPod plan stays offline, and the calibrate cap is the one the free phase prints."""
-
 import json
 import os
 from decimal import Decimal

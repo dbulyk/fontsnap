@@ -1,12 +1,3 @@
-"""Train-side merge groups and source ranks.
-
-``fontsnap_ref.pipeline.MERGE`` and ``KEEP_NOTO`` stay on the product path.
-``TRAIN_MERGE_GROUPS`` names Iosevka, Monaspace, Redaction, Open Sauce, and Inter-like families.
-``members`` is empty until a hold-out review fills it, so ``apply_train_merge`` keeps each key.
-``DEFAULT_RANK_BY_SOURCE`` is 3000 for every source.
-That is the rank the live ranker already uses when Google Fonts has no popularity for a family.
-"""
-
 from __future__ import annotations
 
 import enum
@@ -36,7 +27,6 @@ PRIOR_BY_SOURCE: dict[str, PriorPolicy] = {
 
 DEFAULT_RANK_BY_SOURCE: dict[str, int] = {source: policy.default_rank for source, policy in PRIOR_BY_SOURCE.items()}
 
-# Canonical family_key, then the keys that should disappear into it. Empty until a hold-out review.
 TRAIN_MERGE_GROUPS: tuple[MergeGroup, ...] = (
     MergeGroup("iosevka", ()),
     MergeGroup("monaspace", ()),
@@ -77,7 +67,6 @@ def family_rank(family_key: str, source: str | enum.Enum | None, gf_rank: Mappin
 
 
 def apply_train_merge(keys: list[str], groups: tuple[MergeGroup, ...] | None = None) -> list[str]:
-    """Rename-and-dedupe. The first mapped key is kept. Later copies are dropped. The input list is not changed."""
     alias = merge_alias(TRAIN_MERGE_GROUPS if groups is None else groups)
     out: list[str] = []
     for key in keys:

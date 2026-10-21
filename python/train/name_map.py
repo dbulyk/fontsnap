@@ -1,8 +1,3 @@
-"""Reviewed ONNX-to-timm name map.
-
-propose may walk the graph. The loader in port.py reads the TSV and does not.
-"""
-
 from __future__ import annotations
 
 import re
@@ -43,7 +38,6 @@ def _shape_cell(shape: tuple[int, ...]) -> str:
 
 
 def load_name_map(path: Path) -> tuple[NameMapRow, ...]:
-    """Parse the reviewed TSV. Duplicate names and unknown ops raise."""
     import csv
 
     rows: list[NameMapRow] = []
@@ -77,7 +71,6 @@ def load_name_map(path: Path) -> tuple[NameMapRow, ...]:
 
 
 def op_for_shapes(onnx_shape: tuple[int, ...], timm_shape: tuple[int, ...]) -> str | None:
-    """propose-only. The loader trusts the TSV op and does not call this."""
     if onnx_shape == timm_shape:
         return "copy"
     if len(onnx_shape) == 4 and onnx_shape[-2:] == (1, 1) and timm_shape == onnx_shape[:2]:
@@ -101,10 +94,6 @@ def _conv_prefix(node_name: str) -> str:
 
 
 def _bn_bias_name(root, conv_prefix: str) -> str:
-    """The shipped graph folds BatchNorm into the conv, and timm's conv has no bias.
-
-    The bias initializer belongs on the BatchNorm that still follows that conv.
-    """
     import torch
 
     parent_name, leaf = conv_prefix.rsplit(".", 1) if "." in conv_prefix else ("", conv_prefix)
@@ -118,7 +107,6 @@ def _bn_bias_name(root, conv_prefix: str) -> str:
 
 
 def propose_name_map(onnx_path: Path) -> str:
-    """Print a TSV for stdout. Does not write a path. UNMAPPED lines make main exit 2."""
     import onnx
 
     from train.model import BASE_CLASSES, EfficientNetB3Classifier

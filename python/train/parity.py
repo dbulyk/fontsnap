@@ -1,5 +1,3 @@
-"""ORT versus the PyTorch port on prep(crop_normalize(image, pack|crop))."""
-
 from __future__ import annotations
 
 import sys
@@ -33,7 +31,6 @@ class ParityReport:
 
 
 def openable_images(folder: Path, limit: int) -> tuple[Path, ...]:
-    """Skip Git LFS pointers and unreadable files. Return up to limit real images."""
     if limit < 1:
         raise ValueError("limit must be >= 1")
     picked: list[Path] = []
@@ -75,12 +72,10 @@ def _run(session, nchw: np.ndarray) -> np.ndarray:
 
 
 def reference_logits(onnx_path: Path, nchw: np.ndarray) -> np.ndarray:
-    """One ORT CPU session. Returns float32 logits of shape (3665,). No softmax."""
     return _run(_session(onnx_path), nchw)
 
 
 def compare(onnx_path: Path, images: tuple[Path, ...]) -> ParityReport:
-    """Shared prep tensor for pack and crop. The module is loaded once."""
     if not images:
         raise ValueError("no images")
     import torch

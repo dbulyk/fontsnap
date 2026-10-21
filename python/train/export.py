@@ -1,5 +1,3 @@
-"""fp16-weight ONNX export. Refuses any destination under model/ before torch is imported."""
-
 from __future__ import annotations
 
 import sys
@@ -9,7 +7,6 @@ from train.paths import assert_under_out, refuse_product_write
 
 
 def dest_allowed(path: Path) -> bool:
-    """False when path resolves to the shipped model directory."""
     try:
         refuse_product_write(path)
     except ValueError:
@@ -24,7 +21,6 @@ def _default_dest() -> Path:
 
 
 def export_onnx_fp16(model, dest: Path, *, num_classes: int) -> None:
-    """Write an ONNX file with float32 input/logits named input and logits, and fp16 initializers."""
     if not dest_allowed(dest):
         raise ValueError(f"refusing write to product model/: {dest}")
     resolved = assert_under_out(dest)
@@ -57,7 +53,6 @@ def _export_loaded(model, dest: Path, num_classes: int) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     dummy = torch.zeros(1, 3, 320, 320, dtype=torch.float32)
     try:
-        # dynamo=False keeps one file with fp16 weights. PyTorch 2.9+ warns that this exporter is legacy.
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=DeprecationWarning)
             torch.onnx.export(

@@ -1,9 +1,3 @@
-"""Download catalog faces into out/font-cache. Binaries are not committed.
-
-`file_sha256` in the manifest stays blank unless `--write-sha256` is passed.
-A sha256 sidecar next to each cached file records the bytes either way.
-"""
-
 from __future__ import annotations
 
 import os

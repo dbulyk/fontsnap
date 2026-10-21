@@ -1,5 +1,3 @@
-"""Real-shot CSV, family top-5, and the report-only displacement cap."""
-
 import json
 import os
 import shutil
