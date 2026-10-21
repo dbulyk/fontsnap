@@ -398,8 +398,7 @@ def test_status_http_error_still_deletes(status, monkeypatch, tmp_path, capsys):
     calls = install(monkeypatch, handler)
     code = main(["watch", "--mode", "calibrate"])
     err = capsys.readouterr().err
-    assert deletes(calls) == [f"/pods/{POD}"] or (code != 0 and POD in err)
-    assert deletes(calls)
+    assert deletes(calls) == [f"/pods/{POD}"]
     assert code != 0
     assert KEY not in err
 
@@ -520,7 +519,8 @@ def test_delete_404_is_success(monkeypatch, tmp_path, capsys):
 
 def test_stale_active_pod_is_deleted_before_create(monkeypatch, tmp_path):
     arm(monkeypatch, tmp_path)
-    (tmp_path / "runpod-active-pod.json").write_text(json.dumps({"id": "stale-pod", "mode": "calibrate", "name": "old"}) + "\n", encoding="utf-8")
+    stale = {"id": "stale-pod", "mode": "calibrate", "name": "old"}
+    (tmp_path / "runpod-active-pod.json").write_text(json.dumps(stale) + "\n", encoding="utf-8")
     order = []
 
     def handler(method, path, _body):
@@ -569,9 +569,7 @@ def test_signal_during_poll_deletes(sig, tmp_path):
         check=False,
     )
     logged = trace.read_text(encoding="utf-8") if trace.is_file() else ""
-    deleted = f"DELETE /pods/pod-sig" in logged
-    assert deleted or (proc.returncode != 0 and "pod-sig" in proc.stderr)
-    assert deleted
+    assert "DELETE /pods/pod-sig" in logged
     assert proc.returncode == 128 + int(sig)
     assert KEY not in proc.stderr
     assert KEY not in proc.stdout
