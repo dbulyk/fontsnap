@@ -193,6 +193,7 @@ async function previewInFrame(
   await site.mouse.up();
   const result = await opened;
   await expect(result.locator('#shot')).toBeVisible();
+  await expect(result.locator('#results li').first()).toBeVisible();
   return result.locator('#pvText').inputValue();
 }
 
