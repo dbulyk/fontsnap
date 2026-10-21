@@ -7,12 +7,13 @@ The secure hourly price is price.secure from GET https://api.runpod.io/v2/catalo
 CreatePodRequest sends name, image, cloud SECURE, gpu id and count, disk, and the container
 start command as entrypoint and cmd. v1 called that command dockerStartCmd. v2 stores it as args.
 
-The pod clones this repository at a pinned commit, installs train deps, runs the work under
-timeout on the GPU, prints samples/sec only when calibrate exits 0, sleeps so the client can
-scrape logs, then runs runpodctl pod delete $RUNPOD_POD_ID. The client stops and deletes the
-pod in a finally block on every exit, including SIGINT, SIGTERM, SIGHUP, and unexpected
-exceptions while polling. A failed delete prints the pod id and a manual DELETE command,
-records DELETE FAILED, and exits nonzero.
+The pod fetches this repository at the commit git rev-parse HEAD returned when the plan was
+built, installs train deps, and runs the work under timeout on the GPU. Calibrate prints
+samples/sec only when that command exits 0, sleeps so the client can scrape logs, then runs
+runpodctl pod delete $RUNPOD_POD_ID. A nonzero train exits before that delete and does not
+print samples/sec. The client stops and deletes the pod in a finally block on every exit,
+including SIGINT, SIGTERM, SIGHUP, and unexpected exceptions while polling. A failed delete
+prints the pod id and a manual DELETE command, records DELETE FAILED, and exits nonzero.
 
 Free-phase command:
 
@@ -47,6 +48,8 @@ from urllib.parse import quote
 from train.paths import ROOT, assert_under_out
 
 API = "https://api.runpod.io/v2"
+_PUBLIC_REPO = "https://github.com/dbulyk/fontsnap.git"
+_LOG_SETTLE_SECONDS = 45
 PLAN_CALIBRATE = "python -m train.runpod plan --mode calibrate"
 LIVE_CALIBRATE = "FONTSNAP_RUNPOD_LIVE=1 python -m train.runpod watch --mode calibrate"
 _REJECT = ("--api-key", "--apikey")
@@ -253,30 +256,41 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
     if not re.fullmatch(r"[0-9a-f]{7,40}", sha):
         raise ValueError(f"bad commit pin: {sha!r}")
     if spec.mode is JobMode.CALIBRATE:
-        train_cmd = f"timeout {limit} python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
+        train = f"timeout {limit} python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
+        settle = f"sleep {_LOG_SETTLE_SECONDS}\n"
     else:
-        train_cmd = f"timeout {limit} python -m train.loop --recipe ofl-v1 --device cuda"
-    # Clone + install inside the stock pytorch image; loop prints samples/sec only on
-    # success. Sleep before self-delete so the client can scrape SSE logs while RUNNING.
+        train = f"timeout {limit} python -m train.loop --recipe ofl-v1 --device cuda"
+        settle = ""
+    # Fetch the pinned sha. A clone of the default branch does not contain other commits.
+    # Stdout stays in a file until exit 0 so a failed train cannot emit samples/sec.
     return (
-        "set -u\n"
+        "set -eu\n"
         "export DEBIAN_FRONTEND=noninteractive\n"
         "apt-get update -qq >/dev/null\n"
         "apt-get install -y -qq git git-lfs >/dev/null\n"
         "git lfs install --skip-repo >/dev/null\n"
         "rm -rf /tmp/fontsnap\n"
-        "GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/dbulyk/fontsnap.git /tmp/fontsnap\n"
+        "mkdir -p /tmp/fontsnap\n"
         "cd /tmp/fontsnap\n"
-        f"git checkout --force {sha}\n"
+        "git init -q\n"
+        f"git remote add origin {_PUBLIC_REPO}\n"
+        f"git fetch --depth 1 origin {sha}\n"
+        "GIT_LFS_SKIP_SMUDGE=1 git checkout -q --detach FETCH_HEAD\n"
         "git lfs pull --include='model/**'\n"
         "python -m pip install -q -r python/requirements.txt -r python/train/requirements.txt\n"
         "export FONTSNAP_ALLOW_GPU=1\n"
         "export PYTHONPATH=/tmp/fontsnap/python\n"
-        f"{train_cmd}\n"
+        "set +e\n"
+        f"{train} >/tmp/fontsnap-train.out 2>/tmp/fontsnap-train.err\n"
         "status=$?\n"
-        'if [ "$status" -eq 0 ]; then sleep 45; fi\n'
+        "set -e\n"
+        "cat /tmp/fontsnap-train.err >&2\n"
+        'if [ "$status" -ne 0 ]; then\n'
+        '  exit "$status"\n'
+        "fi\n"
+        "cat /tmp/fontsnap-train.out\n"
+        f"{settle}"
         'runpodctl pod delete "$RUNPOD_POD_ID"\n'
-        "exit $status\n"
     )
 
 
@@ -405,23 +419,33 @@ def plan(spec: RunPodJobSpec, journal: Path | None = None) -> str:
 def _read_all(response, *, limit: int = 1_000_000, stop_when: re.Pattern[str] | None = None) -> bytes:
     chunks: list[bytes] = []
     total = 0
+    # A multi-byte chunked read asks urllib for the next chunk. If that stalls, the
+    # timeout is raised inside read() and the bytes already taken from this chunk are dropped.
+    size = 1 if stop_when is not None else 8192
     while total < limit:
         try:
-            block = response.read(1024 if stop_when is not None else 8192)
+            block = response.read(size)
+        except http.client.IncompleteRead as err:
+            if err.partial:
+                chunks.append(err.partial)
+            break
         except (TimeoutError, OSError, http.client.HTTPException):
             break
         if not block:
             break
         chunks.append(block)
         total += len(block)
-        if stop_when is not None:
-            try:
-                text = b"".join(chunks).decode(errors="replace")
-            except Exception:
-                continue
-            if stop_when.search(text):
-                break
+        if stop_when is not None and _rate_text_settled(b"".join(chunks).decode(errors="replace"), stop_when):
+            break
     return b"".join(chunks)
+
+
+def _rate_text_settled(text: str, pattern: re.Pattern[str]) -> bool:
+    # The number may still be arriving. "9" is not "9.25" until a non-number byte follows.
+    match = pattern.search(text)
+    if match is None or match.end() >= len(text):
+        return False
+    return text[match.end()] not in "0123456789."
 
 
 def _http_raw(
@@ -529,7 +553,7 @@ def delete_pod(pod_id: str, key: str) -> bool:
     while True:
         try:
             status, _payload = _http_json("DELETE", path, key)
-        except (urllib.error.URLError, TimeoutError, OSError):
+        except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException):
             status = 0
         if status in _DELETE_OK:
             return True
@@ -554,7 +578,7 @@ def _report_delete_failed(pod_id: str) -> None:
 def _teardown(pod_id: str, key: str, *, mode: str, hourly: Decimal, started: float, state: str) -> bool:
     try:
         act(pod_id, RemoteAction.STOP.value, key)
-    except (SystemExit, urllib.error.URLError, TimeoutError, OSError):
+    except (Exception, SystemExit):
         pass
     deleted = delete_pod(pod_id, key)
     elapsed_min = Decimal(str((time.monotonic() - started) / 60))
@@ -735,20 +759,20 @@ def _watch(spec: RunPodJobSpec) -> int:
                 recorded = _read_active()
                 if recorded is not None:
                     pod_id = str(recorded["id"])
-        finally:
-            # Projection only on a clean calibrate that actually measured throughput.
-            if code == 0 and rate is not None and spec.mode is JobMode.CALIBRATE:
-                _print_projection(rate, hourly)
-            if pod_id is not None:
-                holder["cleaning"] = True
-                try:
-                    if not _teardown(pod_id, key, mode=spec.mode.value, hourly=hourly, started=started, state=state):
-                        code = 4
-                except Exception:
-                    code = 4
-                    _report_delete_failed(pod_id)
+        if code == 0 and rate is not None and spec.mode is JobMode.CALIBRATE:
+            _print_projection(rate, hourly)
     finally:
-        _restore_signals(previous)
+        try:
+            if pod_id is not None and not holder["cleaning"]:
+                holder["cleaning"] = True
+                if not _teardown(pod_id, key, mode=spec.mode.value, hourly=hourly, started=started, state=state):
+                    code = 4
+        except Exception:
+            code = 4
+            if pod_id is not None:
+                _report_delete_failed(pod_id)
+        finally:
+            _restore_signals(previous)
     return code
 
 
