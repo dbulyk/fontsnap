@@ -19,7 +19,9 @@ Nabigo ang pagkuha: $ERR$ — subukang muli o mag-paste ng screenshot.
 Hindi na-load ang model: $ERR$
 Error: $ERR$
 Preview na teksto
-Mag-type ng sariling teksto (default: The quick brown fox…)
+Mag-type ng sariling teksto
+Tinutukoy ang font…
+$USED$/$MAX$
 Relatibong marka sa top 5
 wala sa Google Fonts
 Kopyahin ang CSS

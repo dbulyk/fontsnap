@@ -80,7 +80,21 @@
     "message": "Văn bản xem trước"
   },
   "previewPh": {
-    "message": "Nhập văn bản của bạn (mặc định: The quick brown fox…)"
+    "message": "Nhập văn bản của bạn"
+  },
+  "identifying": {
+    "message": "Đang nhận dạng phông chữ…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Điểm tương đối trong top 5"

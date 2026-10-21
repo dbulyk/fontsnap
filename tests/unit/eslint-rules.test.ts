@@ -283,6 +283,16 @@ describe('extension code: boundaries, loading, number formatting and ambient dec
     expect(await flagged('src/shared/settings.ts', code)).not.toEqual([]);
   });
 
+  it('lets graphemes.ts, and only graphemes.ts, use Intl.Segmenter', async () => {
+    const code = 'new Intl.Segmenter(undefined, { granularity: "grapheme" });';
+    expect(await reached('src/shared/graphemes.ts', code)).toEqual([]);
+    expect(await reached('src/select/graphemes.ts', code)).toEqual([]);
+    expect(await reached('src/shared/ui.ts', code)).not.toEqual([]);
+    expect(await flagged('src/shared/graphemes.ts', "new Intl.NumberFormat('en');")).not.toEqual(
+      [],
+    );
+  });
+
   it('allows ambient declarations in .d.ts files', async () => {
     const code = "declare module '*.svg' { const url: string; export default url; }";
     expect(await flagged('src/env.d.ts', code)).toEqual([]);

@@ -1,7 +1,11 @@
-// Small pure helpers for the result page (unit-tested in tests/unit/ui.test.ts).
-import { fitsPreview } from './graphemes';
+import { sampleOf } from './samples';
+import { chooseSample } from './script';
 
-export const DEFAULT_PREVIEW = 'The quick brown fox jumps over the lazy dog';
+const english = sampleOf('en');
+if (english === undefined) throw new Error('missing en sample');
+
+// Small pure helpers for the result page (unit-tested in tests/unit/ui.test.ts).
+export const DEFAULT_PREVIEW = english.text;
 
 // CSS generic fallback per Google Fonts category. Display faces are mostly decorative/script-like
 // (Lobster, Pacifico-style), so they fall back to `cursive` like Handwriting.
@@ -17,15 +21,12 @@ export const genericFamily = (category: string): string => GENERIC.get(category)
 export const cssFontFamily = (name: string, category: string): string =>
   `font-family: '${name.replace(/'/g, "\\'")}', ${genericFamily(category)};`;
 
-// Preview sample: user-typed text, else text found under the selection, else the pangram.
+// Typed text wins. Page text uses the 100-grapheme gate inside chooseSample. Otherwise English.
 export function previewText(
   typed: string | null | undefined,
   selected: string | null | undefined,
 ): string {
-  const t = (typed ?? '').trim();
-  if (t) return t;
-  const s = fitsPreview((selected ?? '').replace(/\s+/g, ' ').trim());
-  return s === '' ? DEFAULT_PREVIEW : s;
+  return chooseSample({ typed, pageText: selected }).text;
 }
 
 // Display filter. The ranker always returns k candidates (needed for the top-5 metric), but when the

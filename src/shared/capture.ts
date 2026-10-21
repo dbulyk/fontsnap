@@ -12,9 +12,30 @@ export interface Rect {
 export interface CaptureEntry {
   dataUrl?: string;
   text?: string;
+  /** BCP 47 language from the page (nearest [lang] / html lang); script hint only. */
+  lang?: string;
+  /** Image alt/title (right-click) or other script hint; never shown as preview text. */
+  hint?: string;
   error?: string;
   /** The clicked image could not be isolated: `dataUrl` is the whole visible area and the result page says so. */
   note?: 'whole-view';
+}
+
+const LANG_TAG = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$/;
+
+/** Accept a short BCP 47 tag from hostile page input, or undefined. */
+export function parseLangTag(raw: unknown): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const tag = raw.trim();
+  if (!tag || tag.length > 35 || !LANG_TAG.test(tag)) return undefined;
+  return tag;
+}
+
+/** Accept a short script hint (alt/title), or undefined. */
+export function parseHint(raw: unknown, max = 80): string | undefined {
+  if (typeof raw !== 'string') return undefined;
+  const hint = raw.replace(/\s+/g, ' ').trim().slice(0, max);
+  return hint || undefined;
 }
 
 export interface EncodeOptions {

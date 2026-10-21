@@ -80,7 +80,21 @@
     "message": "Priekšskatījuma teksts"
   },
   "previewPh": {
-    "message": "Ierakstiet savu tekstu (noklusējums: The quick brown fox…)"
+    "message": "Ierakstiet savu tekstu"
+  },
+  "identifying": {
+    "message": "Nosaka fontu…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relatīvais vērtējums starp pirmajiem 5"

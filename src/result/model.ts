@@ -7,6 +7,8 @@ export interface Model {
   ranker: ReturnType<typeof makeRanker>;
   /** Class probabilities for one normalized crop (320x320 NCHW float32 → logits → softmax). */
   probs: (crop: Img) => Promise<Float64Array>;
+  /** GF subset bit names from meta.json (for per-card sample coverage). */
+  subsetNames: string[];
 }
 
 /** Where the packaged files are, relative to the extension root; all of them are in VENDOR_FILES (scripts/lib/vendor.ts). */
@@ -106,6 +108,7 @@ export async function loadModel(): Promise<Model> {
   assertNoOutsideLoads(performance.getEntriesByType('resource'), chrome.runtime.getURL(''));
   return {
     ranker,
+    subsetNames: meta.subsetNames,
     probs: async (crop) => {
       const out = await session.run({
         input: new ort.Tensor('float32', prep(crop), [1, 3, 320, 320]),

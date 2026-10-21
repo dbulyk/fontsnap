@@ -19,7 +19,9 @@ AI 字型辨識 · 在您的裝置上執行
 模型載入失敗:$ERR$
 錯誤:$ERR$
 預覽文字
-輸入自訂文字(預設:The quick brown fox…)
+輸入自訂文字
+正在辨識字型…
+$USED$/$MAX$
 在前 5 名中的相對分數
 不在 Google Fonts 中
 複製 CSS

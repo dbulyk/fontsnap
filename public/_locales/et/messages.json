@@ -80,7 +80,21 @@
     "message": "Eelvaate tekst"
   },
   "previewPh": {
-    "message": "Sisesta oma tekst (vaikimisi: The quick brown fox…)"
+    "message": "Sisesta oma tekst"
+  },
+  "identifying": {
+    "message": "Kirjatüübi tuvastamine…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Suhteline skoor esimese 5 seas"

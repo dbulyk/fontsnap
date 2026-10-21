@@ -80,7 +80,21 @@
     "message": "Text de previzualizare"
   },
   "previewPh": {
-    "message": "Scrieți propriul text (implicit: The quick brown fox…)"
+    "message": "Scrieți propriul text"
+  },
+  "identifying": {
+    "message": "Se identifică fontul…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Scor relativ între primele 5"

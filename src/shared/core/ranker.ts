@@ -1,5 +1,8 @@
 import { at } from './at';
 
+/** Absent from Google Fonts metadata. Not a mask: bitwise AND with -1 matches every subset. */
+export const UNKNOWN_SUBSETS = -1;
+
 /** model/meta.json: families, display names, popularity ranks and merge rules. */
 export interface Meta {
   fams: string[];
@@ -10,6 +13,12 @@ export interface Meta {
   classFam: number[];
   merge: Record<string, string>;
   keepNoto: string[];
+  /** GF subset ids; bit i of `subsets[j]` means fams[j] has subsetNames[i]. */
+  subsetNames: string[];
+  /** primaryScript per family, or "" when Google Fonts recorded none. */
+  script: string[];
+  /** Subset bitmask per family, or UNKNOWN_SUBSETS when the family is absent from Google Fonts metadata. */
+  subsets: number[];
 }
 
 export interface RankedFont {
@@ -19,6 +28,9 @@ export interface RankedFont {
   category: string;
   score: number;
   conf: number;
+  script: string;
+  /** -1 when the family's subsets are unknown. */
+  subsets: number;
 }
 
 export interface RankOptions {
@@ -63,6 +75,8 @@ export function makeRanker(meta: Meta): {
         inGF: at(meta.inGF, j),
         category: at(meta.category, j),
         score: at(fp, i),
+        script: at(meta.script, j),
+        subsets: at(meta.subsets, j),
       });
     }
     const top = out.slice(0, k);

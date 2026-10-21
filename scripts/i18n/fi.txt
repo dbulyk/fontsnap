@@ -19,7 +19,9 @@ Kaappaus epäonnistui: $ERR$ – yritä uudelleen tai liitä kuvakaappaus.
 Mallin lataus epäonnistui: $ERR$
 Virhe: $ERR$
 Esikatseluteksti
-Kirjoita oma teksti (oletus: The quick brown fox…)
+Kirjoita oma teksti
+Tunnistetaan fonttia…
+$USED$/$MAX$
 Suhteellinen pistemäärä 5 parhaan joukossa
 ei Google Fontsissa
 Kopioi CSS

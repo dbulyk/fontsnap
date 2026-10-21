@@ -76,8 +76,8 @@ export const VENDOR_FILES: ReadonlyMap<string, VendorFile> = new Map([
     'model/meta.json',
     {
       source: 'model/meta.json',
-      sha256: '6eba0b40c03d462fa023917df19289f00670fb9a96cdec136d89cf18922fa93c',
-      size: 106519,
+      sha256: '973633542966ea9a4b8c649fc70ae62f64acf9ba63b887995422177dc6f3ea34',
+      size: 119525,
     },
   ],
 ]);

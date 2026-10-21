@@ -80,7 +80,21 @@
     "message": "Текст за преглед"
   },
   "previewPh": {
-    "message": "Въведете свой текст (по подразбиране: The quick brown fox…)"
+    "message": "Въведете свой текст"
+  },
+  "identifying": {
+    "message": "Определяне на шрифта…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Относителна оценка сред първите 5"

@@ -80,7 +80,21 @@
     "message": "Tekst pregleda"
   },
   "previewPh": {
-    "message": "Upišite vlastiti tekst (zadano: The quick brown fox…)"
+    "message": "Upišite vlastiti tekst"
+  },
+  "identifying": {
+    "message": "Određivanje fonta…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relativni rezultat među prvih 5"

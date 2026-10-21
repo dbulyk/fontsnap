@@ -336,6 +336,10 @@ const DOM_MEMBERS = [
       getElementsByTagName: 'c',
       scrollIntoView: 'c',
       getBoundingClientRect: 'c',
+      // lang/hint of the clicked <img> (same fields measureImage already reads)
+      lang: 'r',
+      getAttribute: 'c',
+      documentElement: 'r',
     },
   },
   {
@@ -359,6 +363,11 @@ const DOM_MEMBERS = [
       drawImage: 'c',
       convertToBlob: 'c',
       arrayBuffer: 'c',
+      // lang/hint of the clicked <img> (same fields measureImage already reads)
+      lang: 'r',
+      getAttribute: 'c',
+      parentElement: 'r',
+      documentElement: 'r',
     },
   },
 ];
@@ -381,6 +390,7 @@ const GLOBAL_ACCESS = {
     Object: ['hasOwn', 'entries'],
     Promise: true,
     RangeError: true,
+    RegExp: true,
     Set: true,
     String: [''],
     URLSearchParams: true,
@@ -436,13 +446,13 @@ const GLOBAL_ACCESS = {
     'src/background/clicked.ts': { clearTimeout: true, chrome: ['tabs.get'] },
     // the function that chrome.scripting runs in the web page's process (see PAGE_PROCESS_GLOBS): the images of the page, its pixel ratio
     'src/background/measure.ts': {
-      document: ['images', 'getElementsByTagName'],
+      document: ['images', 'getElementsByTagName', 'documentElement'],
       requestAnimationFrame: true,
       window: ['devicePixelRatio', 'innerWidth', 'innerHeight'],
     },
     // the function that loads the clicked image (see LOAD_IMAGE_FILE): one Image, a canvas, the bytes of the PNG as text
     'src/background/load-image.ts': {
-      document: ['images'],
+      document: ['images', 'documentElement'],
       Image: true,
       btoa: true,
       String: ['fromCharCode'],
@@ -966,7 +976,7 @@ const PAGE_TYPES = [
   {
     match: 'src/select/',
     ambient: ['node_modules/@types/chrome/'],
-    interfaces: {},
+    interfaces: { RectText: ['text', 'lang'] },
     imports: {
       Rect: 'src/shared/capture.ts',
       RequestOf: 'src/shared/messages.ts',
@@ -976,10 +986,15 @@ const PAGE_TYPES = [
   {
     match: MEASURE_FILE,
     ambient: [],
-    interfaces: { MeasuredImage: ['rect', 'dpr', 'saved', 'box', 'outer'] },
+    interfaces: { MeasuredImage: ['rect', 'dpr', 'saved', 'box', 'outer', 'lang', 'hint'] },
     imports: { Rect: 'src/shared/capture.ts' },
   },
-  { match: LOAD_IMAGE_FILE, ambient: [], interfaces: {}, imports: {} },
+  {
+    match: LOAD_IMAGE_FILE,
+    ambient: [],
+    interfaces: { LoadedImagePixels: ['png', 'lang', 'hint'] },
+    imports: {},
+  },
 ];
 
 // --- the calls of chrome.scripting.executeScript: one tab, one frame, and the address of the click (review of PR #14, B1) --------------------

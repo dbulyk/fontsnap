@@ -19,7 +19,9 @@ Uzņemšana neizdevās: $ERR$ — mēģiniet vēlreiz vai ielīmējiet ekrānuz�
 Modeli neizdevās ielādēt: $ERR$
 Kļūda: $ERR$
 Priekšskatījuma teksts
-Ierakstiet savu tekstu (noklusējums: The quick brown fox…)
+Ierakstiet savu tekstu
+Nosaka fontu…
+$USED$/$MAX$
 Relatīvais vērtējums starp pirmajiem 5
 nav Google Fonts
 Kopēt CSS

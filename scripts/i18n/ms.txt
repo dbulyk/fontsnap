@@ -19,7 +19,9 @@ Tangkapan gagal: $ERR$ — cuba lagi atau tampal tangkapan skrin.
 Model gagal dimuatkan: $ERR$
 Ralat: $ERR$
 Teks pratonton
-Taip teks anda sendiri (lalai: The quick brown fox…)
+Taip teks anda sendiri
+Mengenal pasti fon…
+$USED$/$MAX$
 Skor relatif antara 5 teratas
 tiada dalam Google Fonts
 Salin CSS

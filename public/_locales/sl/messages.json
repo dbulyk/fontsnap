@@ -80,7 +80,21 @@
     "message": "Besedilo predogleda"
   },
   "previewPh": {
-    "message": "Vnesite svoje besedilo (privzeto: The quick brown fox…)"
+    "message": "Vnesite svoje besedilo"
+  },
+  "identifying": {
+    "message": "Prepoznavanje pisave…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relativna ocena med prvimi 5"

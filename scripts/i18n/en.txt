@@ -19,7 +19,9 @@ Capture failed: $ERR$ — try again or paste a screenshot.
 Model failed to load: $ERR$
 Error: $ERR$
 Preview text
-Type your own text (default: The quick brown fox…)
+Type your own text
+Identifying font…
+$USED$/$MAX$
 Relative score among the top 5
 not on Google Fonts
 Copy CSS

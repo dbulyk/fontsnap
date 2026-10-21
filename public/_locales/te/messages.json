@@ -80,7 +80,21 @@
     "message": "ప్రివ్యూ టెక్స్ట్"
   },
   "previewPh": {
-    "message": "మీ టెక్స్ట్ టైప్ చేయండి (డిఫాల్ట్: The quick brown fox…)"
+    "message": "మీ టెక్స్ట్ టైప్ చేయండి"
+  },
+  "identifying": {
+    "message": "ఫాంట్‌ను గుర్తిస్తోంది…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "టాప్ 5లో సాపేక్ష స్కోరు"

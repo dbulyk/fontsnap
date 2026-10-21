@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { startSelection, textInRect } from '../../src/select/overlay';
+import { softCapCapture, startSelection, textInRect } from '../../src/select/overlay';
 import { createChromeStub } from './helpers/chrome-stub';
 
 let stub: ReturnType<typeof createChromeStub>;
@@ -502,31 +502,31 @@ describe('textInRect', () => {
       b: { left: 900, right: 990, top: 10, bottom: 20 },
       c: { left: 10, right: 50, top: 30, bottom: 40 },
     });
-    expect(textInRect(document, frame)).toBe('one two three');
+    expect(textInRect(document, frame).text).toBe('one two three');
   });
 
   it('keeps 100 graphemes and drops a longer capture', () => {
     document.body.innerHTML = `<p id="a">${'a'.repeat(100)}</p>`;
     layout({ a: { right: 40, bottom: 20 } });
-    expect(textInRect(document, frame)).toBe('a'.repeat(100));
+    expect(textInRect(document, frame).text).toBe('a'.repeat(100));
   });
 
   it('drops 101 graphemes, including a join and a multi-code-unit character', () => {
     document.body.innerHTML = `<p id="a">${'a'.repeat(101)}</p>`;
     layout({ a: { right: 40, bottom: 20 } });
-    expect(textInRect(document, frame)).toBe('');
+    expect(textInRect(document, frame).text).toBe('');
   });
 
   it('keeps 100 thumbs-up graphemes', () => {
     document.body.innerHTML = `<p id="a">${'👍'.repeat(100)}</p>`;
     layout({ a: { right: 40, bottom: 20 } });
-    expect(textInRect(document, frame)).toBe('👍'.repeat(100));
+    expect(textInRect(document, frame).text).toBe('👍'.repeat(100));
   });
 
   it('drops 101 thumbs-up graphemes', () => {
     document.body.innerHTML = `<p id="a">${'👍'.repeat(101)}</p>`;
     layout({ a: { right: 40, bottom: 20 } });
-    expect(textInRect(document, frame)).toBe('');
+    expect(textInRect(document, frame).text).toBe('');
   });
 
   it('drops two pieces once the joining space passes 100 graphemes', () => {
@@ -535,8 +535,8 @@ describe('textInRect', () => {
       a: { right: 10, bottom: 10 },
       b: { top: 20, right: 10, bottom: 30 },
     });
-    expect(textInRect(document, frame)).toBe('');
-    expect(textInRect(document, { x: 5000, y: 5000, w: 1, h: 1 })).toBe('');
+    expect(textInRect(document, frame).text).toBe('');
+    expect(textInRect(document, { x: 5000, y: 5000, w: 1, h: 1 }).text).toBe('');
   });
 
   it('keeps two pieces that join to exactly 100 graphemes', () => {
@@ -545,7 +545,7 @@ describe('textInRect', () => {
       a: { right: 10, bottom: 10 },
       b: { top: 20, right: 10, bottom: 30 },
     });
-    expect(textInRect(document, frame)).toBe(`${'a'.repeat(50)} ${'b'.repeat(49)}`);
+    expect(textInRect(document, frame).text).toBe(`${'a'.repeat(50)} ${'b'.repeat(49)}`);
   });
 
   it.each([
@@ -558,7 +558,7 @@ describe('textInRect', () => {
   ])('skips text the user does not see: %s', (_name, html) => {
     document.body.innerHTML = `${html}<p id="v">visible</p>`;
     layout({ t: { right: 50, bottom: 10 }, v: { top: 20, right: 50, bottom: 30 } });
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('skips text covered by another element', () => {
@@ -575,7 +575,7 @@ describe('textInRect', () => {
         paint: (hit) => (hit.id === 'cover' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('takes the words of a phrase and the inline element inside it', () => {
@@ -588,7 +588,7 @@ describe('textInRect', () => {
       undefined,
       { stack: (x) => (x < 40 ? [el('t')] : [el('inner'), el('t')]) },
     );
-    expect(textInRect(document, frame)).toBe('outer bold');
+    expect(textInRect(document, frame).text).toBe('outer bold');
   });
 
   it('takes text that does not receive pointer events over an opaque sibling', () => {
@@ -602,7 +602,7 @@ describe('textInRect', () => {
         return {};
       },
     });
-    expect(textInRect(document, frame)).toBe('pointer free');
+    expect(textInRect(document, frame).text).toBe('pointer free');
   });
 
   it('takes text under a transparent layer', () => {
@@ -611,7 +611,7 @@ describe('textInRect', () => {
       stack: () => [el('catcher'), el('t')],
       paint: (hit) => (hit.id === 'catcher' ? { backgroundColor: 'rgba(0, 0, 0, 0)' } : {}),
     });
-    expect(textInRect(document, frame)).toBe('under clear');
+    expect(textInRect(document, frame).text).toBe('under clear');
   });
 
   it('takes a heading when a transparent link is stretched over it', () => {
@@ -628,7 +628,7 @@ describe('textInRect', () => {
         paint: (hit) => (hit.id === 'link' ? { backgroundColor: 'rgba(0, 0, 0, 0)' } : {}),
       },
     );
-    expect(textInRect(document, frame)).toBe('Card title');
+    expect(textInRect(document, frame).text).toBe('Card title');
   });
 
   it.each([
@@ -653,7 +653,7 @@ describe('textInRect', () => {
         paint: (hit) => (hit.id === 'cover' ? paint : {}),
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('takes text under a layer whose opacity is 0', () => {
@@ -663,7 +663,7 @@ describe('textInRect', () => {
       paint: (hit) =>
         hit.id === 'cover' ? { opacity: '0', backgroundColor: 'rgb(255, 255, 255)' } : {},
     });
-    expect(textInRect(document, frame)).toBe('under clear');
+    expect(textInRect(document, frame).text).toBe('under clear');
   });
 
   it('takes text whose element has no box when a parent box is visible', () => {
@@ -674,27 +674,27 @@ describe('textInRect', () => {
       stack: () => [el('p')],
       paint: (hit) => (hit.id === 'p' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
     });
-    expect(textInRect(document, frame)).toBe('shown letters');
+    expect(textInRect(document, frame).text).toBe('shown letters');
   });
 
   it('takes visible letters marked aria-hidden', () => {
     document.body.innerHTML =
       '<div aria-hidden="true"><span id="t">secret</span></div><p id="v">visible</p>';
     layout({ t: { right: 50, bottom: 10 }, v: { top: 20, right: 50, bottom: 30 } });
-    expect(textInRect(document, frame)).toBe('secret visible');
+    expect(textInRect(document, frame).text).toBe('secret visible');
   });
 
   it('takes the selected part of a textarea that meets the frame', () => {
     document.body.innerHTML = '<textarea id="f">hello world</textarea>';
     setRange('f', 0, 5);
     layout({ f: { left: 70, top: 10, right: 160, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('hello');
+    expect(textInRect(document, frame).text).toBe('hello');
   });
 
   it('takes a textarea value when the whole field sits inside the frame', () => {
     document.body.innerHTML = '<textarea id="f">whole value</textarea>';
     layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('whole value');
+    expect(textInRect(document, frame).text).toBe('whole value');
   });
 
   it('skips a textarea that crosses the frame when nothing is selected', () => {
@@ -703,7 +703,7 @@ describe('textInRect', () => {
       f: { left: 70, top: 10, right: 160, bottom: 40 },
       v: { left: 10, top: 50, right: 60, bottom: 70 },
     });
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('skips a textarea selection that does not meet the frame', () => {
@@ -713,20 +713,20 @@ describe('textInRect', () => {
       f: { left: 400, top: 10, right: 480, bottom: 40 },
       v: { left: 10, top: 10, right: 40, bottom: 30 },
     });
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('takes a text field value when the field sits inside the frame', () => {
     document.body.innerHTML = '<input id="f" type="text" value="typed words">';
     layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('typed words');
+    expect(textInRect(document, frame).text).toBe('typed words');
   });
 
   it('takes the selected part of a text field that meets the frame', () => {
     document.body.innerHTML = '<input id="f" type="text" value="hello world">';
     setRange('f', 6, 11);
     layout({ f: { left: 70, top: 10, right: 160, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('world');
+    expect(textInRect(document, frame).text).toBe('world');
   });
 
   it('does not read .value of a password field (masks are what is painted)', () => {
@@ -737,7 +737,7 @@ describe('textInRect', () => {
       f: { left: 10, top: 10, right: 80, bottom: 40 },
       v: { left: 10, top: 50, right: 60, bottom: 70 },
     });
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('does not read .value when text-security paints masks', () => {
@@ -751,7 +751,7 @@ describe('textInRect', () => {
       undefined,
       { paint: (el) => (el.id === 'f' ? { textSecurity: 'disc' } : {}) },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('skips letters whose owner disguises them with text security', () => {
@@ -764,38 +764,38 @@ describe('textInRect', () => {
       undefined,
       { paint: (el) => (el.id === 't' ? { textSecurity: 'disc' } : {}) },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('reads an email field when it sits inside the frame', () => {
     document.body.innerHTML = '<input id="f" type="email" value="ada@example.com">';
     layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('ada@example.com');
+    expect(textInRect(document, frame).text).toBe('ada@example.com');
   });
 
   it('reads a search input', () => {
     document.body.innerHTML = '<input id="f" type="search" value="query words">';
     layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('query words');
+    expect(textInRect(document, frame).text).toBe('query words');
   });
 
   it('reads an input with no type and an input with an unknown type', () => {
     document.body.innerHTML = '<input id="f" value="plain words">';
     layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('plain words');
+    expect(textInRect(document, frame).text).toBe('plain words');
   });
 
   it('reads an input whose type is not a real type', () => {
     document.body.innerHTML = '<input id="f" type="not-a-type" value="odd type">';
     layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
-    expect(textInRect(document, frame)).toBe('odd type');
+    expect(textInRect(document, frame).text).toBe('odd type');
   });
 
   it('does not read a textarea that has no box', () => {
     document.body.innerHTML =
       '<textarea id="f" style="display:none">DisplayNoneTextarea</textarea><p id="v">visible</p>';
     layout({ v: { left: 10, top: 10, right: 60, bottom: 30 } }, undefined, { noBox: ['f'] });
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('skips a textarea covered by an opaque layer', () => {
@@ -813,7 +813,7 @@ describe('textInRect', () => {
         paint: (el) => (el.id === 'cover' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('skips text clipped by an ancestor overflow box', () => {
@@ -827,7 +827,7 @@ describe('textInRect', () => {
       undefined,
       { bounds: { clip: { left: 0, top: 0, right: 100, bottom: 30 } } },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('skips text clipped only on overflow-x', () => {
@@ -847,7 +847,7 @@ describe('textInRect', () => {
             : {},
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('skips text clipped to an empty rect()', () => {
@@ -863,7 +863,7 @@ describe('textInRect', () => {
         paint: (el) => (el.id === 't' ? { clip: 'rect(0px, 0px, 0px, 0px)' } : {}),
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it.each(['inset(100%)', 'inset(50%)'])('skips text clipped by clip-path %s', (path) => {
@@ -876,7 +876,7 @@ describe('textInRect', () => {
       undefined,
       { paint: (el) => (el.id === 't' ? { clipPath: path } : {}) },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('keeps text inside a clip-path that is not an inset', () => {
@@ -885,7 +885,7 @@ describe('textInRect', () => {
       bounds: { t: { left: 10, top: 10, right: 90, bottom: 40 } },
       paint: (el) => (el.id === 't' ? { clipPath: 'circle(50%)' } : {}),
     });
-    expect(textInRect(document, frame)).toBe('inside words');
+    expect(textInRect(document, frame).text).toBe('inside words');
   });
 
   it.each([
@@ -903,7 +903,7 @@ describe('textInRect', () => {
       undefined,
       { stack: (_x, y) => (y < 34 ? [el('cover'), el('t')] : [el('v')]) },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('skips display:contents text whose own visibility is hidden', () => {
@@ -920,7 +920,7 @@ describe('textInRect', () => {
         stack: (_x, y) => (y < 34 ? [el('p')] : [el('v')]),
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('takes a floating label that does not receive pointer events', () => {
@@ -943,7 +943,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, frame)).toBe('Floating Label');
+    expect(textInRect(document, frame).text).toBe('Floating Label');
   });
 
   it('reads a field once, between the text before it and the text after it', () => {
@@ -954,7 +954,7 @@ describe('textInRect', () => {
       f: { left: 10, top: 30, right: 80, bottom: 50 },
       b: { left: 10, top: 60, right: 40, bottom: 80 },
     });
-    expect(textInRect(document, frame)).toBe('before field after');
+    expect(textInRect(document, frame).text).toBe('before field after');
   });
 
   it('walks the root element when the document has no <body> (an SVG or XML page)', () => {
@@ -972,7 +972,7 @@ describe('textInRect', () => {
     document.elementsFromPoint = () => [document.documentElement];
     vi.spyOn(document, 'elementFromPoint').mockReturnValue(document.documentElement);
     expect(document.body).toBeNull();
-    expect(textInRect(document, frame)).toBe('plain root text');
+    expect(textInRect(document, frame).text).toBe('plain root text');
   });
 
   it('answers an empty string when the document cannot be walked', () => {
@@ -985,7 +985,7 @@ describe('textInRect', () => {
       };
       return range;
     });
-    expect(textInRect(document, { x: 0, y: 0, w: 10, h: 10 })).toBe('');
+    expect(textInRect(document, { x: 0, y: 0, w: 10, h: 10 }).text).toBe('');
   });
 
   it('keeps only the framed line of a multi-line text node', () => {
@@ -1001,7 +1001,7 @@ describe('textInRect', () => {
       undefined,
       { stack: () => [el('t')] },
     );
-    expect(textInRect(document, { x: 0, y: 18, w: 100, h: 20 })).toBe('BBBBB');
+    expect(textInRect(document, { x: 0, y: 18, w: 100, h: 20 }).text).toBe('BBBBB');
   });
 
   it('does not skip cover when pointer-events:none is only inherited from body', () => {
@@ -1026,7 +1026,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, frame)).toBe('Sign in');
+    expect(textInRect(document, frame).text).toBe('Sign in');
   });
 
   it('takes fixed text that escapes an overflow:hidden ancestor without a containing block', () => {
@@ -1041,7 +1041,7 @@ describe('textInRect', () => {
       },
       stack: () => [el('t')],
     });
-    expect(textInRect(document, { x: 0, y: 40, w: 200, h: 40 })).toBe('MenuItem one');
+    expect(textInRect(document, { x: 0, y: 40, w: 200, h: 40 }).text).toBe('MenuItem one');
   });
 
   it('clips fixed text when a transform CB sits under overflow:hidden', () => {
@@ -1063,7 +1063,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('treats perspective as a fixed containing block', () => {
@@ -1085,7 +1085,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('treats contain:layout as a fixed containing block', () => {
@@ -1107,7 +1107,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('clips absolute text via a relative parent under overflow:hidden', () => {
@@ -1129,7 +1129,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('takes pe:none hero over an earlier absolute backdrop (browser stack with pe:auto probe)', () => {
@@ -1155,7 +1155,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Hero Caption');
+    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 }).text).toBe('Hero Caption');
     expect(el('t').hasAttribute('style')).toBe(false);
   });
 
@@ -1179,7 +1179,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Echo');
+    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 }).text).toBe('Echo');
     const after = el('t').getAttribute('style') ?? '';
     expect(after).toMatch(/transition-property:\s*opacity/i);
     expect(after).toMatch(/transition-duration:\s*2s/i);
@@ -1207,7 +1207,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Logo');
+    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 }).text).toBe('Logo');
     expect(el('s').getAttribute('style')).toBe('pointer-events:none');
     expect(el('t').hasAttribute('style')).toBe(false);
   });
@@ -1234,7 +1234,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, frame)).toBe('Cookie wall');
+    expect(textInRect(document, frame).text).toBe('Cookie wall');
   });
 
   it('skips lines clipped by overflow:hidden even when another line of the node is shown', () => {
@@ -1254,7 +1254,7 @@ describe('textInRect', () => {
         paint: (hit) => (hit.id === 'clip' ? { overflow: 'hidden' } : {}),
       },
     );
-    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 60 })).toBe('AAAAA');
+    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 60 }).text).toBe('AAAAA');
   });
 
   it('skips lines under an opaque banner even when an uncovered line of the node is shown', () => {
@@ -1280,7 +1280,7 @@ describe('textInRect', () => {
         paint: (hit) => (hit.id === 'banner' ? { backgroundColor: 'rgb(255, 255, 255)' } : {}),
       },
     );
-    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 70 })).toBe('AAAAA Shown Marker');
+    expect(textInRect(document, { x: 0, y: 0, w: 100, h: 70 }).text).toBe('AAAAA Shown Marker');
   });
 
   it('clips fixed text when a translate CB sits under overflow:hidden', () => {
@@ -1302,7 +1302,7 @@ describe('textInRect', () => {
         },
       },
     );
-    expect(textInRect(document, frame)).toBe('visible');
+    expect(textInRect(document, frame).text).toBe('visible');
   });
 
   it('does not take a checkbox value (it is not painted as text)', () => {
@@ -1316,7 +1316,7 @@ describe('textInRect', () => {
       undefined,
       { stack: () => [el('v')] },
     );
-    expect(textInRect(document, frame)).toBe('Remember me');
+    expect(textInRect(document, frame).text).toBe('Remember me');
   });
 
   it('keeps only characters whose center meets the framed line (dense line-height)', () => {
@@ -1333,7 +1333,7 @@ describe('textInRect', () => {
       { stack: () => [el('t')], denseGlyphs: true },
     );
     // Frame only the second line; first-line glyphs that overlap it must not join.
-    expect(textInRect(document, { x: 0, y: 16, w: 100, h: 16 })).toBe('BBBBB');
+    expect(textInRect(document, { x: 0, y: 16, w: 100, h: 16 }).text).toBe('BBBBB');
   });
 
   it('takes a heading when a painted stretched link only covers its own box', () => {
@@ -1350,6 +1350,25 @@ describe('textInRect', () => {
         paint: (hit) => (hit.id === 'link' ? { backgroundColor: 'rgb(13, 110, 253)' } : {}),
       },
     );
-    expect(textInRect(document, { x: 0, y: 0, w: 220, h: 45 })).toBe('Card Title Here');
+    expect(textInRect(document, { x: 0, y: 0, w: 220, h: 45 }).text).toBe('Card Title Here');
+  });
+});
+
+describe('softCapCapture', () => {
+  it('keeps text at or under 100 graphemes after whitespace collapse', () => {
+    expect(softCapCapture(`  ${'a'.repeat(100)}  `)).toBe('a'.repeat(100));
+    expect(softCapCapture('Hello   world')).toBe('Hello world');
+  });
+
+  it('returns empty when the 101st grapheme after collapse is a space (no fragment)', () => {
+    expect(softCapCapture(`${'x'.repeat(100)} ${'y'.repeat(50)}`)).toBe('');
+  });
+
+  it('returns empty for three paragraphs over 100 graphemes (round 2 example)', () => {
+    expect(softCapCapture(`${'a'.repeat(60)}\n\n${'b'.repeat(60)}\n\n${'c'.repeat(60)}`)).toBe('');
+  });
+
+  it('returns empty for zalgo over 2000 code units without truncating', () => {
+    expect(softCapCapture(`a${'\u0301'.repeat(2500)}`)).toBe('');
   });
 });

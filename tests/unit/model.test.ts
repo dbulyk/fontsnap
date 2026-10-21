@@ -49,6 +49,9 @@ const META: Meta = {
   classFam: [0, 1],
   merge: {},
   keepNoto: [],
+  subsetNames: ['latin', 'cyrillic'],
+  script: ['', ''],
+  subsets: [1, 3],
 };
 const white = (w: number, h: number): Img => ({
   w,
@@ -516,7 +519,7 @@ describe('the surface of src/result/model.ts is an allowlist', () => {
 
   it('starts the session exactly as the one pinned text of loadModel says (the yield for resource timing included)', () => {
     expect(functionText(text, 'loadModel')).toBe(
-      "export async function loadModel(): Promise<Model> { configureRuntime(ort.env); const meta = (await (await fetch(metaUrl())).json()) as Meta; const ranker = makeRanker(meta); assertPinnedRuntime(ort.env, runtimeUrl()); const session = await ort.InferenceSession.create(modelUrl(), { executionProviders: ['wasm'], graphOptimizationLevel: 'all', }); await new Promise<void>((resolve) => setTimeout(resolve, 0)); assertNoOutsideLoads(performance.getEntriesByType('resource'), chrome.runtime.getURL('')); return { ranker, probs: async (crop) => { const out = await session.run({ input: new ort.Tensor('float32', prep(crop), [1, 3, 320, 320]), }); return softmax(out['logits']?.data as Float32Array); }, }; }",
+      "export async function loadModel(): Promise<Model> { configureRuntime(ort.env); const meta = (await (await fetch(metaUrl())).json()) as Meta; const ranker = makeRanker(meta); assertPinnedRuntime(ort.env, runtimeUrl()); const session = await ort.InferenceSession.create(modelUrl(), { executionProviders: ['wasm'], graphOptimizationLevel: 'all', }); await new Promise<void>((resolve) => setTimeout(resolve, 0)); assertNoOutsideLoads(performance.getEntriesByType('resource'), chrome.runtime.getURL('')); return { ranker, subsetNames: meta.subsetNames, probs: async (crop) => { const out = await session.run({ input: new ort.Tensor('float32', prep(crop), [1, 3, 320, 320]), }); return softmax(out['logits']?.data as Float32Array); }, }; }",
     );
   });
 
@@ -592,6 +595,7 @@ describe('the surface of src/result/model.ts is an allowlist', () => {
       'env.wasm.proxy',
       'env.wasm.wasmPaths',
       'globalThis.crossOriginIsolated',
+      'meta.subsetNames',
       'navigator.hardwareConcurrency',
       'ort.InferenceSession',
       'ort.InferenceSession.create',

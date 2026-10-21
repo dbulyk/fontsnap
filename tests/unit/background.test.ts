@@ -222,16 +222,11 @@ describe('selection message: screenshot → crop → session → result tab', ()
     ]);
   });
 
-  it('drops preview text longer than 100 graphemes and keeps 100', async () => {
+  it('keeps captured preview text for the result-page grapheme gate', async () => {
     setup();
-    await stub.dispatch({ ...rectMessage, text: 'x'.repeat(100) });
-    expect((await openedResult()).entry?.['text']).toBe('x'.repeat(100));
-    await stub.dispatch({ ...rectMessage, text: 'x'.repeat(101) });
-    expect((await openedResult()).entry?.['text']).toBe('');
-    await stub.dispatch({ ...rectMessage, text: '👍'.repeat(100) });
-    expect((await openedResult()).entry?.['text']).toBe('👍'.repeat(100));
-    await stub.dispatch({ ...rectMessage, text: '👍'.repeat(101) });
-    expect((await openedResult()).entry?.['text']).toBe('');
+    await stub.dispatch({ ...rectMessage, text: 'x'.repeat(200) });
+    const { entry } = await openedResult();
+    expect(entry?.['text']).toBe('x'.repeat(200));
   });
 
   it('re-encodes a crop that is too big for session storage as JPEG, walking the quality ladder', async () => {
@@ -374,9 +369,14 @@ describe('right-click on an image', () => {
     },
   });
   const PIXELS = 'UElYRUxT';
+  const loaded = (png: string | null = PIXELS, extra: { lang?: string; hint?: string } = {}) => ({
+    png,
+    ...extra,
+  });
 
-  it('decodes a data: URL image itself and hands it over: no request, no screenshot', async () => {
+  it('decodes a data: URL image itself when the page has no matching element', async () => {
     setup();
+    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: null }]);
     const src = png();
     await click(src);
     const { call, entry } = await openedResult();
@@ -384,13 +384,14 @@ describe('right-click on an image', () => {
     expect(entry?.['dataUrl']).toBe(src);
     expect(entry?.['text']).toBe('');
     expect(call?.index).toBe(3);
-    expect(stub.chrome.scripting.executeScript).not.toHaveBeenCalled();
     expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
   });
 
   it('reads an image of another origin where the click happened: no download, no screenshot', async () => {
     setup();
-    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: PIXELS }]);
+    stub.chrome.scripting.executeScript.mockResolvedValueOnce([
+      { result: loaded(PIXELS, { lang: 'ru', hint: 'Пример' }) },
+    ]);
     await stub.fireMenuClicked(
       { menuItemId: MENU_IMAGE, srcUrl: 'https://cdn.example/photo.png', frameId: 7 },
       tab,
@@ -407,6 +408,8 @@ describe('right-click on an image', () => {
     expect(stub.chrome.tabs.captureVisibleTab).not.toHaveBeenCalled();
     expect(entry?.['dataUrl']).toMatch(/^data:image\/png;base64,/);
     expect(entry?.['text']).toBe('');
+    expect(entry?.['lang']).toBe('ru');
+    expect(entry?.['hint']).toBe('Пример');
     expect(entry?.['note']).toBeUndefined();
   });
 
@@ -443,7 +446,7 @@ describe('right-click on an image', () => {
 
   it('goes on to the page when a data: URL is not a picture it can use (the ladder itself: clicked.test.ts)', async () => {
     setup();
-    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: PIXELS }]);
+    stub.chrome.scripting.executeScript.mockResolvedValueOnce([{ result: loaded() }]);
     await click(dataUrl('image/svg+xml', new TextEncoder().encode('<svg/>')));
     const { entry } = await openedResult();
     expect(images.fetch).not.toHaveBeenCalled();

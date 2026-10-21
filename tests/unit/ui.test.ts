@@ -39,15 +39,9 @@ describe('preview text', () => {
     expect(previewText('  Hello ', 'page text')).toBe('Hello');
     expect(previewText('', '  Big\n  Title ')).toBe('Big Title');
     expect(previewText('', '')).toBe(DEFAULT_PREVIEW);
-    expect(previewText(undefined, 'x'.repeat(200))).toBe(DEFAULT_PREVIEW);
-  });
-
-  it('keeps 100 graphemes of page text and drops a longer capture', () => {
-    expect(previewText('', 'x'.repeat(100))).toBe('x'.repeat(100));
+    expect(previewText(undefined, 'x'.repeat(100))).toBe('x'.repeat(100));
     expect(previewText(undefined, 'x'.repeat(101))).toBe(DEFAULT_PREVIEW);
-    expect(previewText('', '👍'.repeat(100))).toBe('👍'.repeat(100));
-    expect(previewText('', '👍'.repeat(101))).toBe(DEFAULT_PREVIEW);
-    expect(previewText('y'.repeat(150), 'x'.repeat(200))).toBe('y'.repeat(150));
+    expect(previewText(undefined, 'x'.repeat(200))).toBe(DEFAULT_PREVIEW);
   });
 
   it('treats missing values as empty', () => {

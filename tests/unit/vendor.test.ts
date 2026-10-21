@@ -18,7 +18,7 @@ import { PROTOTYPE_NAMES } from './helpers/media';
 // Written out here a second time, from the files FontSnap 0.1.0 shipped: the list in scripts/lib/vendor.ts cannot
 // be changed without changing this table, which makes any change a visible, deliberate edit of two files.
 const PINNED = new Map([
-  ['model/meta.json', ['6eba0b40c03d462fa023917df19289f00670fb9a96cdec136d89cf18922fa93c', 106519]],
+  ['model/meta.json', ['973633542966ea9a4b8c649fc70ae62f64acf9ba63b887995422177dc6f3ea34', 119525]],
   [
     'model/model_fp16.onnx',
     ['f880c3cfa0fe66269c9825a1d2a94ce01b76790290b0eabc5a518dc02fcffbd1', 32697050],

@@ -80,7 +80,21 @@
     "message": "প্রিভিউ টেক্সট"
   },
   "previewPh": {
-    "message": "নিজের টেক্সট লিখুন (ডিফল্ট: The quick brown fox…)"
+    "message": "নিজের টেক্সট লিখুন"
+  },
+  "identifying": {
+    "message": "ফন্ট নির্ধারণ করা হচ্ছে…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "শীর্ষ ৫-এর মধ্যে আপেক্ষিক স্কোর"

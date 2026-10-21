@@ -19,7 +19,9 @@ Falha na captura: $ERR$ — tente novamente ou cole uma captura de ecrã.
 Falha ao carregar o modelo: $ERR$
 Erro: $ERR$
 Texto de pré-visualização
-Escreva o seu texto (predefinição: The quick brown fox…)
+Escreva o seu texto
+A identificar o tipo de letra…
+$USED$/$MAX$
 Pontuação relativa entre os 5 primeiros
 não está no Google Fonts
 Copiar CSS

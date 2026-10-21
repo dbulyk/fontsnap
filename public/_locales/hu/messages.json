@@ -80,7 +80,21 @@
     "message": "Előnézeti szöveg"
   },
   "previewPh": {
-    "message": "Írjon saját szöveget (alapértelmezés: The quick brown fox…)"
+    "message": "Írjon saját szöveget"
+  },
+  "identifying": {
+    "message": "Betűtípus azonosítása…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relatív pontszám az első 5 között"

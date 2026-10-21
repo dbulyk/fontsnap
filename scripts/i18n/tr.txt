@@ -19,7 +19,9 @@ Yakalama başarısız: $ERR$ — tekrar deneyin veya ekran görüntüsü yapış
 Model yüklenemedi: $ERR$
 Hata: $ERR$
 Önizleme metni
-Kendi metninizi yazın (varsayılan: The quick brown fox…)
+Kendi metninizi yazın
+Yazı tipi belirleniyor…
+$USED$/$MAX$
 İlk 5 içindeki göreli puan
 Google Fonts'ta yok
 CSS'yi kopyala

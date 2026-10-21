@@ -80,7 +80,21 @@
     "message": "Testo di anteprima"
   },
   "previewPh": {
-    "message": "Scrivi il tuo testo (predefinito: The quick brown fox…)"
+    "message": "Scrivi il tuo testo"
+  },
+  "identifying": {
+    "message": "Identificazione del font…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Punteggio relativo tra i primi 5"

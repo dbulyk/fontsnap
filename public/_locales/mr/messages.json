@@ -80,7 +80,21 @@
     "message": "पूर्वावलोकन मजकूर"
   },
   "previewPh": {
-    "message": "तुमचा मजकूर लिहा (डीफॉल्ट: The quick brown fox…)"
+    "message": "तुमचा मजकूर लिहा"
+  },
+  "identifying": {
+    "message": "फॉन्ट ओळखत आहे…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "टॉप 5 मधील सापेक्ष गुण"

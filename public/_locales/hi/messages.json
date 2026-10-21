@@ -80,7 +80,21 @@
     "message": "प्रीव्यू टेक्स्ट"
   },
   "previewPh": {
-    "message": "अपना टेक्स्ट लिखें (डिफ़ॉल्ट: The quick brown fox…)"
+    "message": "अपना टेक्स्ट लिखें"
+  },
+  "identifying": {
+    "message": "फ़ॉन्ट पहचाना जा रहा है…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "टॉप 5 में सापेक्ष स्कोर"

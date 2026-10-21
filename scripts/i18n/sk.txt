@@ -19,7 +19,9 @@ Snímka zlyhala: $ERR$ – skúste to znova alebo vložte snímku obrazovky.
 Model sa nepodarilo načítať: $ERR$
 Chyba: $ERR$
 Text náhľadu
-Napíšte vlastný text (predvolené: The quick brown fox…)
+Napíšte vlastný text
+Určovanie písma…
+$USED$/$MAX$
 Relatívne skóre medzi prvými 5
 nie je v Google Fonts
 Kopírovať CSS

@@ -80,7 +80,21 @@
     "message": "Текст для попереднього перегляду"
   },
   "previewPh": {
-    "message": "Введіть свій текст (за замовчуванням: The quick brown fox…)"
+    "message": "Введіть свій текст"
+  },
+  "identifying": {
+    "message": "Визначаємо шрифт…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Відносна оцінка серед перших 5"

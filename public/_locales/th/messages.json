@@ -80,7 +80,21 @@
     "message": "ข้อความตัวอย่าง"
   },
   "previewPh": {
-    "message": "พิมพ์ข้อความของคุณ (ค่าเริ่มต้น: The quick brown fox…)"
+    "message": "พิมพ์ข้อความของคุณ"
+  },
+  "identifying": {
+    "message": "กำลังระบุแบบอักษร…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "คะแนนสัมพัทธ์ใน 5 อันดับแรก"

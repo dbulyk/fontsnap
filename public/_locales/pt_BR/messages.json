@@ -80,7 +80,21 @@
     "message": "Texto de visualização"
   },
   "previewPh": {
-    "message": "Digite seu próprio texto (padrão: The quick brown fox…)"
+    "message": "Digite seu próprio texto"
+  },
+  "identifying": {
+    "message": "Identificando a fonte…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Pontuação relativa entre as 5 primeiras"

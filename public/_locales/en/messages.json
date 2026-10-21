@@ -80,7 +80,21 @@
     "message": "Preview text"
   },
   "previewPh": {
-    "message": "Type your own text (default: The quick brown fox…)"
+    "message": "Type your own text"
+  },
+  "identifying": {
+    "message": "Identifying font…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relative score among the top 5"

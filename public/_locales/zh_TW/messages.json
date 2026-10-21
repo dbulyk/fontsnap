@@ -80,7 +80,21 @@
     "message": "預覽文字"
   },
   "previewPh": {
-    "message": "輸入自訂文字(預設:The quick brown fox…)"
+    "message": "輸入自訂文字"
+  },
+  "identifying": {
+    "message": "正在辨識字型…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "在前 5 名中的相對分數"

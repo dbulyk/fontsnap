@@ -1,6 +1,6 @@
 import type { Rect } from '../shared/capture';
 import { nonEmpty, sendRect } from './chrome';
-import { MAX_PREVIEW_GRAPHEMES, fitsPreview, graphemeCount } from './graphemes';
+import { CAPTURE_TEXT_UNITS, MAX_PREVIEW_GRAPHEMES, graphemeCount } from './graphemes';
 
 /**
  * A document can lack <body> (an SVG or XML page) although the DOM types say otherwise: the element is taken as a parameter
@@ -8,6 +8,34 @@ import { MAX_PREVIEW_GRAPHEMES, fitsPreview, graphemeCount } from './graphemes';
  */
 function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
   return body ?? root;
+}
+
+export interface RectText {
+  text: string;
+  /** Nearest ancestor lang of the first text node in the rect, else documentElement.lang. */
+  lang: string;
+}
+
+/** Nearest ancestor `lang` or documentElement.lang (BCP 47 shape checked by the service worker). */
+export function nearestLang(from: Element | null, doc: Document): string {
+  for (let el = from; el; el = el.parentElement) {
+    const lang = el.getAttribute('lang');
+    if (lang) return lang;
+  }
+  return doc.documentElement.getAttribute('lang') ?? '';
+}
+
+/**
+ * Collapse whitespace, then accept or reject. Never truncate: over MAX_PREVIEW_GRAPHEMES graphemes
+ * or CAPTURE_TEXT_UNITS code units → '' so the result page shows the automatic sample.
+ * Truncating to 101 left a trailing space as the 101st grapheme; trim then showed a 100-grapheme fragment.
+ */
+export function softCapCapture(text: string): string {
+  const s = text.replace(/\s+/g, ' ').trim();
+  if (!s) return '';
+  if (s.length > CAPTURE_TEXT_UNITS) return '';
+  if (graphemeCount(s) > MAX_PREVIEW_GRAPHEMES) return '';
+  return s;
 }
 
 /** The text walker skips these. textarea and input are read as fields, so their nodes are not counted twice. */
@@ -484,13 +512,14 @@ function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string
 }
 
 // visible text of the page under the dragged rectangle (used as the preview sample when no selection is in it)
-export function textInRect(doc: Document, r: Rect): string {
+export function textInRect(doc: Document, r: Rect): RectText {
   const out: string[] = [];
   const range = doc.createRange();
   const root = bodyOrRoot(doc.body, doc.documentElement);
   const tw = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
   let count = 0;
   let textNodes = 0;
+  let firstParent: Element | null = null;
   try {
     for (
       let node = tw.nextNode();
@@ -500,21 +529,28 @@ export function textInRect(doc: Document, r: Rect): string {
       let piece = '';
       if (node instanceof HTMLTextAreaElement || node instanceof HTMLInputElement) {
         piece = fieldPiece(doc, node, r);
+        if (piece) firstParent ??= node;
       } else if (node.nodeValue !== null) {
         textNodes += 1;
         piece = textPiece(doc, range, node, r);
+        if (piece) firstParent ??= node.parentElement;
       } else {
         continue;
       }
       if (!piece) continue;
       count += (out.length === 0 ? 0 : 1) + graphemeCount(piece);
-      if (count > MAX_PREVIEW_GRAPHEMES) return '';
+      if (count > MAX_PREVIEW_GRAPHEMES) {
+        return { text: '', lang: nearestLang(firstParent, doc) };
+      }
       out.push(piece);
     }
   } catch {
-    return '';
+    return { text: '', lang: nearestLang(null, doc) };
   }
-  return out.join(' ');
+  return {
+    text: softCapCapture(out.join(' ')),
+    lang: nearestLang(firstParent, doc),
+  };
 }
 
 /** The selected text, only when a line of the selection lies in the rectangle: a selection elsewhere on the page is not what was framed. */
@@ -522,7 +558,7 @@ function selectionIn(selection: Selection | null, r: Rect): string {
   if (selection === null || selection.isCollapsed) return '';
   for (let i = 0; i < selection.rangeCount; i++) {
     for (const line of selection.getRangeAt(i).getClientRects()) {
-      if (overlap(line, r) !== null) return fitsPreview(selection.toString().trim());
+      if (overlap(line, r) !== null) return softCapCapture(selection.toString());
     }
   }
   return '';
@@ -630,12 +666,29 @@ export function startSelection(win: Window): void {
     } catch {
       // selection text is optional
     }
-    if (!text) text = textInRect(doc, rect);
+    const found = textInRect(doc, rect);
+    if (!text) text = found.text;
+    const lang = found.lang;
     // wait two frames so the overlay is gone from the screenshot
     win.requestAnimationFrame(() => {
       win.requestAnimationFrame(() => {
         setTimeout(() => {
-          void sendRect({ type: 'fontsnap-rect', rect, dpr: win.devicePixelRatio || 1, text });
+          if (lang) {
+            void sendRect({
+              type: 'fontsnap-rect',
+              rect,
+              dpr: win.devicePixelRatio || 1,
+              text,
+              lang,
+            });
+          } else {
+            void sendRect({
+              type: 'fontsnap-rect',
+              rect,
+              dpr: win.devicePixelRatio || 1,
+              text,
+            });
+          }
         }, 30);
       });
     });

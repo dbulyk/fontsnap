@@ -80,7 +80,21 @@
     "message": "Tekst podglądu"
   },
   "previewPh": {
-    "message": "Wpisz własny tekst (domyślnie: The quick brown fox…)"
+    "message": "Wpisz własny tekst"
+  },
+  "identifying": {
+    "message": "Rozpoznawanie czcionki…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Względny wynik w pierwszej piątce"

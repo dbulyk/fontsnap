@@ -80,7 +80,21 @@
     "message": "プレビューテキスト"
   },
   "previewPh": {
-    "message": "任意のテキストを入力(既定: The quick brown fox…)"
+    "message": "任意のテキストを入力"
+  },
+  "identifying": {
+    "message": "フォントを判定しています…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "上位5件内での相対スコア"

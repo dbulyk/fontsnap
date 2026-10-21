@@ -19,7 +19,9 @@ Acquisizione non riuscita: $ERR$. Riprova o incolla uno screenshot.
 Impossibile caricare il modello: $ERR$
 Errore: $ERR$
 Testo di anteprima
-Scrivi il tuo testo (predefinito: The quick brown fox…)
+Scrivi il tuo testo
+Identificazione del font…
+$USED$/$MAX$
 Punteggio relativo tra i primi 5
 non presente su Google Fonts
 Copia CSS

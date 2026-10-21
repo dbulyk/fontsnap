@@ -80,7 +80,21 @@
     "message": "Text náhledu"
   },
   "previewPh": {
-    "message": "Napište vlastní text (výchozí: The quick brown fox…)"
+    "message": "Napište vlastní text"
+  },
+  "identifying": {
+    "message": "Určování písma…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Relativní skóre mezi prvními 5"

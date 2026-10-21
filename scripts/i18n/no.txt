@@ -19,7 +19,9 @@ Opptak mislyktes: $ERR$ – prøv igjen eller lim inn et skjermbilde.
 Kunne ikke laste inn modellen: $ERR$
 Feil: $ERR$
 Forhåndsvisningstekst
-Skriv din egen tekst (standard: The quick brown fox…)
+Skriv din egen tekst
+Identifiserer skrifttype…
+$USED$/$MAX$
 Relativ poengsum blant topp 5
 finnes ikke på Google Fonts
 Kopier CSS

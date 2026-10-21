@@ -80,7 +80,21 @@
     "message": "முன்னோட்ட உரை"
   },
   "previewPh": {
-    "message": "உங்கள் உரையை உள்ளிடவும் (இயல்பு: The quick brown fox…)"
+    "message": "உங்கள் உரையை உள்ளிடவும்"
+  },
+  "identifying": {
+    "message": "எழுத்துரு அடையாளம் காணப்படுகிறது…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "முதல் 5-இல் ஒப்பீட்டு மதிப்பெண்"

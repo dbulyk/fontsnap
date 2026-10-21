@@ -80,7 +80,21 @@
     "message": "Teks pratonton"
   },
   "previewPh": {
-    "message": "Taip teks anda sendiri (lalai: The quick brown fox…)"
+    "message": "Taip teks anda sendiri"
+  },
+  "identifying": {
+    "message": "Mengenal pasti fon…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Skor relatif antara 5 teratas"

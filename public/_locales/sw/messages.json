@@ -80,7 +80,21 @@
     "message": "Maandishi ya onyesho"
   },
   "previewPh": {
-    "message": "Andika maandishi yako (chaguomsingi: The quick brown fox…)"
+    "message": "Andika maandishi yako"
+  },
+  "identifying": {
+    "message": "Inatambua fonti…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Alama linganishi kati ya 5 bora"

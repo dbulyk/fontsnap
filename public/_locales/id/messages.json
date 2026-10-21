@@ -80,7 +80,21 @@
     "message": "Teks pratinjau"
   },
   "previewPh": {
-    "message": "Ketik teks Anda sendiri (bawaan: The quick brown fox…)"
+    "message": "Ketik teks Anda sendiri"
+  },
+  "identifying": {
+    "message": "Mengidentifikasi font…"
+  },
+  "previewLimit": {
+    "message": "$USED$/$MAX$",
+    "placeholders": {
+      "used": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
   },
   "scoreTitle": {
     "message": "Skor relatif di antara 5 teratas"
