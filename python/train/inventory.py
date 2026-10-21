@@ -10,8 +10,9 @@ import traceback
 import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from pathlib import Path, PurePosixPath
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from train.paths import EXCLUDE_TSV, LICENSE_ROOT, MANIFEST_TSV, ROOT
 from train.registry import (
@@ -258,6 +259,477 @@ def select_static_fonts(paths: list[str]) -> list[str]:
     return sorted(path for _, path in best.values())
 
 
+_FACE_SUFFIXES = (
+    "extrabolditalic",
+    "extralightitalic",
+    "semibolditalic",
+    "mediumitalic",
+    "lightitalic",
+    "thinitalic",
+    "blackitalic",
+    "bolditalic",
+    "regularitalic",
+    "extrabold",
+    "extralight",
+    "semibold",
+    "regular",
+    "medium",
+    "italic",
+    "oblique",
+    "light",
+    "thin",
+    "black",
+    "bold",
+    "heavy",
+    "book",
+)
+_HARD_SKIP_DIRS = _SKIP_DIRS - {"webfonts", "webfont"}
+_PATH_PENALTY = frozenset(
+    {
+        "webfonts",
+        "webfont",
+        "old",
+        "examples",
+        "example",
+        "alternative",
+        "frozen fonts",
+        "nerdfonts",
+        "nerd fonts",
+    }
+)
+_DIRECT_FONT_DIRS = {
+    ("orioncactus", "pretendard"): "packages/pretendard/dist/public/static",
+}
+_REDACTION_GIT = "https://github.com/jeremymickel/Redaction"
+
+
+def _compact_name(text: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", text.lower())
+
+
+def _split_face(compact: str) -> tuple[str, str]:
+    for suffix in _FACE_SUFFIXES:
+        if compact.endswith(suffix) and len(compact) > len(suffix):
+            return compact[: -len(suffix)], suffix
+    return compact, ""
+
+
+def _families_compatible(class_stem: str, file_stem: str) -> bool:
+    if not class_stem or not file_stem:
+        return False
+    if class_stem == file_stem:
+        return True
+    for extra in ("sans", "serif", "text", "s"):
+        if class_stem == file_stem + extra or file_stem == class_stem + extra:
+            return True
+    if class_stem == file_stem + "italic" or class_stem == file_stem + "oblique":
+        return True
+    # Fusion Kai ships J/T region files; phase-1 keeps the G face name.
+    if class_stem.startswith("fusionkai") and file_stem.startswith("fusionkai"):
+        return True
+    # Fusion Pixel release files use -ja; phase-1 class ids use JP.
+    if class_stem.endswith("jp") and file_stem.endswith("ja") and class_stem[:-2] == file_stem[:-2]:
+        return True
+    return False
+
+
+def _faces_match(class_face: str, file_face: str) -> bool:
+    if class_face == file_face:
+        return True
+    if class_face in {"regular", ""} and file_face in {"regular", ""}:
+        return True
+    if class_face == "italic" and file_face == "regularitalic":
+        return True
+    if class_face == "oblique" and file_face == "regularoblique":
+        return True
+    return False
+
+
+def _numeric_face(stem: str) -> tuple[str, int, str] | None:
+    match = re.search(r"^(.*?)(?:[^0-9])(\d{3})[-_ ]?(italic|oblique|regular)$", stem, re.IGNORECASE)
+    if match is None:
+        return None
+    style_word = match.group(3).lower()
+    style = "normal" if style_word == "regular" else style_word
+    return _compact_name(match.group(1)), int(match.group(2)), style
+
+
+def _numeric_family_ok(class_stem: str, file_stem: str) -> bool:
+    if file_stem == class_stem:
+        return True
+    if not file_stem.startswith(class_stem):
+        return False
+    rest = file_stem[len(class_stem) :]
+    return bool(rest) and (rest.startswith("v") or rest[0].isdigit())
+
+
+def _skipped_font(path: str) -> bool:
+    pure = PurePosixPath(path)
+    if pure.suffix.lower() not in {".ttf", ".otf"}:
+        return True
+    if any(part.lower() in _HARD_SKIP_DIRS for part in pure.parts[:-1]):
+        return True
+    stem = pure.stem.lower()
+    if stem.endswith("vf") or "variable" in stem or "[" in stem or stem.endswith("_web") or stem.endswith("-web"):
+        return True
+    return False
+
+
+def _path_penalty(path: str) -> int:
+    return sum(1 for part in PurePosixPath(path).parts if part.lower() in _PATH_PENALTY)
+
+
+def match_upstream_path(
+    class_id: str,
+    weight: int | None,
+    style: str,
+    paths: list[str],
+    family_id: str = "",
+) -> str | None:
+    """Pick the full-font path whose face matches class_id. One compatible file is the whole family."""
+    class_stem, class_face = _split_face(_compact_name(class_id))
+    hint = family_id.replace("-", "")
+    scored: list[tuple[tuple, str]] = []
+    compatible: list[str] = []
+    for path in paths:
+        if _skipped_font(path):
+            continue
+        stem = PurePosixPath(path).stem
+        file_stem, file_face = _split_face(_compact_name(stem))
+        numeric = _numeric_face(stem)
+        face_hit = False
+        if numeric is not None and weight is not None:
+            num_family, num_weight, num_style = numeric
+            if num_weight == weight and num_style == style and _numeric_family_ok(class_stem, num_family):
+                face_hit = True
+        if not face_hit and _families_compatible(class_stem, file_stem) and _faces_match(class_face, file_face):
+            face_hit = True
+        if _families_compatible(class_stem, file_stem):
+            compatible.append(path)
+        if not face_hit:
+            continue
+        ext = 0 if path.lower().endswith(".otf") else 1
+        exact = 0 if stem.lower() == class_id.lower() else 1
+        family_exact = 0 if class_stem == file_stem else 1
+        hint_miss = 0 if hint and hint in _compact_name(path) else 1
+        rank = (0, family_exact, _path_penalty(path), hint_miss, exact, ext, len(PurePosixPath(path).parts), path.lower())
+        scored.append((rank, path))
+    if scored:
+        scored.sort(key=lambda item: item[0])
+        return scored[0][1]
+    if len(compatible) == 1:
+        return compatible[0]
+    return None
+
+
+def _is_latin_cdn(url: str) -> bool:
+    return "cdn.jsdelivr.net/fontsource/fonts/" in url and "/latin-" in url
+
+
+def _source_git(rec: FontClassRecord) -> str:
+    if rec.family_id == "redaction" or rec.family_id.startswith("redaction-"):
+        return _REDACTION_GIT
+    return rec.source_url
+
+
+def _remote_key(url: str) -> tuple[str, str, str] | None:
+    parsed = urlparse(url)
+    parts = [part for part in parsed.path.split("/") if part]
+    if parsed.netloc == "github.com" and len(parts) >= 2:
+        return ("github", parts[0], parts[1])
+    if parsed.netloc in {"gitlab.com", "gitlab.gnome.org"} and len(parts) >= 2:
+        return ("gitlab", parsed.netloc, "/".join(parts))
+    return None
+
+
+def _github_font_index(owner: str, repo: str) -> tuple[str, list[str]]:
+    branch = str(github_json(f"repos/{owner}/{repo}")["default_branch"])
+    sha = str(github_json(f"repos/{owner}/{repo}/commits/{quote(branch, safe='')}")["sha"])
+    subdir = _DIRECT_FONT_DIRS.get((owner, repo))
+    if subdir:
+        listing = github_json(f"repos/{owner}/{repo}/contents/{subdir}?ref={sha}")
+        if not isinstance(listing, list):
+            raise RuntimeError(f"{owner}/{repo} font directory is not a list")
+        paths = [str(item["path"]) for item in listing if str(item.get("name", "")).lower().endswith((".ttf", ".otf"))]
+        return sha, paths
+    _name, commit, blobs = _github_repo(owner, repo, branch)
+    return commit, [path for path in blobs if path.lower().endswith((".ttf", ".otf"))]
+
+
+def _gitlab_font_index(host: str, project_path: str) -> tuple[str, list[str]]:
+    project_q = quote(project_path, safe="")
+    meta = get_json(f"https://{host}/api/v4/projects/{project_q}")
+    if not isinstance(meta, dict):
+        raise RuntimeError(f"{project_path} is not a project")
+    project_id = int(meta["id"])
+    branch = str(meta["default_branch"])
+    commit = get_json(f"https://{host}/api/v4/projects/{project_id}/repository/commits/{quote(branch, safe='')}")
+    if not isinstance(commit, dict):
+        raise RuntimeError(f"{project_path} commit is not an object")
+    sha = str(commit["id"])
+    fonts: list[str] = []
+    page = 1
+    while page <= 30:
+        chunk = get_json(
+            f"https://{host}/api/v4/projects/{project_id}/repository/tree?recursive=true&ref={quote(sha, safe='')}&per_page=100&page={page}"
+        )
+        if not isinstance(chunk, list):
+            raise RuntimeError(f"{project_path} tree is not a list")
+        for item in chunk:
+            path = str(item.get("path", ""))
+            if item.get("type") == "blob" and path.lower().endswith((".ttf", ".otf")):
+                fonts.append(path)
+        if len(chunk) < 100:
+            break
+        page += 1
+    return sha, fonts
+
+
+def _gitlab_any_raw(host: str, project_path: str, sha: str, path: str) -> str:
+    return f"https://{host}/{project_path}/-/raw/{sha}/{quote(path, safe='/')}"
+
+
+def _confirm_sfnt(url: str) -> bool:
+    if "#" in url:
+        return is_sfnt(read_font_bytes(url)[:4])
+    return is_sfnt(read_prefix(url))
+
+
+def split_package_url(url: str) -> tuple[str, str | None]:
+    if "#" not in url:
+        return url, None
+    base, member = url.split("#", 1)
+    member = member.strip()
+    if not base.startswith("https://") or not member or member.startswith("/") or ".." in member.split("/"):
+        raise ValueError(f"bad package url: {url}")
+    return base, member
+
+
+_ZIP_CACHE: dict[str, bytes] = {}
+_ZIP_LOCK = __import__("threading").Lock()
+
+
+def _zip_bytes(zip_url: str) -> bytes:
+    with _ZIP_LOCK:
+        raw = _ZIP_CACHE.get(zip_url)
+        if raw is None:
+            raw = read_url(zip_url)
+            _ZIP_CACHE[zip_url] = raw
+        return raw
+
+
+def read_font_bytes(url: str, limit: int | None = None) -> bytes:
+    """Fetch a static sfnt. `https://host/file.zip#path/inside.ttf` reads one zip member."""
+    base, member = split_package_url(url)
+    if member is None:
+        return read_url(base, limit=limit)
+    raw = _zip_bytes(base)
+    import io
+    import zipfile
+
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(raw))
+    except zipfile.BadZipFile as exc:
+        raise RuntimeError(f"not a zip: {base}") from exc
+    try:
+        data = archive.read(member)
+    except KeyError as exc:
+        raise RuntimeError(f"zip member missing: {member}") from exc
+    if limit is not None and len(data) > limit:
+        raise RuntimeError(f"{url} exceeds {limit} bytes")
+    return data
+
+
+def _package_url(zip_url: str, member: str) -> str:
+    return f"{zip_url}#{member}"
+
+
+# Full-font packages for families whose git trees ship no static TTF/OTF (releases or site zips).
+_PACKAGE_ZIPS: dict[str, str] = {
+    "iosevka": "https://github.com/be5invis/Iosevka/releases/download/v34.9.0/PkgTTF-Iosevka-34.9.0.zip",
+    "iosevka-aile": "https://github.com/be5invis/Iosevka/releases/download/v34.9.0/PkgTTF-IosevkaAile-34.9.0.zip",
+    "iosevka-curly": "https://github.com/be5invis/Iosevka/releases/download/v34.9.0/PkgTTF-IosevkaCurly-34.9.0.zip",
+    "iosevka-curly-slab": "https://github.com/be5invis/Iosevka/releases/download/v34.9.0/PkgTTF-IosevkaCurlySlab-34.9.0.zip",
+    "iosevka-etoile": "https://github.com/be5invis/Iosevka/releases/download/v34.9.0/PkgTTF-IosevkaEtoile-34.9.0.zip",
+    "maple-mono": "https://github.com/subframe7536/maple-font/releases/download/v7.9/MapleMono-TTF.zip",
+    "league-mono": "https://github.com/theleagueof/league-mono/releases/download/2.300/LeagueMono-2.300.zip",
+    "pitagon-sans": "https://github.com/ThePitagon/pitagon-sans/releases/download/v1.1.1/pitagon-sans-fonts.zip",
+    "pitagon-sans-mono": "https://github.com/ThePitagon/pitagon-sans-mono/releases/download/v1.1.1/pitagon-sans-mono-fonts.zip",
+    "pitagon-sans-text": "https://github.com/ThePitagon/pitagon-sans-text/releases/download/v1.1.1/pitagon-sans-text-fonts.zip",
+    "pitagon-serif": "https://github.com/ThePitagon/pitagon-serif/releases/download/v1.1.1/pitagon-serif-fonts.zip",
+    "nebula-sans": "https://nebulasans.com/download/NebulaSans-1.010.zip",
+    "fusion-pixel-8px-monospaced-jp": "https://github.com/TakWolf/fusion-pixel-font/releases/download/2026.10.16/fusion-pixel-font-8px-monospaced-ttf-v2026.10.16.zip",
+    "fusion-pixel-8px-proportional-jp": "https://github.com/TakWolf/fusion-pixel-font/releases/download/2026.10.16/fusion-pixel-font-8px-proportional-ttf-v2026.10.16.zip",
+    "fusion-pixel-10px-monospaced-jp": "https://github.com/TakWolf/fusion-pixel-font/releases/download/2026.10.16/fusion-pixel-font-10px-monospaced-ttf-v2026.10.16.zip",
+    "fusion-pixel-10px-proportional-jp": "https://github.com/TakWolf/fusion-pixel-font/releases/download/2026.10.16/fusion-pixel-font-10px-proportional-ttf-v2026.10.16.zip",
+    "fusion-pixel-12px-monospaced-jp": "https://github.com/TakWolf/fusion-pixel-font/releases/download/2026.10.16/fusion-pixel-font-12px-monospaced-ttf-v2026.10.16.zip",
+    "fusion-pixel-12px-proportional-jp": "https://github.com/TakWolf/fusion-pixel-font/releases/download/2026.10.16/fusion-pixel-font-12px-proportional-ttf-v2026.10.16.zip",
+    "norwester": "https://raw.githubusercontent.com/jamiewilson/norwester/gh-pages/assets/norwester.zip",
+    "win95fa": "https://fontsarena.com/wp-content/uploads/2020/01/W95FA.zip",
+}
+
+
+def _zip_font_members(zip_url: str) -> list[str]:
+    import io
+    import zipfile
+
+    archive = zipfile.ZipFile(io.BytesIO(_zip_bytes(zip_url)))
+    return [
+        name
+        for name in archive.namelist()
+        if name.lower().endswith((".ttf", ".otf")) and "__macosx" not in name.lower() and not PurePosixPath(name).name.startswith(".")
+    ]
+
+
+def _match_or_fallback(class_id: str, weight: int | None, style: str, paths: list[str], family_id: str) -> str | None:
+    path = match_upstream_path(class_id, weight, style, paths, family_id)
+    if path is not None:
+        return path
+    # Prefer a same-style Regular/Italic when the exact weight is missing upstream.
+    stem, _face = _split_face(_compact_name(class_id))
+    for fallback_face, fallback_weight in (("regular", 400), ("italic", 400), ("bold", 700), ("bolditalic", 700)):
+        for path in paths:
+            if _skipped_font(path):
+                continue
+            file_stem, file_face = _split_face(_compact_name(PurePosixPath(path).stem))
+            if not _families_compatible(stem, file_stem):
+                continue
+            if file_face == fallback_face or (fallback_face == "regular" and file_face == ""):
+                if style == "italic" and "italic" not in fallback_face and "oblique" not in fallback_face:
+                    continue
+                if style != "italic" and ("italic" in fallback_face or "oblique" in fallback_face):
+                    continue
+                return path
+    if len(paths) == 1 and not _skipped_font(paths[0]):
+        return paths[0]
+    return None
+
+
+def prefer_package_sources(records: list[FontClassRecord]) -> tuple[list[FontClassRecord], list[str]]:
+    """Replace remaining latin CDN URLs with a member of a foundry release or site zip."""
+    notes: list[str] = []
+    needed = {rec.family_id for rec in records if _is_latin_cdn(rec.download.url) and rec.family_id in _PACKAGE_ZIPS}
+    members: dict[str, list[str]] = {}
+    if needed:
+
+        def load(family_id: str) -> tuple[str, list[str] | None, str | None]:
+            try:
+                return family_id, _zip_font_members(_PACKAGE_ZIPS[family_id]), None
+            except (OSError, RuntimeError, ValueError) as exc:
+                return family_id, None, str(exc)
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            for family_id, paths, error in pool.map(load, sorted(needed)):
+                if paths is None:
+                    notes.append(f"{family_id}: package zip failed: {error}")
+                    continue
+                members[family_id] = paths
+
+    accepted: dict[str, tuple[str, str]] = {}
+    for rec in records:
+        if not _is_latin_cdn(rec.download.url):
+            continue
+        paths = members.get(rec.family_id)
+        if not paths:
+            continue
+        path = _match_or_fallback(rec.class_id, rec.weight, rec.style, paths, rec.family_id)
+        if path is None:
+            notes.append(f"{rec.class_id}: no member in package zip")
+            continue
+        url = _package_url(_PACKAGE_ZIPS[rec.family_id], path)
+        ext = PurePosixPath(path).suffix.lower()
+        accepted[rec.class_id] = (url, f"{rec.class_id}{ext}")
+
+    updated = []
+    for rec in records:
+        hit = accepted.get(rec.class_id)
+        if hit is None:
+            updated.append(rec)
+            continue
+        url, filename = hit
+        updated.append(replace(rec, download=DownloadRecipe(url, filename)))
+    return updated, notes
+
+
+def prefer_full_sources(records: list[FontClassRecord]) -> tuple[list[FontClassRecord], list[str]]:
+    """Replace latin CDN subset URLs with a full TTF/OTF from the foundry git repo when one matches."""
+    groups: dict[tuple[str, str, str], list[FontClassRecord]] = {}
+    notes: list[str] = []
+    for rec in records:
+        if not _is_latin_cdn(rec.download.url):
+            continue
+        key = _remote_key(_source_git(rec))
+        if key is None:
+            continue
+        groups.setdefault(key, []).append(rec)
+
+    def load(key: tuple[str, str, str]) -> tuple[tuple[str, str, str], tuple[str, list[str]] | None, str | None]:
+        try:
+            if key[0] == "github":
+                return key, _github_font_index(key[1], key[2]), None
+            return key, _gitlab_font_index(key[1], key[2]), None
+        except (OSError, RuntimeError, ValueError, KeyError, TypeError) as exc:
+            return key, None, str(exc)
+
+    indexes: dict[tuple[str, str, str], tuple[str, list[str]]] = {}
+    if groups:
+        with ThreadPoolExecutor(max_workers=6) as pool:
+            for key, index, error in pool.map(load, list(groups)):
+                if index is None:
+                    notes.append(f"{key[1]}/{key[2]}: {error}")
+                    continue
+                indexes[key] = index
+
+    chosen: list[tuple[FontClassRecord, str]] = []
+    for key, member_recs in groups.items():
+        index = indexes.get(key)
+        if index is None:
+            for rec in member_recs:
+                notes.append(f"{rec.class_id}: source tree unavailable")
+            continue
+        sha, paths = index
+        for rec in member_recs:
+            path = _match_or_fallback(rec.class_id, rec.weight, rec.style, paths, rec.family_id)
+            if path is None:
+                notes.append(f"{rec.class_id}: no full ttf/otf in source repo")
+                continue
+            if key[0] == "github":
+                url = _github_raw(key[1], key[2], sha, path)
+            else:
+                url = _gitlab_any_raw(key[1], key[2], sha, path)
+            chosen.append((rec, url))
+
+    def confirm(item: tuple[FontClassRecord, str]) -> tuple[str, str | None, str]:
+        rec, url = item
+        try:
+            if not _confirm_sfnt(url):
+                return rec.class_id, None, "not an sfnt"
+        except (OSError, RuntimeError) as exc:
+            return rec.class_id, None, str(exc)
+        return rec.class_id, url, ""
+
+    accepted: dict[str, str] = {}
+    if chosen:
+        with ThreadPoolExecutor(max_workers=12) as pool:
+            for class_id, url, error in pool.map(confirm, chosen):
+                if url is None:
+                    notes.append(f"{class_id}: {error}")
+                    continue
+                accepted[class_id] = url
+
+    updated: list[FontClassRecord] = []
+    for rec in records:
+        url = accepted.get(rec.class_id)
+        if url is None:
+            updated.append(rec)
+            continue
+        path = url.split("#", 1)[0].split("?", 1)[0]
+        ext = PurePosixPath(path).suffix.lower() or ".ttf"
+        updated.append(replace(rec, download=DownloadRecipe(url, f"{rec.class_id}{ext}")))
+    package_updated, package_notes = prefer_package_sources(updated)
+    return package_updated, notes + package_notes
+
+
 def _display(family_id: str) -> str:
     try:
         return DISPLAY[family_id]
@@ -351,6 +823,12 @@ def _unsuitable_note(family_id: str) -> str:
         return "CJK punctuation only"
     if family_id.startswith("unifont"):
         return "bitmap coverage font"
+    if family_id == "cooper-hewitt":
+        return "source tree is UFO only; no published full TTF/OTF"
+    if family_id == "genjyuu-gothic":
+        return "no published full TTF/OTF source tree for GenJyuu Gothic"
+    if family_id == "peace-sans":
+        return "no published full TTF/OTF download"
     return "unsuitable for text recognition"
 
 
@@ -481,6 +959,9 @@ def build_fontsource() -> tuple[list[FontClassRecord], list[Exclusion], dict[str
         sniff.extend(rec.download.url for rec in made)
 
     _require_sfnt_urls(sniff)
+    records, notes = prefer_full_sources(records)
+    for note in notes:
+        print(note, file=sys.stderr)
     return records, exclusions, licenses
 
 
@@ -954,8 +1435,10 @@ def build_catalog() -> tuple[tuple[FontClassRecord, ...], tuple[Exclusion, ...],
     records = tuple(font_records + coll_records + vel_records)
     exclusions = tuple(font_ex + coll_ex + vel_ex)
     licenses = {**font_lic, **coll_lic, **vel_lic}
-    if len(records) != 606:
-        raise RuntimeError(f"built {len(records)} classes, expected 606")
+    from train.registry import PHASE1_CLASSES
+
+    if len(records) != PHASE1_CLASSES:
+        raise RuntimeError(f"built {len(records)} classes, expected {PHASE1_CLASSES}")
     ids = [rec.class_id for rec in records]
     if len(ids) != len(set(ids)):
         raise RuntimeError("class ids are not unique")

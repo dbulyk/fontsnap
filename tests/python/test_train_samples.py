@@ -3,7 +3,6 @@ import os
 import shutil
 import subprocess
 import sys
-import types
 from pathlib import Path
 
 import numpy as np
@@ -17,8 +16,10 @@ from train.paths import OUT
 from train.render import render_sample
 from train.samples import (
     BACKGROUNDS,
+    BG_BY_ID,
     SHIPPED_CLASS_COUNT,
     SPLIT_SPAN,
+    TEXT_BY_ID,
     TEXTS,
     Split,
     SyntheticSampleSpec,
@@ -80,7 +81,7 @@ def test_build_specs_is_deterministic_and_uses_the_published_bases():
     train = build_specs(n_classes=2, split=Split.TRAIN, per_class=2)
     assert train == build_specs(n_classes=2, split="train", per_class=2)
     assert [spec.seed for spec in train] == [0, 1, 2, 3]
-    assert [(spec.text_id, spec.bg_id) for spec in train] == [(0, 0), (1, 1), (0, 0), (1, 1)]
+    assert [(spec.text_id, spec.bg_id) for spec in train] == [(0, 0), (1, 0), (0, 0), (1, 0)]
     hold = build_specs(n_classes=1, split=Split.SYNTH_HOLDOUT, per_class=1)
     replay = build_specs(n_classes=1, split=Split.REPLAY, per_class=1)
     assert hold[0].seed == 1_000_000_000
@@ -91,6 +92,50 @@ def test_build_specs_is_deterministic_and_uses_the_published_bases():
     assert replay[0].bg_id == 20
     assert head_index(train[0]) == SHIPPED_CLASS_COUNT
     assert head_index(train[2]) == SHIPPED_CLASS_COUNT + 1
+
+
+def _is_dark(rgb: tuple[int, int, int]) -> bool:
+    return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] < 128
+
+
+def test_text_and_background_cycle_independently():
+    specs = build_specs(n_classes=1, split=Split.TRAIN, per_class=4)
+    text_ids = [entry.text_id for entry in TEXTS if entry.split == Split.TRAIN and entry.script == "latin"]
+    bg_ids = [bg.bg_id for bg in BACKGROUNDS if bg.split == Split.TRAIN]
+    pairs = [(spec.text_id, spec.bg_id) for spec in specs]
+    assert pairs == [
+        (text_ids[0], bg_ids[0]),
+        (text_ids[1], bg_ids[0]),
+        (text_ids[0], bg_ids[1]),
+        (text_ids[1], bg_ids[1]),
+    ]
+    product = build_specs(n_classes=1, split=Split.TRAIN, per_class=len(text_ids) * len(bg_ids))
+    assert {(spec.text_id, spec.bg_id) for spec in product} == {(text_id, bg_id) for text_id in text_ids for bg_id in bg_ids}
+
+
+def test_train_and_holdout_mix_light_and_dark():
+    for split in (Split.TRAIN, Split.SYNTH_HOLDOUT):
+        bank = {_is_dark(bg.rgb) for bg in BACKGROUNDS if bg.split == split}
+        assert bank == {True, False}
+        specs = build_specs(n_classes=1, split=split, per_class=8)
+        used = {_is_dark(BG_BY_ID[spec.bg_id].rgb) for spec in specs}
+        assert used == {True, False}
+
+
+def test_cyrillic_ids_are_used_when_subsets_allow():
+    class _Cyr:
+        subsets = ("latin", "cyrillic")
+
+    specs = build_specs(n_classes=1, split=Split.TRAIN, per_class=6, records=(_Cyr(),))
+    scripts = {TEXT_BY_ID[spec.text_id].script for spec in specs}
+    assert "cyrillic" in scripts
+    assert "latin" in scripts
+    latin_only = build_specs(n_classes=1, split=Split.TRAIN, per_class=6, records=(_Record(("latin",)),))
+    assert {TEXT_BY_ID[spec.text_id].script for spec in latin_only} == {"latin"}
+    cjk = build_specs(n_classes=1, split=Split.TRAIN, per_class=8, records=(_Record(("latin", "cjk")),))
+    assert "cjk" in {TEXT_BY_ID[spec.text_id].script for spec in cjk}
+    hangul = build_specs(n_classes=1, split=Split.SYNTH_HOLDOUT, per_class=8, records=(_Record(("hangul", "latin")),))
+    assert "hangul" in {TEXT_BY_ID[spec.text_id].script for spec in hangul}
 
 
 def test_shared_text_id_is_rejected():
@@ -117,6 +162,61 @@ def test_spec_fits_checks_script_and_split():
     assert spec_fits(_Record(("cyrillic",)), cyr) is True
     mixed = SyntheticSampleSpec(0, 100, 0, 1_000_000_000, Split.SYNTH_HOLDOUT)
     assert spec_fits(_Record(("latin",)), mixed) is False
+
+
+def test_manifest_record_raises_when_font_bytes_are_missing(monkeypatch):
+    from train.registry import load_manifest
+
+    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(OUT / "font-cache-pytest-missing"))
+    records = load_manifest()
+    specs = build_specs(n_classes=1, split=Split.TRAIN, per_class=1, records=(records[0],))
+    dataset = FontSnapSynth(specs, (records[0],))
+    assert len(dataset) == 1
+    with pytest.raises(FileNotFoundError, match="font bytes"):
+        dataset[0]
+
+
+def test_file_sha256_is_loaded_instead_of_the_default_font(monkeypatch):
+    payload = b"not a font"
+    digest = hashlib.sha256(payload).hexdigest()
+    root = OUT / "font-cache-pytest" / f"wiring-{os.getpid()}"
+    shutil.rmtree(root, ignore_errors=True)
+    root.mkdir(parents=True)
+    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(root))
+    try:
+        store_bytes(digest, payload, root)
+
+        class _Rec:
+            class_id = "Demo-Regular"
+            file_sha256 = digest
+            download = object()
+            subsets = ("latin",)
+
+        specs = build_specs(n_classes=1, split=Split.TRAIN, per_class=1, records=(_Rec(),))
+        dataset = FontSnapSynth(specs, (_Rec(),))
+        with pytest.raises(OSError):
+            dataset[0]
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+def test_real_records_use_cjk_and_hangul_banks_and_construct():
+    from train.registry import load_manifest
+
+    records = load_manifest()
+    lxgw = next(rec for rec in records if rec.family_id == "lxgw-wenkai")
+    pretendard = next(rec for rec in records if rec.family_id == "pretendard")
+    assert "cjk" in lxgw.subsets and "latin" in lxgw.subsets
+    assert "hangul" in pretendard.subsets and "latin" in pretendard.subsets
+    cjk_specs = build_specs(n_classes=1, split=Split.TRAIN, per_class=8, records=(lxgw,))
+    hangul_specs = build_specs(n_classes=1, split=Split.TRAIN, per_class=8, records=(pretendard,))
+    assert "cjk" in {TEXT_BY_ID[spec.text_id].script for spec in cjk_specs}
+    assert "hangul" in {TEXT_BY_ID[spec.text_id].script for spec in hangul_specs}
+    specs = build_specs(n_classes=len(records), split=Split.TRAIN, per_class=1, records=records)
+    dataset = FontSnapSynth(specs, records)
+    from train.registry import PHASE1_CLASSES
+
+    assert len(dataset) == PHASE1_CLASSES
 
 
 def test_dataset_rejects_a_record_whose_subsets_omit_latin():
@@ -230,18 +330,16 @@ def test_cache_stores_bytes_only_when_the_hash_matches(tmp_path):
         shutil.rmtree(root, ignore_errors=True)
 
 
-def test_catalog_digests_reads_registry_sha256(monkeypatch):
+def test_catalog_digests_reads_file_sha256(monkeypatch):
     digest = "ab" * 32
 
-    class _Recipe:
-        sha256 = digest.upper()
-
     class _Rec:
-        recipe = _Recipe()
+        file_sha256 = digest.upper()
 
-    module = types.ModuleType("train.registry")
-    module.REGISTRY = (_Rec(),)
-    monkeypatch.setitem(sys.modules, "train.registry", module)
+    class _Empty:
+        file_sha256 = ""
+
+    monkeypatch.setattr("train.registry.load_manifest", lambda: (_Rec(), _Empty()))
     assert catalog_digests() == (digest,)
 
 
@@ -256,15 +354,29 @@ def test_samples_cli_prints_disjoint_counts(capsys):
     assert samples_main(["--split", "holdout", "--classes", "1"]) == 2
 
 
-def test_samples_cli_uses_registry_length_when_classes_is_omitted(monkeypatch, capsys):
-    module = types.ModuleType("train.registry")
-    module.REGISTRY = (object(), object(), object(), object())
-    monkeypatch.setitem(sys.modules, "train.registry", module)
-    assert samples_main(["--per-class", "1"]) == 0
+def test_samples_cli_uses_manifest_length_when_classes_is_omitted(capsys):
+    from train.registry import PHASE1_CLASSES
+
+    assert samples_main(["--split", "train", "--per-class", "2", "--dry-run"]) == 0
     out = capsys.readouterr().out
-    assert "classes=4" in out
-    assert "specs=4" in out
-    assert "dry_run=0" in out
+    assert "split=train" in out
+    assert f"classes={PHASE1_CLASSES}" in out
+    assert f"specs={PHASE1_CLASSES * 2}" in out
+    assert "disjoint=ok" in out
+    assert "dry_run=1" in out
+
+
+def test_samples_cli_falls_back_to_phase1_count(monkeypatch, capsys):
+    from train.registry import PHASE1_CLASSES
+
+    def boom():
+        raise OSError("manifest missing")
+
+    monkeypatch.setattr("train.registry.load_manifest", boom)
+    assert samples_main(["--per-class", "1", "--dry-run"]) == 0
+    out = capsys.readouterr().out
+    assert f"classes={PHASE1_CLASSES}" in out
+    assert f"specs={PHASE1_CLASSES}" in out
 
 
 def test_train_main_dispatches_samples_and_cache(capsys, monkeypatch):

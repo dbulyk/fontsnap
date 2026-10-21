@@ -13,7 +13,7 @@ from train.paths import EXCLUDE_TSV, LICENSE_ROOT, MANIFEST_TSV, ROOT
 HTTP_USER_AGENT = "FontSnapTrain/0.1 (inventory; +https://github.com/dbulyk/fontsnap)"
 
 OFL_SPDX = "OFL-1.1"
-PHASE1_CLASSES = 606
+PHASE1_CLASSES = 582
 _SHA = re.compile(r"[0-9a-f]{64}")
 _FAMILY_ID = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 _CLASS_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -96,6 +96,7 @@ FONTSOURCE_UNSUITABLE = frozenset(
     {
         "bravura",
         "bravura-text",
+        "cooper-hewitt",
         "dseg-weather",
         "dseg14-classic",
         "dseg14-classic-mini",
@@ -107,6 +108,8 @@ FONTSOURCE_UNSUITABLE = frozenset(
         "dseg7-modern-mini",
         "dseg7-segg-chan",
         "dseg7-segg-chan-mini",
+        "genjyuu-gothic",
+        "peace-sans",
         "unifont",
         "unifontex",
         "yakuhanjp",
@@ -139,7 +142,6 @@ FONTSOURCE_FACES = {
     "bluu-next": 2,
     "chunk-five": 1,
     "commit-mono": 12,
-    "cooper-hewitt": 16,
     "fusion-kai-g": 1,
     "fusion-pixel-10px-monospaced-jp": 1,
     "fusion-pixel-10px-proportional-jp": 1,
@@ -147,7 +149,6 @@ FONTSOURCE_FACES = {
     "fusion-pixel-12px-proportional-jp": 1,
     "fusion-pixel-8px-monospaced-jp": 1,
     "fusion-pixel-8px-proportional-jp": 1,
-    "genjyuu-gothic": 7,
     "hauora-sans": 7,
     "ia-writer-duo": 4,
     "ia-writer-mono": 4,
@@ -177,7 +178,6 @@ FONTSOURCE_FACES = {
     "open-sauce-two": 14,
     "opendyslexic": 4,
     "ostrich-sans": 4,
-    "peace-sans": 1,
     "pitagon-sans": 6,
     "pitagon-sans-mono": 16,
     "pitagon-sans-text": 14,
@@ -195,6 +195,68 @@ FONTSOURCE_FACES = {
     "uncut-sans": 10,
     "win95fa": 1,
 }
+
+# Scripts past Latin that the phase-1 files actually cover. Cyrillic is filled from cmap
+# checks of the downloaded files. CJK and Hangul follow the families in plan section 2.2.
+CJK_FAMILIES = frozenset(
+    family_id for family_id in FONTSOURCE_FACES if family_id.startswith("fusion-") or family_id in {"lxgw-wenkai"}
+)
+HANGUL_FAMILIES = frozenset({"pretendard"})
+# Measured from cmap of the phase-1 cached full fonts (U+0400..U+04FF).
+CYRILLIC_FAMILIES = frozenset(
+    {
+        "adwaita-mono",
+        "adwaita-sans",
+        "apfel-grotezk",
+        "argentum-sans",
+        "facade-font",
+        "fusion-kai-g",
+        "fusion-pixel-10px-proportional-jp",
+        "fusion-pixel-12px-monospaced-jp",
+        "fusion-pixel-12px-proportional-jp",
+        "grotesk",
+        "hauora-sans",
+        "ia-writer-duo",
+        "ia-writer-mono",
+        "ia-writer-quattro",
+        "iosevka",
+        "iosevka-aile",
+        "iosevka-curly",
+        "iosevka-curly-slab",
+        "iosevka-etoile",
+        "lxgw-wenkai",
+        "maple-mono",
+        "monaspace-argon",
+        "monaspace-krypton",
+        "monaspace-neon",
+        "monaspace-radon",
+        "monaspace-xenon",
+        "mononoki",
+        "mourier",
+        "murmure",
+        "nebula-sans",
+        "open-runde",
+        "opendyslexic",
+        "ouroboros",
+        "pitagon-sans-mono",
+        "pretendard",
+        "rubik-one",
+        "sinistre",
+        "sneaky-times",
+    }
+)
+
+
+def subsets_for(family_id: str) -> tuple[str, ...]:
+    scripts = ["latin"]
+    if family_id in CYRILLIC_FAMILIES:
+        scripts.append("cyrillic")
+    if family_id in CJK_FAMILIES:
+        scripts.append("cjk")
+    if family_id in HANGUL_FAMILIES:
+        scripts.append("hangul")
+    return tuple(scripts)
+
 
 COLLLETTTIVO_FACES = {
     "absans": 1,
@@ -297,7 +359,7 @@ def _require_tables() -> None:
     if overlap:
         raise RuntimeError(f"included faces overlap excludes: {sorted(overlap)}")
     if sum(n for _, n in PHASE1_BY_SOURCE.values()) != PHASE1_CLASSES:
-        raise RuntimeError("phase-1 face tables do not sum to 606")
+        raise RuntimeError(f"phase-1 face tables do not sum to {PHASE1_CLASSES}")
     if {p.lower() for p in VELVETYNE_KEEP} != set(VELVETYNE_FACES):
         raise RuntimeError("velvetyne keep paths disagree with face counts")
     if WAITING_ON_SITE & set(VELVETYNE_FACES):
@@ -328,6 +390,8 @@ class DownloadRecipe:
     def __post_init__(self) -> None:
         if not self.url.startswith("https://") or not self.filename:
             raise ValueError(f"bad download recipe: {self.url} {self.filename}")
+        if "\n" in self.url or "\t" in self.url or " " in self.url:
+            raise ValueError(f"download url is not TSV-safe: {self.url}")
         if Path(self.filename).name != self.filename or self.filename.startswith("."):
             raise ValueError(f"bad download filename: {self.filename}")
         if Path(self.filename).suffix.lower() not in {".ttf", ".otf"}:
@@ -382,6 +446,10 @@ class FontClassRecord:
             raise ValueError(f"{self.class_id} license path {self.license.path} != {expected}")
         if "\t" in self.designer or "\n" in self.designer or "\t" in self.family or "\n" in self.category:
             raise ValueError(f"TSV-unsafe text on {self.class_id}")
+
+    @property
+    def subsets(self) -> tuple[str, ...]:
+        return subsets_for(self.family_id)
 
 
 @dataclass(frozen=True)
@@ -686,7 +754,7 @@ def check() -> list[str]:
         errors.append(f"fusion classes kept {sorted(fusion_ids)}")
 
     sums = {
-        ExcludeReason.UNSUITABLE: 97,
+        ExcludeReason.UNSUITABLE: 121,
         ExcludeReason.ALIAS: 28,
         ExcludeReason.FUSION_MERGED: 20,
         ExcludeReason.DUPLICATE_SOURCE: 2,

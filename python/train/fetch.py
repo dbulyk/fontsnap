@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from pathlib import Path
 
-from train.inventory import read_url
+from train.inventory import read_font_bytes
 from train.paths import MANIFEST_TSV, OUT, assert_under_out
 from train.registry import FontClassRecord, dump_manifest, is_sfnt, load_manifest, sha256_hex
 
@@ -48,17 +49,33 @@ def main(argv: list[str] | None = None) -> int:
     if dry:
         print(f"{len(records)} downloads -> {cache}")
         return 0
-    digests: dict[str, str] = {}
-    try:
-        for rec in records:
-            digests[rec.class_id] = _fetch_one(rec, _dest(cache, rec))
-    except (OSError, RuntimeError, ValueError) as exc:
-        print(exc, file=sys.stderr)
-        return 1
-    if write_sha:
+    digests, failures = _fetch_all(records, cache)
+    if write_sha and digests:
         _stamp(digests)
-    print(f"fetched {len(digests)}")
-    return 0
+    print(f"fetched {len(digests)} failed {len(failures)}")
+    for line in failures:
+        print(line, file=sys.stderr)
+    return 1 if failures else 0
+
+
+def _fetch_all(records: tuple[FontClassRecord, ...], cache: Path) -> tuple[dict[str, str], list[str]]:
+    digests: dict[str, str] = {}
+    failures: list[str] = []
+
+    def one(rec: FontClassRecord) -> tuple[str, str]:
+        return rec.class_id, _fetch_one(rec, _dest(cache, rec))
+
+    workers = min(8, max(1, len(records)))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(one, rec) for rec in records]
+        for rec, future in zip(records, futures, strict=True):
+            try:
+                class_id, digest = future.result()
+            except (OSError, RuntimeError, ValueError) as exc:
+                failures.append(f"{rec.class_id}: {exc}")
+                continue
+            digests[class_id] = digest
+    return digests, failures
 
 
 def _dest(cache: Path, rec: FontClassRecord) -> Path:
@@ -75,7 +92,7 @@ def _fetch_one(rec: FontClassRecord, dest: Path) -> str:
         dest.unlink()
     partial = dest.with_name(dest.name + ".partial")
     assert_under_out(partial)
-    data = read_url(rec.download.url)
+    data = read_font_bytes(rec.download.url)
     if not is_sfnt(data):
         raise RuntimeError(f"{rec.class_id} is not a static sfnt")
     digest = sha256_hex(data)

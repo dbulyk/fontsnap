@@ -60,17 +60,13 @@ def read_verified(sha256: str, root: Path | None = None) -> bytes:
 
 
 def catalog_digests() -> tuple[str, ...]:
-    try:
-        from train.registry import REGISTRY
-    except ImportError:
-        return ()
+    from train.registry import load_manifest
+
     digests: list[str] = []
-    for record in REGISTRY:
-        recipe = getattr(record, "recipe", None)
-        digest = getattr(recipe, "sha256", None)
-        if not isinstance(digest, str):
-            raise ValueError("registry record is missing recipe.sha256")
-        digests.append(_digest(digest))
+    for record in load_manifest():
+        if not record.file_sha256:
+            continue
+        digests.append(_digest(record.file_sha256))
     return tuple(digests)
 
 

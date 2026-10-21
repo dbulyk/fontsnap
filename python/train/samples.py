@@ -43,21 +43,33 @@ TEXTS: tuple[TextEntry, ...] = (
     TextEntry(0, Split.TRAIN, "latin", "The quick brown fox jumps over the lazy dog."),
     TextEntry(1, Split.TRAIN, "latin", "Pack my box with five dozen liquor jugs."),
     TextEntry(2, Split.TRAIN, "cyrillic", "Съешь же ещё этих мягких французских булок."),
+    TextEntry(3, Split.TRAIN, "cjk", "永字八法で漢字の骨格を見る。"),
+    TextEntry(4, Split.TRAIN, "hangul", "다람쥐 헌 쳇바퀴에 타고파."),
     TextEntry(100, Split.SYNTH_HOLDOUT, "latin", "A hold-out line the training seeds never render."),
     TextEntry(101, Split.SYNTH_HOLDOUT, "latin", "Second hold-out line, disjoint from the train ids."),
     TextEntry(102, Split.SYNTH_HOLDOUT, "cyrillic", "Это строка только для отложенной выборки."),
+    TextEntry(103, Split.SYNTH_HOLDOUT, "cjk", "明朝とゴシックを比べる留白。"),
+    TextEntry(104, Split.SYNTH_HOLDOUT, "hangul", "홀드아웃 전용 한글 문장입니다."),
     TextEntry(200, Split.REPLAY, "latin", "Replay line one, unused by train or hold-out."),
     TextEntry(201, Split.REPLAY, "latin", "Replay line two, still disjoint."),
     TextEntry(202, Split.REPLAY, "cyrillic", "Строка повтора, не из обучения."),
+    TextEntry(203, Split.REPLAY, "cjk", "再学習のため別の漢字文。"),
+    TextEntry(204, Split.REPLAY, "hangul", "리플레이 전용 한글 문장입니다."),
 )
 
 BACKGROUNDS: tuple[Background, ...] = (
     Background(0, Split.TRAIN, (255, 255, 255)),
     Background(1, Split.TRAIN, (245, 245, 240)),
+    Background(2, Split.TRAIN, (32, 32, 32)),
+    Background(3, Split.TRAIN, (24, 24, 28)),
     Background(10, Split.SYNTH_HOLDOUT, (32, 32, 32)),
     Background(11, Split.SYNTH_HOLDOUT, (24, 24, 28)),
+    Background(12, Split.SYNTH_HOLDOUT, (255, 255, 255)),
+    Background(13, Split.SYNTH_HOLDOUT, (245, 245, 240)),
     Background(20, Split.REPLAY, (250, 248, 245)),
     Background(21, Split.REPLAY, (230, 230, 230)),
+    Background(22, Split.REPLAY, (28, 28, 32)),
+    Background(23, Split.REPLAY, (18, 18, 22)),
 )
 
 
@@ -108,8 +120,10 @@ def head_index(spec: SyntheticSampleSpec) -> int:
     return SHIPPED_CLASS_COUNT + spec.class_index
 
 
-def _latin_text_ids(split: Split) -> tuple[int, ...]:
-    return tuple(entry.text_id for entry in TEXTS if entry.split == split and entry.script == "latin")
+def _text_ids_for(split: Split, scripts: tuple[str, ...] | None) -> tuple[int, ...]:
+    allowed = ("latin",) if scripts is None else scripts
+    wanted = set(allowed)
+    return tuple(entry.text_id for entry in TEXTS if entry.split == split and entry.script in wanted)
 
 
 def _background_ids(split: Split) -> tuple[int, ...]:
@@ -146,24 +160,35 @@ def _coerce_split(split: Split | str) -> Split:
     return Split(split)
 
 
-def build_specs(*, n_classes: int, split: Split | str, per_class: int) -> tuple[SyntheticSampleSpec, ...]:
+def build_specs(
+    *,
+    n_classes: int,
+    split: Split | str,
+    per_class: int,
+    records: tuple[object, ...] | None = None,
+) -> tuple[SyntheticSampleSpec, ...]:
     split = _coerce_split(split)
     if n_classes < 0 or per_class < 1:
         raise ValueError("n_classes must be >= 0 and per_class must be >= 1")
+    if records is not None and len(records) != n_classes:
+        raise ValueError("records length must equal n_classes")
     if n_classes and (n_classes - 1) * per_class + (per_class - 1) >= SPLIT_SPAN:
         raise ValueError("seed offset crosses the split span")
-    text_ids = _latin_text_ids(split)
     bg_ids = _background_ids(split)
-    if not text_ids or not bg_ids:
-        raise ValueError(f"split {split.value} has no latin text or no background")
+    if not bg_ids:
+        raise ValueError(f"split {split.value} has no background")
     specs: list[SyntheticSampleSpec] = []
     for class_index in range(n_classes):
+        scripts = _subsets(records[class_index]) if records is not None else None
+        text_ids = _text_ids_for(split, scripts)
+        if not text_ids:
+            raise ValueError(f"split {split.value} has no text for class {class_index}")
         for k in range(per_class):
             specs.append(
                 SyntheticSampleSpec(
                     class_index=class_index,
                     text_id=text_ids[k % len(text_ids)],
-                    bg_id=bg_ids[k % len(bg_ids)],
+                    bg_id=bg_ids[(k // len(text_ids)) % len(bg_ids)],
                     seed=SEED_BASE[split] + class_index * per_class + k,
                     split=split,
                 )
@@ -272,12 +297,21 @@ def specs_from_jsonl(text: str) -> tuple[SyntheticSampleSpec, ...]:
     return tuple(specs)
 
 
-def _registry_class_count() -> int:
+def _manifest_records() -> tuple[object, ...] | None:
+    from train.registry import load_manifest
+
     try:
-        from train.registry import REGISTRY
-    except ImportError:
-        return 0
-    return len(REGISTRY)
+        return load_manifest()
+    except (OSError, ValueError):
+        return None
+
+
+def _class_count(records: tuple[object, ...] | None) -> int:
+    if records:
+        return len(records)
+    from train.registry import PHASE1_CLASSES
+
+    return PHASE1_CLASSES
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -289,8 +323,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         split = Split(args.split)
-        n_classes = _registry_class_count() if args.classes is None else args.classes
-        groups = {item: build_specs(n_classes=n_classes, split=item, per_class=args.per_class) for item in Split}
+        records = _manifest_records() if args.classes is None else None
+        n_classes = _class_count(records) if args.classes is None else args.classes
+        groups = {item: build_specs(n_classes=n_classes, split=item, per_class=args.per_class, records=records) for item in Split}
         assert_disjoint(groups)
     except ValueError as exc:
         print(exc, file=sys.stderr)

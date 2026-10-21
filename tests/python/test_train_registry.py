@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fontsnap_ref.pipeline import Families, nz
 from train.fetch import main as fetch_main
-from train.inventory import face_class_id, select_static_fonts
+from train.inventory import face_class_id, match_upstream_path, select_static_fonts
 from train.paths import LICENSE_ROOT, OUT, ROOT
 from train.registry import (
     COLLLETTTIVO_NOT_FONTS,
@@ -58,7 +58,6 @@ PLAN_WAITING = frozenset(
 def test_phase1_counts_and_round_trip():
     records = load_manifest()
     exclusions = load_exclusions()
-    assert len(records) == 606
     assert len(records) == PHASE1_CLASSES
     for source, (families, classes) in PHASE1_BY_SOURCE.items():
         got = [rec for rec in records if rec.source == source]
@@ -66,16 +65,16 @@ def test_phase1_counts_and_round_trip():
         assert len({rec.family_id for rec in got}) == families
     assert dump_manifest(records) == (ROOT / "data" / "fonts_manifest_v3.tsv").read_text(encoding="utf-8")
     assert dump_exclusions(exclusions) == (ROOT / "data" / "fonts_exclude_v3.tsv").read_text(encoding="utf-8")
-    assert len({rec.class_id for rec in records}) == 606
+    assert len({rec.class_id for rec in records}) == PHASE1_CLASSES
 
 
 def test_every_family_has_one_ofl_file():
     records = load_manifest()
     paths = {rec.license.path for rec in records}
-    assert len(paths) == 66 + 16 + 24
+    assert len(paths) == sum(families for families, _ in PHASE1_BY_SOURCE.values())
     for rec in records:
         assert rec.license.spdx == OFL_SPDX
-        assert rec.file_sha256 == ""
+        assert len(rec.file_sha256) == 64
         assert rec.download.url.startswith("https://")
         assert rec.download.filename.endswith((".ttf", ".otf"))
         data = (ROOT / rec.license.path).read_bytes()
@@ -116,7 +115,7 @@ def test_exclude_pins():
 
     assert dropped(ExcludeReason.NON_OFL) == 55
     assert dropped(ExcludeReason.ALIAS) == 28
-    assert dropped(ExcludeReason.UNSUITABLE) == 97
+    assert dropped(ExcludeReason.UNSUITABLE) == 121
     assert dropped(ExcludeReason.FUSION_MERGED) == 20
     assert dropped(ExcludeReason.DUPLICATE_SOURCE) == 2
     assert {path.lower() for path in VELVETYNE_NON_OFL} <= by_reason[ExcludeReason.NON_OFL]
@@ -138,6 +137,70 @@ def test_no_model_family_collisions():
         collapsed.setdefault(key, set()).add(rec.family)
         assert key not in model
     assert all(len(names) == 1 for names in collapsed.values())
+
+
+def test_upstream_match_prefers_the_full_face_over_a_variant():
+    argentum = [
+        "otf/ArgentumSans-Bold.otf",
+        "otf/ArgentumSans-CondensedBold.otf",
+        "ttf/ArgentumSans-Bold.ttf",
+    ]
+    assert match_upstream_path("ArgentumSans-Bold", 700, "normal", argentum, "argentum-sans") == "otf/ArgentumSans-Bold.otf"
+    hauora = ["fonts/ttf/Hauora-Bold.ttf", "fonts/otf/Hauora-Bold.otf"]
+    assert match_upstream_path("HauoraSans-Bold", 700, "normal", hauora, "hauora-sans") == "fonts/otf/Hauora-Bold.otf"
+    commit = ["src/fonts/fontlab/CommitMonoV143-700Italic.otf", "src/fonts/fontlab/CommitMonoV143-400Italic.otf"]
+    assert (
+        match_upstream_path("CommitMono-BoldItalic", 700, "italic", commit, "commit-mono")
+        == "src/fonts/fontlab/CommitMonoV143-700Italic.otf"
+    )
+    monaspace = [
+        "fonts/Static Fonts/Monaspace Argon/MonaspaceArgon-Bold.otf",
+        "fonts/Frozen Fonts/Monaspace Argon/MonaspaceArgonFrozen-Bold.ttf",
+        "fonts/Static Fonts/Monaspace Argon/MonaspaceArgon-SemiWideBold.otf",
+    ]
+    assert (
+        match_upstream_path("MonaspaceArgon-Bold", 700, "normal", monaspace, "monaspace-argon")
+        == "fonts/Static Fonts/Monaspace Argon/MonaspaceArgon-Bold.otf"
+    )
+    assert match_upstream_path("ChunkFive-ExtraBold", 800, "normal", ["ChunkFive-Regular.otf", "Chunk Five Print.otf"], "chunk-five") == (
+        "ChunkFive-Regular.otf"
+    )
+    bagnard = ["Bagnard.otf", "BagnardSans.otf"]
+    assert match_upstream_path("Bagnard-Regular", 400, "normal", bagnard, "bagnard") == "Bagnard.otf"
+    assert match_upstream_path("BagnardSans-Regular", 400, "normal", bagnard, "bagnard-sans") == "BagnardSans.otf"
+    ia = ["iA Writer Duo/Static/iAWriterDuoS-Bold.ttf", "iA Writer Duo/Variable/iAWriterDuoV.ttf"]
+    assert match_upstream_path("iAWriterDuo-Bold", 700, "normal", ia, "ia-writer-duo") == "iA Writer Duo/Static/iAWriterDuoS-Bold.ttf"
+    lxgw = [
+        "fonts/TTF/LXGWWenKai-Light.ttf",
+        "fonts/TTF/LXGWWenKai-Medium.ttf",
+        "fonts/TTF/LXGWWenKai-Regular.ttf",
+        "fonts/TTF/LXGWWenKaiMono-Regular.ttf",
+    ]
+    assert match_upstream_path("LXGWWenKai-Bold", 700, "normal", lxgw, "lxgw-wenkai") is None
+    assert match_upstream_path("LXGWWenKai-Light", 300, "normal", lxgw, "lxgw-wenkai") == "fonts/TTF/LXGWWenKai-Light.ttf"
+    uncut = ["Static/UncutSans-RegularItalic.otf", "Static/UncutSans-BookItalic.otf"]
+    assert match_upstream_path("UncutSans-Italic", 400, "italic", uncut, "uncut-sans") == "Static/UncutSans-RegularItalic.otf"
+
+
+def test_script_subsets_follow_the_family():
+    from train.registry import subsets_for
+
+    lxgw = next(rec for rec in load_manifest() if rec.family_id == "lxgw-wenkai")
+    pretendard = next(rec for rec in load_manifest() if rec.family_id == "pretendard")
+    latin = next(rec for rec in load_manifest() if rec.family_id == "bagnard")
+    assert subsets_for("lxgw-wenkai") == lxgw.subsets
+    assert "cjk" in lxgw.subsets
+    assert "hangul" in pretendard.subsets
+    assert latin.subsets == ("latin",)
+
+
+
+def test_manifest_pins_full_fonts_with_sha256():
+    records = load_manifest()
+    assert len(records) == PHASE1_CLASSES
+    for rec in records:
+        assert rec.file_sha256 and len(rec.file_sha256) == 64
+        assert not ("jsdelivr.net/fontsource" in rec.download.url and "/latin-" in rec.download.url)
 
 
 def test_open_sauce_uses_source_ttf_not_cdn():

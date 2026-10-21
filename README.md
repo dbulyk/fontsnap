@@ -46,7 +46,7 @@ enforced by code and automated checks, not by review alone; see "What the checks
 | `scripts/`                                        | build and check helpers (`lib/` is unit-tested), `eval/` (JS evaluation on realset3), `i18n/` (locale sources and `build-locales.py`)                                   |
 | `python/fontsnap_ref/`, `python/data/`            | Python reference pipeline (`textcrop`, `pipeline`, `evaluate`, `build_meta`) and its data (classes, family mapping v2b, Google Fonts metadata)                          |
 | `python/train/`                                   | Free-phase OFL inventory, on-the-fly synth loader, PyTorch port/parity, RunPod dry launcher (extra deps in `python/train/requirements.txt`)                             |
-| `data/fonts_manifest_v3.tsv`, `data/licenses/v3/` | 606 new OFL class rows (Fontsource / Collletttivo / Velvetyne) and per-family `OFL.txt` (no font binaries)                                                              |
+| `data/fonts_manifest_v3.tsv`, `data/licenses/v3/` | 582 new OFL class rows (Fontsource / Collletttivo / Velvetyne) with full-font URLs + sha256, and per-family `OFL.txt` (no font binaries)                                |
 | `data/realset3/`                                  | 263 labelled screenshots (`images/` via Git LFS, `labels.csv`) and the collection scripts                                                                               |
 | `data/realshots/`                                 | Label CSV format for tester-collected screenshots of new families (`out/realshots/images/` holds pixels)                                                                |
 | `tests/`                                          | `unit` (Vitest), `e2e` (Playwright), `regression` (realset3 + parity), `python` (pytest), `fixtures`, `guard-snapshots`, `thresholds.json`                              |
@@ -75,7 +75,10 @@ python -m train generate --check   # assert TSV/licenses match the loader
 python -m train samples --split train --per-class 2 --dry-run
 python -m train parity --limit 4   # CPU: PyTorch vs ORT on prep(crop_normalize)
 python -m train runpod plan --mode calibrate   # prints create body; does not read RUNPOD_API_KEY
-# live calibrate later (not in CI): FONTSNAP_RUNPOD_LIVE=1 python -m train.runpod watch --mode calibrate
+# live calibrate (not in CI; needs RUNPOD_API_KEY). Caps: <=20 min and <=$1. API v2:
+# https://docs.runpod.io/api-reference-v2/ (base https://api.runpod.io/v2,
+# price from GET /v2/catalog/gpus/{id} → price.secure).
+# FONTSNAP_RUNPOD_LIVE=1 python -m train runpod watch --mode calibrate
 ```
 
 Real-shot labels: `data/realshots/README.md`. Prior/merge tables for new sources live in `python/train/policy.py` (values stay at product defaults until a GPU hold-out).

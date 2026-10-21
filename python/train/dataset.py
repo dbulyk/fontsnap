@@ -42,20 +42,43 @@ class FontSnapSynth:
         return len(self.specs)
 
     def __getitem__(self, index: int):
-        import torch
-
         spec = self.specs[index]
         font_bytes, instance = _font_of(self.records[spec.class_index]) if self.records is not None else (None, ())
         arr = prepared_chw(spec, font_bytes, instance=instance)
+        import torch
+
         return torch.from_numpy(arr), head_index(spec)
 
 
-def _font_of(record: object) -> tuple[bytes | None, tuple[tuple[str, float], ...]]:
+def _digest_of(record: object) -> str | None:
+    direct = getattr(record, "file_sha256", None)
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
     recipe = getattr(record, "recipe", None)
-    digest = getattr(recipe, "sha256", None) if recipe is not None else None
-    font_bytes = read_verified(digest) if isinstance(digest, str) else None
-    instance = getattr(record, "instance", ()) or ()
-    return font_bytes, tuple(instance)
+    legacy = getattr(recipe, "sha256", None) if recipe is not None else None
+    if isinstance(legacy, str) and legacy.strip():
+        return legacy.strip()
+    return None
+
+
+def _has_font_recipe(record: object) -> bool:
+    if getattr(record, "download", None) is not None:
+        return True
+    return getattr(record, "recipe", None) is not None
+
+
+def _font_of(record: object) -> tuple[bytes | None, tuple[tuple[str, float], ...]]:
+    instance = tuple(getattr(record, "instance", ()) or ())
+    digest = _digest_of(record)
+    name = getattr(record, "class_id", None) or "font"
+    if digest:
+        try:
+            return read_verified(digest), instance
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f"font bytes missing for {name}") from exc
+    if _has_font_recipe(record):
+        raise FileNotFoundError(f"font bytes missing for {name}")
+    return None, instance
 
 
 def make_loader(
