@@ -70,6 +70,7 @@ interface StackPaint {
   position?: string;
   transform?: string;
   filter?: string;
+  perspective?: string;
   contain?: string;
   willChange?: string;
 }
@@ -151,8 +152,20 @@ function layout(
         return charBox(id, range.startOffset);
       }
       const lines = asLines(boxes[id]);
-      const box = lines[0];
-      return { left: 0, right: 0, top: 0, bottom: 0, ...(box ?? {}) } as DOMRect;
+      if (lines.length === 0) {
+        return { left: 0, right: 0, top: 0, bottom: 0 } as DOMRect;
+      }
+      let left = Infinity;
+      let top = Infinity;
+      let right = -Infinity;
+      let bottom = -Infinity;
+      for (const box of lines) {
+        left = Math.min(left, box.left ?? 0);
+        top = Math.min(top, box.top ?? 0);
+        right = Math.max(right, box.right ?? 0);
+        bottom = Math.max(bottom, box.bottom ?? 0);
+      }
+      return { left, top, right, bottom } as DOMRect;
     };
     return range;
   });
@@ -206,6 +219,7 @@ function layout(
       position: pick(paint.position, real.position, 'static'),
       transform: pick(paint.transform, real.transform, 'none'),
       filter: pick(paint.filter, real.filter, 'none'),
+      perspective: pick(paint.perspective, real.perspective, 'none'),
       contain: pick(paint.contain, real.contain, 'none'),
       willChange: pick(paint.willChange, real.willChange, 'auto'),
       getPropertyValue: (property: string) => {
@@ -730,23 +744,22 @@ describe('textInRect', () => {
       '<input id="f" type="text" autocomplete="cc-number" value="4111111111111111">',
     ],
     [
-      'a name containing password',
+      'a name with password token',
       'f',
       '<input id="f" type="text" name="user_password" value="SecretPass">',
     ],
-    ['an id containing pass', 'show-pass', '<input id="show-pass" type="text" value="SecretPass">'],
-    ['an id containing pwd', 'pwd', '<input id="pwd" type="text" value="SecretPass">'],
-    ['an id containing pw', 'pw', '<input id="pw" type="text" value="SecretPass">'],
+    ['an id that is pwd', 'pwd', '<input id="pwd" type="text" value="SecretPass">'],
+    ['an id that is pw', 'pw', '<input id="pw" type="text" value="SecretPass">'],
+    ['a name that is пароль', 'f', '<input id="f" type="text" name="пароль" value="SecretPass">'],
     [
-      'a name containing пароль',
+      'camelCase userPassword',
       'f',
-      '<input id="f" type="text" name="пароль" value="SecretPass">',
+      '<input id="f" type="text" name="userPassword" value="SecretPass">',
     ],
-    [
-      'inputmode numeric with maxlength 6',
-      'f',
-      '<input id="f" type="text" inputmode="numeric" maxlength="6" value="123456">',
-    ],
+    ['name=pin', 'f', '<input id="f" type="text" name="pin" value="1234">'],
+    ['name=otp_code', 'f', '<input id="f" type="text" name="otp_code" value="123456">'],
+    ['maxlength 6 on a text input', 'f', '<input id="f" type="text" maxlength="6" value="123456">'],
+    ['maxlength 1 OTP cell', 'f', '<input id="f" type="text" maxlength="1" value="9">'],
   ])('never reads a password-like field (%s)', (_name, id, html) => {
     document.body.innerHTML = `${html}<p id="v">visible</p>`;
     layout({
@@ -804,11 +817,40 @@ describe('textInRect', () => {
     expect(textInRect(document, frame)).toBe('visible');
   });
 
-  it('reads a username field', () => {
+  it('reads a username field with autocomplete off', () => {
     document.body.innerHTML =
-      '<input id="f" type="text" name="username" autocomplete="username" value="ada">';
+      '<input id="f" type="text" name="username" autocomplete="off" value="ada">';
     layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
     expect(textInRect(document, frame)).toBe('ada');
+  });
+
+  it('does not read a field with autocomplete=username', () => {
+    document.body.innerHTML =
+      '<input id="f" type="text" name="username" autocomplete="username" value="ada"><p id="v">visible</p>';
+    layout({
+      f: { left: 10, top: 10, right: 80, bottom: 40 },
+      v: { left: 10, top: 50, right: 60, bottom: 70 },
+    });
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('reads a text input named Typing test (pin is not a substring match)', () => {
+    document.body.innerHTML = '<input id="f" type="text" name="Typing test" value="safe words">';
+    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
+    expect(textInRect(document, frame)).toBe('safe words');
+  });
+
+  it('reads fields whose names only contain sensitive substrings', () => {
+    document.body.innerHTML = '<input id="f" type="text" name="passage" value="passage words">';
+    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
+    expect(textInRect(document, frame)).toBe('passage words');
+  });
+
+  it('does not treat Senha as a sensitive label', () => {
+    document.body.innerHTML =
+      '<label for="f">Senha</label><input id="f" type="text" value="plain words">';
+    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
+    expect(textInRect(document, frame)).toBe('plain words');
   });
 
   it('does not read an email field', () => {
@@ -819,6 +861,12 @@ describe('textInRect', () => {
       v: { left: 10, top: 50, right: 60, bottom: 70 },
     });
     expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('reads a search input', () => {
+    document.body.innerHTML = '<input id="f" type="search" value="query words">';
+    layout({ f: { left: 10, top: 10, right: 80, bottom: 40 } });
+    expect(textInRect(document, frame)).toBe('query words');
   });
 
   it('reads an input with no type and an input with an unknown type', () => {
@@ -1000,8 +1048,9 @@ describe('textInRect', () => {
     layout({});
     vi.spyOn(document, 'createRange').mockImplementation(() => {
       const range = realRange();
-      range.getClientRects = () =>
-        [{ left: 0, right: 10, top: 0, bottom: 10 }] as unknown as DOMRectList;
+      const box = { left: 0, right: 10, top: 0, bottom: 10 } as DOMRect;
+      range.getClientRects = () => [box] as unknown as DOMRectList;
+      range.getBoundingClientRect = () => box;
       return range;
     });
     document.elementsFromPoint = () => [document.documentElement];
@@ -1077,6 +1126,116 @@ describe('textInRect', () => {
       stack: () => [el('t')],
     });
     expect(textInRect(document, { x: 0, y: 40, w: 200, h: 40 })).toBe('MenuItem one');
+  });
+
+  it('clips fixed text when a transform CB sits under overflow:hidden', () => {
+    document.body.innerHTML =
+      '<div id="clip"><div id="wrap"><p id="t">TRAP fixed</p></div></div><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, right: 90, top: 50, bottom: 70 },
+        v: { left: 10, right: 70, top: 80, bottom: 96 },
+      },
+      undefined,
+      {
+        bounds: { clip: { left: 0, top: 0, right: 100, bottom: 30 } },
+        paint: (hit) => {
+          if (hit.id === 'clip') return { overflow: 'hidden' };
+          if (hit.id === 'wrap') return { transform: 'matrix(1, 0, 0, 1, 0, 0)' };
+          if (hit.id === 't') return { position: 'fixed' };
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('treats perspective as a fixed containing block', () => {
+    document.body.innerHTML =
+      '<div id="clip"><div id="wrap"><p id="t">TRAP fixed</p></div></div><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, right: 90, top: 50, bottom: 70 },
+        v: { left: 10, right: 70, top: 80, bottom: 96 },
+      },
+      undefined,
+      {
+        bounds: { clip: { left: 0, top: 0, right: 100, bottom: 30 } },
+        paint: (hit) => {
+          if (hit.id === 'clip') return { overflow: 'hidden' };
+          if (hit.id === 'wrap') return { perspective: '800px' };
+          if (hit.id === 't') return { position: 'fixed' };
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('treats contain:layout as a fixed containing block', () => {
+    document.body.innerHTML =
+      '<div id="clip"><div id="wrap"><p id="t">TRAP fixed</p></div></div><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, right: 90, top: 50, bottom: 70 },
+        v: { left: 10, right: 70, top: 80, bottom: 96 },
+      },
+      undefined,
+      {
+        bounds: { clip: { left: 0, top: 0, right: 100, bottom: 30 } },
+        paint: (hit) => {
+          if (hit.id === 'clip') return { overflow: 'hidden' };
+          if (hit.id === 'wrap') return { contain: 'layout' };
+          if (hit.id === 't') return { position: 'fixed' };
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('clips absolute text via a relative parent under overflow:hidden', () => {
+    document.body.innerHTML =
+      '<div id="clip"><div id="rel"><p id="t">TRAP abs</p></div></div><p id="v">visible</p>';
+    layout(
+      {
+        t: { left: 10, right: 90, top: 50, bottom: 70 },
+        v: { left: 10, right: 70, top: 80, bottom: 96 },
+      },
+      undefined,
+      {
+        bounds: { clip: { left: 0, top: 0, right: 100, bottom: 30 } },
+        paint: (hit) => {
+          if (hit.id === 'clip') return { overflow: 'hidden' };
+          if (hit.id === 'rel') return { position: 'relative' };
+          if (hit.id === 't') return { position: 'absolute' };
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, frame)).toBe('visible');
+  });
+
+  it('skips cover when pe:none is on an ancestor wrapper, not only the text node owner', () => {
+    document.body.innerHTML =
+      '<div id="wrap"><h1 id="t">Hero Caption</h1></div><div id="cover"></div>';
+    layout(
+      {
+        t: { left: 10, right: 120, top: 10, bottom: 40 },
+        cover: { left: 0, right: 200, top: 0, bottom: 50 },
+      },
+      undefined,
+      {
+        stack: () => [el('cover'), el('t')],
+        paint: (hit) => {
+          if (hit.id === 'wrap') return { pointerEvents: 'none' };
+          if (hit.id === 't') return { pointerEvents: 'none' };
+          if (hit.id === 'cover') return { backgroundColor: 'rgb(34, 68, 102)' };
+          return {};
+        },
+      },
+    );
+    expect(textInRect(document, { x: 0, y: 0, w: 200, h: 50 })).toBe('Hero Caption');
   });
 
   it('takes a heading when a painted stretched link only covers its own box', () => {

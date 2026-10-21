@@ -374,12 +374,30 @@ const previewCases: PreviewCase[] = [
     expected: 'Floating Label',
   },
   {
+    name: 'a pe:none label wrapping a span over an input',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:64px">
+      <label style="position:absolute;left:12px;top:12px;pointer-events:none;${LINE}"><span>Email address</span></label>
+      <input style="width:560px;height:64px;${field}">
+    </div>`,
+    expected: 'Email address',
+  },
+  {
     name: 'a hero caption over an opaque sibling',
     inner: `<div style="position:relative;margin:24px 16px;width:560px;height:72px">
       <div style="position:absolute;inset:0;background:#246"></div>
       <p style="position:absolute;left:12px;top:16px;pointer-events:none;color:#fff;${LINE}">Hero Caption</p>
     </div>`,
     expected: 'Hero Caption',
+  },
+  {
+    name: 'a hero caption under a pe:none wrapper',
+    inner: `<div style="position:relative;margin:24px 16px;width:560px;height:72px">
+      <div style="position:absolute;inset:0;background:#246"></div>
+      <div style="pointer-events:none;position:absolute;left:12px;top:16px">
+        <h1 style="margin:0;color:#fff;${LINE}">HeroCaption</h1>
+      </div>
+    </div>`,
+    expected: 'HeroCaption',
   },
   {
     name: 'a textarea fully inside the frame',
@@ -445,12 +463,12 @@ const previewCases: PreviewCase[] = [
     expected: MARKER,
   },
   {
-    name: 'a name containing password',
+    name: 'a name with password token',
     inner: `<input type="text" name="user_password" value="toggledSecret" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
     expected: MARKER,
   },
   {
-    name: 'an id containing pwd',
+    name: 'an id that is pwd',
     inner: `<input id="pwd" type="text" value="toggledSecret" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
     expected: MARKER,
   },
@@ -460,8 +478,18 @@ const previewCases: PreviewCase[] = [
     expected: MARKER,
   },
   {
+    name: 'otp maxlength 1 cell',
+    inner: `<input type="text" maxlength="1" value="9" style="position:absolute;left:16px;top:16px;width:48px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
     name: 'otp inputmode numeric maxlength 6',
     inner: `<input type="text" inputmode="numeric" maxlength="6" value="123456" style="position:absolute;left:16px;top:16px;width:120px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'type=email',
+    inner: `<input type="email" value="ada@example.com" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
     expected: MARKER,
   },
   {
@@ -477,12 +505,38 @@ const previewCases: PreviewCase[] = [
     expected: MARKER,
   },
   {
-    name: 'a name containing пароль',
+    name: 'a label naming Senha is not sensitive',
+    inner: `<label for="senha" style="position:absolute;left:16px;top:8px;font:16px sans-serif">Senha</label>
+      <input id="senha" type="text" value="plain words" style="position:absolute;left:16px;top:40px;width:320px;height:44px;${field}">`,
+    expected: 'Senha plain words',
+  },
+  {
+    name: 'Typing test name is not a pin token',
+    inner: `<input type="text" name="Typing test" value="safe words" style="position:absolute;left:16px;top:28px;width:320px;height:44px;${field}">`,
+    expected: 'safe words',
+  },
+  {
+    name: 'name=pin',
+    inner: `<input type="text" name="pin" value="4242" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'name=otp_code',
+    inner: `<input type="text" name="otp_code" value="123456" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'name=userPassword',
+    inner: `<input type="text" name="userPassword" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
+    expected: MARKER,
+  },
+  {
+    name: 'a name that is пароль',
     inner: `<input type="text" name="пароль" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
     expected: MARKER,
   },
   {
-    name: 'an id containing pw',
+    name: 'an id with pw token',
     inner: `<input id="user_pw" type="text" value="SecretPass" style="position:absolute;left:16px;top:16px;width:320px;height:44px;${field}">${markerAt(80)}`,
     expected: MARKER,
   },
@@ -493,6 +547,63 @@ const previewCases: PreviewCase[] = [
       <div style="position:fixed;left:56px;top:200px;background:#fff;padding:8px;${LINE}">MenuItem one</div>
     </nav>`,
     expected: 'MenuItem one',
+  },
+  {
+    name: 'a fixed list item escaping overflow:hidden nav',
+    inner: `<nav style="overflow:hidden;height:40px;background:#eee;margin:16px">
+      <ul style="margin:0;padding:0;list-style:none">
+        <li style="position:fixed;left:56px;top:200px;background:#fff;padding:8px;${LINE}"><a href="#go" style="color:#111;text-decoration:none">Fixed Link</a></li>
+      </ul>
+    </nav>`,
+    expected: 'Fixed Link',
+  },
+  {
+    name: 'a fixed span escaping overflow:hidden nav',
+    inner: `<nav style="overflow:hidden;height:40px;background:#eee;margin:16px">
+      <div style="position:fixed;left:56px;top:200px;background:#fff;padding:8px;${LINE}"><span>Fixed Span</span></div>
+    </nav>`,
+    expected: 'Fixed Span',
+  },
+  {
+    name: 'absolute under relative inside overflow:hidden keeps the visible marker',
+    inner: `<div style="overflow:hidden;height:48px;margin:16px;background:#eee">
+      <div style="position:relative;height:48px">
+        <span style="position:absolute;left:16px;top:4px;${LINE}">Shown Marker</span>
+      </div>
+      <p style="margin:0;${LINE}">TRAP clipped</p>
+    </div>`,
+    expected: MARKER,
+  },
+  {
+    name: 'fixed under transform inside overflow:hidden keeps the in-box marker',
+    inner: `<div style="overflow:hidden;height:72px;margin:16px;background:#eee">
+      <div style="transform:translateZ(0)">
+        <span style="position:fixed;left:16px;top:8px;${LINE}">Shown Marker</span>
+      </div>
+      <p style="margin:0;padding-top:120px;${LINE}">TRAP clipped</p>
+    </div>`,
+    expected: MARKER,
+  },
+  {
+    name: 'RTL Hebrew with Latin keeps document order',
+    inner: `<p dir="rtl" style="position:absolute;left:16px;top:28px;${LINE}">שלום FontSnap עולם</p>`,
+    expected: 'שלום FontSnap עולם',
+  },
+  {
+    name: 'RTL Arabic with digits keeps document order',
+    inner: `<p dir="rtl" style="position:absolute;left:16px;top:28px;${LINE}">السعر 250 ريال اليوم</p>`,
+    expected: 'السعر 250 ريال اليوم',
+  },
+  {
+    name: '::first-letter does not invent a space',
+    css: 'p::first-letter{font-size:48px;float:left;line-height:1}',
+    inner: `<p style="position:absolute;left:16px;top:28px;width:520px;margin:0;font:32px/40px sans-serif;color:#111">Once upon a time</p>`,
+    expected: 'Once upon a time',
+  },
+  {
+    name: 'CJK wrap does not invent spaces',
+    inner: `<p style="position:absolute;left:16px;top:28px;width:200px;margin:0;font:28px/36px sans-serif;color:#111;word-break:break-all">日本語の文字です</p>`,
+    expected: '日本語の文字です',
   },
   {
     name: 'a heading under a painted stretched-link button',
@@ -523,6 +634,51 @@ for (const item of previewCases) {
     expect(text).toBe(item.expected);
   });
 }
+
+test('framing the middle of a large pre finishes quickly', async ({
+  context,
+  extensionId,
+  serve,
+}) => {
+  const lines = Array.from({ length: 4000 }, (_, i) => `line-${String(i).padStart(4, '0')} x`).join(
+    '\n',
+  );
+  const origin = await serve(
+    new Map([
+      [
+        '/',
+        {
+          type: 'text/html; charset=utf-8',
+          body: `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="margin:0">
+<pre id="big" style="margin:0;padding:8px;font:14px/18px monospace;white-space:pre">${lines}</pre>
+</body></html>`,
+        },
+      ],
+    ]),
+  );
+  const site = await context.newPage();
+  await site.goto(`${origin}/`);
+  await site.evaluate(() => {
+    window.scrollTo(0, 18 * 2000);
+  });
+  await clickToolbarIcon(context, extensionId, site);
+  await expect(site.locator('div[style*="crosshair"]')).toBeVisible();
+  const opened = context.waitForEvent('page', {
+    predicate: (candidate) => isExtensionPage(candidate.url(), EXTENSION_PAGES.result),
+  });
+  const started = Date.now();
+  await site.mouse.move(20, 120);
+  await site.mouse.down();
+  await site.mouse.move(700, 360, { steps: 4 });
+  await site.mouse.up();
+  const result = await opened;
+  const elapsed = Date.now() - started;
+  await expect(result.locator('#shot')).toBeVisible();
+  const text = await result.locator('#pvText').inputValue();
+  expect(elapsed).toBeLessThan(2000);
+  expect(text.length).toBeLessThanOrEqual(120);
+});
 
 async function previewAround(
   context: BrowserContext,
