@@ -290,6 +290,7 @@ const DOM_MEMBERS = [
       position: 'r',
       transform: 'r',
       filter: 'r',
+      perspective: 'r',
       contain: 'r',
       willChange: 'r',
       autocomplete: 'r',

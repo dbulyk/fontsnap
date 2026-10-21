@@ -14,8 +14,22 @@ function bodyOrRoot(body: HTMLElement | null, root: HTMLElement): HTMLElement {
 const NOT_SHOWN_TAGS = 'textarea, input, select, option, script, style, noscript, template';
 const NOT_SHOWN = `${NOT_SHOWN_TAGS}, :is(${NOT_SHOWN_TAGS}) *`;
 
-/** Name / id / label tokens that mark a field as sensitive. When in doubt, skip. */
-const SENSITIVE_TOKEN = /pass|pwd|pw|pin|cvv|cvc|csc|otp|card|password|пароль/i;
+/** Whole-token names that mark a field as sensitive. Substrings like "Typing" must not match. */
+const SENSITIVE = new Set([
+  'pass',
+  'pwd',
+  'pw',
+  'pin',
+  'cvv',
+  'cvc',
+  'csc',
+  'otp',
+  'card',
+  'password',
+  'пароль',
+]);
+
+type FlowMode = 'fixed' | 'absolute' | 'inflow';
 
 /** The part of `line` inside the rectangle, or null when they do not overlap. */
 function overlap(line: DOMRect, r: Rect): Rect | null {
@@ -112,26 +126,26 @@ function isViewportClipper(el: Element, doc: Document): boolean {
   return el === doc.documentElement || el === doc.body;
 }
 
-/**
- * Whether `ancestor` is a containing block that can clip `owner` via overflow.
- * Fixed: transform/filter/contain/will-change. Absolute: positioned or transform/filter. Else: all.
- */
-function containingBlockFor(ancestor: Element, owner: Element): boolean {
-  const pos = getComputedStyle(owner).position;
-  if (pos === 'fixed') {
-    const style = getComputedStyle(ancestor);
-    return (
-      style.transform !== 'none' ||
-      style.filter !== 'none' ||
-      style.contain === 'paint' ||
-      style.contain === 'strict' ||
-      style.willChange.includes('transform')
-    );
-  }
-  if (pos === 'absolute') {
-    const style = getComputedStyle(ancestor);
-    return style.position !== 'static' || style.transform !== 'none' || style.filter !== 'none';
-  }
+function flowMode(el: Element): FlowMode {
+  const pos = getComputedStyle(el).position;
+  if (pos === 'fixed') return 'fixed';
+  if (pos === 'absolute') return 'absolute';
+  return 'inflow';
+}
+
+/** Whether `style` makes this element a containing block for `position: fixed` descendants. */
+function establishesFixedCB(style: CSSStyleDeclaration): boolean {
+  if (style.transform !== 'none' || style.filter !== 'none') return true;
+  if (style.perspective !== 'none' && style.perspective !== '') return true;
+  if (/(?:^|\s)(?:paint|layout|strict|content)(?:\s|$)/.test(style.contain)) return true;
+  return /(?:^|,)\s*(?:transform|filter|perspective)\s*(?:,|$)/.test(style.willChange);
+}
+
+/** Whether `ancestor` can clip a descendant whose current flow mode is `mode`. */
+function isClipCB(ancestor: Element, mode: FlowMode): boolean {
+  const style = getComputedStyle(ancestor);
+  if (mode === 'fixed') return establishesFixedCB(style);
+  if (mode === 'absolute') return style.position !== 'static' || establishesFixedCB(style);
   return true;
 }
 
@@ -150,7 +164,8 @@ function inTopLayer(el: Element): boolean {
 }
 
 /**
- * The part of `line` inside the frame and the clips that actually contain `owner`.
+ * The part of `line` inside the frame and the clips along the containing-block chain.
+ * Mode switches at each CB so a transform under overflow:hidden can clip fixed descendants.
  * The owner's own clip always applies. Top-layer owners skip ancestor clip.
  */
 function visiblePart(line: DOMRect, frame: Rect, owner: Element, doc: Document): Rect | null {
@@ -162,11 +177,13 @@ function visiblePart(line: DOMRect, frame: Rect, owner: Element, doc: Document):
     if (part === null) return null;
   }
   if (inTopLayer(owner)) return part;
+  let mode = flowMode(owner);
   let current: Element | null = owner.parentElement;
   while (part !== null && current !== null) {
-    if (!isViewportClipper(current, doc) && containingBlockFor(current, owner)) {
+    if (!isViewportClipper(current, doc) && isClipCB(current, mode)) {
       const limit = clipLimit(current);
       if (limit !== null) part = intersect(part, limit);
+      mode = flowMode(current);
     }
     current = current.parentElement;
   }
@@ -206,24 +223,26 @@ function paintsAtPoint(el: Element, cx: number, cy: number): boolean {
 }
 
 /**
- * `pointer-events: none` skips cover only when set on the element itself: computed none while the parent is
- * not none. Inherited none from body (parent also none) must not skip cover. Inline style is not read here
- * (page-process code may not read `.style`); an inline none still shows up in the computed style.
+ * `pointer-events: none` skips cover when the topmost pe:none ancestor is not html/body.
+ * Inherited none from body (top is body) must not skip cover; a label or hero wrapper may.
  */
-function peOwn(el: Element): boolean {
-  const own = getComputedStyle(el).pointerEvents;
-  if (own !== 'none') return false;
-  const parent = el.parentElement;
-  if (parent === null) return true;
-  return getComputedStyle(parent).pointerEvents !== 'none';
+function peSkipsCover(el: Element, doc: Document): boolean {
+  let top: Element | null = null;
+  let current: Element | null = el;
+  while (current !== null) {
+    if (getComputedStyle(current).pointerEvents === 'none') top = current;
+    current = current.parentElement;
+  }
+  if (top === null) return false;
+  return top !== doc.body && top !== doc.documentElement;
 }
 
 /**
- * Hit-testing skips an element with its own `pointer-events: none`, so the stack would blame the layer under a
- * floating label or a hero caption. Those elements are not checked for covering.
+ * Hit-testing skips pe:none text (floating labels, hero captions), so the stack would blame the layer under
+ * them. Those owners are not checked for covering.
  */
 function covered(doc: Document, owner: Element, part: Rect): boolean {
-  if (peOwn(owner)) return false;
+  if (peSkipsCover(owner, doc)) return false;
   const cx = part.x + part.w / 2;
   const cy = part.y + part.h / 2;
   const stack = doc.elementsFromPoint(cx, cy);
@@ -257,23 +276,47 @@ function labelText(doc: Document, el: HTMLInputElement | HTMLTextAreaElement): s
   return parts.join(' ');
 }
 
-/** Fields that must never enter the preview (passwords, cards, OTP, and lookalikes). */
-function sensitiveField(doc: Document, el: HTMLTextAreaElement | HTMLInputElement): boolean {
-  if (el instanceof HTMLInputElement && el.type.toLowerCase() === 'password') return true;
-  if (masked(getComputedStyle(el))) return true;
-  if (/(?:current-password|new-password|one-time-code)/i.test(el.autocomplete)) return true;
-  if (/(?:^|\s)cc-/i.test(el.autocomplete)) return true;
-  if (SENSITIVE_TOKEN.test(el.name) || SENSITIVE_TOKEN.test(el.id)) return true;
-  if (SENSITIVE_TOKEN.test(el.ariaLabel ?? '') || SENSITIVE_TOKEN.test(labelText(doc, el)))
-    return true;
-  if (el instanceof HTMLInputElement) {
-    const kind = el.type.toLowerCase();
-    const numeric = el.inputMode.toLowerCase() === 'numeric' || kind === 'number' || kind === 'tel';
-    if (numeric && el.maxLength >= 0 && el.maxLength <= 8) return true;
-  } else if (el.inputMode.toLowerCase() === 'numeric' && el.maxLength >= 0 && el.maxLength <= 8) {
-    return true;
+/** Split on non-letters, then on camelCase boundaries (userPassword → user, password). */
+function tokensOf(raw: string): string[] {
+  const out: string[] = [];
+  for (const run of raw.split(/[^\p{L}]+/u)) {
+    if (run === '') continue;
+    for (const part of run.split(/(?<=\p{Ll})(?=\p{Lu})|(?<=\p{Lu})(?=\p{Lu}\p{Ll})/u)) {
+      if (part !== '') out.push(part);
+    }
+  }
+  return out;
+}
+
+function hasSensitiveToken(raw: string): boolean {
+  for (const token of tokensOf(raw)) {
+    if (SENSITIVE.has(token.toLowerCase())) return true;
   }
   return false;
+}
+
+function allowedInputType(el: HTMLInputElement): boolean {
+  const kind = el.type.toLowerCase();
+  return kind === 'text' || kind === 'search';
+}
+
+/**
+ * Only plain text/search inputs and textareas with no sensitive markers.
+ * Autocomplete other than empty/off, short maxlength, and whole sensitive tokens all refuse.
+ */
+function fieldAllowed(doc: Document, el: HTMLTextAreaElement | HTMLInputElement): boolean {
+  if (el instanceof HTMLInputElement) {
+    if (!allowedInputType(el)) return false;
+  } else if (!(el instanceof HTMLTextAreaElement)) {
+    return false;
+  }
+  if (masked(getComputedStyle(el))) return false;
+  const ac = el.autocomplete.trim().toLowerCase();
+  if (ac !== '' && ac !== 'off') return false;
+  if (el.maxLength >= 0 && el.maxLength <= 8) return false;
+  if (hasSensitiveToken(el.name) || hasSensitiveToken(el.id)) return false;
+  if (hasSensitiveToken(el.ariaLabel ?? '') || hasSensitiveToken(labelText(doc, el))) return false;
+  return true;
 }
 
 function fieldPiece(
@@ -281,8 +324,7 @@ function fieldPiece(
   el: HTMLTextAreaElement | HTMLInputElement,
   frame: Rect,
 ): string {
-  if (el instanceof HTMLInputElement && el.type.toLowerCase() !== 'text') return '';
-  if (sensitiveField(doc, el)) return '';
+  if (!fieldAllowed(doc, el)) return '';
   if (!styleVisible(el)) return '';
   let boxes = 0;
   let crossed = false;
@@ -312,30 +354,50 @@ function fieldPiece(
   return inside ? clean(el.value) : '';
 }
 
-/** Character offsets `[from, to)` whose boxes meet `line`, or null when none do. */
-function lineOffsets(range: Range, node: Node, line: DOMRect): [number, number] | null {
-  const value = node.nodeValue ?? '';
-  let from = -1;
-  let to = -1;
-  for (let i = 0; i < value.length; i++) {
-    range.setStart(node, i);
-    range.setEnd(node, i + 1);
-    const box = range.getBoundingClientRect();
-    const midY = (box.top + box.bottom) / 2;
-    const midX = (box.left + box.right) / 2;
-    const hit = midY >= line.top && midY <= line.bottom && midX >= line.left && midX <= line.right;
-    if (hit) {
-      if (from < 0) from = i;
-      to = i + 1;
-    } else if (from >= 0) {
-      break;
+/** True when `box`'s center lies inside any of `lines` (or the boxes overlap that line). */
+function charMeetsLines(box: DOMRect, lines: readonly DOMRect[]): boolean {
+  const midX = (box.left + box.right) / 2;
+  const midY = (box.top + box.bottom) / 2;
+  for (const line of lines) {
+    if (midX >= line.left && midX <= line.right && midY >= line.top && midY <= line.bottom) {
+      return true;
     }
+    if (overlap(box, fromDom(line)) !== null) return true;
   }
-  return from < 0 || to < 0 ? null : [from, to];
+  return false;
+}
+
+/** First index whose box can meet Y ≥ `yMin` (assumes top-to-bottom index order). */
+function firstIndexMeetingY(range: Range, node: Node, length: number, yMin: number): number {
+  let lo = 0;
+  let hi = length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    range.setStart(node, mid);
+    range.setEnd(node, mid + 1);
+    if (range.getBoundingClientRect().bottom < yMin) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+/** Last index whose box can meet Y ≤ `yMax` (assumes top-to-bottom index order). */
+function lastIndexMeetingY(range: Range, node: Node, length: number, yMax: number): number {
+  let lo = 0;
+  let hi = length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    range.setStart(node, mid);
+    range.setEnd(node, mid + 1);
+    if (range.getBoundingClientRect().top <= yMax) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo - 1;
 }
 
 /**
- * Text of the node whose line boxes meet the frame. Only those lines are kept (not the whole nodeValue).
+ * Text of the node whose line boxes meet the frame. Characters are kept in document order with no
+ * invented separators (RTL, ::first-letter, CJK). The char scan is bounded to the Y span of visible lines.
  */
 function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string {
   const value = node.nodeValue ?? '';
@@ -344,18 +406,38 @@ function textPiece(doc: Document, range: Range, node: Node, frame: Rect): string
   if (owner.matches(NOT_SHOWN)) return '';
   if (!styleVisible(owner)) return '';
   range.selectNodeContents(node);
+  if (overlap(range.getBoundingClientRect(), frame) === null) return '';
   const lines: DOMRect[] = [];
-  for (const line of range.getClientRects()) lines.push(line);
-  const parts: string[] = [];
+  let anyOverlap = false;
+  for (const line of range.getClientRects()) {
+    lines.push(line);
+    if (overlap(line, frame) !== null) anyOverlap = true;
+  }
+  if (!anyOverlap) return '';
+  const visibleLines: DOMRect[] = [];
   for (const line of lines) {
     const part = visiblePart(line, frame, owner, doc);
     if (part === null || covered(doc, owner, part)) continue;
-    const offsets = lineOffsets(range, node, line);
-    if (offsets === null) continue;
-    const slice = value.slice(offsets[0], offsets[1]);
-    if (slice.trim()) parts.push(slice);
+    visibleLines.push(line);
   }
-  return parts.length === 0 ? '' : clean(parts.join(' '));
+  if (visibleLines.length === 0) return '';
+  let yMin = Infinity;
+  let yMax = -Infinity;
+  for (const line of visibleLines) {
+    if (line.top < yMin) yMin = line.top;
+    if (line.bottom > yMax) yMax = line.bottom;
+  }
+  const length = value.length;
+  const from = firstIndexMeetingY(range, node, length, yMin);
+  const to = lastIndexMeetingY(range, node, length, yMax);
+  if (from > to || from >= length) return '';
+  let out = '';
+  for (let i = from; i <= to; i++) {
+    range.setStart(node, i);
+    range.setEnd(node, i + 1);
+    if (charMeetsLines(range.getBoundingClientRect(), visibleLines)) out += value[i] ?? '';
+  }
+  return out === '' ? '' : clean(out);
 }
 
 // visible text of the page under the dragged rectangle (used as the preview sample when no selection is in it)
