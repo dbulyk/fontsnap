@@ -10,4 +10,4 @@ select = ["E", "F", "W", "I", "B"]
 testpaths = ["tests/python"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["fontsnap_ref"]
+known-first-party = ["fontsnap_ref", "train"]

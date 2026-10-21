@@ -1,0 +1,82 @@
+source	family_id	family	reason	dropped_classes	note
+fontsource	firago	FiraGO	alias	18	render alias of GF Fira Sans
+fontsource	geist-sans	Geist Sans	alias	9	render alias of GF Geist
+fontsource	noto-mono	Noto Mono	alias	1	render alias of GF Noto Sans Mono
+fontsource	apfel-grotezk	Apfel Grotezk	duplicate-source	2	use the Collletttivo family (5 cuts)
+fontsource	fusion-kai-j	Fusion Kai J	fusion-merged	1	merged into fusion-kai-g
+fontsource	fusion-kai-t	Fusion Kai T	fusion-merged	1	merged into fusion-kai-g
+fontsource	fusion-pixel-10px-monospaced-kr	Fusion Pixel 10px Monospaced KR	fusion-merged	1	merged into fusion-pixel-10px-monospaced-jp
+fontsource	fusion-pixel-10px-monospaced-sc	Fusion Pixel 10px Monospaced SC	fusion-merged	1	merged into fusion-pixel-10px-monospaced-jp
+fontsource	fusion-pixel-10px-monospaced-tc	Fusion Pixel 10px Monospaced TC	fusion-merged	1	merged into fusion-pixel-10px-monospaced-jp
+fontsource	fusion-pixel-10px-proportional-kr	Fusion Pixel 10px Proportional KR	fusion-merged	1	merged into fusion-pixel-10px-proportional-jp
+fontsource	fusion-pixel-10px-proportional-sc	Fusion Pixel 10px Proportional SC	fusion-merged	1	merged into fusion-pixel-10px-proportional-jp
+fontsource	fusion-pixel-10px-proportional-tc	Fusion Pixel 10px Proportional TC	fusion-merged	1	merged into fusion-pixel-10px-proportional-jp
+fontsource	fusion-pixel-12px-monospaced-kr	Fusion Pixel 12px Monospaced KR	fusion-merged	1	merged into fusion-pixel-12px-monospaced-jp
+fontsource	fusion-pixel-12px-monospaced-sc	Fusion Pixel 12px Monospaced SC	fusion-merged	1	merged into fusion-pixel-12px-monospaced-jp
+fontsource	fusion-pixel-12px-monospaced-tc	Fusion Pixel 12px Monospaced TC	fusion-merged	1	merged into fusion-pixel-12px-monospaced-jp
+fontsource	fusion-pixel-12px-proportional-kr	Fusion Pixel 12px Proportional KR	fusion-merged	1	merged into fusion-pixel-12px-proportional-jp
+fontsource	fusion-pixel-12px-proportional-sc	Fusion Pixel 12px Proportional SC	fusion-merged	1	merged into fusion-pixel-12px-proportional-jp
+fontsource	fusion-pixel-12px-proportional-tc	Fusion Pixel 12px Proportional TC	fusion-merged	1	merged into fusion-pixel-12px-proportional-jp
+fontsource	fusion-pixel-8px-monospaced-kr	Fusion Pixel 8px Monospaced KR	fusion-merged	1	merged into fusion-pixel-8px-monospaced-jp
+fontsource	fusion-pixel-8px-monospaced-sc	Fusion Pixel 8px Monospaced SC	fusion-merged	1	merged into fusion-pixel-8px-monospaced-jp
+fontsource	fusion-pixel-8px-monospaced-tc	Fusion Pixel 8px Monospaced TC	fusion-merged	1	merged into fusion-pixel-8px-monospaced-jp
+fontsource	fusion-pixel-8px-proportional-kr	Fusion Pixel 8px Proportional KR	fusion-merged	1	merged into fusion-pixel-8px-proportional-jp
+fontsource	fusion-pixel-8px-proportional-sc	Fusion Pixel 8px Proportional SC	fusion-merged	1	merged into fusion-pixel-8px-proportional-jp
+fontsource	fusion-pixel-8px-proportional-tc	Fusion Pixel 8px Proportional TC	fusion-merged	1	merged into fusion-pixel-8px-proportional-jp
+fontsource	aileron	Aileron	non-ofl	12	catalog license CC0-1.0
+fontsource	clear-sans	Clear Sans	non-ofl	10	catalog license Apache-2.0
+fontsource	comic-mono	Comic Mono	non-ofl	2	catalog license mit
+fontsource	dejavu-math	DejaVu Math	non-ofl	1	npm LICENSE is not OFL-1.1; Fontsource metadata says OFL-1.1
+fontsource	dejavu-mono	DejaVu Mono	non-ofl	4	npm LICENSE is not OFL-1.1; Fontsource metadata says OFL-1.1
+fontsource	dejavu-sans	DejaVu Sans	non-ofl	4	npm LICENSE is not OFL-1.1; Fontsource metadata says OFL-1.1
+fontsource	dejavu-serif	DejaVu Serif	non-ofl	4	npm LICENSE is not OFL-1.1; Fontsource metadata says OFL-1.1
+fontsource	metropolis	Metropolis	non-ofl	18	catalog license Unlicense
+fontsource	bravura	Bravura	unsuitable	1	music notation (SMuFL), not text
+fontsource	bravura-text	Bravura Text	unsuitable	1	music notation (SMuFL), not text
+fontsource	dseg-weather	DSEG Weather	unsuitable	1	segment display, not text
+fontsource	dseg14-classic	DSEG14 Classic	unsuitable	6	segment display, not text
+fontsource	dseg14-classic-mini	DSEG14 Classic Mini	unsuitable	6	segment display, not text
+fontsource	dseg14-modern	DSEG14 Modern	unsuitable	6	segment display, not text
+fontsource	dseg14-modern-mini	DSEG14 Modern Mini	unsuitable	6	segment display, not text
+fontsource	dseg7-classic	DSEG7 Classic	unsuitable	6	segment display, not text
+fontsource	dseg7-classic-mini	DSEG7 Classic Mini	unsuitable	6	segment display, not text
+fontsource	dseg7-modern	DSEG7 Modern	unsuitable	6	segment display, not text
+fontsource	dseg7-modern-mini	DSEG7 Modern Mini	unsuitable	6	segment display, not text
+fontsource	dseg7-segg-chan	DSEG7 SEGG CHAN	unsuitable	1	segment display, not text
+fontsource	dseg7-segg-chan-mini	DSEG7 SEGG CHAN Mini	unsuitable	1	segment display, not text
+fontsource	unifont	Unifont	unsuitable	1	bitmap coverage font
+fontsource	unifontex	UnifontEX	unsuitable	1	bitmap coverage font
+fontsource	yakuhanjp	YakuHanJP	unsuitable	7	CJK punctuation only
+fontsource	yakuhanjps	YakuHanJPs	unsuitable	7	CJK punctuation only
+fontsource	yakuhanmp	YakuHanMP	unsuitable	7	CJK punctuation only
+fontsource	yakuhanmps	YakuHanMPs	unsuitable	7	CJK punctuation only
+fontsource	yakuhanrp	YakuHanRP	unsuitable	7	CJK punctuation only
+fontsource	yakuhanrps	YakuHanRPs	unsuitable	7	CJK punctuation only
+collletttivo	cltoools	CLTools	not-a-font	0	repository is not a typeface
+collletttivo	word-o-mat	Word-o-mat	not-a-font	0	repository is not a typeface
+velvetyne	lack	Lack	no-license	4	no license file in the repository
+velvetyne	fungal	Fungal	non-ofl	21	Bitstream Vera / DejaVu license
+velvetyne	pilowlava3d	Pilowlava	non-ofl	0	Free Art License, no shipped font files
+velvetyne	velvetyne-libre-friends	Velvetyne Libre Friends	not-a-font	0	no font files
+velvetyne	velvetyne-standard-character-set	Velvetyne Standard Character Set	not-a-font	0	MIT character-set specimen, not a font
+velvetyne	cantique	Cantique	off-catalog	1	foundry catalog does not list this family
+velvetyne	happy-times-at-the-ikob	Happy Times at the IKOB	off-catalog	3	foundry catalog does not list this family
+velvetyne	imago-mundi-mei	Imago Mundi Mei	off-catalog	1	foundry catalog does not list this family
+velvetyne	sporting-grotesque	Sporting Grotesque	off-catalog	2	foundry catalog does not list this family
+velvetyne	velvetyne-notdef	Velvetyne Notdef	unsuitable	1	.notdef service font, no license file
+velvetyne	bianzhidai	bianzhidai	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	cirruscumulus	cirruscumulus	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	combat	combat	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	degheest	degheest	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	hyper-scrypt	hyper-scrypt	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	karrik	karrik	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	lithops	lithops	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	outward	outward	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	ouvrieres	ouvrieres	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	picnic	picnic	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	resistance	resistance	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	steps-mono	steps-mono	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	terminal-grotesque	terminal-grotesque	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	tiny	tiny	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	typefesse	typefesse	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
+velvetyne	velvelyne	velvelyne	waiting-on-site		catalog family with no foundry repository while velvetyne.fr is down
