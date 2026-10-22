@@ -52,8 +52,9 @@ OFL_V1_NEW_BIAS = -80.0
 OFL_V1_SUPPRESS_WEIGHT = 1.0
 OFL_V1_SUPPRESS_MARGIN = 8.0
 # Warm-up batches excluded from calibrate samples/sec (fetch/workers/compile).
-CALIBRATE_WARMUP_STEPS = 4
-CALIBRATE_STEPS = 16
+# 8+64 keeps cudnn/AMP past the cold first steps; 16 timed steps overstated throughput.
+CALIBRATE_WARMUP_STEPS = 8
+CALIBRATE_STEPS = 64
 ASSUMED_FLOOR_SAMPLES_PER_SEC = Decimal("5")
 RTX_4090_USD_PER_HOUR = Decimal("0.89")
 TRAIN_SPEND_CAP_USD = Decimal("17.00")
@@ -64,6 +65,8 @@ SETUP_SLACK_SECONDS = 20 * 60
 FONT_FETCH_SLACK_SECONDS = 3 * 60
 # Leave room inside the watchdog for artifact send after train.
 ARTIFACT_TRANSFER_SECONDS = 10 * 60
+# Calibrate rate handover: runpodctl send waits for client receive (ACK) then self-deletes.
+HANDOVER_ACK_SECONDS = 3 * 60
 
 
 @dataclass(frozen=True, slots=True)

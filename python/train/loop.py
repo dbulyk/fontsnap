@@ -339,6 +339,16 @@ def train(cfg: TrainConfig) -> Path:
         torch.cuda.synchronize()
     elapsed = max(time.perf_counter() - started, 1e-9)
     if cfg.recipe == "calibrate":
+        # Fingerprint so live logs prove calibrate matches ofl-v1 step B knobs.
+        print(
+            "fontsnap_calibrate_recipe"
+            f" unfreeze_from_block={cfg.unfreeze_from_block}"
+            f" batch={cfg.batch_size}"
+            f" amp={int(cfg.amp)}"
+            f" backbone_lr={cfg.backbone_lr}"
+            f" steps={cfg.steps}",
+            flush=True,
+        )
         print(f"samples/sec {samples / elapsed:.6f}", flush=True)
         if device.type == "cuda":
             peak = torch.cuda.max_memory_allocated() / (1024**3)
