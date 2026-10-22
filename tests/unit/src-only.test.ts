@@ -15,12 +15,12 @@ import { ORT_EXTERNAL } from '../../scripts/lib/vendor';
 import { bundleKinds, sharedConfig, type BundleKind } from '../../vite.shared';
 
 let root: string;
-const roots: string[] = [];
+const fixtureRoots: string[] = [];
 
 /** A throwaway project: src/, scripts/, node_modules/. Returns absolute paths by relative name. */
 function project(files: Record<string, string>): string {
   const dir = mkdtempSync(join(tmpdir(), 'src-only-'));
-  roots.push(dir);
+  fixtureRoots.push(dir);
   for (const [name, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, name)), { recursive: true });
     writeFileSync(join(dir, name), text);
@@ -38,7 +38,7 @@ beforeEach(() => {
   symlinkSync(join(root, 'src/a.ts'), join(root, 'scripts/inner.ts'));
 });
 afterEach(() => {
-  for (const dir of roots.splice(0)) rmSync(dir, { recursive: true, force: true });
+  for (const dir of fixtureRoots.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
 const dirs = () => ({
@@ -305,8 +305,9 @@ async function buildDetailed(
   entry: string,
   buildOptions: BuildOptions = {},
 ): Promise<BuiltProject> {
+  // Do not delete these dirs in afterEach: Vite can still resolve HTML scripts after
+  // build() rejects on an outside asset (CI: unhandled "Failed to resolve ./main.ts").
   const dir = mkdtempSync(join(tmpdir(), 'src-only-build-'));
-  roots.push(dir);
   for (const [name, text] of Object.entries(typeof files === 'function' ? files(dir) : files)) {
     mkdirSync(dirname(join(dir, name)), { recursive: true });
     writeFileSync(join(dir, name), text);
@@ -557,11 +558,17 @@ function assetText(name: string, padding: number): string {
 }
 
 function assetProject(row: AssetCase, padding: number, where: string): Record<string, string> {
-  const body = `${row.html?.(where) ?? ''}<script type="module" src="./main.ts"></script>`;
+  // HTML-only rows use an inline module so Vite does not keep a dangling resolve of
+  // ./main.ts after an outside-asset failure (unhandled rejection once the temp dir is gone).
+  const needsMain = row.main !== undefined || row.css !== undefined;
+  const script = needsMain
+    ? '<script type="module" src="./main.ts"></script>'
+    : '<script type="module">export {};</script>';
+  const body = `${row.html?.(where) ?? ''}${script}`;
   const imports = row.css ? "import './style.css';\n" : '';
   return {
     'src/index.html': `<!doctype html><html><body>${body}</body></html>`,
-    'src/main.ts': `${imports}${row.main?.(where) ?? 'export {};'}`,
+    ...(needsMain ? { 'src/main.ts': `${imports}${row.main?.(where) ?? 'export {};'}` } : {}),
     ...(row.css ? { 'src/style.css': row.css(where) } : {}),
     [`scripts/${row.asset}`]: assetText(row.asset, padding),
     [`src/assets/${row.asset}`]: assetText(row.asset, padding),

@@ -92,6 +92,44 @@ def test_fontsource_slug_uses_display_kebab_case():
     assert any(family_for_class(i) == "open-sans" for i in range(BASE_CLASSES))
 
 
+def test_load_replay_fonts_one_regular_class_per_family(tmp_path, monkeypatch):
+    """B1: latin-400 bytes attach to the Regular class only, not every sibling."""
+    import json
+
+    import yaml
+
+    from train.model import BASE_CLASSES
+    from train.paths import MODEL_DIR, ROOT
+    from train.replay_gf import load_replay_fonts, regular_class_for_family
+
+    meta = json.loads((MODEL_DIR / "meta.json").read_text(encoding="utf-8"))
+    names = yaml.safe_load((ROOT / "python" / "data" / "classes_v2.yaml").read_text(encoding="utf-8"))[
+        "classnames"
+    ]
+    # Inconsolata: many cuts, one Regular that matches latin-400-normal.
+    fam = next(i for i, name in enumerate(meta["display"]) if name == "Inconsolata")
+    members = [i for i, f in enumerate(meta["classFam"]) if f == fam]
+    assert len(members) > 2
+    chosen = regular_class_for_family(fam, members)
+    assert chosen is not None
+    assert names[chosen] == "Inconsolata-Regular"
+
+    payload = b"\x00\x01\x00\x00" + b"regular-only"
+    monkeypatch.setattr(
+        "train.replay_gf.load_gf_font",
+        lambda family, root=None, *, fetch=True: payload,
+    )
+    fonts = load_replay_fonts(fetch=False, root=tmp_path, class_indices=range(BASE_CLASSES), workers=1)
+    assert chosen in fonts
+    sibling = next(i for i in members if i != chosen)
+    assert sibling not in fonts
+    # No family contributes more than one class.
+    by_fam: dict[int, list[int]] = {}
+    for class_index in fonts:
+        by_fam.setdefault(int(meta["classFam"][class_index]), []).append(class_index)
+    assert all(len(group) == 1 for group in by_fam.values())
+
+
 def test_make_ofl_loader_replays_with_real_gf_bytes(tmp_path, monkeypatch):
     pytest.importorskip("torch")
     payload = b"\x00\x01\x00\x00" + b"gf-replay"

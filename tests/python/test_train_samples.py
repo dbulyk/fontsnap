@@ -279,6 +279,7 @@ def test_prepared_chw_textcrop_pack_differs_from_raw():
 
 def test_fontsnap_synth_stays_on_raw_synth_prep(monkeypatch):
     """Evidence (r6): pack/crop on CE pool hurt realset3; new-class stays raw."""
+    pytest.importorskip("torch")
     seen: list[str | None] = []
 
     def _fake_prepared(s, font_bytes=None, *, instance=(), textcrop=None):

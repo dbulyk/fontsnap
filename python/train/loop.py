@@ -149,6 +149,24 @@ def _block_index(name: str) -> int | None:
     return int(part)
 
 
+def threat_softplus(logits, labels, *, margin: float, weight: float):
+    """Penalty when a new logit threatens the labeled old class on GF replay.
+
+    Uses the true replay label's logit, not amax over old rows: under partial
+    unfreeze, amax would lift a wrong old class that happens to score higher.
+    """
+    import torch.nn.functional as F
+
+    replay = labels < BASE_CLASSES
+    if not bool(replay.any()):
+        return logits.new_zeros(())
+    replay_labels = labels[replay]
+    replay_logits = logits[replay]
+    old_true = replay_logits.gather(1, replay_labels.unsqueeze(1)).squeeze(1)
+    max_new = replay_logits[:, BASE_CLASSES:].amax(dim=-1)
+    return weight * F.softplus(max_new - old_true + margin).mean()
+
+
 def apply_partial_unfreeze(model, *, from_block: int) -> None:
     """Train classifier + blocks[from_block:] + conv_head; freeze earlier stages.
 
@@ -260,13 +278,12 @@ def train(cfg: TrainConfig) -> Path:
         logits = model(inputs)
         loss = F.cross_entropy(logits, labels)
         if use_margin:
-            replay = labels < BASE_CLASSES
-            if bool(replay.any()):
-                replay_logits = logits[replay]
-                max_old = replay_logits[:, :BASE_CLASSES].amax(dim=-1)
-                max_new = replay_logits[:, BASE_CLASSES:].amax(dim=-1)
-                # Fire only when a new logit threatens the old answer on GF replay.
-                loss = loss + cfg.suppress_weight * F.softplus(max_new - max_old + cfg.suppress_margin).mean()
+            loss = loss + threat_softplus(
+                logits,
+                labels,
+                margin=cfg.suppress_margin,
+                weight=cfg.suppress_weight,
+            )
         return loss
 
     # Build loader (font fetch + workers) before the calibrate timer; warm-up

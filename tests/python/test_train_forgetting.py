@@ -174,9 +174,7 @@ def test_replay_margin_suppress_in_loop_source():
     from train import loop
 
     src = inspect.getsource(loop.train)
-    assert "softplus" in src
-    assert "max_new" in src and "max_old" in src
-    assert "labels < BASE_CLASSES" in src
+    assert "threat_softplus" in src
     assert "web_iter" not in src
     assert "web_bank" not in src
     assert "logsumexp" not in src
@@ -184,6 +182,36 @@ def test_replay_margin_suppress_in_loop_source():
     assert "apply_partial_unfreeze" in src
     # One call site only (import + call); no second model for LwF.
     assert src.count("load_efficientnet_b3_from_onnx(") == 1
+    helper = inspect.getsource(loop.threat_softplus)
+    assert "gather" in helper
+    assert "amax" in helper
+    assert ".amax(dim=-1)" in helper
+    assert "[:BASE_CLASSES].amax" not in helper
+
+
+def test_threat_softplus_grads_hit_labeled_old_class_not_amax_winner():
+    """B1: under unfreeze, softplus must pull the true label, not a wrong old top-1."""
+    pytest.importorskip("torch")
+    import torch
+
+    from train.loop import threat_softplus
+    from train.model import BASE_CLASSES
+
+    n_new = 4
+    margin = 8.0
+    logits = torch.zeros(1, BASE_CLASSES + n_new, requires_grad=True)
+    label = 11
+    wrong = 10
+    with torch.no_grad():
+        logits[0, wrong] = 3.0
+        logits[0, label] = 1.0
+        logits[0, BASE_CLASSES] = 3.0 + margin - 0.5
+    labels = torch.tensor([label])
+    threat_softplus(logits, labels, margin=margin, weight=1.0).backward()
+    grad = logits.grad[0]
+    assert float(grad[label]) < -0.5
+    assert abs(float(grad[wrong])) < 1e-5
+    assert float(grad[BASE_CLASSES]) > 0.5
 
 
 def test_apply_partial_unfreeze_trainability():

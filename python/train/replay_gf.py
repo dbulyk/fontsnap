@@ -3,8 +3,10 @@
 meta.json maps each of the 3665 shipped classes to a family; most are in Google
 Fonts. We pull a static latin-400 cut from the Fontsource jsDelivr CDN (same host
 pattern as phase-1 downloads) and cache it under out/font-cache by content sha256.
-One regular cut per family is enough: old head rows stay frozen, and CE on these
-images only has to push *new* rows down on old-looking features.
+
+One latin-400 file matches one Regular (or upright variable) class per family.
+Replay keeps that single class index so CE and softplus train the backbone toward
+the cut that was actually rendered, not Bold/Light/Italic siblings.
 
 Fontsource package ids are kebab-case (open-sans), not the compressed fam keys in
 meta.json (opensans). Slugs come from meta display names.
@@ -20,14 +22,18 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+import yaml
+
 from train.cache import HashMismatch, cache_root, read_verified, store_bytes
 from train.model import BASE_CLASSES
-from train.paths import MODEL_DIR, assert_under_out
+from train.paths import MODEL_DIR, ROOT, assert_under_out
 from train.registry import sha256_hex
 
 _CDN = "https://cdn.jsdelivr.net/fontsource/fonts/{family}@latest/latin-400-normal.ttf"
 _UA = "fontsnap-train/0 (ofl-v1 replay; +https://github.com/dbulyk/fontsnap)"
 _SLUG = re.compile(r"[^a-z0-9]+")
+_COMPACT = re.compile(r"[^a-z0-9]")
+_CLASSES_YAML = ROOT / "python" / "data" / "classes_v2.yaml"
 # Parallel fetch keeps cold calibrate/train setup inside the pod watchdog.
 _FETCH_WORKERS = 8
 _FETCH_TIMEOUT_SECONDS = 20
@@ -37,6 +43,15 @@ _FETCH_TIMEOUT_SECONDS = 20
 def _meta() -> dict:
     path = MODEL_DIR / "meta.json"
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+@lru_cache(maxsize=1)
+def _classnames() -> tuple[str, ...]:
+    blob = yaml.safe_load(_CLASSES_YAML.read_text(encoding="utf-8"))
+    names = tuple(str(x) for x in blob["classnames"])
+    if len(names) != BASE_CLASSES:
+        raise RuntimeError(f"classnames length {len(names)} != BASE_CLASSES {BASE_CLASSES}")
+    return names
 
 
 def fontsource_slug(display_name: str) -> str:
@@ -56,6 +71,38 @@ def family_for_class(class_index: int) -> str | None:
     if not meta["inGF"][fam_index]:
         return None
     return fontsource_slug(str(meta["display"][fam_index]))
+
+
+def _compact(name: str) -> str:
+    return _COMPACT.sub("", name.lower())
+
+
+def regular_class_for_family(fam_index: int, members: list[int]) -> int | None:
+    """Class index whose face matches latin-400-normal, or None when none is clear."""
+    if not members:
+        return None
+    names = _classnames()
+    exact = [i for i in members if names[i].endswith("-Regular")]
+    if exact:
+        fam_key = _compact(str(_meta()["fams"][fam_index]))
+
+        def score(class_index: int) -> tuple[int, int, int]:
+            stem = names[class_index][: -len("-Regular")]
+            return (0 if _compact(stem) == fam_key else 1, len(names[class_index]), class_index)
+
+        return sorted(exact, key=score)[0]
+    upright_var = [
+        i
+        for i in members
+        if "[" in names[i] and "Italic" not in names[i] and "Oblique" not in names[i]
+    ]
+    if len(upright_var) == 1:
+        return upright_var[0]
+    if len(upright_var) > 1:
+        return sorted(upright_var)[0]
+    if len(members) == 1:
+        return members[0]
+    return None
 
 
 def gf_font_url(family: str) -> str:
@@ -103,15 +150,26 @@ def load_replay_fonts(
     class_indices: range | None = None,
     workers: int = _FETCH_WORKERS,
 ) -> dict[int, bytes]:
-    """Map old class index → font bytes for every in-GF class that downloads."""
+    """Map one Regular-class index per in-GF family → latin-400 font bytes."""
     indices = range(BASE_CLASSES) if class_indices is None else class_indices
+    meta = _meta()
+    by_family: dict[int, list[int]] = {}
+    for class_index in indices:
+        if not 0 <= class_index < BASE_CLASSES:
+            continue
+        fam_index = int(meta["classFam"][class_index])
+        if not meta["inGF"][fam_index]:
+            continue
+        by_family.setdefault(fam_index, []).append(class_index)
+
     class_to_family: dict[int, str] = {}
     families: list[str] = []
     seen: set[str] = set()
-    for class_index in indices:
-        family = family_for_class(class_index)
-        if family is None:
+    for fam_index, members in by_family.items():
+        class_index = regular_class_for_family(fam_index, members)
+        if class_index is None:
             continue
+        family = fontsource_slug(str(meta["display"][fam_index]))
         class_to_family[class_index] = family
         if family not in seen:
             seen.add(family)
