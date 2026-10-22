@@ -9,12 +9,12 @@ start command as entrypoint and cmd. v1 called that command dockerStartCmd. v2 s
 
 The pod fetches this repository at the commit git rev-parse HEAD returned when the plan was
 built, installs train deps, and runs the work on the GPU. A background sleep+delete watchdog
-covers the whole lifetime (setup + train + log settle). Calibrate prints samples/sec only
-when that command exits 0, sleeps so the client can scrape logs, then runs runpodctl pod
-delete $RUNPOD_POD_ID. A nonzero train still self-deletes but never prints samples/sec. The
-client stops and deletes the pod in a finally block on every exit, including SIGINT, SIGTERM,
-SIGHUP, and unexpected exceptions while polling. A failed delete prints the pod id and a
-manual DELETE command, records DELETE FAILED, and exits nonzero.
+covers the script lifetime (max_runtime minus image-pull slack). Self-delete tries legacy
+runpodctl remove pod, then runpodctl pod delete, then DELETE via the pod-scoped
+RUNPOD_API_KEY Runpod injects (never our client key), then runpodctl stop pod. Each call has
+a timeout; PID 1 retries with backoff and does not exit until a delete succeeds, so a failed
+delete cannot loop into another training run. Calibrate prints samples/sec only on exit 0.
+The client stops and deletes the pod in a finally block on every exit.
 
 Free-phase command:
 
@@ -51,6 +51,9 @@ from train.paths import ROOT, assert_under_out
 API = "https://api.runpod.io/v2"
 _PUBLIC_REPO = "https://github.com/dbulyk/fontsnap.git"
 _LOG_SETTLE_SECONDS = 45
+# Image pull / provision happens before the entrypoint; billing starts at create.
+_PROVISION_SLACK_SECONDS = 5 * 60
+_SELF_DELETE_CALL_TIMEOUT = 30
 PLAN_CALIBRATE = "python -m train.runpod plan --mode calibrate"
 LIVE_CALIBRATE = "FONTSNAP_RUNPOD_LIVE=1 python -m train.runpod watch --mode calibrate"
 _REJECT = ("--api-key", "--apikey")
@@ -254,9 +257,49 @@ def pinned_commit() -> str:
 
 
 def _self_delete_deadline(spec: RunPodJobSpec) -> int:
-    # Setup (apt/git/pip) + train + optional log settle must all finish before this fires.
-    settle = _LOG_SETTLE_SECONDS if spec.mode is JobMode.CALIBRATE else 0
-    return spec.max_runtime_seconds + settle + 60
+    # Entrypoint starts after image pull; reserve slack so create→delete stays in the spend window.
+    return max(60, spec.max_runtime_seconds - _PROVISION_SLACK_SECONDS)
+
+
+def self_delete_shell() -> str:
+    """Shell that keeps trying until this pod is gone.
+
+    runpodctl is not in the pytorch image layers; the RunPod host injects it plus a
+    pod-scoped RUNPOD_API_KEY. Prefer legacy `remove pod` (runpodctl 1.x and hidden
+    legacy on 2+/3+), then `pod delete`, then REST DELETE (Bearer via curl -H @-, not
+    argv), then `stop pod` to cut GPU billing. Every external call has a timeout.
+    """
+    ok = "|".join(str(code) for code in sorted(_DELETE_OK))
+    t = _SELF_DELETE_CALL_TIMEOUT
+    return (
+        "_fontsnap_self_delete() {\n"
+        f'  timeout {t} runpodctl remove pod "$RUNPOD_POD_ID" >/dev/null 2>&1 && return 0\n'
+        f'  timeout {t} runpodctl pod delete "$RUNPOD_POD_ID" >/dev/null 2>&1 && return 0\n'
+        '  if [ -n "${RUNPOD_API_KEY:-}" ]; then\n'
+        "    _fs_code=$(\n"
+        '      printf "Authorization: Bearer %s\\n" "$RUNPOD_API_KEY" |\n'
+        f'      curl -sS --max-time {t} -o /dev/null -w "%{{http_code}}" -X DELETE -H @- '
+        f'"{API}/pods/$RUNPOD_POD_ID" || true\n'
+        "    )\n"
+        f'    case "$_fs_code" in {ok}) return 0 ;; esac\n'
+        "  fi\n"
+        f'  timeout {t} runpodctl stop pod "$RUNPOD_POD_ID" >/dev/null 2>&1 || true\n'
+        '  echo "fontsnap: self-delete failed for $RUNPOD_POD_ID" >&2\n'
+        "  return 1\n"
+        "}\n"
+        "_fontsnap_until_deleted() {\n"
+        "  _fs_delay=1\n"
+        "  while true; do\n"
+        "    if _fontsnap_self_delete; then\n"
+        "      return 0\n"
+        "    fi\n"
+        '    sleep "$_fs_delay"\n'
+        '    if [ "$_fs_delay" -lt 60 ]; then\n'
+        "      _fs_delay=$((_fs_delay * 2))\n"
+        "    fi\n"
+        "  done\n"
+        "}\n"
+    )
 
 
 def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
@@ -264,22 +307,23 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError(f"bad commit pin: {sha!r}")
     deadline = _self_delete_deadline(spec)
+    settle = _LOG_SETTLE_SECONDS if spec.mode is JobMode.CALIBRATE else 0
     if spec.mode is JobMode.CALIBRATE:
         train = f"python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
-        on_ok = f"  cat /tmp/fontsnap-train.out\n  sleep {_LOG_SETTLE_SECONDS}\n"
+        on_ok = f"  cat /tmp/fontsnap-train.out\n  sleep {settle}\n"
     else:
         train = "python -m train.loop --recipe ofl-v1 --device cuda"
         on_ok = "  cat /tmp/fontsnap-train.out\n"
-    # Watchdog first: if apt/git/pip/train hang and the client is dead, the pod still deletes.
-    # Fetch the pinned full sha (short shas are rejected). Hold stdout until exit 0.
+    # Watchdog first. Never exit until delete succeeds — no restart loop, no re-train.
     return (
         "set -u\n"
-        f'(sleep {deadline}; runpodctl pod delete "$RUNPOD_POD_ID") &\n'
+        f"{self_delete_shell()}"
+        f"(sleep {deadline}; _fontsnap_until_deleted) &\n"
         "WATCHDOG_PID=$!\n"
         "trap 'kill $WATCHDOG_PID 2>/dev/null || true' EXIT\n"
         "export DEBIAN_FRONTEND=noninteractive\n"
         "apt-get update -qq >/dev/null\n"
-        "apt-get install -y -qq git git-lfs >/dev/null\n"
+        "apt-get install -y -qq git git-lfs curl >/dev/null\n"
         "git lfs install --skip-repo >/dev/null\n"
         "rm -rf /tmp/fontsnap\n"
         "mkdir -p /tmp/fontsnap\n"
@@ -298,7 +342,7 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
         'if [ "$status" -eq 0 ]; then\n'
         f"{on_ok}"
         "fi\n"
-        'runpodctl pod delete "$RUNPOD_POD_ID"\n'
+        "_fontsnap_until_deleted\n"
         'exit "$status"\n'
     )
 
@@ -716,6 +760,8 @@ def _watch(spec: RunPodJobSpec) -> int:
         raise SystemExit(2)
     if _over_calibrate_cap(spec):
         raise SystemExit(3)
+    # Validate the pin before any network call so a bad sha is not exit-4 silence.
+    pinned_commit()
     key = api_key()
     holder = {"cleaning": False}
     pod_id: str | None = None
@@ -872,6 +918,9 @@ def main(argv: list[str] | None = None) -> int:
                 _report_delete_failed(pod_id)
                 return 4
             return 0
+    except ValueError as err:
+        print(err, file=sys.stderr)
+        return 4
     except SystemExit as err:
         code = err.code
         return 0 if code is None else int(code)
