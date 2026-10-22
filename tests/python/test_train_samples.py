@@ -299,6 +299,7 @@ def test_getitem_returns_a_tensor_when_torch_is_installed():
 
 
 def test_make_loader_passes_records_so_cyrillic_appears():
+    pytest.importorskip("torch")
     from collections import Counter
 
     from train.dataset import make_loader
@@ -343,7 +344,10 @@ def test_fetch_stores_cas_bytes_the_loader_can_read(monkeypatch):
 
 
 def test_adwaita_weight_instances_render_distinct_glyphs(monkeypatch):
-    from train.inventory import read_font_bytes
+    pytest.importorskip("fontTools")
+    from dataclasses import replace
+
+    from train import render as render_mod
     from train.registry import load_manifest
 
     records = load_manifest()
@@ -352,15 +356,67 @@ def test_adwaita_weight_instances_render_distinct_glyphs(monkeypatch):
     assert thin.file_sha256 == black.file_sha256
     assert thin.instance == (("wght", 100.0),)
     assert black.instance == (("wght", 900.0),)
+    # Offline: one shared CAS payload; instantiate maps wght → different static faces.
+    payload = _box_ttf(stem=10)
+    digest = hashlib.sha256(payload).hexdigest()
+    thin = replace(thin, file_sha256=digest)
+    black = replace(black, file_sha256=digest)
+    faces = {100.0: _box_ttf(stem=40), 900.0: _box_ttf(stem=400)}
+
+    def instantiate(_data: bytes, instance: tuple[tuple[str, float], ...]) -> bytes:
+        weight = dict(instance)["wght"]
+        return faces[weight]
+
+    monkeypatch.setattr(render_mod, "_instantiate", instantiate)
     root = OUT / "font-cache-pytest" / f"adwaita-{os.getpid()}"
     shutil.rmtree(root, ignore_errors=True)
     root.mkdir(parents=True)
     monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(root))
-    store_bytes(thin.file_sha256, read_font_bytes(thin.download.url), root)
-    spec = build_specs(n_classes=1, split=Split.TRAIN, per_class=1)[0]
-    thin_img = prepared_chw(spec, read_verified(thin.file_sha256), instance=thin.instance)
-    black_img = prepared_chw(spec, read_verified(black.file_sha256), instance=black.instance)
-    assert thin_img.tobytes() != black_img.tobytes()
+    store_bytes(digest, payload, root)
+    import train.samples as samples_mod
+    from train.samples import TextEntry
+
+    alphabet = TextEntry(0, Split.TRAIN, "latin", "AAAA")
+    monkeypatch.setattr(samples_mod, "TEXT_BY_ID", {**samples_mod.TEXT_BY_ID, 0: alphabet})
+    monkeypatch.setattr(render_mod, "TEXT_BY_ID", samples_mod.TEXT_BY_ID)
+    spec = SyntheticSampleSpec(class_index=0, text_id=0, bg_id=0, seed=0, split=Split.TRAIN)
+    thin_pil = render_sample(spec, read_verified(digest), instance=thin.instance)
+    black_pil = render_sample(spec, read_verified(digest), instance=black.instance)
+    assert thin_pil.get_flattened_data() != black_pil.get_flattened_data()
+
+
+def _box_ttf(*, stem: int) -> bytes:
+    import io
+
+    from fontTools.fontBuilder import FontBuilder
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+
+    letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    order = [".notdef", *letters]
+    fb = FontBuilder(1000, isTTF=True)
+    fb.setupGlyphOrder(order)
+    fb.setupCharacterMap({ord(ch): ch for ch in letters})
+    glyphs = {}
+    metrics = {}
+    for name in order:
+        thick = 50 if name == ".notdef" else stem
+        pen = TTGlyphPen(None)
+        pen.moveTo((0, 0))
+        pen.lineTo((0, 700))
+        pen.lineTo((thick, 700))
+        pen.lineTo((thick, 0))
+        pen.closePath()
+        glyphs[name] = pen.glyph()
+        metrics[name] = (thick + 50, 0)
+    fb.setupGlyf(glyphs)
+    fb.setupHorizontalMetrics(metrics)
+    fb.setupHorizontalHeader(ascent=800, descent=-200)
+    fb.setupNameTable({"familyName": "TestFace", "styleName": f"w{stem}"})
+    fb.setupOS2()
+    fb.setupPost()
+    buf = io.BytesIO()
+    fb.save(buf)
+    return buf.getvalue()
 
 
 def test_cache_stores_bytes_only_when_the_hash_matches(tmp_path):

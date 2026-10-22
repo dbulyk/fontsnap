@@ -54,7 +54,8 @@ def recipe(name: str) -> TrainConfig:
             lr=1e-4,
             weight_decay=0.0,
             amp=True,
-            num_classes=BASE_CLASSES,
+            # Labels from make_loader are SHIPPED_CLASS_COUNT + class_index.
+            num_classes=expanded_classes(),
             device="cuda",
             checkpoint_dir=_checkpoint_dir(),
             distill_weight=0.0,

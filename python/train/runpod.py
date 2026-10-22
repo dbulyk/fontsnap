@@ -8,12 +8,13 @@ CreatePodRequest sends name, image, cloud SECURE, gpu id and count, disk, and th
 start command as entrypoint and cmd. v1 called that command dockerStartCmd. v2 stores it as args.
 
 The pod fetches this repository at the commit git rev-parse HEAD returned when the plan was
-built, installs train deps, and runs the work under timeout on the GPU. Calibrate prints
-samples/sec only when that command exits 0, sleeps so the client can scrape logs, then runs
-runpodctl pod delete $RUNPOD_POD_ID. A nonzero train still self-deletes but never prints
-samples/sec. The client stops and deletes the pod in a finally block on every exit,
-including SIGINT, SIGTERM, SIGHUP, and unexpected exceptions while polling. A failed delete
-prints the pod id and a manual DELETE command, records DELETE FAILED, and exits nonzero.
+built, installs train deps, and runs the work on the GPU. A background sleep+delete watchdog
+covers the whole lifetime (setup + train + log settle). Calibrate prints samples/sec only
+when that command exits 0, sleeps so the client can scrape logs, then runs runpodctl pod
+delete $RUNPOD_POD_ID. A nonzero train still self-deletes but never prints samples/sec. The
+client stops and deletes the pod in a finally block on every exit, including SIGINT, SIGTERM,
+SIGHUP, and unexpected exceptions while polling. A failed delete prints the pod id and a
+manual DELETE command, records DELETE FAILED, and exits nonzero.
 
 Free-phase command:
 
@@ -234,7 +235,9 @@ def parse_pod(payload: dict, *, status_code: int) -> RemotePod:
 
 def pinned_commit() -> str:
     override = os.environ.get("FONTSNAP_RUNPOD_COMMIT", "").strip()
-    if re.fullmatch(r"[0-9a-f]{7,40}", override):
+    if override:
+        if not re.fullmatch(r"[0-9a-f]{40}", override):
+            raise ValueError("FONTSNAP_RUNPOD_COMMIT must be a full 40-char lowercase sha")
         return override
     try:
         out = subprocess.check_output(
@@ -250,22 +253,30 @@ def pinned_commit() -> str:
     return sha
 
 
+def _self_delete_deadline(spec: RunPodJobSpec) -> int:
+    # Setup (apt/git/pip) + train + optional log settle must all finish before this fires.
+    settle = _LOG_SETTLE_SECONDS if spec.mode is JobMode.CALIBRATE else 0
+    return spec.max_runtime_seconds + settle + 60
+
+
 def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
-    limit = spec.max_runtime_seconds
     sha = commit if commit is not None else pinned_commit()
-    if not re.fullmatch(r"[0-9a-f]{7,40}", sha):
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError(f"bad commit pin: {sha!r}")
+    deadline = _self_delete_deadline(spec)
     if spec.mode is JobMode.CALIBRATE:
-        train = f"timeout {limit} python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
+        train = f"python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
         on_ok = f"  cat /tmp/fontsnap-train.out\n  sleep {_LOG_SETTLE_SECONDS}\n"
     else:
-        train = f"timeout {limit} python -m train.loop --recipe ofl-v1 --device cuda"
+        train = "python -m train.loop --recipe ofl-v1 --device cuda"
         on_ok = "  cat /tmp/fontsnap-train.out\n"
-    # Fetch the pinned sha. A clone of the default branch does not contain other commits.
-    # Stdout stays in a file until exit 0 so a failed train cannot emit samples/sec.
-    # Self-delete always runs so a dead client cannot leave a billing pod behind.
+    # Watchdog first: if apt/git/pip/train hang and the client is dead, the pod still deletes.
+    # Fetch the pinned full sha (short shas are rejected). Hold stdout until exit 0.
     return (
         "set -u\n"
+        f'(sleep {deadline}; runpodctl pod delete "$RUNPOD_POD_ID") &\n'
+        "WATCHDOG_PID=$!\n"
+        "trap 'kill $WATCHDOG_PID 2>/dev/null || true' EXIT\n"
         "export DEBIAN_FRONTEND=noninteractive\n"
         "apt-get update -qq >/dev/null\n"
         "apt-get install -y -qq git git-lfs >/dev/null\n"

@@ -232,10 +232,11 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert "x-access-token" not in script
     assert script.index('runpodctl pod delete "$RUNPOD_POD_ID"') < script.index('exit "$status"')
     assert "pip install" in script
-    assert (
-        f"timeout {CALIBRATE.max_runtime_seconds} python -m train.loop --recipe calibrate --steps {CALIBRATE.samples} --device cuda"
-        in script
-    )
+    from train.runpod import _self_delete_deadline
+
+    assert f'(sleep {_self_delete_deadline(CALIBRATE)}; runpodctl pod delete "$RUNPOD_POD_ID") &' in script
+    assert script.index("(sleep") < script.index("apt-get")
+    assert f"python -m train.loop --recipe calibrate --steps {CALIBRATE.samples} --device cuda" in script
     assert "FONTSNAP_ALLOW_GPU=1" in script
     assert "sleep 45" in script
     assert 'runpodctl pod delete "$RUNPOD_POD_ID"' in script
@@ -243,7 +244,8 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert "RUNPOD_API_KEY" not in json.dumps(body)
     assert "env" not in body
     train = create_body(TRAIN)["cmd"][0]
-    assert f"timeout {TRAIN.max_runtime_seconds} python -m train.loop --recipe ofl-v1 --device cuda" in train
+    assert f'(sleep {_self_delete_deadline(TRAIN)}; runpodctl pod delete "$RUNPOD_POD_ID") &' in train
+    assert "python -m train.loop --recipe ofl-v1 --device cuda" in train
     assert 'runpodctl pod delete "$RUNPOD_POD_ID"' in train
 
 
@@ -773,7 +775,11 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
         '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\nexit 0\n',
         encoding="utf-8",
     )
-    (bind / "sleep").write_text('#!/bin/sh\necho slept >> "$DELETED"\nexit 0\n', encoding="utf-8")
+    # Watchdog uses a large sleep; park until the EXIT trap kills it. Settle (45) is a no-op.
+    (bind / "sleep").write_text(
+        '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n',
+        encoding="utf-8",
+    )
     for path in bind.iterdir():
         path.chmod(0o755)
     env = os.environ.copy()
@@ -795,13 +801,49 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
         assert "samples/sec" not in proc.stdout
         assert "main train" not in proc.stdout
         assert f"pod delete {POD}" in removed
-        assert "slept" not in removed
     finally:
         for leftover in (Path("/tmp/fontsnap"), Path("/tmp/fontsnap-train.out"), Path("/tmp/fontsnap-train.err")):
             if leftover.is_file():
                 leftover.unlink()
             elif leftover.is_dir():
                 subprocess.run(["rm", "-rf", str(leftover)], check=False)
+
+
+def test_watchdog_deletes_when_apt_get_hangs(monkeypatch, tmp_path):
+    import time
+
+    import train.runpod as runpod
+    from train.runpod import container_script
+
+    monkeypatch.setattr(runpod, "_self_delete_deadline", lambda _spec: 2)
+    sha = "b" * 40
+    script = container_script(CALIBRATE, commit=sha)
+    bind = tmp_path / "bin"
+    bind.mkdir()
+    deleted = tmp_path / "deleted.txt"
+    (bind / "apt-get").write_text("#!/bin/sh\nexec sleep 1000\n", encoding="utf-8")
+    (bind / "runpodctl").write_text(
+        '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\nexit 0\n',
+        encoding="utf-8",
+    )
+    for path in bind.iterdir():
+        path.chmod(0o755)
+    env = os.environ.copy()
+    env["PATH"] = f"{bind}:/usr/bin:/bin"
+    env["DELETED"] = str(deleted)
+    env["RUNPOD_POD_ID"] = POD
+    proc = subprocess.Popen(["bash", "-c", script], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline:
+            if deleted.is_file() and f"pod delete {POD}" in deleted.read_text(encoding="utf-8"):
+                break
+            time.sleep(0.1)
+        else:
+            raise AssertionError("watchdog did not delete the pod while setup hung")
+    finally:
+        proc.kill()
+        proc.wait(timeout=5)
 
 
 def _read_http(conn: socket.socket) -> tuple[str, str]:
