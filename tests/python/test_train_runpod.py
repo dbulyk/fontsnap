@@ -231,28 +231,34 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert "python/train/requirements.txt" in script
     assert "x-access-token" not in script
     assert "_fontsnap_self_delete" in script
-    assert script.index("_fontsnap_self_delete") < script.index('exit "$status"')
+    assert "_fontsnap_until_deleted" in script
+    assert script.index("_fontsnap_until_deleted") < script.index('exit "$status"')
     assert "pip install" in script
-    from train.runpod import _self_delete_deadline
+    from train.runpod import _PROVISION_SLACK_SECONDS, _SELF_DELETE_CALL_TIMEOUT, _self_delete_deadline
 
-    assert _self_delete_deadline(CALIBRATE) == CALIBRATE.max_runtime_seconds
-    assert _self_delete_deadline(TRAIN) == TRAIN.max_runtime_seconds
-    assert f"(sleep {_self_delete_deadline(CALIBRATE)}; _fontsnap_self_delete) &" in script
+    assert _self_delete_deadline(CALIBRATE) == max(60, CALIBRATE.max_runtime_seconds - _PROVISION_SLACK_SECONDS)
+    assert _self_delete_deadline(TRAIN) == max(60, TRAIN.max_runtime_seconds - _PROVISION_SLACK_SECONDS)
+    assert f"(sleep {_self_delete_deadline(CALIBRATE)}; _fontsnap_until_deleted) &" in script
     assert script.index("(sleep") < script.index("apt-get")
     assert f"python -m train.loop --recipe calibrate --steps {CALIBRATE.samples} --device cuda" in script
     assert "FONTSNAP_ALLOW_GPU=1" in script
-    assert 'runpodctl remove pod "$RUNPOD_POD_ID"' in script
-    assert 'runpodctl pod delete "$RUNPOD_POD_ID"' in script
+    assert f'timeout {_SELF_DELETE_CALL_TIMEOUT} runpodctl remove pod "$RUNPOD_POD_ID"' in script
+    assert f'timeout {_SELF_DELETE_CALL_TIMEOUT} runpodctl pod delete "$RUNPOD_POD_ID"' in script
+    assert f'timeout {_SELF_DELETE_CALL_TIMEOUT} runpodctl stop pod "$RUNPOD_POD_ID"' in script
     assert script.index("remove pod") < script.index("pod delete")
+    assert script.index("pod delete") < script.index("stop pod")
     assert "api.runpod.io/v2/pods/" in script
-    assert "FONTSNAP_DONE_MARKER" in script
+    assert "--max-time" in script
+    assert "-H @-" in script
+    assert "FONTSNAP_DONE_MARKER" not in script
+    assert "/var/lib/fontsnap/done" not in script
     # Script may read the pod-scoped $RUNPOD_API_KEY Runpod injects; create body must not set it.
     assert "env" not in body
     assert KEY not in json.dumps(body)
     train = create_body(TRAIN)["cmd"][0]
-    assert f"(sleep {_self_delete_deadline(TRAIN)}; _fontsnap_self_delete) &" in train
+    assert f"(sleep {_self_delete_deadline(TRAIN)}; _fontsnap_until_deleted) &" in train
     assert "python -m train.loop --recipe ofl-v1 --device cuda" in train
-    assert "_fontsnap_self_delete" in train
+    assert "_fontsnap_until_deleted" in train
 
 
 def test_calibrate_spend_cap_exits_3_above_one_dollar():
@@ -736,6 +742,11 @@ def test_sse_chunked_logs_still_yield_samples_per_sec(monkeypatch, tmp_path, cap
     assert "main train 100000 samples:" in out
 
 
+def _park_long_sleep_stub() -> str:
+    # Watchdog uses a large sleep; park until the EXIT trap kills it. Short sleeps (settle/backoff) no-op.
+    return '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n'
+
+
 def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
     from train.runpod import container_script
 
@@ -781,14 +792,9 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
         '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\nexit 0\n',
         encoding="utf-8",
     )
-    # Watchdog uses a large sleep; park until the EXIT trap kills it. Settle (45) is a no-op.
-    (bind / "sleep").write_text(
-        '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n',
-        encoding="utf-8",
-    )
+    (bind / "sleep").write_text(_park_long_sleep_stub(), encoding="utf-8")
     for path in bind.iterdir():
         path.chmod(0o755)
-    done = tmp_path / "done-marker"
     env = os.environ.copy()
     env["PATH"] = f"{bind}:/usr/bin:/bin"
     env["GIT_LOG"] = str(git_log)
@@ -796,7 +802,6 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
     env["PY_LOG"] = str(py_log)
     env["DELETED"] = str(deleted)
     env["RUNPOD_POD_ID"] = POD
-    env["FONTSNAP_DONE_MARKER"] = str(done)
     proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
     try:
         logged = git_log.read_text(encoding="utf-8") if git_log.is_file() else ""
@@ -809,7 +814,6 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
         assert "samples/sec" not in proc.stdout
         assert "main train" not in proc.stdout
         assert f"remove pod {POD}" in removed
-        assert done.is_file()
     finally:
         for leftover in (Path("/tmp/fontsnap"), Path("/tmp/fontsnap-train.out"), Path("/tmp/fontsnap-train.err")):
             if leftover.is_file():
@@ -830,7 +834,6 @@ def test_watchdog_deletes_when_apt_get_hangs(monkeypatch, tmp_path):
     bind = tmp_path / "bin"
     bind.mkdir()
     deleted = tmp_path / "deleted.txt"
-    done = tmp_path / "done"
     (bind / "apt-get").write_text("#!/bin/sh\nexec sleep 1000\n", encoding="utf-8")
     (bind / "runpodctl").write_text(
         '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\nexit 0\n',
@@ -842,7 +845,6 @@ def test_watchdog_deletes_when_apt_get_hangs(monkeypatch, tmp_path):
     env["PATH"] = f"{bind}:/usr/bin:/bin"
     env["DELETED"] = str(deleted)
     env["RUNPOD_POD_ID"] = POD
-    env["FONTSNAP_DONE_MARKER"] = str(done)
     proc = subprocess.Popen(["bash", "-c", script], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         deadline = time.monotonic() + 8
@@ -866,7 +868,6 @@ def test_self_delete_falls_back_when_pod_subcommand_is_unknown(tmp_path):
     bind = tmp_path / "bin"
     bind.mkdir()
     deleted = tmp_path / "deleted.txt"
-    done = tmp_path / "done"
     (bind / "git").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     (bind / "python").write_text(
         '#!/bin/sh\nif [ "$1 $2" = "-m pip" ]; then exit 0; fi\necho "samples/sec 1.0"\nexit 0\n',
@@ -885,26 +886,24 @@ def test_self_delete_falls_back_when_pod_subcommand_is_unknown(tmp_path):
         "exit 1\n",
         encoding="utf-8",
     )
-    (bind / "sleep").write_text(
-        '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n',
-        encoding="utf-8",
-    )
+    (bind / "sleep").write_text(_park_long_sleep_stub(), encoding="utf-8")
     for path in bind.iterdir():
         path.chmod(0o755)
     env = os.environ.copy()
     env["PATH"] = f"{bind}:/usr/bin:/bin"
     env["DELETED"] = str(deleted)
     env["RUNPOD_POD_ID"] = POD
-    env["FONTSNAP_DONE_MARKER"] = str(done)
     proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
     removed = deleted.read_text(encoding="utf-8") if deleted.is_file() else ""
     assert proc.returncode == 0
     assert f"remove pod {POD}" in removed
     assert "samples/sec 1.0" in proc.stdout
-    assert done.is_file()
 
 
-def test_restart_with_done_marker_skips_train_and_deletes(tmp_path):
+def test_all_delete_paths_failing_keeps_pid1_alive_without_retrain(tmp_path):
+    """If every delete path fails, PID 1 must retry instead of exiting (no restart/re-train)."""
+    import time
+
     from train.runpod import container_script
 
     sha = "d" * 40
@@ -912,33 +911,58 @@ def test_restart_with_done_marker_skips_train_and_deletes(tmp_path):
     bind = tmp_path / "bin"
     bind.mkdir()
     deleted = tmp_path / "deleted.txt"
-    done = tmp_path / "done"
-    done.write_text("1\n", encoding="utf-8")
     py_log = tmp_path / "python.log"
-    (bind / "apt-get").write_text('#!/bin/sh\necho apt >> "$PY_LOG"; exit 0\n', encoding="utf-8")
-    (bind / "python").write_text('#!/bin/sh\necho train >> "$PY_LOG"; exit 0\n', encoding="utf-8")
-    (bind / "git").write_text('#!/bin/sh\necho git >> "$PY_LOG"; exit 0\n', encoding="utf-8")
+    attempts = tmp_path / "attempts.txt"
+    (bind / "git").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bind / "python").write_text(
+        '#!/bin/sh\nprintf "%s\\n" "$*" >> "$PY_LOG"\nif [ "$1 $2" = "-m pip" ]; then exit 0; fi\necho "samples/sec 1.0"\nexit 0\n',
+        encoding="utf-8",
+    )
+    (bind / "apt-get").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bind / "curl").write_text(
+        '#!/bin/sh\nprintf "curl %s\\n" "$*" >> "$DELETED"\necho 401\nexit 0\n',
+        encoding="utf-8",
+    )
     (bind / "runpodctl").write_text(
-        '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\nexit 0\n',
+        "#!/bin/sh\n"
+        'printf "%s\\n" "$*" >> "$DELETED"\n'
+        'echo attempt >> "$ATTEMPTS"\n'
+        'if [ "$1 $2" = "remove pod" ]; then echo unauthorized >&2; exit 1; fi\n'
+        'if [ "$1" = pod ]; then echo \'Error: unknown command "pod"\' >&2; exit 1; fi\n'
+        'if [ "$1 $2" = "stop pod" ]; then exit 1; fi\n'
+        "exit 1\n",
         encoding="utf-8",
     )
-    (bind / "sleep").write_text(
-        '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n',
-        encoding="utf-8",
-    )
+    (bind / "sleep").write_text(_park_long_sleep_stub(), encoding="utf-8")
     for path in bind.iterdir():
         path.chmod(0o755)
     env = os.environ.copy()
     env["PATH"] = f"{bind}:/usr/bin:/bin"
     env["DELETED"] = str(deleted)
     env["PY_LOG"] = str(py_log)
+    env["ATTEMPTS"] = str(attempts)
     env["RUNPOD_POD_ID"] = POD
-    env["FONTSNAP_DONE_MARKER"] = str(done)
-    proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
-    assert proc.returncode == 4
-    assert "prior run finished" in proc.stderr
-    assert f"remove pod {POD}" in deleted.read_text(encoding="utf-8")
-    assert not py_log.exists() or "train" not in py_log.read_text(encoding="utf-8")
+    env["RUNPOD_API_KEY"] = "pod-scoped-injected-key"
+    proc = subprocess.Popen(["bash", "-c", script], env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        deadline = time.monotonic() + 8
+        while time.monotonic() < deadline:
+            if attempts.is_file() and attempts.read_text(encoding="utf-8").count("attempt") >= 3:
+                break
+            time.sleep(0.1)
+        else:
+            raise AssertionError("self-delete did not retry after all paths failed")
+        assert proc.poll() is None, "PID 1 exited while delete was still failing"
+        py = py_log.read_text(encoding="utf-8")
+        assert py.count("train.loop") == 1
+        removed = deleted.read_text(encoding="utf-8")
+        assert f"remove pod {POD}" in removed
+        assert f"pod delete {POD}" in removed
+        assert f"stop pod {POD}" in removed
+        assert "api.runpod.io/v2/pods/" + POD in removed
+    finally:
+        proc.kill()
+        proc.wait(timeout=5)
 
 
 def test_short_commit_sha_fails_loudly(monkeypatch, capsys):
@@ -950,6 +974,16 @@ def test_short_commit_sha_fails_loudly(monkeypatch, capsys):
     assert "full 40-char" in err
 
 
+def test_watch_short_commit_sha_fails_before_network(monkeypatch, tmp_path, capsys):
+    arm(monkeypatch, tmp_path)
+    monkeypatch.setenv("FONTSNAP_RUNPOD_COMMIT", "abc1234")
+    calls = install(monkeypatch, lambda *_a: (_ for _ in ()).throw(AssertionError("urlopen")))
+    assert main(["watch", "--mode", "calibrate"]) == 4
+    err = capsys.readouterr().err
+    assert "full 40-char" in err
+    assert calls == []
+
+
 def test_self_delete_uses_injected_key_when_runpodctl_is_broken(tmp_path):
     from train.runpod import container_script
 
@@ -958,7 +992,7 @@ def test_self_delete_uses_injected_key_when_runpodctl_is_broken(tmp_path):
     bind = tmp_path / "bin"
     bind.mkdir()
     deleted = tmp_path / "deleted.txt"
-    done = tmp_path / "done"
+    auth = tmp_path / "auth.txt"
     (bind / "git").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     (bind / "python").write_text(
         '#!/bin/sh\nif [ "$1 $2" = "-m pip" ]; then exit 0; fi\necho ok\nexit 0\n',
@@ -966,34 +1000,32 @@ def test_self_delete_uses_injected_key_when_runpodctl_is_broken(tmp_path):
     )
     (bind / "apt-get").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     (bind / "runpodctl").write_text(
-        '#!/bin/sh\necho \'Error: unknown command "pod"\' >&2; exit 1\n',
+        "#!/bin/sh\necho 'Error: unknown command \"pod\"' >&2; exit 1\n",
         encoding="utf-8",
     )
     (bind / "curl").write_text(
-        "#!/bin/sh\n"
-        'printf "%s\\n" "$*" >> "$DELETED"\n'
-        'echo 204\n'
-        "exit 0\n",
+        '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\ncat > "$AUTH"\necho 204\nexit 0\n',
         encoding="utf-8",
     )
-    (bind / "sleep").write_text(
-        '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n',
-        encoding="utf-8",
-    )
+    (bind / "sleep").write_text(_park_long_sleep_stub(), encoding="utf-8")
     for path in bind.iterdir():
         path.chmod(0o755)
     env = os.environ.copy()
     env["PATH"] = f"{bind}:/usr/bin:/bin"
     env["DELETED"] = str(deleted)
+    env["AUTH"] = str(auth)
     env["RUNPOD_POD_ID"] = POD
     env["RUNPOD_API_KEY"] = "pod-scoped-injected-key"
-    env["FONTSNAP_DONE_MARKER"] = str(done)
     proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
     removed = deleted.read_text(encoding="utf-8") if deleted.is_file() else ""
+    header = auth.read_text(encoding="utf-8") if auth.is_file() else ""
     assert proc.returncode == 0
     assert "api.runpod.io/v2/pods/" + POD in removed
-    assert "pod-scoped-injected-key" in removed
+    assert "-H" in removed and "@-" in removed
+    assert "pod-scoped-injected-key" not in removed
+    assert "Authorization: Bearer pod-scoped-injected-key" in header
     assert KEY not in removed
+    assert KEY not in header
 
 
 def _read_http(conn: socket.socket) -> tuple[str, str]:
