@@ -1,0 +1,185 @@
+from decimal import Decimal
+
+import pytest
+
+from train.loop import recipe
+from train.model import BASE_CLASSES, NEW_HEAD_BIAS, expanded_classes
+from train.recipe_defs import (
+    ARTIFACT_TRANSFER_SECONDS,
+    ASSUMED_FLOOR_SAMPLES_PER_SEC,
+    CALIBRATE_STEPS,
+    FONT_FETCH_SLACK_SECONDS,
+    OFL_V1_BACKBONE_LR,
+    OFL_V1_BATCH_SIZE,
+    OFL_V1_LR,
+    OFL_V1_PER_CLASS_NEW,
+    OFL_V1_PER_CLASS_REPLAY,
+    OFL_V1_REPLAY_REPEAT,
+    OFL_V1_SUPPRESS_MARGIN,
+    OFL_V1_SUPPRESS_WEIGHT,
+    OFL_V1_UNFREEZE_FROM_BLOCK,
+    SETUP_SLACK_SECONDS,
+    TRAIN_SPEND_CAP_USD,
+    ofl_v1_budget,
+    projection_band,
+    train_max_runtime_seconds,
+    train_wall_seconds,
+)
+from train.registry import PHASE1_CLASSES
+from train.runpod import CALIBRATE, TRAIN, calibrate_spec, train_spec
+
+
+def test_ofl_v1_and_calibrate_share_loader_shape():
+    ofl = recipe("ofl-v1")
+    cal = recipe("calibrate")
+    assert ofl.batch_size == cal.batch_size == OFL_V1_BATCH_SIZE
+    assert ofl.amp is cal.amp is True
+    assert ofl.num_workers == cal.num_workers
+    assert ofl.per_class_new == cal.per_class_new == OFL_V1_PER_CLASS_NEW
+    assert ofl.per_class_replay == cal.per_class_replay == OFL_V1_PER_CLASS_REPLAY == 4
+    assert ofl.replay_repeat == cal.replay_repeat == OFL_V1_REPLAY_REPEAT == 6
+    assert ofl.unfreeze_from_block == cal.unfreeze_from_block == OFL_V1_UNFREEZE_FROM_BLOCK == 5
+    assert ofl.lr == cal.lr == OFL_V1_LR == 1e-3
+    assert ofl.backbone_lr == cal.backbone_lr == OFL_V1_BACKBONE_LR == 1e-4
+    assert not hasattr(ofl, "distill_weight")
+    assert not hasattr(ofl, "freeze_backbone")
+    assert ofl.suppress_weight == cal.suppress_weight == OFL_V1_SUPPRESS_WEIGHT == 1.0
+    assert ofl.suppress_margin == cal.suppress_margin == OFL_V1_SUPPRESS_MARGIN == 8.0
+    assert ofl.num_classes == cal.num_classes == expanded_classes()
+    assert ofl.device == cal.device == "cuda"
+    assert cal.steps == CALIBRATE_STEPS
+    assert ofl.total_samples == ofl_v1_budget().total_samples
+
+
+def test_sample_budget_includes_gf_replay():
+    from train.replay_gf import selected_replay_classes
+
+    replay_classes = len(selected_replay_classes())
+    budget = ofl_v1_budget()
+    assert budget.new_classes == PHASE1_CLASSES
+    assert budget.old_classes == replay_classes
+    assert replay_classes < BASE_CLASSES
+    assert budget.replay_repeat == OFL_V1_REPLAY_REPEAT
+    assert budget.replay_samples == replay_classes * OFL_V1_PER_CLASS_REPLAY * OFL_V1_REPLAY_REPEAT
+    assert budget.total_samples == PHASE1_CLASSES * OFL_V1_PER_CLASS_NEW + budget.replay_samples
+
+
+def test_runpod_specs_derive_from_recipe_and_rate():
+    budget = ofl_v1_budget()
+    assert calibrate_spec().samples == CALIBRATE_STEPS * OFL_V1_BATCH_SIZE
+    assert CALIBRATE.samples == CALIBRATE_STEPS * OFL_V1_BATCH_SIZE
+    assert TRAIN.samples == budget.total_samples
+    assert train_spec(Decimal("12")).max_runtime_seconds == train_max_runtime_seconds(budget.total_samples, Decimal("12"))
+    assert TRAIN.spend_cap_usd == TRAIN_SPEND_CAP_USD
+    band = projection_band(budget.total_samples)
+    assert band["fits_17"] == Decimal(1)
+    assert ASSUMED_FLOOR_SAMPLES_PER_SEC == Decimal("5")
+    assert NEW_HEAD_BIAS == -80.0
+
+
+def test_train_wall_includes_font_fetch_slack():
+    """B8: cold GF+OFL download must sit inside setup / max_runtime, not only compute."""
+    assert FONT_FETCH_SLACK_SECONDS >= 60
+    rate = Decimal("20")
+    samples = 1000
+    # ceil(1000/20) = 50
+    assert train_wall_seconds(samples, rate) == (50 + SETUP_SLACK_SECONDS + FONT_FETCH_SLACK_SECONDS + ARTIFACT_TRANSFER_SECONDS)
+
+
+def test_fontsource_slug_uses_display_kebab_case():
+    from train.model import BASE_CLASSES
+    from train.replay_gf import family_for_class, fontsource_slug
+
+    assert fontsource_slug("Open Sans") == "open-sans"
+    assert fontsource_slug("IBM Plex Sans") == "ibm-plex-sans"
+    # meta fams are compressed; CDN package ids must keep hyphens from display.
+    assert any(family_for_class(i) == "open-sans" for i in range(BASE_CLASSES))
+
+
+def test_load_replay_fonts_one_regular_class_per_family(tmp_path, monkeypatch):
+    """B1: latin-400 bytes attach to the Regular class only, not every sibling."""
+    import json
+
+    import yaml
+
+    from train.model import BASE_CLASSES
+    from train.paths import MODEL_DIR, ROOT
+    from train.replay_gf import load_replay_fonts, regular_class_for_family
+
+    meta = json.loads((MODEL_DIR / "meta.json").read_text(encoding="utf-8"))
+    names = yaml.safe_load((ROOT / "python" / "data" / "classes_v2.yaml").read_text(encoding="utf-8"))["classnames"]
+    # Inconsolata: many cuts, one Regular that matches latin-400-normal.
+    fam = next(i for i, name in enumerate(meta["display"]) if name == "Inconsolata")
+    members = [i for i, f in enumerate(meta["classFam"]) if f == fam]
+    assert len(members) > 2
+    chosen = regular_class_for_family(fam, members)
+    assert chosen is not None
+    assert names[chosen] == "Inconsolata-Regular"
+    # SC/UI siblings must not steal the base family's cut (review r8).
+    for display, expect in (
+        ("Signika", "Signika[GRAD,wght]"),
+        ("Signika Negative", "SignikaNegative[wght]"),
+        ("Noto Sans Arabic", "NotoSansArabic[wdth,wght]"),
+    ):
+        fam_i = next(i for i, name in enumerate(meta["display"]) if name == display)
+        mem = [i for i, f in enumerate(meta["classFam"]) if f == fam_i]
+        pick = regular_class_for_family(fam_i, mem)
+        assert pick is not None
+        assert names[pick] == expect, (display, names[pick])
+
+    payload = b"\x00\x01\x00\x00" + b"regular-only"
+    monkeypatch.setattr(
+        "train.replay_gf.load_gf_font",
+        lambda family, root=None, *, fetch=True: payload,
+    )
+    fonts = load_replay_fonts(fetch=False, root=tmp_path, class_indices=range(BASE_CLASSES), workers=1)
+    assert chosen in fonts
+    sibling = next(i for i in members if i != chosen)
+    assert sibling not in fonts
+    # No family contributes more than one class.
+    by_fam: dict[int, list[int]] = {}
+    for class_index in fonts:
+        by_fam.setdefault(int(meta["classFam"][class_index]), []).append(class_index)
+    assert all(len(group) == 1 for group in by_fam.values())
+
+
+def test_make_ofl_loader_replays_with_real_gf_bytes(tmp_path, monkeypatch):
+    pytest.importorskip("torch")
+    payload = b"\x00\x01\x00\x00" + b"gf-replay"
+    monkeypatch.setenv("FONTSNAP_SKIP_FETCH", "1")
+    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(tmp_path / "cache"))
+    (tmp_path / "cache").mkdir()
+    monkeypatch.setattr("train.paths.OUT", tmp_path)
+    monkeypatch.setattr("train.dataset.read_verified", lambda _sha, root=None: payload)
+    monkeypatch.setattr(
+        "train.replay_gf.load_replay_fonts",
+        lambda **_kwargs: {i: payload for i in range(8)},
+    )
+    from PIL import ImageFont
+
+    monkeypatch.setattr(
+        "train.render._font",
+        lambda _bytes, _size_px, _instance: ImageFont.load_default(),
+    )
+    from train.dataset import make_ofl_loader
+
+    loader = make_ofl_loader(
+        batch_size=4,
+        per_class_new=1,
+        per_class_replay=1,
+        num_workers=0,
+        shuffle=True,
+        fetch_fonts=False,
+    )
+    labels = []
+    for _inputs, batch_labels in loader:
+        labels.extend(int(x) for x in batch_labels.tolist())
+    assert any(label < BASE_CLASSES for label in labels), labels[:20]
+    assert any(label >= BASE_CLASSES for label in labels), labels[:20]
+
+
+def test_container_script_has_no_playwright():
+    from train.runpod import CALIBRATE, container_script, pinned_commit
+
+    script = container_script(CALIBRATE, commit=pinned_commit())
+    assert "playwright" not in script

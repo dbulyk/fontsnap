@@ -264,6 +264,34 @@ def test_prepared_chw_is_the_prep_tensor():
     assert np.array_equal(chw, prepared_chw(spec))
 
 
+def test_prepared_chw_textcrop_pack_differs_from_raw():
+    """Evaluate pack/crop views via prepared_chw(textcrop=...)."""
+    spec = build_specs(n_classes=1, split=Split.REPLAY, per_class=1)[0]
+    raw = prepared_chw(spec)
+    packed = prepared_chw(spec, textcrop="pack")
+    cropped = prepared_chw(spec, textcrop="crop")
+    assert packed.shape == raw.shape == cropped.shape
+    assert not np.array_equal(raw, packed)
+    assert not np.array_equal(packed, cropped)
+    with pytest.raises(ValueError, match="textcrop"):
+        prepared_chw(spec, textcrop="nope")
+
+
+def test_fontsnap_synth_stays_on_raw_synth_prep(monkeypatch):
+    """Evidence (r6): pack/crop on CE pool hurt realset3; new-class stays raw."""
+    pytest.importorskip("torch")
+    seen: list[str | None] = []
+
+    def _fake_prepared(s, font_bytes=None, *, instance=(), textcrop=None):
+        seen.append(textcrop)
+        return np.zeros((3, 320, 320), dtype=np.float32)
+
+    monkeypatch.setattr("train.dataset.prepared_chw", _fake_prepared)
+    dataset = FontSnapSynth(build_specs(n_classes=1, split=Split.TRAIN, per_class=1))
+    _ = dataset[0]
+    assert seen == [None]
+
+
 def test_constructing_a_dataset_does_not_import_torch():
     script = """
 import sys

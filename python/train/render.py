@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import random
 
@@ -9,6 +10,8 @@ from PIL import Image, ImageDraw, ImageFont
 from train.samples import BG_BY_ID, TEXT_BY_ID, SyntheticSampleSpec
 
 _CANVAS = (480, 120)
+_INSTANCE_CACHE: dict[tuple[str, tuple[tuple[str, float], ...]], bytes] = {}
+_INSTANCE_CACHE_MAX = 64
 
 
 def render_sample(
@@ -53,6 +56,11 @@ def _font(font_bytes: bytes | None, size_px: int, instance: tuple[tuple[str, flo
 
 
 def _instantiate(font_bytes: bytes, instance: tuple[tuple[str, float], ...]) -> bytes:
+    digest = hashlib.sha256(font_bytes).hexdigest()
+    key = (digest, instance)
+    cached = _INSTANCE_CACHE.get(key)
+    if cached is not None:
+        return cached
     from fontTools.ttLib import TTFont
     from fontTools.varLib.instancer import instantiateVariableFont
 
@@ -69,9 +77,13 @@ def _instantiate(font_bytes: bytes, instance: tuple[tuple[str, float], ...]) -> 
     try:
         buf = io.BytesIO()
         instanced.save(buf)
-        return buf.getvalue()
+        payload = buf.getvalue()
     finally:
         instanced.close()
+    if len(_INSTANCE_CACHE) >= _INSTANCE_CACHE_MAX:
+        _INSTANCE_CACHE.pop(next(iter(_INSTANCE_CACHE)))
+    _INSTANCE_CACHE[key] = payload
+    return payload
 
 
 def _draw_tracked(

@@ -39,7 +39,8 @@ def _export_loaded(model, dest: Path, num_classes: int) -> None:
     net = model.module if hasattr(model, "module") else model
     if net.classifier.out_features != num_classes:
         raise ValueError(f"head width {net.classifier.out_features} != {num_classes}")
-    export_net = copy.deepcopy(net).half().eval()
+    # Always export from CPU so a CUDA-trained module cannot meet a CPU dummy.
+    export_net = copy.deepcopy(net).cpu().half().eval()
 
     class _FloatIo(torch.nn.Module):
         def __init__(self, inner: torch.nn.Module) -> None:
