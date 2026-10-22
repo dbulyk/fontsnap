@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 BASE_CLASSES = 3665
+# Below the lowest old-head maxima seen on realset3 slices (some images peak near -42).
+# Zero weight + this bias keeps new rows out of argmax at step 0.
+NEW_HEAD_BIAS = -80.0
 
 
 def expanded_classes() -> int:
@@ -65,13 +68,15 @@ def expand_classifier(model: EfficientNetB3Classifier, old: int, new: int) -> Ef
         raise ValueError(f"model head is {model.num_classes}, expected {old}")
     import torch
 
+    # New rows must not dominate argmax: old logits are typically ~-28 on realset3.
+    # Zero weight + zero bias would score 0 and win ~99% of images before any step.
     old_linear = model.module.classifier
     new_linear = torch.nn.Linear(old_linear.in_features, new, bias=old_linear.bias is not None)
     with torch.no_grad():
         new_linear.weight.zero_()
         new_linear.weight[:old].copy_(old_linear.weight[:old])
         if new_linear.bias is not None and old_linear.bias is not None:
-            new_linear.bias.zero_()
+            new_linear.bias.fill_(NEW_HEAD_BIAS)
             new_linear.bias[:old].copy_(old_linear.bias[:old])
     model.module.classifier = new_linear
     model.num_classes = new

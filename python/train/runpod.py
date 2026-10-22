@@ -47,10 +47,25 @@ from typing import Literal
 from urllib.parse import quote
 
 from train.paths import ROOT, assert_under_out
+from train.recipe_defs import (
+    ARTIFACT_TRANSFER_SECONDS,
+    CALIBRATE_MAX_RUNTIME_SECONDS,
+    CALIBRATE_SPEND_CAP_USD,
+    CALIBRATE_STEPS,
+    OFL_V1_BATCH_SIZE,
+    TRAIN_SPEND_CAP_USD,
+    estimate_train_usd,
+    ofl_v1_budget,
+    read_calibrate_rate,
+    train_max_runtime_seconds,
+    train_wall_seconds,
+    write_calibrate_rate,
+)
 
 API = "https://api.runpod.io/v2"
 _PUBLIC_REPO = "https://github.com/dbulyk/fontsnap.git"
-_LOG_SETTLE_SECONDS = 45
+# Short flush only: long settle eats the calibrate watchdog window (N15).
+_LOG_SETTLE_SECONDS = 15
 # Image pull / provision happens before the entrypoint; billing starts at create.
 _PROVISION_SLACK_SECONDS = 5 * 60
 _SELF_DELETE_CALL_TIMEOUT = 30
@@ -60,7 +75,8 @@ _REJECT = ("--api-key", "--apikey")
 _POLL_SECONDS = 5
 _TRANSIENT_HTTP = frozenset({429, 500, 502, 503, 504})
 _TRANSIENT_LIMIT = 4
-_DELETE_OK = frozenset({200, 202, 204, 404})
+# 404 is ambiguous (wrong path vs already gone); only treat definitive success codes.
+_DELETE_OK = frozenset({200, 202, 204})
 _DELETE_BACKOFF = (1, 2, 4, 8)
 _SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP)
 _QUANTUM = Decimal("0.000001")
@@ -154,33 +170,42 @@ class CostLine:
         )
 
 
-CALIBRATE = RunPodJobSpec(
-    name="fontsnap-calibrate",
-    mode=JobMode.CALIBRATE,
-    gpu_id="NVIDIA GeForce RTX 4090",
-    gpu_count=1,
-    cloud="SECURE",
-    image="runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404",
-    disk_gb=20,
-    max_runtime_seconds=20 * 60,
-    spend_cap_usd=Decimal("1.00"),
-    samples=8,
-    env=(),
-)
+def calibrate_spec() -> RunPodJobSpec:
+    return RunPodJobSpec(
+        name="fontsnap-calibrate",
+        mode=JobMode.CALIBRATE,
+        gpu_id="NVIDIA GeForce RTX 4090",
+        gpu_count=1,
+        cloud="SECURE",
+        image="runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404",
+        disk_gb=20,
+        max_runtime_seconds=CALIBRATE_MAX_RUNTIME_SECONDS,
+        spend_cap_usd=CALIBRATE_SPEND_CAP_USD,
+        samples=CALIBRATE_STEPS * OFL_V1_BATCH_SIZE,
+        env=(),
+    )
 
-TRAIN = RunPodJobSpec(
-    name="fontsnap-train",
-    mode=JobMode.TRAIN,
-    gpu_id=CALIBRATE.gpu_id,
-    gpu_count=1,
-    cloud="SECURE",
-    image=CALIBRATE.image,
-    disk_gb=20,
-    max_runtime_seconds=4 * 60 * 60,
-    spend_cap_usd=Decimal("4.00"),
-    samples=100_000,
-    env=(),
-)
+
+def train_spec(rate: Decimal | None = None) -> RunPodJobSpec:
+    samples = ofl_v1_budget().total_samples
+    measured = read_calibrate_rate() if rate is None else rate
+    return RunPodJobSpec(
+        name="fontsnap-train",
+        mode=JobMode.TRAIN,
+        gpu_id="NVIDIA GeForce RTX 4090",
+        gpu_count=1,
+        cloud="SECURE",
+        image="runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404",
+        disk_gb=20,
+        max_runtime_seconds=train_max_runtime_seconds(samples, measured),
+        spend_cap_usd=TRAIN_SPEND_CAP_USD,
+        samples=samples,
+        env=(),
+    )
+
+
+CALIBRATE = calibrate_spec()
+TRAIN = train_spec()
 
 
 def api_key() -> str:
@@ -302,19 +327,60 @@ def self_delete_shell() -> str:
     )
 
 
+def _publish_artifacts_shell() -> str:
+    """Publish ckpt (+ ONNX if present) without deadlocking send/receive.
+
+    Print the receive code and sha256 *before* waiting on runpodctl send.
+    send runs with an explicit --code and a timeout inside the watchdog window.
+    Never `exit` here: self-delete must still run; failures set status=4.
+    """
+    t = ARTIFACT_TRANSFER_SECONDS
+    return (
+        '  ART="$WORK/out/train"\n'
+        "  PUBLISH_RC=0\n"
+        '  if [ ! -f "$ART/ckpt-final.pt" ]; then\n'
+        '    echo "fontsnap: missing ckpt-final.pt" >&2\n'
+        "    PUBLISH_RC=4\n"
+        "  else\n"
+        '    TGZ="$WORK/fontsnap-ofl-v1.tgz"\n'
+        '    if [ -f "$ART/candidate.onnx" ]; then\n'
+        '      tar -C "$ART" -czf "$TGZ" ckpt-final.pt candidate.onnx\n'
+        "    else\n"
+        '      echo "fontsnap: candidate.onnx missing; publishing ckpt only" >&2\n'
+        '      tar -C "$ART" -czf "$TGZ" ckpt-final.pt\n'
+        "    fi\n"
+        "    SHA=$(sha256sum \"$TGZ\" | awk '{print $1}')\n"
+        "    CODE=$(python -c \"import secrets; print('-'.join(secrets.token_hex(2) for _ in range(4)))\")\n"
+        '    echo "fontsnap_artifact_sha256 $SHA"\n'
+        '    echo "fontsnap_artifact_receive $CODE"\n'
+        "    if ! command -v runpodctl >/dev/null 2>&1; then\n"
+        '      echo "fontsnap: runpodctl missing; cannot send artifacts" >&2\n'
+        "      PUBLISH_RC=4\n"
+        f'    elif ! timeout {t} runpodctl send --code "$CODE" "$TGZ"; then\n'
+        '      echo "fontsnap: artifact send failed" >&2\n'
+        "      PUBLISH_RC=4\n"
+        "    fi\n"
+        "  fi\n"
+        '  if [ "$PUBLISH_RC" -ne 0 ]; then status="$PUBLISH_RC"; fi\n'
+    )
+
+
 def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
     sha = commit if commit is not None else pinned_commit()
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError(f"bad commit pin: {sha!r}")
     deadline = _self_delete_deadline(spec)
-    settle = _LOG_SETTLE_SECONDS if spec.mode is JobMode.CALIBRATE else 0
+    # Keep settle inside the deadline; leave room for log scrape (N15).
+    settle = min(_LOG_SETTLE_SECONDS, max(0, deadline // 60)) if spec.mode is JobMode.CALIBRATE else 0
     if spec.mode is JobMode.CALIBRATE:
-        train = f"python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
-        on_ok = f"  cat /tmp/fontsnap-train.out\n  sleep {settle}\n"
+        # No --steps override: calibrate recipe already matches ofl-v1 batch/AMP/loader.
+        train = "python -m train.loop --recipe calibrate --device cuda"
+        on_ok = '  cat "$WORK/fontsnap-train.out"\n' + (f"  sleep {settle}\n" if settle else "")
     else:
         train = "python -m train.loop --recipe ofl-v1 --device cuda"
-        on_ok = "  cat /tmp/fontsnap-train.out\n"
+        on_ok = '  cat "$WORK/fontsnap-train.out"\n' + _publish_artifacts_shell()
     # Watchdog first. Never exit until delete succeeds — no restart loop, no re-train.
+    # Publish (train on_ok) runs before until_deleted so transfer fits the deadline.
     return (
         "set -u\n"
         f"{self_delete_shell()}"
@@ -325,9 +391,10 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
         "apt-get update -qq >/dev/null\n"
         "apt-get install -y -qq git git-lfs curl >/dev/null\n"
         "git lfs install --skip-repo >/dev/null\n"
-        "rm -rf /tmp/fontsnap\n"
-        "mkdir -p /tmp/fontsnap\n"
-        "cd /tmp/fontsnap\n"
+        'WORK="${FONTSNAP_POD_WORK:-/tmp/fontsnap}"\n'
+        'rm -rf "$WORK"\n'
+        'mkdir -p "$WORK"\n'
+        'cd "$WORK"\n'
         "git init -q\n"
         f"git remote add origin {_PUBLIC_REPO}\n"
         f"git fetch --depth 1 origin {sha}\n"
@@ -335,10 +402,10 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
         "git lfs pull --include='model/**'\n"
         "python -m pip install -q -r python/requirements.txt -r python/train/requirements.txt\n"
         "export FONTSNAP_ALLOW_GPU=1\n"
-        "export PYTHONPATH=/tmp/fontsnap/python\n"
-        f"{train} >/tmp/fontsnap-train.out 2>/tmp/fontsnap-train.err\n"
+        'export PYTHONPATH="$WORK/python"\n'
+        f'{train} >"$WORK/fontsnap-train.out" 2>"$WORK/fontsnap-train.err"\n'
         "status=$?\n"
-        "cat /tmp/fontsnap-train.err >&2\n"
+        'cat "$WORK/fontsnap-train.err" >&2\n'
         'if [ "$status" -eq 0 ]; then\n'
         f"{on_ok}"
         "fi\n"
@@ -658,6 +725,9 @@ def _teardown(pod_id: str, key: str, *, mode: str, hourly: Decimal, started: flo
 
 
 _SAMPLES_PER_SEC = re.compile(r"samples/sec(?:=|\s+)(\d+(?:\.\d+)?)")
+# Exact code shape from secrets.token_hex(2)×4; do not swallow SSE/JSON tails.
+_ARTIFACT_RECEIVE = re.compile(r"fontsnap_artifact_receive\s+([0-9a-f]{4}(?:-[0-9a-f]{4}){3})\b")
+_ARTIFACT_SHA = re.compile(r"fontsnap_artifact_sha256\s+([0-9a-f]{64})\b")
 
 
 def parse_samples_per_sec(text: str) -> Decimal | None:
@@ -673,25 +743,78 @@ def parse_samples_per_sec(text: str) -> Decimal | None:
     return rate
 
 
-def _latest_rate(pod_id: str, key: str, prior: Decimal | None) -> Decimal | None:
+def parse_artifact_receive(text: str) -> str | None:
+    found = _ARTIFACT_RECEIVE.findall(text)
+    return found[-1] if found else None
+
+
+def parse_artifact_sha256(text: str) -> str | None:
+    found = _ARTIFACT_SHA.findall(text)
+    return found[-1] if found else None
+
+
+def _pod_log_text(pod_id: str, key: str, stop_when: re.Pattern[str] | None = None) -> str:
     path = "/pods/" + quote(pod_id, safe="") + "/logs?source=container&tail=200"
     try:
-        # SSE stays open; read in small chunks and stop once samples/sec appears.
-        status, raw = _http_raw("GET", path, key, timeout=2.5, stop_when=_SAMPLES_PER_SEC)
+        status, raw = _http_raw("GET", path, key, timeout=2.5, stop_when=stop_when)
     except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException):
-        return prior
+        return ""
     if status != 200:
-        return prior
+        return ""
     try:
-        text = raw.decode(errors="replace")
+        return raw.decode(errors="replace")
     except UnicodeDecodeError:
-        return prior
+        return ""
+
+
+def _latest_rate(pod_id: str, key: str, prior: Decimal | None) -> Decimal | None:
+    text = _pod_log_text(pod_id, key, stop_when=_SAMPLES_PER_SEC)
     parsed = parse_samples_per_sec(text)
     return prior if parsed is None else parsed
 
 
+def _latest_artifact(pod_id: str, key: str, prior: tuple[str | None, str | None]) -> tuple[str | None, str | None]:
+    text = _pod_log_text(pod_id, key, stop_when=_ARTIFACT_RECEIVE)
+    code = parse_artifact_receive(text) or prior[0]
+    digest = parse_artifact_sha256(text) or prior[1]
+    return code, digest
+
+
+def receive_artifact(code: str, expected_sha256: str) -> Path:
+    """Pull the train tarball; clear RUNPOD_API_KEY and verify sha256."""
+    import hashlib
+
+    from train import paths
+
+    dest_dir = assert_under_out(paths.OUT / "train")
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    for old in dest_dir.glob("fontsnap-ofl-v1*.tgz"):
+        old.unlink()
+    env = {k: v for k, v in os.environ.items() if k != "RUNPOD_API_KEY"}
+    subprocess.run(
+        ["runpodctl", "receive", code],
+        cwd=str(dest_dir),
+        check=True,
+        timeout=ARTIFACT_TRANSFER_SECONDS,
+        env=env,
+    )
+    matches = sorted(dest_dir.glob("*.tgz"))
+    if not matches:
+        raise FileNotFoundError("runpodctl receive produced no tarball")
+    archive = matches[-1]
+    digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+    if digest != expected_sha256:
+        archive.unlink(missing_ok=True)
+        raise ValueError(f"artifact sha256 mismatch: got {digest}, want {expected_sha256}")
+    final = dest_dir / "fontsnap-ofl-v1.tgz"
+    if archive != final:
+        archive.replace(final)
+    return final
+
+
 def project_main_train(rate: Decimal, hourly_usd: Decimal) -> tuple[Decimal, Decimal]:
-    hours = Decimal(TRAIN.samples) / rate / Decimal(3600)
+    samples = ofl_v1_budget().total_samples
+    hours = Decimal(samples) / rate / Decimal(3600)
     usd = hours * hourly_usd
     return (
         hours.quantize(_QUANTUM, rounding=ROUND_HALF_UP),
@@ -700,46 +823,72 @@ def project_main_train(rate: Decimal, hourly_usd: Decimal) -> tuple[Decimal, Dec
 
 
 def _print_projection(rate: Decimal, hourly_usd: Decimal) -> None:
+    write_calibrate_rate(rate)
+    samples = ofl_v1_budget().total_samples
     hours, usd = project_main_train(rate, hourly_usd)
+    runtime = train_max_runtime_seconds(samples, rate)
     print(f"samples/sec {format(rate, 'f')}")
-    print(f"main train {TRAIN.samples} samples: {format(hours, 'f')} h ${format(usd, 'f')}")
+    print(f"main train {samples} samples: {format(hours, 'f')} h ${format(usd, 'f')}")
+    print(f"main train max_runtime_seconds {runtime}")
+    if estimate_train_usd(samples, rate, hourly_usd) > TRAIN_SPEND_CAP_USD:
+        print("main train exceeds $17 at measured rate (incl. setup); do not launch", flush=True)
 
 
-def _poll(pod_id: str, key: str, spec: RunPodJobSpec, deadline: float) -> tuple[int, Decimal | None, str]:
+def _poll(pod_id: str, key: str, spec: RunPodJobSpec, deadline: float) -> tuple[int, Decimal | None, str, str | None, str | None]:
     rate: Decimal | None = None
+    artifact_code: str | None = None
+    artifact_sha: str | None = None
+    received = False
     transient = 0
     state = PodState.PROVISIONING.value
     while time.monotonic() < deadline:
         pod = get_pod(pod_id, key)
         state = pod.state.value
         if pod.cloud.upper() == "COMMUNITY":
-            return 4, rate, state
+            return 4, rate, state, artifact_code, artifact_sha
         if pod.http_status in _TRANSIENT_HTTP or pod.http_status == 0:
             transient += 1
             if transient >= _TRANSIENT_LIMIT:
-                return 4, rate, state
+                return 4, rate, state, artifact_code, artifact_sha
             time.sleep(_POLL_SECONDS)
             continue
         transient = 0
         if pod.http_status in {401, 403}:
-            return 4, rate, state
+            return 4, rate, state, artifact_code, artifact_sha
         if pod.state is PodState.RUNNING:
             rate = _latest_rate(pod_id, key, rate)
+            if spec.mode is JobMode.TRAIN and not received:
+                artifact_code, artifact_sha = _latest_artifact(pod_id, key, (artifact_code, artifact_sha))
+                if artifact_code and artifact_sha:
+                    try:
+                        path = receive_artifact(artifact_code, artifact_sha)
+                        print(f"artifact {path}", flush=True)
+                        received = True
+                    except (OSError, subprocess.SubprocessError, ValueError, FileNotFoundError) as err:
+                        print(f"fontsnap: artifact receive failed: {err}", file=sys.stderr)
+                        return 4, rate, state, artifact_code, artifact_sha
             time.sleep(_POLL_SECONDS)
             continue
         if pod.state in _WAIT_STATES:
             time.sleep(_POLL_SECONDS)
             continue
         if pod.state in _DONE_STATES:
-            # ABSENT (self-delete) and EXITED both keep trying logs once.
             rate = _latest_rate(pod_id, key, rate)
+            if spec.mode is JobMode.TRAIN and not received:
+                artifact_code, artifact_sha = _latest_artifact(pod_id, key, (artifact_code, artifact_sha))
             if spec.mode is JobMode.CALIBRATE and rate is None:
-                return 4, rate, state
-            return 0, rate, state
-        return 4, rate, state
+                return 4, rate, state, artifact_code, artifact_sha
+            if spec.mode is JobMode.TRAIN and not received:
+                print("fontsnap: train finished without a verified artifact", file=sys.stderr)
+                return 4, rate, state, artifact_code, artifact_sha
+            return 0, rate, state, artifact_code, artifact_sha
+        return 4, rate, state, artifact_code, artifact_sha
     if spec.mode is JobMode.CALIBRATE and rate is None:
-        return 4, rate, state
-    return 0, rate, state
+        return 4, rate, state, artifact_code, artifact_sha
+    if spec.mode is JobMode.TRAIN and not received:
+        print("fontsnap: train timed out without a verified artifact", file=sys.stderr)
+        return 4, rate, state, artifact_code, artifact_sha
+    return 0, rate, state, artifact_code, artifact_sha
 
 
 def _over_calibrate_cap(spec: RunPodJobSpec) -> bool:
@@ -801,7 +950,7 @@ def _watch(spec: RunPodJobSpec) -> int:
                 started = time.monotonic()
                 pod = create_pod(spec, key)
                 pod_id = pod.id
-                code, rate, state = _poll(pod.id, key, spec, started + spec.max_runtime_seconds)
+                code, rate, state, _art_code, _art_sha = _poll(pod.id, key, spec, started + spec.max_runtime_seconds)
         except _Shutdown as err:
             code = 128 + err.signum
             if pod_id is None:
@@ -865,9 +1014,25 @@ def _spec_from_args(rest: list[str]) -> RunPodJobSpec:
             continue
         raise SystemExit(2)
     if mode == "calibrate":
-        return CALIBRATE
+        return calibrate_spec()
     if mode == "train":
-        return TRAIN
+        rate = read_calibrate_rate()
+        spec = train_spec(rate)
+        if rate is not None:
+            if estimate_train_usd(spec.samples, rate) > TRAIN_SPEND_CAP_USD:
+                print(
+                    f"calibrated rate {rate} samples/s projects over ${TRAIN_SPEND_CAP_USD} incl. setup+transfer; refusing train",
+                    file=sys.stderr,
+                )
+                raise SystemExit(3)
+            needed = train_wall_seconds(spec.samples, rate)
+            if train_max_runtime_seconds(spec.samples, rate) < needed:
+                print(
+                    "calibrated rate cannot finish the epoch inside the $17-capped max_runtime; refusing train",
+                    file=sys.stderr,
+                )
+                raise SystemExit(3)
+        return spec
     raise SystemExit(2)
 
 

@@ -7,7 +7,7 @@ import numpy as np
 from fontsnap_ref.pipeline import prep
 from train.cache import read_verified
 from train.render import render_sample
-from train.samples import SyntheticSampleSpec, build_specs, head_index, known_spec, spec_fits
+from train.samples import SHIPPED_CLASS_COUNT, SyntheticSampleSpec, build_specs, known_spec, spec_fits
 
 
 def prepared_chw(
@@ -25,9 +25,16 @@ def prepared_chw(
 
 
 class FontSnapSynth:
-    def __init__(self, specs: tuple[SyntheticSampleSpec, ...], records: tuple[Any, ...] | None = None) -> None:
+    def __init__(
+        self,
+        specs: tuple[SyntheticSampleSpec, ...],
+        records: tuple[Any, ...] | None = None,
+        *,
+        label_offset: int = SHIPPED_CLASS_COUNT,
+    ) -> None:
         self.specs = tuple(specs)
         self.records = records
+        self.label_offset = label_offset
         for spec in self.specs:
             if records is None:
                 if not known_spec(spec):
@@ -47,7 +54,7 @@ class FontSnapSynth:
         arr = prepared_chw(spec, font_bytes, instance=instance)
         import torch
 
-        return torch.from_numpy(arr), head_index(spec)
+        return torch.from_numpy(arr), self.label_offset + spec.class_index
 
 
 def _digest_of(record: object) -> str | None:
@@ -89,9 +96,62 @@ def make_loader(
     batch_size: int,
     records: tuple[Any, ...] | None = None,
     num_workers: int = 0,
+    label_offset: int = SHIPPED_CLASS_COUNT,
+    shuffle: bool = False,
 ):
     from torch.utils.data import DataLoader
 
     specs = build_specs(n_classes=n_classes, split=split, per_class=per_class, records=records)
-    dataset = FontSnapSynth(specs, records)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+    dataset = FontSnapSynth(specs, records, label_offset=label_offset)
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        persistent_workers=num_workers > 0,
+    )
+
+
+def make_ofl_loader(
+    *,
+    batch_size: int,
+    per_class_new: int,
+    per_class_replay: int,
+    num_workers: int,
+    shuffle: bool,
+    fetch_fonts: bool = True,
+):
+    """OFL phase-1 samples (labels BASE..). Replay of old classes is disabled.
+
+    Fake default-font images under old labels are label noise; old classes are
+    preserved by freezing the backbone and restoring old head rows. per_class_replay
+    must be 0 until real Google Fonts face files are wired for replay.
+    """
+    from torch.utils.data import DataLoader
+
+    from train.cache import cache_root
+    from train.fetch import _fetch_one
+    from train.registry import load_manifest
+
+    if per_class_replay != 0:
+        raise ValueError(
+            "ofl-v1 refuses synthetic replay without real font bytes; set per_class_replay=0 (backbone frozen, old head rows restored)"
+        )
+    records = load_manifest()
+    if fetch_fonts:
+        root = cache_root()
+        seen: set[str] = set()
+        for rec in records:
+            if not rec.file_sha256 or rec.file_sha256 in seen:
+                continue
+            seen.add(rec.file_sha256)
+            _fetch_one(rec, root)
+    new_specs = build_specs(n_classes=len(records), split="train", per_class=per_class_new, records=records)
+    dataset = FontSnapSynth(new_specs, records=records, label_offset=SHIPPED_CLASS_COUNT)
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        persistent_workers=num_workers > 0,
+    )
