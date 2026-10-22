@@ -64,8 +64,8 @@ from train.recipe_defs import (
 
 API = "https://api.runpod.io/v2"
 _PUBLIC_REPO = "https://github.com/dbulyk/fontsnap.git"
-# Short flush only: long settle eats the calibrate watchdog window (N15).
-_LOG_SETTLE_SECONDS = 15
+# Short flush only: long settle eats the calibrate watchdog window (N15/N19).
+_LOG_SETTLE_SECONDS = 5
 # Image pull / provision happens before the entrypoint; billing starts at create.
 _PROVISION_SLACK_SECONDS = 5 * 60
 _SELF_DELETE_CALL_TIMEOUT = 30
@@ -330,9 +330,9 @@ def self_delete_shell() -> str:
 def _publish_artifacts_shell() -> str:
     """Publish ckpt (+ ONNX if present) without deadlocking send/receive.
 
-    Print the receive code and sha256 *before* waiting on runpodctl send.
-    send runs with an explicit --code and a timeout inside the watchdog window.
-    Never `exit` here: self-delete must still run; failures set status=4.
+    runpodctl send appends a relay index to --code (5 parts). Start send in the
+    background, print sha + the full code from its first stdout line, then wait
+    with timeout inside the watchdog window. Never bare `exit`: self-delete must run.
     """
     t = ARTIFACT_TRANSFER_SECONDS
     return (
@@ -350,15 +350,44 @@ def _publish_artifacts_shell() -> str:
         '      tar -C "$ART" -czf "$TGZ" ckpt-final.pt\n'
         "    fi\n"
         "    SHA=$(sha256sum \"$TGZ\" | awk '{print $1}')\n"
-        "    CODE=$(python -c \"import secrets; print('-'.join(secrets.token_hex(2) for _ in range(4)))\")\n"
-        '    echo "fontsnap_artifact_sha256 $SHA"\n'
-        '    echo "fontsnap_artifact_receive $CODE"\n'
+        # python -u so markers flush under piped/docker logs before send blocks.
+        "    python3 -u -c \"print('fontsnap_artifact_sha256', '$SHA', flush=True)\"\n"
         "    if ! command -v runpodctl >/dev/null 2>&1; then\n"
         '      echo "fontsnap: runpodctl missing; cannot send artifacts" >&2\n'
         "      PUBLISH_RC=4\n"
-        f'    elif ! timeout {t} runpodctl send --code "$CODE" "$TGZ"; then\n'
-        '      echo "fontsnap: artifact send failed" >&2\n'
-        "      PUBLISH_RC=4\n"
+        "    else\n"
+        "      CODE_BASE=$(python3 -c \"import secrets; print('-'.join(secrets.token_hex(2) for _ in range(4)))\")\n"
+        '      SEND_OUT="$WORK/fontsnap-send.out"\n'
+        '      SEND_ERR="$WORK/fontsnap-send.err"\n'
+        '      : >"$SEND_OUT"\n'
+        '      : >"$SEND_ERR"\n'
+        f'      timeout {t} runpodctl send --code "$CODE_BASE" "$TGZ" >"$SEND_OUT" 2>"$SEND_ERR" &\n'
+        "      SEND_PID=$!\n"
+        '      FULL=""\n'
+        "      for _ in $(seq 1 300); do\n"
+        '        if [ -s "$SEND_OUT" ]; then\n'
+        "          FULL=$(head -n1 \"$SEND_OUT\" | tr -d '\\r')\n"
+        "          break\n"
+        "        fi\n"
+        '        if ! kill -0 "$SEND_PID" 2>/dev/null; then\n'
+        "          break\n"
+        "        fi\n"
+        "        sleep 0.1\n"
+        "      done\n"
+        '      if [ -z "$FULL" ]; then\n'
+        '        echo "fontsnap: send produced no receive code" >&2\n'
+        '        cat "$SEND_ERR" >&2 || true\n'
+        '        kill "$SEND_PID" 2>/dev/null || true\n'
+        '        wait "$SEND_PID" 2>/dev/null || true\n'
+        "        PUBLISH_RC=4\n"
+        "      else\n"
+        "        python3 -u -c \"print('fontsnap_artifact_receive', '$FULL', flush=True)\"\n"
+        '        if ! wait "$SEND_PID"; then\n'
+        '          echo "fontsnap: artifact send failed" >&2\n'
+        '          cat "$SEND_ERR" >&2 || true\n'
+        "          PUBLISH_RC=4\n"
+        "        fi\n"
+        "      fi\n"
         "    fi\n"
         "  fi\n"
         '  if [ "$PUBLISH_RC" -ne 0 ]; then status="$PUBLISH_RC"; fi\n'
@@ -668,6 +697,12 @@ def act(pod_id: str, action: str, key: str) -> None:
 
 
 def delete_pod(pod_id: str, key: str) -> bool:
+    """Client-side delete. 404 is success only when a follow-up get shows the pod is gone.
+
+    The in-pod curl fallback still treats 404 as failure (N13: wrong path must not
+    look like a successful self-delete). After #25 self-delete, the client's DELETE
+    routinely sees 404 because the pod is already absent — that must clear active.
+    """
     path = "/pods/" + quote(pod_id, safe="")
     delays = iter(_DELETE_BACKOFF)
     while True:
@@ -677,6 +712,11 @@ def delete_pod(pod_id: str, key: str) -> bool:
             status = 0
         if status in _DELETE_OK:
             return True
+        if status == 404:
+            gone = get_pod(pod_id, key)
+            if gone.state is PodState.ABSENT or gone.http_status == 404:
+                return True
+            return False
         if status not in _TRANSIENT_HTTP and status != 0:
             return False
         try:
@@ -725,8 +765,8 @@ def _teardown(pod_id: str, key: str, *, mode: str, hourly: Decimal, started: flo
 
 
 _SAMPLES_PER_SEC = re.compile(r"samples/sec(?:=|\s+)(\d+(?:\.\d+)?)")
-# Exact code shape from secrets.token_hex(2)×4; do not swallow SSE/JSON tails.
-_ARTIFACT_RECEIVE = re.compile(r"fontsnap_artifact_receive\s+([0-9a-f]{4}(?:-[0-9a-f]{4}){3})\b")
+# runpodctl send prints base + "-" + relay index (5 parts). Do not swallow JSON tails.
+_ARTIFACT_RECEIVE = re.compile(r"fontsnap_artifact_receive\s+([0-9a-f]{4}(?:-[0-9a-f]{4}){3}-\d+)\b")
 _ARTIFACT_SHA = re.compile(r"fontsnap_artifact_sha256\s+([0-9a-f]{64})\b")
 
 

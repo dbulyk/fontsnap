@@ -3,22 +3,21 @@
 Sample budget (justification)
 -----------------------------
 The shipped head has BASE_CLASSES = 3665 faces from storia/font-classify-onnx.
-This repository has family metadata (model/meta.json) but no per-face Google Fonts
-file inventory for those labels. Synthetic "replay" with ImageFont.load_default()
-is label noise (rejected in round 1). Full GF-file replay (plan §2.2.3 / variant
-(b)) stays deferred until that inventory is wired.
+meta.json marks most families as in Google Fonts; ofl-v1 pulls a latin-400 cut
+per family from the Fontsource CDN for replay (see train.replay_gf).
 
-Choice for ofl-v1 (round 2)
+Choice for ofl-v1 (round 3)
 ---------------------------
-- Train **only** the 597 new OFL faces (real verified font bytes).
-- **Freeze the backbone**; train classifier head only; zero grads on old rows so
-  they stay at the ONNX init. This is the affordable preservation path that
-  meets realset3 displacement ≤ 2 % without GF replay bytes.
-- Init new head bias to -80 (below the lowest old-head maxima on realset3,
-  measured near -77) so new classes do not steal argmax at step 0.
-- After each AdamW step, restore old classifier rows (weight decay would move
-  them even with zeroed grads).
-- PER_CLASS_NEW=256, PER_CLASS_REPLAY=0. Batch 16 + AMP; num_workers=4.
+- Train the 597 new OFL faces (real verified font bytes) **and** replay old
+  classes on real GF family files (PER_CLASS_REPLAY=4, repeated REPLAY_REPEAT=6
+  times per epoch) so new head rows see enough negatives.
+- **Freeze the backbone**; train classifier head only; restore old head rows
+  after each AdamW step (weight decay would move them with zeroed grads).
+- Soft-distill old logits from the frozen teacher on replay batches (LwF), and
+  logsumexp-penalize new-head logits on those same images (CE alone cannot:
+  with bias −80 the softmax mass on new rows is ~0 so the CE grad is ~0).
+- Init new head bias to -80 so new classes do not steal argmax at step 0.
+- Batch 16 + AMP; num_workers=4.
 """
 
 from __future__ import annotations
@@ -34,7 +33,9 @@ from train.registry import PHASE1_CLASSES
 
 OFL_V1_BATCH_SIZE = 16
 OFL_V1_PER_CLASS_NEW = 256
-OFL_V1_PER_CLASS_REPLAY = 0
+OFL_V1_PER_CLASS_REPLAY = 4
+# Concat-repeat the replay set each epoch so negatives ≈37% of steps (CPU sweep).
+OFL_V1_REPLAY_REPEAT = 6
 OFL_V1_LR = 1e-3  # head-only; higher than full-net 1e-4
 OFL_V1_WEIGHT_DECAY = 1e-2
 OFL_V1_NUM_WORKERS = 4
@@ -42,6 +43,9 @@ OFL_V1_AMP = True
 OFL_V1_CHECKPOINT_EVERY = 500
 OFL_V1_FREEZE_BACKBONE = True
 OFL_V1_NEW_BIAS = -80.0
+OFL_V1_DISTILL_WEIGHT = 1.0
+OFL_V1_SUPPRESS_WEIGHT = 0.5
+OFL_V1_DISTILL_TEMPERATURE = 2.0
 # Warm-up batches excluded from calibrate samples/sec (fetch/workers/compile).
 CALIBRATE_WARMUP_STEPS = 4
 CALIBRATE_STEPS = 16
@@ -59,6 +63,7 @@ ARTIFACT_TRANSFER_SECONDS = 10 * 60
 class SampleBudget:
     per_class_new: int
     per_class_replay: int
+    replay_repeat: int
     new_classes: int
     old_classes: int
 
@@ -68,7 +73,7 @@ class SampleBudget:
 
     @property
     def replay_samples(self) -> int:
-        return self.per_class_replay * self.old_classes
+        return self.per_class_replay * self.old_classes * self.replay_repeat
 
     @property
     def total_samples(self) -> int:
@@ -79,6 +84,7 @@ def ofl_v1_budget() -> SampleBudget:
     return SampleBudget(
         per_class_new=OFL_V1_PER_CLASS_NEW,
         per_class_replay=OFL_V1_PER_CLASS_REPLAY,
+        replay_repeat=OFL_V1_REPLAY_REPEAT,
         new_classes=PHASE1_CLASSES,
         old_classes=BASE_CLASSES,
     )

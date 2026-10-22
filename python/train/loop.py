@@ -14,11 +14,15 @@ from train.recipe_defs import (
     OFL_V1_AMP,
     OFL_V1_BATCH_SIZE,
     OFL_V1_CHECKPOINT_EVERY,
+    OFL_V1_DISTILL_TEMPERATURE,
+    OFL_V1_DISTILL_WEIGHT,
     OFL_V1_FREEZE_BACKBONE,
     OFL_V1_LR,
     OFL_V1_NUM_WORKERS,
     OFL_V1_PER_CLASS_NEW,
     OFL_V1_PER_CLASS_REPLAY,
+    OFL_V1_REPLAY_REPEAT,
+    OFL_V1_SUPPRESS_WEIGHT,
     OFL_V1_WEIGHT_DECAY,
     ofl_v1_budget,
     ofl_v1_steps,
@@ -37,10 +41,12 @@ class TrainConfig:
     device: str
     checkpoint_dir: Path
     distill_weight: float
+    suppress_weight: float
     distill_dir: str
     use_synth: bool
     per_class_new: int
     per_class_replay: int
+    replay_repeat: int
     num_workers: int
     total_samples: int
     checkpoint_every: int
@@ -63,11 +69,13 @@ def recipe(name: str) -> TrainConfig:
         num_classes=expanded_classes(),
         device="cuda",
         checkpoint_dir=_checkpoint_dir(),
-        distill_weight=0.0,
+        distill_weight=OFL_V1_DISTILL_WEIGHT,
+        suppress_weight=OFL_V1_SUPPRESS_WEIGHT,
         distill_dir="",
         use_synth=True,
         per_class_new=OFL_V1_PER_CLASS_NEW,
         per_class_replay=OFL_V1_PER_CLASS_REPLAY,
+        replay_repeat=OFL_V1_REPLAY_REPEAT,
         num_workers=OFL_V1_NUM_WORKERS,
         total_samples=budget.total_samples,
         checkpoint_every=OFL_V1_CHECKPOINT_EVERY,
@@ -85,10 +93,12 @@ def recipe(name: str) -> TrainConfig:
             device="cpu",
             checkpoint_dir=_checkpoint_dir(),
             distill_weight=0.0,
+            suppress_weight=0.0,
             distill_dir="",
             use_synth=False,
             per_class_new=0,
             per_class_replay=0,
+            replay_repeat=1,
             num_workers=0,
             total_samples=1,
             checkpoint_every=0,
@@ -181,10 +191,13 @@ def train(cfg: TrainConfig) -> Path:
         raise SystemExit(2)
     if cfg.num_classes not in (BASE_CLASSES, target):
         raise ValueError(f"num_classes must be {BASE_CLASSES} or {target}")
-    if cfg.distill_weight > 0:
+    # External image distill still banned from realset3; empty distill_dir means
+    # LwF from the frozen ONNX teacher on replay batches only.
+    if cfg.distill_weight > 0 and cfg.distill_dir.strip() != "":
         assert_distill_source(cfg.distill_dir)
     dest = final_checkpoint_path(cfg)
     import torch
+    import torch.nn.functional as F
 
     from fontsnap_ref.pipeline import MODEL
     from train.port import load_efficientnet_b3_from_onnx
@@ -202,6 +215,14 @@ def train(cfg: TrainConfig) -> Path:
     preserve_old = cfg.freeze_backbone and cfg.num_classes == target
     if preserve_old:
         _freeze_backbone(model)
+    teacher = None
+    use_replay_reg = preserve_old and cfg.distill_dir.strip() == "" and (cfg.distill_weight > 0 or cfg.suppress_weight > 0)
+    if use_replay_reg and cfg.distill_weight > 0:
+        teacher = load_efficientnet_b3_from_onnx(MODEL, num_classes=BASE_CLASSES)
+        teacher.eval()
+        teacher.module.to(device)
+        for param in teacher.parameters():
+            param.requires_grad = False
     params = [p for p in model.parameters() if p.requires_grad]
     if not params:
         raise RuntimeError("no trainable parameters")
@@ -213,6 +234,27 @@ def train(cfg: TrainConfig) -> Path:
     old_w = old_b = None
     if preserve_old:
         old_w, old_b = _anchor_old_head(model)
+    temperature = OFL_V1_DISTILL_TEMPERATURE
+
+    def _step_loss(inputs, labels):
+        logits = model(inputs)
+        loss = F.cross_entropy(logits, labels)
+        if use_replay_reg:
+            replay = labels < BASE_CLASSES
+            if bool(replay.any()):
+                replay_logits = logits[replay]
+                if teacher is not None and cfg.distill_weight > 0:
+                    with torch.no_grad():
+                        teacher_logits = teacher(inputs[replay])
+                    log_p = F.log_softmax(replay_logits[:, :BASE_CLASSES] / temperature, dim=-1)
+                    soft = F.softmax(teacher_logits / temperature, dim=-1)
+                    loss = loss + cfg.distill_weight * F.kl_div(log_p, soft, reduction="batchmean") * (temperature * temperature)
+                if cfg.suppress_weight > 0:
+                    # CE on frozen old rows barely moves new rows while bias is −80
+                    # (softmax mass on new ≈ 0 ⇒ grad ≈ 0). Pull new logits down on
+                    # replay images explicitly so they cannot displace realset3.
+                    loss = loss + cfg.suppress_weight * torch.logsumexp(replay_logits[:, BASE_CLASSES:], dim=-1).mean()
+        return loss
 
     # Build loader (font fetch + workers) before the calibrate timer; warm-up
     # batches are excluded from samples/sec so cold fetch cannot tank the rate.
@@ -226,9 +268,9 @@ def train(cfg: TrainConfig) -> Path:
         with torch.no_grad():
             if use_amp:
                 with torch.autocast(device_type="cuda", enabled=True):
-                    _ = torch.nn.functional.cross_entropy(model(warm_x), warm_y)
+                    _ = model(warm_x)
             else:
-                _ = torch.nn.functional.cross_entropy(model(warm_x), warm_y)
+                _ = model(warm_x)
     if device.type == "cuda":
         torch.cuda.synchronize()
 
@@ -241,14 +283,14 @@ def train(cfg: TrainConfig) -> Path:
         opt.zero_grad(set_to_none=True)
         if use_amp:
             with torch.autocast(device_type="cuda", enabled=True):
-                loss = torch.nn.functional.cross_entropy(model(inputs), labels)
+                loss = _step_loss(inputs, labels)
             scaler.scale(loss).backward()
             if preserve_old:
                 _zero_old_head_grads(model)
             scaler.step(opt)
             scaler.update()
         else:
-            loss = torch.nn.functional.cross_entropy(model(inputs), labels)
+            loss = _step_loss(inputs, labels)
             loss.backward()
             if preserve_old:
                 _zero_old_head_grads(model)
@@ -321,6 +363,7 @@ def _batches(cfg: TrainConfig, device, *, limit: int):
         num_workers=workers,
         shuffle=True,
         fetch_fonts=fetch,
+        replay_repeat=cfg.replay_repeat,
     )
     produced = 0
     while produced < limit:
@@ -375,10 +418,12 @@ def main(argv: list[str] | None = None) -> int:
             device=cfg.device if device is None else device,
             checkpoint_dir=cfg.checkpoint_dir,
             distill_weight=cfg.distill_weight,
+            suppress_weight=cfg.suppress_weight,
             distill_dir=cfg.distill_dir,
             use_synth=cfg.use_synth,
             per_class_new=cfg.per_class_new,
             per_class_replay=cfg.per_class_replay,
+            replay_repeat=cfg.replay_repeat,
             num_workers=cfg.num_workers,
             total_samples=cfg.total_samples,
             checkpoint_every=cfg.checkpoint_every,

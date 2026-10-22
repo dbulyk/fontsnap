@@ -262,7 +262,9 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert "_fontsnap_until_deleted" in train
     assert "runpodctl send --code" in train
     assert "fontsnap_artifact_receive" in train
-    assert train.index("fontsnap_artifact_receive") < train.index("runpodctl send --code")
+    # send starts in the background; full 5-part code is echoed from its stdout.
+    assert "SEND_OUT=" in train
+    assert train.index("runpodctl send --code") < train.index("fontsnap_artifact_receive")
     assert train.index("runpodctl send") < train.index("_fontsnap_until_deleted\nexit")
 
 
@@ -383,7 +385,11 @@ def test_happy_path_waits_for_the_job_then_deletes(monkeypatch, tmp_path, capsys
     assert any(method == "GET" and path.startswith(f"/pods/{POD}/logs") for method, path, _body in calls)
     assert deletes(calls) == [f"/pods/{POD}"]
     assert "samples/sec 12.5" in out
-    assert f"main train {TRAIN.samples} samples: 3.396267 h $3.022677" in out
+    from train.recipe_defs import RTX_4090_USD_PER_HOUR
+    from train.runpod import project_main_train
+
+    hours, usd = project_main_train(Decimal("12.5"), RTX_4090_USD_PER_HOUR)
+    assert f"main train {TRAIN.samples} samples: {format(hours, 'f')} h ${format(usd, 'f')}" in out
     assert "main train max_runtime_seconds" in out
     assert KEY not in out
     assert not (tmp_path / "runpod-active-pod.json").exists()
@@ -415,7 +421,11 @@ def test_timer_stops_a_running_calibrate(monkeypatch, tmp_path, capsys):
     out = capsys.readouterr().out
     assert deletes(calls) == [f"/pods/{POD}"]
     assert "samples/sec 12.5" in out
-    assert f"main train {TRAIN.samples} samples: 3.396267 h $3.022677" in out
+    from train.recipe_defs import RTX_4090_USD_PER_HOUR
+    from train.runpod import project_main_train
+
+    hours, usd = project_main_train(Decimal("12.5"), RTX_4090_USD_PER_HOUR)
+    assert f"main train {TRAIN.samples} samples: {format(hours, 'f')} h ${format(usd, 'f')}" in out
 
 
 @pytest.mark.parametrize("status", [503, 401, 404, 429, 500])
@@ -534,9 +544,10 @@ def test_delete_retries_a_network_error_then_succeeds(monkeypatch, tmp_path, cap
     assert not (tmp_path / "runpod-active-pod.json").exists()
 
 
-def test_delete_404_is_not_success(monkeypatch, tmp_path, capsys):
-    """404 is ambiguous (wrong path vs gone); treating it as OK let PID 1 exit without delete (N13)."""
+def test_delete_404_is_success_when_pod_is_gone(monkeypatch, tmp_path, capsys):
+    """Client: after #25 self-delete, DELETE 404 + get ABSENT is success (clears active)."""
     arm(monkeypatch, tmp_path)
+    state = {"deleted": False, "polls": 0}
 
     def handler(method, path, _body):
         hit = price_and_create(method, path)
@@ -545,19 +556,24 @@ def test_delete_404_is_not_success(monkeypatch, tmp_path, capsys):
         if method == "GET" and "/logs" in path:
             return 200, b"samples/sec 12.5\n"
         if method == "GET" and path.startswith(f"/pods/{POD}"):
-            return 200, pod_payload("EXITED")
+            if state["deleted"]:
+                return 404, {"title": "Not Found"}
+            state["polls"] += 1
+            status = "RUNNING" if state["polls"] == 1 else "EXITED"
+            return 200, pod_payload(status)
         if method == "POST" and path.endswith("/action"):
             return 200, {}
         if method == "DELETE":
+            state["deleted"] = True
             return 404, {"title": "Not Found"}
         raise AssertionError((method, path))
 
     calls = install(monkeypatch, handler)
-    assert main(["watch", "--mode", "calibrate"]) == 4
+    assert main(["watch", "--mode", "calibrate"]) == 0
     assert deletes(calls) == [f"/pods/{POD}"]
-    err = capsys.readouterr().err
-    assert "DELETE FAILED" in err
-    assert "DELETE FAILED" in journal_notes(tmp_path)
+    assert "DELETE FAILED" not in capsys.readouterr().err
+    assert journal_notes(tmp_path) == ["deleted"]
+    assert not (tmp_path / "runpod-active-pod.json").exists()
 
 
 def test_stale_active_pod_is_deleted_before_create(monkeypatch, tmp_path):
@@ -1360,19 +1376,21 @@ def test_absent_pod_still_reads_a_rate(monkeypatch, tmp_path, capsys):
     assert deletes(calls) == [f"/pods/{POD}"]
 
 
-def test_artifact_receive_regex_stops_at_json_tail():
+def test_artifact_receive_regex_requires_relay_index():
     from train.runpod import parse_artifact_receive, parse_artifact_sha256
 
-    code = "abcd-ef01-2345-6789"
+    code = "abcd-ef01-2345-6789-2"
     digest = "a" * 64
     blob = json.dumps({"line": f"fontsnap_artifact_receive {code}"})
     assert parse_artifact_receive(blob) == code
+    # Four-part codes (missing relay index) must not match — receive would fail.
+    assert parse_artifact_receive("fontsnap_artifact_receive abcd-ef01-2345-6789") is None
     assert parse_artifact_sha256(f'fontsnap_artifact_sha256 {digest}"}}') == digest
     assert parse_artifact_receive("fontsnap_artifact_receive not-a-code") is None
 
 
-def test_publish_prints_code_before_blocking_send(tmp_path):
-    """send waits for a receiver; code+sha must appear in stdout before that wait (B4)."""
+def test_publish_prints_full_code_from_send_stdout_before_wait(tmp_path):
+    """Mimic runpodctl v1.14.4: send prints base-relayIndex then blocks (B4)."""
     work = tmp_path / "pod-work"
     art = work / "out" / "train"
     art.mkdir(parents=True)
@@ -1384,7 +1402,14 @@ def test_publish_prints_code_before_blocking_send(tmp_path):
         "#!/bin/sh\n"
         'printf "%s\\n" "$*" >> "$SEND_LOG"\n'
         'if [ "$1" = send ]; then\n'
-        "  # Mimic v1.14.4: block until a receiver connects (stdin may be closed).\n"
+        "  code=\n"
+        "  prev=\n"
+        "  for arg; do\n"
+        '    if [ "$prev" = "--code" ]; then code="$arg"; fi\n'
+        '    prev="$arg"\n'
+        "  done\n"
+        "  # Real runpodctl appends a relay index and prints the full secret.\n"
+        '  printf "%s-2\\n" "$code"\n'
         "  exec sleep 1000\n"
         "fi\n"
         "exit 0\n",
@@ -1434,6 +1459,10 @@ def test_publish_prints_code_before_blocking_send(tmp_path):
             raise AssertionError(f"code not printed before send blocked; got {buf!r}")
         assert "fontsnap_artifact_sha256" in buf
         assert "fontsnap_artifact_receive" in buf
+        from train.runpod import parse_artifact_receive
+
+        full = parse_artifact_receive(buf)
+        assert full is not None and full.count("-") == 4 and full.endswith("-2")
         # send must have started (and be blocked)
         time.sleep(0.2)
         assert proc.poll() is None
@@ -1455,16 +1484,18 @@ def test_receive_artifact_strips_api_key_and_checks_sha(tmp_path, monkeypatch):
     payload = b"weights-v2"
     digest = hashlib.sha256(payload).hexdigest()
     seen = {}
+    full_code = "abcd-ef01-2345-6789-2"
 
     def fake_run(cmd, cwd=None, check=None, timeout=None, env=None):
         seen["cmd"] = cmd
         seen["env"] = env
         assert "RUNPOD_API_KEY" not in (env or {})
+        assert cmd[2] == full_code
         Path(cwd).joinpath("incoming.tgz").write_bytes(payload)
         return subprocess.CompletedProcess(cmd, 0)
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    path = runpod.receive_artifact("abcd-ef01-2345-6789", digest)
+    path = runpod.receive_artifact(full_code, digest)
     assert path == dest / "fontsnap-ofl-v1.tgz"
     assert path.read_bytes() == payload
     assert seen["cmd"][:2] == ["runpodctl", "receive"]
@@ -1475,13 +1506,13 @@ def test_receive_artifact_strips_api_key_and_checks_sha(tmp_path, monkeypatch):
 
     monkeypatch.setattr(subprocess, "run", write_bad)
     with pytest.raises(ValueError, match="sha256"):
-        runpod.receive_artifact("abcd-ef01-2345-6789", digest)
+        runpod.receive_artifact(full_code, digest)
     assert not (dest / "bad.tgz").exists()
 
 
 def test_train_watch_receives_artifact_while_running(monkeypatch, tmp_path, capsys):
     arm(monkeypatch, tmp_path)
-    code = "abcd-ef01-2345-6789"
+    code = "abcd-ef01-2345-6789-2"
     digest = "b" * 64
     got = {"receive": 0}
 
@@ -1556,9 +1587,9 @@ def test_slow_calibrate_rate_refuses_train_under_cap(monkeypatch, tmp_path, caps
     assert calls == []
 
 
-def test_self_delete_shell_does_not_treat_404_as_ok():
+def test_pod_self_delete_shell_still_rejects_404():
+    """N13: in-pod curl must not treat 404 as success (wrong path / rights)."""
     from train.runpod import _DELETE_OK, self_delete_shell
 
     assert 404 not in _DELETE_OK
-    text = self_delete_shell()
-    assert "404" not in text
+    assert "404" not in self_delete_shell()

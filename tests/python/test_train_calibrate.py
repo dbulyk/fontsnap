@@ -5,9 +5,27 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 
 
+def _stub_fonts(monkeypatch, tmp_path, payload: bytes):
+    monkeypatch.setenv("FONTSNAP_SKIP_FETCH", "1")
+    monkeypatch.setattr("train.dataset.read_verified", lambda _sha, root=None: payload)
+    monkeypatch.setattr(
+        "train.replay_gf.load_replay_fonts",
+        lambda **_kwargs: {i: payload for i in range(16)},
+    )
+    from PIL import ImageFont
+
+    monkeypatch.setattr(
+        "train.render._font",
+        lambda _bytes, _size_px, _instance: ImageFont.load_default(),
+    )
+    monkeypatch.setattr("train.paths.OUT", tmp_path)
+    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(tmp_path / "font-cache"))
+    (tmp_path / "font-cache").mkdir(exist_ok=True)
+
+
 def test_calibrate_recipe_matches_ofl_v1_shape():
     from train.loop import recipe
-    from train.recipe_defs import CALIBRATE_STEPS, OFL_V1_BATCH_SIZE
+    from train.recipe_defs import CALIBRATE_STEPS, OFL_V1_BATCH_SIZE, OFL_V1_PER_CLASS_REPLAY
 
     cal = recipe("calibrate")
     ofl = recipe("ofl-v1")
@@ -15,7 +33,7 @@ def test_calibrate_recipe_matches_ofl_v1_shape():
     assert cal.batch_size == ofl.batch_size == OFL_V1_BATCH_SIZE
     assert cal.amp == ofl.amp
     assert cal.per_class_new == ofl.per_class_new
-    assert cal.per_class_replay == ofl.per_class_replay == 0
+    assert cal.per_class_replay == ofl.per_class_replay == OFL_V1_PER_CLASS_REPLAY
     assert cal.freeze_backbone == ofl.freeze_backbone
 
 
@@ -26,21 +44,11 @@ def test_calibrate_one_cpu_step_prints_rate_and_exits_0(tmp_path, monkeypatch, c
     if not MODEL.is_file() or MODEL.stat().st_size < 1_000_000:
         pytest.skip("onnx weights are not pulled")
 
-    payload = b"\x00\x01\x00\x00" + b"calibrate-fixture"
-    monkeypatch.setenv("FONTSNAP_SKIP_FETCH", "1")
-    monkeypatch.setattr("train.dataset.read_verified", lambda _sha, root=None: payload)
-    from PIL import ImageFont
-
-    monkeypatch.setattr(
-        "train.render._font",
-        lambda _bytes, _size_px, _instance: ImageFont.load_default(),
-    )
+    _stub_fonts(monkeypatch, tmp_path, b"\x00\x01\x00\x00" + b"calibrate-fixture")
     monkeypatch.setattr("train.loop.OFL_V1_PER_CLASS_NEW", 1)
+    monkeypatch.setattr("train.loop.OFL_V1_PER_CLASS_REPLAY", 1)
     monkeypatch.setattr("train.loop.CALIBRATE_WARMUP_STEPS", 0)
-    cache = tmp_path / "font-cache"
-    cache.mkdir()
-    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(cache))
-    monkeypatch.setattr("train.paths.OUT", tmp_path)
+    monkeypatch.setattr("train.export.export_onnx_fp16", lambda *a, **k: None)
 
     from train.loop import main as loop_main
 
@@ -56,19 +64,10 @@ def test_calibrate_timer_starts_after_loader_warmup(tmp_path, monkeypatch, capsy
     if not MODEL.is_file() or MODEL.stat().st_size < 1_000_000:
         pytest.skip("onnx weights are not pulled")
 
-    payload = b"\x00\x01\x00\x00" + b"warmup-fixture"
-    monkeypatch.setenv("FONTSNAP_SKIP_FETCH", "1")
-    monkeypatch.setattr("train.dataset.read_verified", lambda _sha, root=None: payload)
-    from PIL import ImageFont
-
-    monkeypatch.setattr(
-        "train.render._font",
-        lambda _bytes, _size_px, _instance: ImageFont.load_default(),
-    )
-    monkeypatch.setattr("train.paths.OUT", tmp_path)
-    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(tmp_path / "font-cache"))
-    (tmp_path / "font-cache").mkdir()
+    _stub_fonts(monkeypatch, tmp_path, b"\x00\x01\x00\x00" + b"warmup-fixture")
     monkeypatch.setattr("train.loop.CALIBRATE_WARMUP_STEPS", 2)
+    monkeypatch.setattr("train.loop.OFL_V1_PER_CLASS_NEW", 1)
+    monkeypatch.setattr("train.loop.OFL_V1_PER_CLASS_REPLAY", 1)
     monkeypatch.setattr("train.export.export_onnx_fp16", lambda *a, **k: None)
 
     import train.loop as loop
@@ -106,18 +105,9 @@ def test_ofl_v1_writes_ckpt_when_onnx_export_fails(tmp_path, monkeypatch):
     if not MODEL.is_file() or MODEL.stat().st_size < 1_000_000:
         pytest.skip("onnx weights are not pulled")
 
-    payload = b"\x00\x01\x00\x00" + b"export-fail"
-    monkeypatch.setenv("FONTSNAP_SKIP_FETCH", "1")
-    monkeypatch.setattr("train.dataset.read_verified", lambda _sha, root=None: payload)
-    from PIL import ImageFont
-
-    monkeypatch.setattr(
-        "train.render._font",
-        lambda _bytes, _size_px, _instance: ImageFont.load_default(),
-    )
-    monkeypatch.setattr("train.paths.OUT", tmp_path)
-    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(tmp_path / "font-cache"))
-    (tmp_path / "font-cache").mkdir()
+    _stub_fonts(monkeypatch, tmp_path, b"\x00\x01\x00\x00" + b"export-fail")
+    monkeypatch.setattr("train.loop.OFL_V1_PER_CLASS_NEW", 1)
+    monkeypatch.setattr("train.loop.OFL_V1_PER_CLASS_REPLAY", 1)
 
     def boom(*_a, **_k):
         raise RuntimeError("cuda export crashed")
@@ -138,19 +128,10 @@ def test_train_streams_and_writes_final_ckpt(tmp_path, monkeypatch):
     if not MODEL.is_file() or MODEL.stat().st_size < 1_000_000:
         pytest.skip("onnx weights are not pulled")
 
-    payload = b"\x00\x01\x00\x00" + b"stream-fixture"
-    monkeypatch.setenv("FONTSNAP_SKIP_FETCH", "1")
-    monkeypatch.setattr("train.dataset.read_verified", lambda _sha, root=None: payload)
-    from PIL import ImageFont
-
-    monkeypatch.setattr(
-        "train.render._font",
-        lambda _bytes, _size_px, _instance: ImageFont.load_default(),
-    )
+    _stub_fonts(monkeypatch, tmp_path, b"\x00\x01\x00\x00" + b"stream-fixture")
     monkeypatch.setattr("train.loop.OFL_V1_PER_CLASS_NEW", 1)
-    monkeypatch.setattr("train.paths.OUT", tmp_path)
-    monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(tmp_path / "font-cache"))
-    (tmp_path / "font-cache").mkdir()
+    monkeypatch.setattr("train.loop.OFL_V1_PER_CLASS_REPLAY", 1)
+    monkeypatch.setattr("train.export.export_onnx_fp16", lambda *a, **k: None)
 
     import train.loop as loop
 
