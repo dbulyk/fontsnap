@@ -6,18 +6,24 @@ The shipped head has BASE_CLASSES = 3665 faces from storia/font-classify-onnx.
 meta.json marks most families as in Google Fonts; ofl-v1 pulls a latin-400 cut
 per family from the Fontsource CDN for replay (see train.replay_gf).
 
-Choice for ofl-v1 (round 3)
+Choice for ofl-v1 (round 5)
 ---------------------------
 - Train the 597 new OFL faces (real verified font bytes) **and** replay old
   classes on real GF family files (PER_CLASS_REPLAY=4, repeated REPLAY_REPEAT=6
   times per epoch) so new head rows see enough negatives.
 - **Freeze the backbone**; train classifier head only; restore old head rows
   after each AdamW step (weight decay would move them with zeroed grads).
-- Soft-distill old logits from the frozen teacher on replay batches (LwF), and
-  logsumexp-penalize new-head logits on those same images (CE alone cannot:
-  with bias −80 the softmax mass on new rows is ~0 so the CE grad is ~0).
+- On replay images only, margin-penalize when a new logit threatens the old
+  answer: softplus(max_new − max_old + margin). Unthresholded logsumexp was
+  killing new-class hold-out on the full head; CE alone cannot move new rows
+  at bias −80.
+- Replay renders use evaluate pack/crop textcrop (closer to the extension view
+  than raw synth-prep). Softplus still needs screenshot-domain negatives to
+  protect realset3; those are not in-tree (realset3 is eval-only).
+- No LwF teacher (KL on frozen old columns is ~0 and costs a second forward).
 - Init new head bias to -80 so new classes do not steal argmax at step 0.
-- Batch 16 + AMP; num_workers=4.
+- Batch 16 + AMP; num_workers=4. Font fetches run in parallel (8 workers);
+  FONT_FETCH_SLACK_SECONDS is inside setup / max_runtime budgets.
 """
 
 from __future__ import annotations
@@ -34,7 +40,7 @@ from train.registry import PHASE1_CLASSES
 OFL_V1_BATCH_SIZE = 16
 OFL_V1_PER_CLASS_NEW = 256
 OFL_V1_PER_CLASS_REPLAY = 4
-# Concat-repeat the replay set each epoch so negatives ≈37% of steps (CPU sweep).
+# Concat-repeat the replay set each epoch so negatives ≈37% of steps.
 OFL_V1_REPLAY_REPEAT = 6
 OFL_V1_LR = 1e-3  # head-only; higher than full-net 1e-4
 OFL_V1_WEIGHT_DECAY = 1e-2
@@ -43,9 +49,11 @@ OFL_V1_AMP = True
 OFL_V1_CHECKPOINT_EVERY = 500
 OFL_V1_FREEZE_BACKBONE = True
 OFL_V1_NEW_BIAS = -80.0
-OFL_V1_DISTILL_WEIGHT = 1.0
-OFL_V1_SUPPRESS_WEIGHT = 0.5
+# Kept at 0: LwF on frozen old columns is a no-op (round 4 measure).
+OFL_V1_DISTILL_WEIGHT = 0.0
 OFL_V1_DISTILL_TEMPERATURE = 2.0
+OFL_V1_SUPPRESS_WEIGHT = 1.0
+OFL_V1_SUPPRESS_MARGIN = 8.0
 # Warm-up batches excluded from calibrate samples/sec (fetch/workers/compile).
 CALIBRATE_WARMUP_STEPS = 4
 CALIBRATE_STEPS = 16
@@ -55,6 +63,8 @@ TRAIN_SPEND_CAP_USD = Decimal("17.00")
 CALIBRATE_SPEND_CAP_USD = Decimal("1.00")
 CALIBRATE_MAX_RUNTIME_SECONDS = 20 * 60
 SETUP_SLACK_SECONDS = 20 * 60
+# Parallel GF+OFL cold fetch (~1 min measured) plus headroom inside setup.
+FONT_FETCH_SLACK_SECONDS = 3 * 60
 # Leave room inside the watchdog for artifact send after train.
 ARTIFACT_TRANSFER_SECONDS = 10 * 60
 
@@ -104,18 +114,22 @@ def estimate_usd(samples: int, rate: Decimal, hourly: Decimal = RTX_4090_USD_PER
     return estimate_hours(samples, rate) * hourly
 
 
+def _setup_slack_seconds() -> int:
+    return SETUP_SLACK_SECONDS + FONT_FETCH_SLACK_SECONDS
+
+
 def estimate_train_usd(samples: int, rate: Decimal, hourly: Decimal = RTX_4090_USD_PER_HOUR) -> Decimal:
-    """Compute + setup + artifact transfer, for the >$17 refuse check."""
-    slack = Decimal(SETUP_SLACK_SECONDS + ARTIFACT_TRANSFER_SECONDS) / Decimal(3600)
+    """Compute + setup (incl. font fetch) + artifact transfer, for the >$17 refuse check."""
+    slack = Decimal(_setup_slack_seconds() + ARTIFACT_TRANSFER_SECONDS) / Decimal(3600)
     return (estimate_hours(samples, rate) + slack) * hourly
 
 
 def train_wall_seconds(samples: int, rate: Decimal) -> int:
-    """Seconds the pod needs: epoch compute + setup slack + artifact send window."""
+    """Seconds the pod needs: epoch compute + setup/fetch slack + artifact send window."""
     if rate <= 0:
         raise ValueError("rate must be positive")
     compute = int(math.ceil(float(Decimal(samples) / rate)))
-    return compute + SETUP_SLACK_SECONDS + ARTIFACT_TRANSFER_SECONDS
+    return compute + _setup_slack_seconds() + ARTIFACT_TRANSFER_SECONDS
 
 
 def train_max_runtime_seconds(samples: int, rate: Decimal | None = None) -> int:

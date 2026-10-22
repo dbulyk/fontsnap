@@ -108,7 +108,9 @@ def test_frozen_backbone_old_rows_and_replay_train(tmp_path, monkeypatch):
 
     base_cfg = recipe("ofl-v1")
     assert base_cfg.per_class_replay >= 4
-    assert base_cfg.distill_weight > 0
+    assert base_cfg.distill_weight == 0.0
+    assert base_cfg.suppress_weight > 0
+    assert base_cfg.suppress_margin > 0
     cfg = TrainConfig(
         recipe=base_cfg.recipe,
         steps=12,
@@ -119,8 +121,9 @@ def test_frozen_backbone_old_rows_and_replay_train(tmp_path, monkeypatch):
         num_classes=base_cfg.num_classes,
         device="cpu",
         checkpoint_dir=tmp_path / "train",
-        distill_weight=base_cfg.distill_weight,
+        distill_weight=0.0,
         suppress_weight=base_cfg.suppress_weight,
+        suppress_margin=base_cfg.suppress_margin,
         distill_dir="",
         use_synth=True,
         per_class_new=1,
@@ -160,12 +163,15 @@ def test_frozen_backbone_old_rows_and_replay_train(tmp_path, monkeypatch):
     assert new_head_moved
 
 
-def test_replay_logsumexp_term_in_loop_source():
-    """Guard: CE on frozen old rows cannot move new rows at bias −80; loop must penalize them."""
+def test_replay_margin_suppress_in_loop_source():
+    """Guard: unthresholded logsumexp is gone; margin softplus must remain."""
     import inspect
 
     from train import loop
 
     src = inspect.getsource(loop.train)
-    assert "logsumexp" in src
-    assert "BASE_CLASSES:" in src or "BASE_CLASSES :" in src
+    assert "softplus" in src
+    assert "max_new" in src and "max_old" in src
+    assert "logsumexp" not in src
+    # One call site only (import + call); no second model for LwF.
+    assert src.count("load_efficientnet_b3_from_onnx(") == 1

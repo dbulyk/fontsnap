@@ -1408,6 +1408,8 @@ def test_publish_prints_full_code_from_send_stdout_before_wait(tmp_path):
         '    if [ "$prev" = "--code" ]; then code="$arg"; fi\n'
         '    prev="$arg"\n'
         "  done\n"
+        "  # 1.14.15 without config.toml prints a banner on stdout before the code.\n"
+        '  printf "%s\\n" "Runpod config file not found, please run runpodctl config to create it"\n'
         "  # Real runpodctl appends a relay index and prints the full secret.\n"
         '  printf "%s-2\\n" "$code"\n'
         "  exec sleep 1000\n"

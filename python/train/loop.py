@@ -14,7 +14,6 @@ from train.recipe_defs import (
     OFL_V1_AMP,
     OFL_V1_BATCH_SIZE,
     OFL_V1_CHECKPOINT_EVERY,
-    OFL_V1_DISTILL_TEMPERATURE,
     OFL_V1_DISTILL_WEIGHT,
     OFL_V1_FREEZE_BACKBONE,
     OFL_V1_LR,
@@ -22,6 +21,7 @@ from train.recipe_defs import (
     OFL_V1_PER_CLASS_NEW,
     OFL_V1_PER_CLASS_REPLAY,
     OFL_V1_REPLAY_REPEAT,
+    OFL_V1_SUPPRESS_MARGIN,
     OFL_V1_SUPPRESS_WEIGHT,
     OFL_V1_WEIGHT_DECAY,
     ofl_v1_budget,
@@ -42,6 +42,7 @@ class TrainConfig:
     checkpoint_dir: Path
     distill_weight: float
     suppress_weight: float
+    suppress_margin: float
     distill_dir: str
     use_synth: bool
     per_class_new: int
@@ -71,6 +72,7 @@ def recipe(name: str) -> TrainConfig:
         checkpoint_dir=_checkpoint_dir(),
         distill_weight=OFL_V1_DISTILL_WEIGHT,
         suppress_weight=OFL_V1_SUPPRESS_WEIGHT,
+        suppress_margin=OFL_V1_SUPPRESS_MARGIN,
         distill_dir="",
         use_synth=True,
         per_class_new=OFL_V1_PER_CLASS_NEW,
@@ -94,6 +96,7 @@ def recipe(name: str) -> TrainConfig:
             checkpoint_dir=_checkpoint_dir(),
             distill_weight=0.0,
             suppress_weight=0.0,
+            suppress_margin=0.0,
             distill_dir="",
             use_synth=False,
             per_class_new=0,
@@ -191,8 +194,7 @@ def train(cfg: TrainConfig) -> Path:
         raise SystemExit(2)
     if cfg.num_classes not in (BASE_CLASSES, target):
         raise ValueError(f"num_classes must be {BASE_CLASSES} or {target}")
-    # External image distill still banned from realset3; empty distill_dir means
-    # LwF from the frozen ONNX teacher on replay batches only.
+    # External image distill (if ever enabled) is banned from realset3.
     if cfg.distill_weight > 0 and cfg.distill_dir.strip() != "":
         assert_distill_source(cfg.distill_dir)
     dest = final_checkpoint_path(cfg)
@@ -215,14 +217,8 @@ def train(cfg: TrainConfig) -> Path:
     preserve_old = cfg.freeze_backbone and cfg.num_classes == target
     if preserve_old:
         _freeze_backbone(model)
-    teacher = None
-    use_replay_reg = preserve_old and cfg.distill_dir.strip() == "" and (cfg.distill_weight > 0 or cfg.suppress_weight > 0)
-    if use_replay_reg and cfg.distill_weight > 0:
-        teacher = load_efficientnet_b3_from_onnx(MODEL, num_classes=BASE_CLASSES)
-        teacher.eval()
-        teacher.module.to(device)
-        for param in teacher.parameters():
-            param.requires_grad = False
+    # No second ONNX pass: KL on frozen old columns is ~0 (round 4).
+    use_margin = preserve_old and cfg.suppress_weight > 0
     params = [p for p in model.parameters() if p.requires_grad]
     if not params:
         raise RuntimeError("no trainable parameters")
@@ -234,26 +230,18 @@ def train(cfg: TrainConfig) -> Path:
     old_w = old_b = None
     if preserve_old:
         old_w, old_b = _anchor_old_head(model)
-    temperature = OFL_V1_DISTILL_TEMPERATURE
 
     def _step_loss(inputs, labels):
         logits = model(inputs)
         loss = F.cross_entropy(logits, labels)
-        if use_replay_reg:
+        if use_margin:
             replay = labels < BASE_CLASSES
             if bool(replay.any()):
                 replay_logits = logits[replay]
-                if teacher is not None and cfg.distill_weight > 0:
-                    with torch.no_grad():
-                        teacher_logits = teacher(inputs[replay])
-                    log_p = F.log_softmax(replay_logits[:, :BASE_CLASSES] / temperature, dim=-1)
-                    soft = F.softmax(teacher_logits / temperature, dim=-1)
-                    loss = loss + cfg.distill_weight * F.kl_div(log_p, soft, reduction="batchmean") * (temperature * temperature)
-                if cfg.suppress_weight > 0:
-                    # CE on frozen old rows barely moves new rows while bias is −80
-                    # (softmax mass on new ≈ 0 ⇒ grad ≈ 0). Pull new logits down on
-                    # replay images explicitly so they cannot displace realset3.
-                    loss = loss + cfg.suppress_weight * torch.logsumexp(replay_logits[:, BASE_CLASSES:], dim=-1).mean()
+                max_old = replay_logits[:, :BASE_CLASSES].amax(dim=-1)
+                max_new = replay_logits[:, BASE_CLASSES:].amax(dim=-1)
+                # Fire only when a new logit threatens the old answer.
+                loss = loss + cfg.suppress_weight * F.softplus(max_new - max_old + cfg.suppress_margin).mean()
         return loss
 
     # Build loader (font fetch + workers) before the calibrate timer; warm-up
@@ -419,6 +407,7 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint_dir=cfg.checkpoint_dir,
             distill_weight=cfg.distill_weight,
             suppress_weight=cfg.suppress_weight,
+            suppress_margin=cfg.suppress_margin,
             distill_dir=cfg.distill_dir,
             use_synth=cfg.use_synth,
             per_class_new=cfg.per_class_new,

@@ -5,17 +5,22 @@ import pytest
 from train.loop import recipe
 from train.model import BASE_CLASSES, NEW_HEAD_BIAS, expanded_classes
 from train.recipe_defs import (
+    ARTIFACT_TRANSFER_SECONDS,
     ASSUMED_FLOOR_SAMPLES_PER_SEC,
     CALIBRATE_STEPS,
+    FONT_FETCH_SLACK_SECONDS,
     OFL_V1_BATCH_SIZE,
     OFL_V1_PER_CLASS_NEW,
     OFL_V1_PER_CLASS_REPLAY,
     OFL_V1_REPLAY_REPEAT,
+    OFL_V1_SUPPRESS_MARGIN,
     OFL_V1_SUPPRESS_WEIGHT,
+    SETUP_SLACK_SECONDS,
     TRAIN_SPEND_CAP_USD,
     ofl_v1_budget,
     projection_band,
     train_max_runtime_seconds,
+    train_wall_seconds,
 )
 from train.registry import PHASE1_CLASSES
 from train.runpod import CALIBRATE, TRAIN, calibrate_spec, train_spec
@@ -31,8 +36,9 @@ def test_ofl_v1_and_calibrate_share_loader_shape():
     assert ofl.per_class_replay == cal.per_class_replay == OFL_V1_PER_CLASS_REPLAY == 4
     assert ofl.replay_repeat == cal.replay_repeat == OFL_V1_REPLAY_REPEAT == 6
     assert ofl.freeze_backbone is cal.freeze_backbone is True
-    assert ofl.distill_weight == cal.distill_weight > 0
-    assert ofl.suppress_weight == cal.suppress_weight == OFL_V1_SUPPRESS_WEIGHT == 0.5
+    assert ofl.distill_weight == cal.distill_weight == 0.0
+    assert ofl.suppress_weight == cal.suppress_weight == OFL_V1_SUPPRESS_WEIGHT == 1.0
+    assert ofl.suppress_margin == cal.suppress_margin == OFL_V1_SUPPRESS_MARGIN == 8.0
     assert ofl.num_classes == cal.num_classes == expanded_classes()
     assert ofl.device == cal.device == "cuda"
     assert cal.steps == CALIBRATE_STEPS
@@ -59,6 +65,15 @@ def test_runpod_specs_derive_from_recipe_and_rate():
     assert band["fits_17"] == Decimal(1)
     assert ASSUMED_FLOOR_SAMPLES_PER_SEC == Decimal("5")
     assert NEW_HEAD_BIAS == -80.0
+
+
+def test_train_wall_includes_font_fetch_slack():
+    """B8: cold GF+OFL download must sit inside setup / max_runtime, not only compute."""
+    assert FONT_FETCH_SLACK_SECONDS >= 60
+    rate = Decimal("20")
+    samples = 1000
+    # ceil(1000/20) = 50
+    assert train_wall_seconds(samples, rate) == (50 + SETUP_SLACK_SECONDS + FONT_FETCH_SLACK_SECONDS + ARTIFACT_TRANSFER_SECONDS)
 
 
 def test_fontsource_slug_uses_display_kebab_case():

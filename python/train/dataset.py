@@ -26,8 +26,20 @@ def prepared_chw(
     font_bytes: bytes | None = None,
     *,
     instance: tuple[tuple[str, float], ...] = (),
+    textcrop: str | None = None,
 ) -> np.ndarray:
+    """Render → optional evaluate-style textcrop → prep.
+
+    Replay passes textcrop='pack'|'crop' so old-class negatives live in the same
+    view as realset3 / the extension; plain synth train and hold-out omit it.
+    """
     canvas = render_sample(spec, font_bytes, instance=instance)
+    if textcrop is not None:
+        from fontsnap_ref.textcrop import crop_normalize
+
+        if textcrop not in ("pack", "crop"):
+            raise ValueError(f"textcrop must be 'pack' or 'crop', got {textcrop!r}")
+        canvas = crop_normalize(canvas, textcrop)
     batch = prep(canvas)
     chw = np.ascontiguousarray(batch[0], dtype=np.float32)
     if chw.shape != (3, 320, 320):
@@ -90,8 +102,10 @@ class OldClassReplaySynth:
         last_err: Exception | None = None
         for offset in range(len(self.specs)):
             spec = self.specs[(index + offset) % len(self.specs)]
+            # Evaluate-style pack/crop (closer domain than raw synth-prep).
+            view = "pack" if (spec.seed % 2 == 0) else "crop"
             try:
-                arr = prepared_chw(spec, self.fonts[spec.class_index])
+                arr = prepared_chw(spec, self.fonts[spec.class_index], textcrop=view)
             except (OSError, RuntimeError, ValueError) as err:
                 last_err = err
                 continue
@@ -206,13 +220,20 @@ def make_ofl_loader(
         raise ValueError("replay_repeat must be >= 1")
     records = load_manifest()
     if fetch_fonts:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
         root = cache_root()
         seen: set[str] = set()
+        jobs = []
         for rec in records:
             if not rec.file_sha256 or rec.file_sha256 in seen:
                 continue
             seen.add(rec.file_sha256)
-            _fetch_one(rec, root)
+            jobs.append(rec)
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            futs = [pool.submit(_fetch_one, rec, root) for rec in jobs]
+            for fut in as_completed(futs):
+                fut.result()
     new_specs = build_specs(n_classes=len(records), split="train", per_class=per_class_new, records=records)
     new_ds = FontSnapSynth(new_specs, records=records, label_offset=SHIPPED_CLASS_COUNT)
     parts: list = [new_ds]

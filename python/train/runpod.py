@@ -331,8 +331,9 @@ def _publish_artifacts_shell() -> str:
     """Publish ckpt (+ ONNX if present) without deadlocking send/receive.
 
     runpodctl send appends a relay index to --code (5 parts). Start send in the
-    background, print sha + the full code from its first stdout line, then wait
-    with timeout inside the watchdog window. Never bare `exit`: self-delete must run.
+    background, print sha + the full code matched by ^$CODE_BASE-[0-9]+$ (not
+    head -n1: 1.14.15 may print a config banner first), then wait with timeout
+    inside the watchdog window. Never bare `exit`: self-delete must run.
     """
     t = ARTIFACT_TRANSFER_SECONDS
     return (
@@ -364,12 +365,14 @@ def _publish_artifacts_shell() -> str:
         f'      timeout {t} runpodctl send --code "$CODE_BASE" "$TGZ" >"$SEND_OUT" 2>"$SEND_ERR" &\n'
         "      SEND_PID=$!\n"
         '      FULL=""\n'
+        # 1.14.15 without config.toml prints a banner on stdout before the code.
         "      for _ in $(seq 1 300); do\n"
-        '        if [ -s "$SEND_OUT" ]; then\n'
-        "          FULL=$(head -n1 \"$SEND_OUT\" | tr -d '\\r')\n"
+        '        FULL=$(grep -E "^${CODE_BASE}-[0-9]+$" "$SEND_OUT" 2>/dev/null | head -n1 | tr -d \'\\r\' || true)\n'
+        '        if [ -n "$FULL" ]; then\n'
         "          break\n"
         "        fi\n"
         '        if ! kill -0 "$SEND_PID" 2>/dev/null; then\n'
+        '          FULL=$(grep -E "^${CODE_BASE}-[0-9]+$" "$SEND_OUT" 2>/dev/null | head -n1 | tr -d \'\\r\' || true)\n'
         "          break\n"
         "        fi\n"
         "        sleep 0.1\n"

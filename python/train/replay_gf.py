@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -27,6 +28,9 @@ from train.registry import sha256_hex
 _CDN = "https://cdn.jsdelivr.net/fontsource/fonts/{family}@latest/latin-400-normal.ttf"
 _UA = "fontsnap-train/0 (ofl-v1 replay; +https://github.com/dbulyk/fontsnap)"
 _SLUG = re.compile(r"[^a-z0-9]+")
+# Parallel fetch keeps cold calibrate/train setup inside the pod watchdog.
+_FETCH_WORKERS = 8
+_FETCH_TIMEOUT_SECONDS = 20
 
 
 @lru_cache(maxsize=1)
@@ -66,7 +70,7 @@ def _family_pointer(family: str, root: Path) -> Path:
 
 def _download(url: str) -> bytes:
     req = Request(url, headers={"User-Agent": _UA})
-    with urlopen(req, timeout=60) as resp:
+    with urlopen(req, timeout=_FETCH_TIMEOUT_SECONDS) as resp:
         data = resp.read()
     if len(data) < 100 or data[:4] not in (b"\x00\x01\x00\x00", b"OTTO", b"true", b"ttcf"):
         raise RuntimeError(f"not an sfnt at {url}")
@@ -97,22 +101,42 @@ def load_replay_fonts(
     fetch: bool = True,
     root: Path | None = None,
     class_indices: range | None = None,
+    workers: int = _FETCH_WORKERS,
 ) -> dict[int, bytes]:
     """Map old class index → font bytes for every in-GF class that downloads."""
-    out: dict[int, bytes] = {}
     indices = range(BASE_CLASSES) if class_indices is None else class_indices
-    seen_family: dict[str, bytes] = {}
+    class_to_family: dict[int, str] = {}
+    families: list[str] = []
+    seen: set[str] = set()
     for class_index in indices:
         family = family_for_class(class_index)
         if family is None:
             continue
-        if family in seen_family:
-            out[class_index] = seen_family[family]
-            continue
-        try:
-            payload = load_gf_font(family, root, fetch=fetch)
-        except (OSError, RuntimeError, ValueError, HTTPError, URLError, HashMismatch, FileNotFoundError):
-            continue
-        seen_family[family] = payload
-        out[class_index] = payload
+        class_to_family[class_index] = family
+        if family not in seen:
+            seen.add(family)
+            families.append(family)
+
+    family_bytes: dict[str, bytes] = {}
+    if families:
+        # Cached hits are cheap; misses download in parallel (B8 / N20).
+        def one(family: str) -> tuple[str, bytes | None]:
+            try:
+                return family, load_gf_font(family, root, fetch=fetch)
+            except (OSError, RuntimeError, ValueError, HTTPError, URLError, HashMismatch, FileNotFoundError):
+                return family, None
+
+        pool = max(1, min(workers, len(families)))
+        with ThreadPoolExecutor(max_workers=pool) as executor:
+            futs = [executor.submit(one, family) for family in families]
+            for fut in as_completed(futs):
+                family, payload = fut.result()
+                if payload is not None:
+                    family_bytes[family] = payload
+
+    out: dict[int, bytes] = {}
+    for class_index, family in class_to_family.items():
+        payload = family_bytes.get(family)
+        if payload is not None:
+            out[class_index] = payload
     return out

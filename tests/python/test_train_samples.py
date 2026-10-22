@@ -264,6 +264,19 @@ def test_prepared_chw_is_the_prep_tensor():
     assert np.array_equal(chw, prepared_chw(spec))
 
 
+def test_prepared_chw_textcrop_pack_differs_from_raw():
+    """Replay may request evaluate pack/crop views via prepared_chw(textcrop=...)."""
+    spec = build_specs(n_classes=1, split=Split.REPLAY, per_class=1)[0]
+    raw = prepared_chw(spec)
+    packed = prepared_chw(spec, textcrop="pack")
+    cropped = prepared_chw(spec, textcrop="crop")
+    assert packed.shape == raw.shape == cropped.shape
+    assert not np.array_equal(raw, packed)
+    assert not np.array_equal(packed, cropped)
+    with pytest.raises(ValueError, match="textcrop"):
+        prepared_chw(spec, textcrop="nope")
+
+
 def test_constructing_a_dataset_does_not_import_torch():
     script = """
 import sys
