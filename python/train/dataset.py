@@ -31,8 +31,8 @@ def prepared_chw(
     """Render → optional evaluate-style textcrop → prep.
 
     New-class / replay / synth hold-out stay on raw synth-prep (CPU full-head
-    measure: pack/crop on the CE pool dropped realset3 to ~47%). Softplus
-    negatives from the public web bank use pack+crop in train.web_bank.
+    measure: pack/crop on the CE pool dropped realset3 to ~47%). Softplus in
+    step B applies on GF replay rows in the same CE view.
     """
     canvas = render_sample(spec, font_bytes, instance=instance)
     if textcrop is not None:

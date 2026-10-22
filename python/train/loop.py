@@ -12,9 +12,9 @@ from train.recipe_defs import (
     CALIBRATE_STEPS,
     CALIBRATE_WARMUP_STEPS,
     OFL_V1_AMP,
+    OFL_V1_BACKBONE_LR,
     OFL_V1_BATCH_SIZE,
     OFL_V1_CHECKPOINT_EVERY,
-    OFL_V1_FREEZE_BACKBONE,
     OFL_V1_LR,
     OFL_V1_NUM_WORKERS,
     OFL_V1_PER_CLASS_NEW,
@@ -22,8 +22,8 @@ from train.recipe_defs import (
     OFL_V1_REPLAY_REPEAT,
     OFL_V1_SUPPRESS_MARGIN,
     OFL_V1_SUPPRESS_WEIGHT,
+    OFL_V1_UNFREEZE_FROM_BLOCK,
     OFL_V1_WEIGHT_DECAY,
-    WEB_BANK_SLACK_SECONDS,
     ofl_v1_budget,
     ofl_v1_steps,
 )
@@ -35,6 +35,7 @@ class TrainConfig:
     steps: int
     batch_size: int
     lr: float
+    backbone_lr: float
     weight_decay: float
     amp: bool
     num_classes: int
@@ -49,7 +50,7 @@ class TrainConfig:
     num_workers: int
     total_samples: int
     checkpoint_every: int
-    freeze_backbone: bool
+    unfreeze_from_block: int
 
 
 def _checkpoint_dir() -> Path:
@@ -63,6 +64,7 @@ def recipe(name: str) -> TrainConfig:
     ofl_common = dict(
         batch_size=OFL_V1_BATCH_SIZE,
         lr=OFL_V1_LR,
+        backbone_lr=OFL_V1_BACKBONE_LR,
         weight_decay=OFL_V1_WEIGHT_DECAY,
         amp=OFL_V1_AMP,
         num_classes=expanded_classes(),
@@ -77,7 +79,7 @@ def recipe(name: str) -> TrainConfig:
         num_workers=OFL_V1_NUM_WORKERS,
         total_samples=budget.total_samples,
         checkpoint_every=OFL_V1_CHECKPOINT_EVERY,
-        freeze_backbone=OFL_V1_FREEZE_BACKBONE,
+        unfreeze_from_block=OFL_V1_UNFREEZE_FROM_BLOCK,
     )
     if name == "smoke":
         return TrainConfig(
@@ -85,6 +87,7 @@ def recipe(name: str) -> TrainConfig:
             steps=1,
             batch_size=1,
             lr=1e-4,
+            backbone_lr=1e-4,
             weight_decay=0.0,
             amp=False,
             num_classes=BASE_CLASSES,
@@ -99,7 +102,7 @@ def recipe(name: str) -> TrainConfig:
             num_workers=0,
             total_samples=1,
             checkpoint_every=0,
-            freeze_backbone=False,
+            unfreeze_from_block=0,
         )
     if name == "calibrate":
         return TrainConfig(
@@ -137,12 +140,50 @@ def onnx_export_path(cfg: TrainConfig) -> Path:
     return assert_under_out(cfg.checkpoint_dir) / "candidate.onnx"
 
 
-def _freeze_backbone(model) -> None:
+def _block_index(name: str) -> int | None:
+    if not name.startswith("blocks."):
+        return None
+    part = name.split(".", 2)[1]
+    if not part.isdigit():
+        return None
+    return int(part)
+
+
+def apply_partial_unfreeze(model, *, from_block: int) -> None:
+    """Train classifier + blocks[from_block:] + conv_head; freeze earlier stages.
+
+    ONNX import folds BatchNorm into convs (no BN modules remain), so there is
+    nothing to freeze in train/eval for running stats.
+    """
+    if from_block < 0:
+        raise ValueError(f"from_block must be >= 0, got {from_block}")
     for name, param in model.module.named_parameters():
-        if name.startswith("classifier."):
+        if name.startswith("classifier.") or name.startswith("conv_head."):
             param.requires_grad = True
+            continue
+        stage = _block_index(name)
+        if stage is not None and stage >= from_block:
+            param.requires_grad = True
+            continue
+        param.requires_grad = False
+
+
+def _param_groups(model, *, head_lr: float, backbone_lr: float, weight_decay: float):
+    head: list = []
+    backbone: list = []
+    for name, param in model.module.named_parameters():
+        if not param.requires_grad:
+            continue
+        if name.startswith("classifier."):
+            head.append(param)
         else:
-            param.requires_grad = False
+            backbone.append(param)
+    if not head:
+        raise RuntimeError("no trainable classifier parameters")
+    groups = [{"params": head, "lr": head_lr, "weight_decay": weight_decay}]
+    if backbone:
+        groups.append({"params": backbone, "lr": backbone_lr, "weight_decay": weight_decay})
+    return groups
 
 
 def _zero_old_head_grads(model) -> None:
@@ -171,26 +212,6 @@ def _restore_old_head(model, weight_anchor, bias_anchor) -> None:
             model.module.classifier.bias[:BASE_CLASSES].copy_(bias_anchor)
 
 
-def _web_negative_iter(cfg: TrainConfig, device, *, fetch: bool):
-    """Cycle evaluate pack/crop views from the public web bank for softplus."""
-    import torch
-    from torch.utils.data import DataLoader
-
-    from train.web_bank import WebNegativeBank, ensure_web_bank
-
-    ensure_web_bank(fetch=fetch, deadline_seconds=WEB_BANK_SLACK_SECONDS)
-    bank = WebNegativeBank()
-    loader = DataLoader(
-        bank,
-        batch_size=cfg.batch_size,
-        shuffle=True,
-        num_workers=0,
-    )
-    while True:
-        for batch in loader:
-            yield batch.to(device)
-
-
 def train(cfg: TrainConfig) -> Path:
     target = expanded_classes()
     if cfg.device != "cpu" and os.environ.get("FONTSNAP_ALLOW_GPU") != "1":
@@ -214,14 +235,17 @@ def train(cfg: TrainConfig) -> Path:
         raise RuntimeError("cuda requested but not available")
     model.train()
     model.module.to(device)
-    preserve_old = cfg.freeze_backbone and cfg.num_classes == target
+    preserve_old = cfg.num_classes == target
     if preserve_old:
-        _freeze_backbone(model)
+        apply_partial_unfreeze(model, from_block=cfg.unfreeze_from_block)
     use_margin = preserve_old and cfg.suppress_weight > 0
-    params = [p for p in model.parameters() if p.requires_grad]
-    if not params:
-        raise RuntimeError("no trainable parameters")
-    opt = torch.optim.AdamW(params, lr=cfg.lr, weight_decay=cfg.weight_decay)
+    groups = _param_groups(
+        model,
+        head_lr=cfg.lr,
+        backbone_lr=cfg.backbone_lr,
+        weight_decay=cfg.weight_decay,
+    )
+    opt = torch.optim.AdamW(groups)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(cfg.steps, 1))
     use_amp = cfg.amp and cfg.device == "cuda"
     scaler = torch.amp.GradScaler(device="cuda", enabled=True) if use_amp else None
@@ -231,21 +255,18 @@ def train(cfg: TrainConfig) -> Path:
         old_w, old_b = _anchor_old_head(model)
 
     fetch = os.environ.get("FONTSNAP_SKIP_FETCH") != "1"
-    web_iter = None
-    if use_margin and cfg.use_synth:
-        # Bank build before calibrate timer (same as font fetch / warm-up).
-        web_iter = _web_negative_iter(cfg, device, fetch=fetch)
 
     def _step_loss(inputs, labels):
         logits = model(inputs)
         loss = F.cross_entropy(logits, labels)
-        if use_margin and web_iter is not None:
-            neg = next(web_iter)
-            neg_logits = model(neg)
-            max_old = neg_logits[:, :BASE_CLASSES].amax(dim=-1)
-            max_new = neg_logits[:, BASE_CLASSES:].amax(dim=-1)
-            # Fire only when a new logit threatens the old answer on web views.
-            loss = loss + cfg.suppress_weight * F.softplus(max_new - max_old + cfg.suppress_margin).mean()
+        if use_margin:
+            replay = labels < BASE_CLASSES
+            if bool(replay.any()):
+                replay_logits = logits[replay]
+                max_old = replay_logits[:, :BASE_CLASSES].amax(dim=-1)
+                max_new = replay_logits[:, BASE_CLASSES:].amax(dim=-1)
+                # Fire only when a new logit threatens the old answer on GF replay.
+                loss = loss + cfg.suppress_weight * F.softplus(max_new - max_old + cfg.suppress_margin).mean()
         return loss
 
     # Build loader (font fetch + workers) before the calibrate timer; warm-up
@@ -265,6 +286,7 @@ def train(cfg: TrainConfig) -> Path:
                 _ = model(warm_x)
     if device.type == "cuda":
         torch.cuda.synchronize()
+        torch.cuda.reset_peak_memory_stats()
 
     completed = 0
     samples = 0
@@ -301,6 +323,9 @@ def train(cfg: TrainConfig) -> Path:
     elapsed = max(time.perf_counter() - started, 1e-9)
     if cfg.recipe == "calibrate":
         print(f"samples/sec {samples / elapsed:.6f}", flush=True)
+        if device.type == "cuda":
+            peak = torch.cuda.max_memory_allocated() / (1024**3)
+            print(f"peak_gpu_mem_gb {peak:.3f}", flush=True)
     dest.parent.mkdir(parents=True, exist_ok=True)
     _save(cfg, model, completed, dest)
     if cfg.recipe == "ofl-v1":
@@ -404,6 +429,7 @@ def main(argv: list[str] | None = None) -> int:
             steps=cfg.steps if steps is None else steps,
             batch_size=cfg.batch_size,
             lr=cfg.lr,
+            backbone_lr=cfg.backbone_lr,
             weight_decay=cfg.weight_decay,
             amp=cfg.amp,
             num_classes=cfg.num_classes,
@@ -418,7 +444,7 @@ def main(argv: list[str] | None = None) -> int:
             num_workers=cfg.num_workers,
             total_samples=cfg.total_samples,
             checkpoint_every=cfg.checkpoint_every,
-            freeze_backbone=cfg.freeze_backbone,
+            unfreeze_from_block=cfg.unfreeze_from_block,
         )
     path = final_checkpoint_path(cfg)
     if dry_run:

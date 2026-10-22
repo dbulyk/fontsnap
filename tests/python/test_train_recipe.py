@@ -9,15 +9,17 @@ from train.recipe_defs import (
     ASSUMED_FLOOR_SAMPLES_PER_SEC,
     CALIBRATE_STEPS,
     FONT_FETCH_SLACK_SECONDS,
+    OFL_V1_BACKBONE_LR,
     OFL_V1_BATCH_SIZE,
+    OFL_V1_LR,
     OFL_V1_PER_CLASS_NEW,
     OFL_V1_PER_CLASS_REPLAY,
     OFL_V1_REPLAY_REPEAT,
     OFL_V1_SUPPRESS_MARGIN,
     OFL_V1_SUPPRESS_WEIGHT,
+    OFL_V1_UNFREEZE_FROM_BLOCK,
     SETUP_SLACK_SECONDS,
     TRAIN_SPEND_CAP_USD,
-    WEB_BANK_SLACK_SECONDS,
     ofl_v1_budget,
     projection_band,
     train_max_runtime_seconds,
@@ -36,8 +38,11 @@ def test_ofl_v1_and_calibrate_share_loader_shape():
     assert ofl.per_class_new == cal.per_class_new == OFL_V1_PER_CLASS_NEW
     assert ofl.per_class_replay == cal.per_class_replay == OFL_V1_PER_CLASS_REPLAY == 4
     assert ofl.replay_repeat == cal.replay_repeat == OFL_V1_REPLAY_REPEAT == 6
-    assert ofl.freeze_backbone is cal.freeze_backbone is True
+    assert ofl.unfreeze_from_block == cal.unfreeze_from_block == OFL_V1_UNFREEZE_FROM_BLOCK == 5
+    assert ofl.lr == cal.lr == OFL_V1_LR == 1e-3
+    assert ofl.backbone_lr == cal.backbone_lr == OFL_V1_BACKBONE_LR == 1e-4
     assert not hasattr(ofl, "distill_weight")
+    assert not hasattr(ofl, "freeze_backbone")
     assert ofl.suppress_weight == cal.suppress_weight == OFL_V1_SUPPRESS_WEIGHT == 1.0
     assert ofl.suppress_margin == cal.suppress_margin == OFL_V1_SUPPRESS_MARGIN == 8.0
     assert ofl.num_classes == cal.num_classes == expanded_classes()
@@ -69,15 +74,12 @@ def test_runpod_specs_derive_from_recipe_and_rate():
 
 
 def test_train_wall_includes_font_fetch_slack():
-    """B8 + step A: cold GF/OFL fetch and web-bank capture sit inside setup / max_runtime."""
+    """B8: cold GF+OFL download must sit inside setup / max_runtime, not only compute."""
     assert FONT_FETCH_SLACK_SECONDS >= 60
-    assert WEB_BANK_SLACK_SECONDS >= 60
     rate = Decimal("20")
     samples = 1000
     # ceil(1000/20) = 50
-    assert train_wall_seconds(samples, rate) == (
-        50 + SETUP_SLACK_SECONDS + FONT_FETCH_SLACK_SECONDS + WEB_BANK_SLACK_SECONDS + ARTIFACT_TRANSFER_SECONDS
-    )
+    assert train_wall_seconds(samples, rate) == (50 + SETUP_SLACK_SECONDS + FONT_FETCH_SLACK_SECONDS + ARTIFACT_TRANSFER_SECONDS)
 
 
 def test_fontsource_slug_uses_display_kebab_case():
@@ -123,3 +125,10 @@ def test_make_ofl_loader_replays_with_real_gf_bytes(tmp_path, monkeypatch):
         labels.extend(int(x) for x in batch_labels.tolist())
     assert any(label < BASE_CLASSES for label in labels), labels[:20]
     assert any(label >= BASE_CLASSES for label in labels), labels[:20]
+
+
+def test_container_script_has_no_playwright():
+    from train.runpod import CALIBRATE, container_script, pinned_commit
+
+    script = container_script(CALIBRATE, commit=pinned_commit())
+    assert "playwright" not in script

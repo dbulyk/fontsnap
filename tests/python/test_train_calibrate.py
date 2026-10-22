@@ -34,7 +34,8 @@ def test_calibrate_recipe_matches_ofl_v1_shape():
     assert cal.amp == ofl.amp
     assert cal.per_class_new == ofl.per_class_new
     assert cal.per_class_replay == ofl.per_class_replay == OFL_V1_PER_CLASS_REPLAY
-    assert cal.freeze_backbone == ofl.freeze_backbone
+    assert cal.unfreeze_from_block == ofl.unfreeze_from_block
+    assert cal.backbone_lr == ofl.backbone_lr
 
 
 def test_calibrate_one_cpu_step_prints_rate_and_exits_0(tmp_path, monkeypatch, capsys):
@@ -75,9 +76,9 @@ def test_calibrate_timer_starts_after_loader_warmup(tmp_path, monkeypatch, capsy
     order: list[str] = []
     real_batches = loop._batches
 
-    def wrapped(cfg, device, *, limit):
+    def wrapped(cfg, device, *, limit, fetch=None):
         order.append(f"loader:{limit}")
-        yield from real_batches(cfg, device, limit=limit)
+        yield from real_batches(cfg, device, limit=limit, fetch=fetch)
 
     times = {"n": 0.0}
 
