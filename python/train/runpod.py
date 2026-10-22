@@ -9,12 +9,11 @@ start command as entrypoint and cmd. v1 called that command dockerStartCmd. v2 s
 
 The pod fetches this repository at the commit git rev-parse HEAD returned when the plan was
 built, installs train deps, and runs the work on the GPU. A background sleep+delete watchdog
-covers the whole lifetime (setup + train + log settle). Calibrate prints samples/sec only
-when that command exits 0, sleeps so the client can scrape logs, then runs runpodctl pod
-delete $RUNPOD_POD_ID. A nonzero train still self-deletes but never prints samples/sec. The
-client stops and deletes the pod in a finally block on every exit, including SIGINT, SIGTERM,
-SIGHUP, and unexpected exceptions while polling. A failed delete prints the pod id and a
-manual DELETE command, records DELETE FAILED, and exits nonzero.
+covers the whole lifetime within max_runtime_seconds. Self-delete tries legacy
+runpodctl remove pod, then runpodctl pod delete, then DELETE via the pod-scoped
+RUNPOD_API_KEY Runpod injects (never our client key). A done marker skips re-work if the
+container restarts after a failed delete. Calibrate prints samples/sec only on exit 0.
+The client stops and deletes the pod in a finally block on every exit.
 
 Free-phase command:
 
@@ -254,9 +253,29 @@ def pinned_commit() -> str:
 
 
 def _self_delete_deadline(spec: RunPodJobSpec) -> int:
-    # Setup (apt/git/pip) + train + optional log settle must all finish before this fires.
-    settle = _LOG_SETTLE_SECONDS if spec.mode is JobMode.CALIBRATE else 0
-    return spec.max_runtime_seconds + settle + 60
+    # Must not exceed the spend-cap window (max_runtime_seconds).
+    return spec.max_runtime_seconds
+
+
+def self_delete_shell() -> str:
+    """Shell that terminates this pod with whatever the image actually has.
+
+    Live pytorch images ship an older runpodctl where `pod delete` is unknown and
+    `remove pod` still works. Runpod also injects a pod-scoped RUNPOD_API_KEY.
+    """
+    return (
+        "_fontsnap_self_delete() {\n"
+        '  runpodctl remove pod "$RUNPOD_POD_ID" && return 0\n'
+        '  runpodctl pod delete "$RUNPOD_POD_ID" && return 0\n'
+        '  if [ -n "${RUNPOD_API_KEY:-}" ]; then\n'
+        '    curl -sS -o /dev/null -w "%{http_code}" -X DELETE '
+        '-H "Authorization: Bearer $RUNPOD_API_KEY" '
+        '"https://api.runpod.io/v2/pods/$RUNPOD_POD_ID" | grep -Eq "^(200|202|204|404)$" && return 0\n'
+        "  fi\n"
+        '  echo "fontsnap: self-delete failed for $RUNPOD_POD_ID" >&2\n'
+        "  return 1\n"
+        "}\n"
+    )
 
 
 def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
@@ -264,22 +283,31 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError(f"bad commit pin: {sha!r}")
     deadline = _self_delete_deadline(spec)
+    # Leave room inside the deadline for the post-success log settle.
+    settle = min(_LOG_SETTLE_SECONDS, max(0, deadline // 20))
     if spec.mode is JobMode.CALIBRATE:
         train = f"python -m train.loop --recipe calibrate --steps {spec.samples} --device cuda"
-        on_ok = f"  cat /tmp/fontsnap-train.out\n  sleep {_LOG_SETTLE_SECONDS}\n"
+        on_ok = f"  cat /tmp/fontsnap-train.out\n  sleep {settle}\n" if settle else "  cat /tmp/fontsnap-train.out\n"
     else:
         train = "python -m train.loop --recipe ofl-v1 --device cuda"
         on_ok = "  cat /tmp/fontsnap-train.out\n"
-    # Watchdog first: if apt/git/pip/train hang and the client is dead, the pod still deletes.
-    # Fetch the pinned full sha (short shas are rejected). Hold stdout until exit 0.
+    # Watchdog first. Done marker short-circuits a restart loop after a failed delete.
     return (
         "set -u\n"
-        f'(sleep {deadline}; runpodctl pod delete "$RUNPOD_POD_ID") &\n'
+        f"{self_delete_shell()}"
+        f"(sleep {deadline}; _fontsnap_self_delete) &\n"
         "WATCHDOG_PID=$!\n"
         "trap 'kill $WATCHDOG_PID 2>/dev/null || true' EXIT\n"
+        'DONE="${FONTSNAP_DONE_MARKER:-/var/lib/fontsnap/done}"\n'
+        'mkdir -p "$(dirname "$DONE")"\n'
+        'if [ -f "$DONE" ]; then\n'
+        '  echo "fontsnap: prior run finished; deleting pod without re-work" >&2\n'
+        "  _fontsnap_self_delete\n"
+        "  exit 4\n"
+        "fi\n"
         "export DEBIAN_FRONTEND=noninteractive\n"
         "apt-get update -qq >/dev/null\n"
-        "apt-get install -y -qq git git-lfs >/dev/null\n"
+        "apt-get install -y -qq git git-lfs curl >/dev/null\n"
         "git lfs install --skip-repo >/dev/null\n"
         "rm -rf /tmp/fontsnap\n"
         "mkdir -p /tmp/fontsnap\n"
@@ -298,7 +326,8 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
         'if [ "$status" -eq 0 ]; then\n'
         f"{on_ok}"
         "fi\n"
-        'runpodctl pod delete "$RUNPOD_POD_ID"\n'
+        'touch "$DONE"\n'
+        "_fontsnap_self_delete\n"
         'exit "$status"\n'
     )
 
@@ -872,6 +901,9 @@ def main(argv: list[str] | None = None) -> int:
                 _report_delete_failed(pod_id)
                 return 4
             return 0
+    except ValueError as err:
+        print(err, file=sys.stderr)
+        return 4
     except SystemExit as err:
         code = err.code
         return 0 if code is None else int(code)

@@ -230,23 +230,29 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert "python/requirements.txt" in script
     assert "python/train/requirements.txt" in script
     assert "x-access-token" not in script
-    assert script.index('runpodctl pod delete "$RUNPOD_POD_ID"') < script.index('exit "$status"')
+    assert "_fontsnap_self_delete" in script
+    assert script.index("_fontsnap_self_delete") < script.index('exit "$status"')
     assert "pip install" in script
     from train.runpod import _self_delete_deadline
 
-    assert f'(sleep {_self_delete_deadline(CALIBRATE)}; runpodctl pod delete "$RUNPOD_POD_ID") &' in script
+    assert _self_delete_deadline(CALIBRATE) == CALIBRATE.max_runtime_seconds
+    assert _self_delete_deadline(TRAIN) == TRAIN.max_runtime_seconds
+    assert f"(sleep {_self_delete_deadline(CALIBRATE)}; _fontsnap_self_delete) &" in script
     assert script.index("(sleep") < script.index("apt-get")
     assert f"python -m train.loop --recipe calibrate --steps {CALIBRATE.samples} --device cuda" in script
     assert "FONTSNAP_ALLOW_GPU=1" in script
-    assert "sleep 45" in script
+    assert 'runpodctl remove pod "$RUNPOD_POD_ID"' in script
     assert 'runpodctl pod delete "$RUNPOD_POD_ID"' in script
-    assert "runpodctl remove pod" not in script
-    assert "RUNPOD_API_KEY" not in json.dumps(body)
+    assert script.index("remove pod") < script.index("pod delete")
+    assert "api.runpod.io/v2/pods/" in script
+    assert "FONTSNAP_DONE_MARKER" in script
+    # Script may read the pod-scoped $RUNPOD_API_KEY Runpod injects; create body must not set it.
     assert "env" not in body
+    assert KEY not in json.dumps(body)
     train = create_body(TRAIN)["cmd"][0]
-    assert f'(sleep {_self_delete_deadline(TRAIN)}; runpodctl pod delete "$RUNPOD_POD_ID") &' in train
+    assert f"(sleep {_self_delete_deadline(TRAIN)}; _fontsnap_self_delete) &" in train
     assert "python -m train.loop --recipe ofl-v1 --device cuda" in train
-    assert 'runpodctl pod delete "$RUNPOD_POD_ID"' in train
+    assert "_fontsnap_self_delete" in train
 
 
 def test_calibrate_spend_cap_exits_3_above_one_dollar():
@@ -782,6 +788,7 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
     )
     for path in bind.iterdir():
         path.chmod(0o755)
+    done = tmp_path / "done-marker"
     env = os.environ.copy()
     env["PATH"] = f"{bind}:/usr/bin:/bin"
     env["GIT_LOG"] = str(git_log)
@@ -789,6 +796,7 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
     env["PY_LOG"] = str(py_log)
     env["DELETED"] = str(deleted)
     env["RUNPOD_POD_ID"] = POD
+    env["FONTSNAP_DONE_MARKER"] = str(done)
     proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
     try:
         logged = git_log.read_text(encoding="utf-8") if git_log.is_file() else ""
@@ -800,7 +808,8 @@ def test_container_script_does_not_print_rate_on_train_failure(tmp_path):
         assert proc.returncode != 0
         assert "samples/sec" not in proc.stdout
         assert "main train" not in proc.stdout
-        assert f"pod delete {POD}" in removed
+        assert f"remove pod {POD}" in removed
+        assert done.is_file()
     finally:
         for leftover in (Path("/tmp/fontsnap"), Path("/tmp/fontsnap-train.out"), Path("/tmp/fontsnap-train.err")):
             if leftover.is_file():
@@ -821,6 +830,7 @@ def test_watchdog_deletes_when_apt_get_hangs(monkeypatch, tmp_path):
     bind = tmp_path / "bin"
     bind.mkdir()
     deleted = tmp_path / "deleted.txt"
+    done = tmp_path / "done"
     (bind / "apt-get").write_text("#!/bin/sh\nexec sleep 1000\n", encoding="utf-8")
     (bind / "runpodctl").write_text(
         '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\nexit 0\n',
@@ -832,11 +842,12 @@ def test_watchdog_deletes_when_apt_get_hangs(monkeypatch, tmp_path):
     env["PATH"] = f"{bind}:/usr/bin:/bin"
     env["DELETED"] = str(deleted)
     env["RUNPOD_POD_ID"] = POD
+    env["FONTSNAP_DONE_MARKER"] = str(done)
     proc = subprocess.Popen(["bash", "-c", script], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         deadline = time.monotonic() + 8
         while time.monotonic() < deadline:
-            if deleted.is_file() and f"pod delete {POD}" in deleted.read_text(encoding="utf-8"):
+            if deleted.is_file() and f"remove pod {POD}" in deleted.read_text(encoding="utf-8"):
                 break
             time.sleep(0.1)
         else:
@@ -844,6 +855,145 @@ def test_watchdog_deletes_when_apt_get_hangs(monkeypatch, tmp_path):
     finally:
         proc.kill()
         proc.wait(timeout=5)
+
+
+def test_self_delete_falls_back_when_pod_subcommand_is_unknown(tmp_path):
+    """Live image error: Error: unknown command \"pod\" for \"runpodctl\"."""
+    from train.runpod import container_script
+
+    sha = "c" * 40
+    script = container_script(CALIBRATE, commit=sha)
+    bind = tmp_path / "bin"
+    bind.mkdir()
+    deleted = tmp_path / "deleted.txt"
+    done = tmp_path / "done"
+    (bind / "git").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bind / "python").write_text(
+        '#!/bin/sh\nif [ "$1 $2" = "-m pip" ]; then exit 0; fi\necho "samples/sec 1.0"\nexit 0\n',
+        encoding="utf-8",
+    )
+    (bind / "apt-get").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bind / "curl").write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    (bind / "runpodctl").write_text(
+        "#!/bin/sh\n"
+        'printf "%s\\n" "$*" >> "$DELETED"\n'
+        'if [ "$1" = pod ]; then\n'
+        '  echo \'Error: unknown command "pod" for "runpodctl"\' >&2\n'
+        "  exit 1\n"
+        "fi\n"
+        'if [ "$1 $2" = "remove pod" ]; then exit 0; fi\n'
+        "exit 1\n",
+        encoding="utf-8",
+    )
+    (bind / "sleep").write_text(
+        '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n',
+        encoding="utf-8",
+    )
+    for path in bind.iterdir():
+        path.chmod(0o755)
+    env = os.environ.copy()
+    env["PATH"] = f"{bind}:/usr/bin:/bin"
+    env["DELETED"] = str(deleted)
+    env["RUNPOD_POD_ID"] = POD
+    env["FONTSNAP_DONE_MARKER"] = str(done)
+    proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
+    removed = deleted.read_text(encoding="utf-8") if deleted.is_file() else ""
+    assert proc.returncode == 0
+    assert f"remove pod {POD}" in removed
+    assert "samples/sec 1.0" in proc.stdout
+    assert done.is_file()
+
+
+def test_restart_with_done_marker_skips_train_and_deletes(tmp_path):
+    from train.runpod import container_script
+
+    sha = "d" * 40
+    script = container_script(CALIBRATE, commit=sha)
+    bind = tmp_path / "bin"
+    bind.mkdir()
+    deleted = tmp_path / "deleted.txt"
+    done = tmp_path / "done"
+    done.write_text("1\n", encoding="utf-8")
+    py_log = tmp_path / "python.log"
+    (bind / "apt-get").write_text('#!/bin/sh\necho apt >> "$PY_LOG"; exit 0\n', encoding="utf-8")
+    (bind / "python").write_text('#!/bin/sh\necho train >> "$PY_LOG"; exit 0\n', encoding="utf-8")
+    (bind / "git").write_text('#!/bin/sh\necho git >> "$PY_LOG"; exit 0\n', encoding="utf-8")
+    (bind / "runpodctl").write_text(
+        '#!/bin/sh\nprintf "%s\\n" "$*" >> "$DELETED"\nexit 0\n',
+        encoding="utf-8",
+    )
+    (bind / "sleep").write_text(
+        '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n',
+        encoding="utf-8",
+    )
+    for path in bind.iterdir():
+        path.chmod(0o755)
+    env = os.environ.copy()
+    env["PATH"] = f"{bind}:/usr/bin:/bin"
+    env["DELETED"] = str(deleted)
+    env["PY_LOG"] = str(py_log)
+    env["RUNPOD_POD_ID"] = POD
+    env["FONTSNAP_DONE_MARKER"] = str(done)
+    proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
+    assert proc.returncode == 4
+    assert "prior run finished" in proc.stderr
+    assert f"remove pod {POD}" in deleted.read_text(encoding="utf-8")
+    assert not py_log.exists() or "train" not in py_log.read_text(encoding="utf-8")
+
+
+def test_short_commit_sha_fails_loudly(monkeypatch, capsys):
+    monkeypatch.setenv("FONTSNAP_RUNPOD_COMMIT", "abc1234")
+    monkeypatch.setenv("FONTSNAP_RUNPOD_LIVE", "1")
+    monkeypatch.setenv("RUNPOD_API_KEY", KEY)
+    assert main(["plan", "--mode", "calibrate"]) == 4
+    err = capsys.readouterr().err
+    assert "full 40-char" in err
+
+
+def test_self_delete_uses_injected_key_when_runpodctl_is_broken(tmp_path):
+    from train.runpod import container_script
+
+    sha = "e" * 40
+    script = container_script(CALIBRATE, commit=sha)
+    bind = tmp_path / "bin"
+    bind.mkdir()
+    deleted = tmp_path / "deleted.txt"
+    done = tmp_path / "done"
+    (bind / "git").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bind / "python").write_text(
+        '#!/bin/sh\nif [ "$1 $2" = "-m pip" ]; then exit 0; fi\necho ok\nexit 0\n',
+        encoding="utf-8",
+    )
+    (bind / "apt-get").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bind / "runpodctl").write_text(
+        '#!/bin/sh\necho \'Error: unknown command "pod"\' >&2; exit 1\n',
+        encoding="utf-8",
+    )
+    (bind / "curl").write_text(
+        "#!/bin/sh\n"
+        'printf "%s\\n" "$*" >> "$DELETED"\n'
+        'echo 204\n'
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    (bind / "sleep").write_text(
+        '#!/bin/sh\nif [ -n "$1" ] && [ "$1" -gt 100 ] 2>/dev/null; then exec cat; fi\nexit 0\n',
+        encoding="utf-8",
+    )
+    for path in bind.iterdir():
+        path.chmod(0o755)
+    env = os.environ.copy()
+    env["PATH"] = f"{bind}:/usr/bin:/bin"
+    env["DELETED"] = str(deleted)
+    env["RUNPOD_POD_ID"] = POD
+    env["RUNPOD_API_KEY"] = "pod-scoped-injected-key"
+    env["FONTSNAP_DONE_MARKER"] = str(done)
+    proc = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, timeout=20, check=False)
+    removed = deleted.read_text(encoding="utf-8") if deleted.is_file() else ""
+    assert proc.returncode == 0
+    assert "api.runpod.io/v2/pods/" + POD in removed
+    assert "pod-scoped-injected-key" in removed
+    assert KEY not in removed
 
 
 def _read_http(conn: socket.socket) -> tuple[str, str]:
