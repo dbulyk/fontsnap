@@ -52,12 +52,16 @@ def test_ofl_v1_and_calibrate_share_loader_shape():
 
 
 def test_sample_budget_includes_gf_replay():
+    from train.replay_gf import selected_replay_classes
+
+    replay_classes = len(selected_replay_classes())
     budget = ofl_v1_budget()
     assert budget.new_classes == PHASE1_CLASSES
-    assert budget.old_classes == BASE_CLASSES
+    assert budget.old_classes == replay_classes
+    assert replay_classes < BASE_CLASSES
     assert budget.replay_repeat == OFL_V1_REPLAY_REPEAT
-    assert budget.replay_samples == BASE_CLASSES * OFL_V1_PER_CLASS_REPLAY * OFL_V1_REPLAY_REPEAT
-    assert budget.total_samples == PHASE1_CLASSES * OFL_V1_PER_CLASS_NEW + budget.replay_samples == 240_792
+    assert budget.replay_samples == replay_classes * OFL_V1_PER_CLASS_REPLAY * OFL_V1_REPLAY_REPEAT
+    assert budget.total_samples == PHASE1_CLASSES * OFL_V1_PER_CLASS_NEW + budget.replay_samples
 
 
 def test_runpod_specs_derive_from_recipe_and_rate():
@@ -103,9 +107,7 @@ def test_load_replay_fonts_one_regular_class_per_family(tmp_path, monkeypatch):
     from train.replay_gf import load_replay_fonts, regular_class_for_family
 
     meta = json.loads((MODEL_DIR / "meta.json").read_text(encoding="utf-8"))
-    names = yaml.safe_load((ROOT / "python" / "data" / "classes_v2.yaml").read_text(encoding="utf-8"))[
-        "classnames"
-    ]
+    names = yaml.safe_load((ROOT / "python" / "data" / "classes_v2.yaml").read_text(encoding="utf-8"))["classnames"]
     # Inconsolata: many cuts, one Regular that matches latin-400-normal.
     fam = next(i for i, name in enumerate(meta["display"]) if name == "Inconsolata")
     members = [i for i, f in enumerate(meta["classFam"]) if f == fam]
@@ -113,6 +115,17 @@ def test_load_replay_fonts_one_regular_class_per_family(tmp_path, monkeypatch):
     chosen = regular_class_for_family(fam, members)
     assert chosen is not None
     assert names[chosen] == "Inconsolata-Regular"
+    # SC/UI siblings must not steal the base family's cut (review r8).
+    for display, expect in (
+        ("Signika", "Signika[GRAD,wght]"),
+        ("Signika Negative", "SignikaNegative[wght]"),
+        ("Noto Sans Arabic", "NotoSansArabic[wdth,wght]"),
+    ):
+        fam_i = next(i for i, name in enumerate(meta["display"]) if name == display)
+        mem = [i for i, f in enumerate(meta["classFam"]) if f == fam_i]
+        pick = regular_class_for_family(fam_i, mem)
+        assert pick is not None
+        assert names[pick] == expect, (display, names[pick])
 
     payload = b"\x00\x01\x00\x00" + b"regular-only"
     monkeypatch.setattr(

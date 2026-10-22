@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { build, mergeConfig } from 'vite';
 import type { BuildOptions } from 'vite';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   cssImportSpecifiers,
   findOutsideSrc,
@@ -16,6 +16,8 @@ import { bundleKinds, sharedConfig, type BundleKind } from '../../vite.shared';
 
 let root: string;
 const fixtureRoots: string[] = [];
+/** Cleared in afterAll so Vite can finish HTML script resolves after a failed build. */
+const buildRoots: string[] = [];
 
 /** A throwaway project: src/, scripts/, node_modules/. Returns absolute paths by relative name. */
 function project(files: Record<string, string>): string {
@@ -39,6 +41,9 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const dir of fixtureRoots.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+afterAll(() => {
+  for (const dir of buildRoots.splice(0)) rmSync(dir, { recursive: true, force: true });
 });
 
 const dirs = () => ({
@@ -305,9 +310,8 @@ async function buildDetailed(
   entry: string,
   buildOptions: BuildOptions = {},
 ): Promise<BuiltProject> {
-  // Do not delete these dirs in afterEach: Vite can still resolve HTML scripts after
-  // build() rejects on an outside asset (CI: unhandled "Failed to resolve ./main.ts").
   const dir = mkdtempSync(join(tmpdir(), 'src-only-build-'));
+  buildRoots.push(dir);
   for (const [name, text] of Object.entries(typeof files === 'function' ? files(dir) : files)) {
     mkdirSync(dirname(join(dir, name)), { recursive: true });
     writeFileSync(join(dir, name), text);

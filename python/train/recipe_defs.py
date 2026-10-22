@@ -2,23 +2,24 @@
 
 Sample budget (justification)
 -----------------------------
-The shipped head has BASE_CLASSES = 3665 faces from storia/font-classify-onnx.
-meta.json marks most families as in Google Fonts; ofl-v1 pulls a latin-400 cut
-per family from the Fontsource CDN for replay (see train.replay_gf).
+The shipped head has 3665 faces from storia/font-classify-onnx. meta.json marks
+most families as in Google Fonts; ofl-v1 pulls one latin-400 cut per family from
+the Fontsource CDN (see train.replay_gf.selected_replay_classes).
 
 Choice for ofl-v1 (round 7 / step B)
 ------------------------------------
-- Train the 597 new OFL faces (real verified font bytes) **and** replay old
-  classes on real GF family files (PER_CLASS_REPLAY=4, repeated REPLAY_REPEAT=6
-  times per epoch) so new head rows see enough CE negatives.
+- Train the 597 new OFL faces (real verified font bytes) **and** replay one
+  Regular cut per GF family (PER_CLASS_REPLAY=4, repeated REPLAY_REPEAT=6
+  times per epoch) so new head rows see enough CE negatives. SampleBudget.old_classes
+  is len(selected_replay_classes()), not the full head size.
 - **Partial unfreeze**: train classifier + blocks.5 + blocks.6 + conv_head.
   Earlier stages stay frozen. ONNX import folds BatchNorm into convs, so there
   is no BN to keep in train/eval. Head LR 1e-3; backbone LR 1e-4.
 - Restore old head rows after each AdamW step (weight decay would move them
-  with zeroed grads). Threat-only softplus on GF replay rows:
-  softplus(max_new − max_old + margin). Step A's public web bank failed on
-  CPU for realset3 (~48.7/72.2); with unfreeze, GF softplus is the softplus
-  source. Unthresholded logsumexp and LwF are gone.
+  with zeroed grads). Threat-only softplus on GF replay rows gathers the labeled
+  old logit. Step A's public web bank failed on CPU for realset3 (~48.7/72.2);
+  with unfreeze, GF softplus is the softplus source. Unthresholded logsumexp and
+  LwF are gone.
 - Init new head bias to -80 so new classes do not steal argmax at step 0.
 - Batch 16 + AMP; num_workers=4. Font fetches run in parallel (8 workers);
   FONT_FETCH_SLACK_SECONDS is inside setup / max_runtime budgets.
@@ -31,7 +32,6 @@ from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from train.model import BASE_CLASSES
 from train.paths import assert_under_out
 from train.registry import PHASE1_CLASSES
 
@@ -88,12 +88,15 @@ class SampleBudget:
 
 
 def ofl_v1_budget() -> SampleBudget:
+    # Same pre-fetch class set as make_ofl_loader / load_replay_fonts (one cut per GF family).
+    from train.replay_gf import selected_replay_classes
+
     return SampleBudget(
         per_class_new=OFL_V1_PER_CLASS_NEW,
         per_class_replay=OFL_V1_PER_CLASS_REPLAY,
         replay_repeat=OFL_V1_REPLAY_REPEAT,
         new_classes=PHASE1_CLASSES,
-        old_classes=BASE_CLASSES,
+        old_classes=len(selected_replay_classes()),
     )
 
 

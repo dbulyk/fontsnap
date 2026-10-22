@@ -77,32 +77,67 @@ def _compact(name: str) -> str:
     return _COMPACT.sub("", name.lower())
 
 
+def _face_stem(classname: str) -> str:
+    """Family stem of a class id: strip -Regular or a variable-axis suffix."""
+    if classname.endswith("-Regular"):
+        return classname[: -len("-Regular")]
+    if "[" in classname:
+        return classname.split("[", 1)[0]
+    return classname
+
+
 def regular_class_for_family(fam_index: int, members: list[int]) -> int | None:
-    """Class index whose face matches latin-400-normal, or None when none is clear."""
+    """Class index whose face matches latin-400-normal, or None when none is clear.
+
+    Prefer a cut whose compact stem equals the family key so SC/UI/Display
+    siblings do not take the base family's latin-400 file.
+    """
     if not members:
         return None
     names = _classnames()
+    fam_key = _compact(str(_meta()["fams"][fam_index]))
+
+    def stem_matches(class_index: int) -> bool:
+        return _compact(_face_stem(names[class_index])) == fam_key
+
+    def shortest(candidates: list[int]) -> int:
+        return sorted(candidates, key=lambda i: (len(names[i]), i))[0]
+
     exact = [i for i in members if names[i].endswith("-Regular")]
+    match_exact = [i for i in exact if stem_matches(i)]
+    if match_exact:
+        return shortest(match_exact)
+    upright_var = [i for i in members if "[" in names[i] and "Italic" not in names[i] and "Oblique" not in names[i]]
+    match_var = [i for i in upright_var if stem_matches(i)]
+    if match_var:
+        return shortest(match_var)
     if exact:
-        fam_key = _compact(str(_meta()["fams"][fam_index]))
-
-        def score(class_index: int) -> tuple[int, int, int]:
-            stem = names[class_index][: -len("-Regular")]
-            return (0 if _compact(stem) == fam_key else 1, len(names[class_index]), class_index)
-
-        return sorted(exact, key=score)[0]
-    upright_var = [
-        i
-        for i in members
-        if "[" in names[i] and "Italic" not in names[i] and "Oblique" not in names[i]
-    ]
-    if len(upright_var) == 1:
-        return upright_var[0]
-    if len(upright_var) > 1:
-        return sorted(upright_var)[0]
+        return shortest(exact)
+    if upright_var:
+        return shortest(upright_var)
     if len(members) == 1:
         return members[0]
     return None
+
+
+def selected_replay_classes(class_indices: range | None = None) -> tuple[int, ...]:
+    """Old class indices that share the loader's one-Regular-per-family rule (pre-fetch)."""
+    indices = range(BASE_CLASSES) if class_indices is None else class_indices
+    meta = _meta()
+    by_family: dict[int, list[int]] = {}
+    for class_index in indices:
+        if not 0 <= class_index < BASE_CLASSES:
+            continue
+        fam_index = int(meta["classFam"][class_index])
+        if not meta["inGF"][fam_index]:
+            continue
+        by_family.setdefault(fam_index, []).append(class_index)
+    chosen: list[int] = []
+    for fam_index, members in by_family.items():
+        class_index = regular_class_for_family(fam_index, members)
+        if class_index is not None:
+            chosen.append(class_index)
+    return tuple(sorted(chosen))
 
 
 def gf_font_url(family: str) -> str:
@@ -151,24 +186,12 @@ def load_replay_fonts(
     workers: int = _FETCH_WORKERS,
 ) -> dict[int, bytes]:
     """Map one Regular-class index per in-GF family → latin-400 font bytes."""
-    indices = range(BASE_CLASSES) if class_indices is None else class_indices
     meta = _meta()
-    by_family: dict[int, list[int]] = {}
-    for class_index in indices:
-        if not 0 <= class_index < BASE_CLASSES:
-            continue
-        fam_index = int(meta["classFam"][class_index])
-        if not meta["inGF"][fam_index]:
-            continue
-        by_family.setdefault(fam_index, []).append(class_index)
-
     class_to_family: dict[int, str] = {}
     families: list[str] = []
     seen: set[str] = set()
-    for fam_index, members in by_family.items():
-        class_index = regular_class_for_family(fam_index, members)
-        if class_index is None:
-            continue
+    for class_index in selected_replay_classes(class_indices):
+        fam_index = int(meta["classFam"][class_index])
         family = fontsource_slug(str(meta["display"][fam_index]))
         class_to_family[class_index] = family
         if family not in seen:
