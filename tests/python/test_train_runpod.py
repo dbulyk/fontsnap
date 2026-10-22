@@ -34,6 +34,17 @@ REPO = Path(__file__).resolve().parents[2]
 PYTHON = REPO / "python"
 KEY = "super-secret-key-9f3a"
 POD = "pod-1"
+CAL_HANDOVER_CODE = "abcd-ef01-2345-6789-2"
+CAL_HANDOVER_SHA = "ab" * 32
+
+
+def calibrate_handover_logs(rate: str = "12.5") -> bytes:
+    """Log blob with rate first, then runpodctl handover markers (client ACK)."""
+    return (
+        f"samples/sec {rate}\n"
+        f"fontsnap_calibrate_sha256 {CAL_HANDOVER_SHA}\n"
+        f"fontsnap_calibrate_receive {CAL_HANDOVER_CODE}\n"
+    ).encode()
 
 
 class Resp:
@@ -100,6 +111,32 @@ def arm(monkeypatch, tmp_path):
     sleeps = []
     monkeypatch.setattr("train.runpod.time.sleep", lambda seconds: sleeps.append(seconds))
     monkeypatch.setattr("train.runpod.time.monotonic", Clock())
+
+    import train.runpod as runpod
+    from train.recipe_defs import write_calibrate_rate
+
+    holder: dict[str, Decimal] = {}
+
+    def tracking_handover(pod_id: str, key: str, prior: tuple[str | None, str | None]):
+        text = runpod._pod_log_text(pod_id, key, stop_when=runpod._CALIBRATE_RECEIVE)
+        rate = runpod.parse_samples_per_sec(text)
+        if rate is not None:
+            holder["rate"] = rate
+        code = runpod.parse_calibrate_receive(text) or prior[0]
+        digest = runpod.parse_calibrate_sha256(text) or prior[1]
+        return code, digest
+
+    def fake_receive_calibrate(code: str, sha: str):
+        assert code == CAL_HANDOVER_CODE
+        assert sha == CAL_HANDOVER_SHA
+        rate = holder.get("rate")
+        if rate is None:
+            raise ValueError("test handover missing samples/sec in logs")
+        write_calibrate_rate(rate)
+        return rate
+
+    monkeypatch.setattr(runpod, "_latest_calibrate_handover", tracking_handover)
+    monkeypatch.setattr(runpod, "receive_calibrate_rate", fake_receive_calibrate)
     return sleeps
 
 
@@ -253,6 +290,10 @@ def test_create_body_is_a_secure_pod_that_stops_itself():
     assert "-H @-" in script
     assert "FONTSNAP_DONE_MARKER" not in script
     assert "/var/lib/fontsnap/done" not in script
+    assert "fontsnap_calibrate_receive" in script
+    assert "calibrate-rate.txt" in script
+    assert "runpodctl send --code" in script
+    assert " sleep 5\n" not in script
     # Script may read the pod-scoped $RUNPOD_API_KEY Runpod injects; create body must not set it.
     assert "env" not in body
     assert KEY not in json.dumps(body)
@@ -362,8 +403,7 @@ def test_happy_path_waits_for_the_job_then_deletes(monkeypatch, tmp_path, capsys
                 assert json.loads(body) == create_body(CALIBRATE)
             return hit
         if method == "GET" and path.startswith(f"/pods/{POD}/logs"):
-            line = json.dumps({"ts": "2026-01-01T00:00:00Z", "source": "container", "line": "samples/sec 12.5"})
-            return 200, f"id: 1\ndata: {line}\n".encode()
+            return 200, calibrate_handover_logs("12.5")
         if method == "GET" and path.startswith(f"/pods/{POD}"):
             seen["pod_gets"] += 1
             record = tmp_path / "runpod-active-pod.json"
@@ -407,7 +447,7 @@ def test_timer_stops_a_running_calibrate(monkeypatch, tmp_path, capsys):
         if hit:
             return hit
         if method == "GET" and path.startswith(f"/pods/{POD}/logs"):
-            return 200, b"samples/sec 12.5\n"
+            return 200, calibrate_handover_logs("12.5")
         if method == "GET" and path.startswith(f"/pods/{POD}"):
             return 200, pod_payload("RUNNING")
         if method == "POST" and path.endswith("/action"):
@@ -486,7 +526,7 @@ def test_delete_retries_then_reports_the_pod_id(monkeypatch, tmp_path, capsys):
         if hit:
             return hit
         if method == "GET" and "/logs" in path:
-            return 200, b"samples/sec 12.5\n"
+            return 200, calibrate_handover_logs("12.5")
         if method == "GET" and path.startswith(f"/pods/{POD}"):
             return 200, pod_payload("EXITED")
         if method == "POST" and path.endswith("/action"):
@@ -528,7 +568,7 @@ def test_delete_retries_a_network_error_then_succeeds(monkeypatch, tmp_path, cap
         if method == "POST" and path == "/pods":
             return Resp(201, json.dumps(pod_payload("PROVISIONING")).encode())
         if method == "GET" and "/logs" in path:
-            return Resp(200, b"samples/sec 12.5\n")
+            return Resp(200, calibrate_handover_logs("12.5"))
         if method == "GET" and path.startswith(f"/pods/{POD}"):
             return Resp(200, json.dumps(pod_payload("EXITED")).encode())
         if method == "POST" and path.endswith("/action"):
@@ -554,7 +594,7 @@ def test_delete_404_is_success_when_pod_is_gone(monkeypatch, tmp_path, capsys):
         if hit:
             return hit
         if method == "GET" and "/logs" in path:
-            return 200, b"samples/sec 12.5\n"
+            return 200, calibrate_handover_logs("12.5")
         if method == "GET" and path.startswith(f"/pods/{POD}"):
             if state["deleted"]:
                 return 404, {"title": "Not Found"}
@@ -590,7 +630,7 @@ def test_stale_active_pod_is_deleted_before_create(monkeypatch, tmp_path):
         if hit:
             return hit
         if method == "GET" and "/logs" in path:
-            return 200, b"samples/sec 12.5\n"
+            return 200, calibrate_handover_logs("12.5")
         if method == "GET" and path.startswith(f"/pods/{POD}"):
             return 200, pod_payload("EXITED")
         if method == "POST" and path.endswith("/action"):
@@ -736,7 +776,7 @@ def test_sse_chunked_logs_still_yield_samples_per_sec(monkeypatch, tmp_path, cap
 
     class SlowSSE(Resp):
         def __init__(self):
-            prefix = b"data: samples/sec 9.25\n\n"
+            prefix = b"data: " + calibrate_handover_logs("9.25").replace(b"\n", b"\ndata: ")
             # Trailing chunk never arrives; read must stop early on the rate line.
             super().__init__(200, prefix)
 
@@ -919,9 +959,30 @@ def test_self_delete_falls_back_when_pod_subcommand_is_unknown(tmp_path):
     )
     (bind / "apt-get").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     (bind / "curl").write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    (bind / "timeout").write_text(
+        "#!/bin/sh\n"
+        "shift\n"
+        'exec "$@"\n',
+        encoding="utf-8",
+    )
+    (bind / "sha256sum").write_text(
+        "#!/bin/sh\n"
+        'python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],\'rb\').read()).hexdigest(), sys.argv[1])" "$1"\n',
+        encoding="utf-8",
+    )
     (bind / "runpodctl").write_text(
         "#!/bin/sh\n"
         'printf "%s\\n" "$*" >> "$DELETED"\n'
+        'if [ "$1" = send ]; then\n'
+        "  code=\n"
+        "  prev=\n"
+        "  for arg; do\n"
+        '    if [ "$prev" = "--code" ]; then code="$arg"; fi\n'
+        '    prev="$arg"\n'
+        "  done\n"
+        '  printf "%s-2\\n" "$code"\n'
+        "  exit 0\n"
+        "fi\n"
         'if [ "$1" = pod ]; then\n'
         '  echo \'Error: unknown command "pod" for "runpodctl"\' >&2\n'
         "  exit 1\n"
@@ -939,6 +1000,7 @@ def test_self_delete_falls_back_when_pod_subcommand_is_unknown(tmp_path):
     assert proc.returncode == 0
     assert f"remove pod {POD}" in removed
     assert "samples/sec 1.0" in proc.stdout
+    assert "fontsnap_calibrate_receive" in proc.stdout
 
 
 def test_all_delete_paths_failing_keeps_pid1_alive_without_retrain(tmp_path):
@@ -964,9 +1026,30 @@ def test_all_delete_paths_failing_keeps_pid1_alive_without_retrain(tmp_path):
         '#!/bin/sh\nprintf "curl %s\\n" "$*" >> "$DELETED"\necho 401\nexit 0\n',
         encoding="utf-8",
     )
+    (bind / "timeout").write_text(
+        "#!/bin/sh\n"
+        "shift\n"
+        'exec "$@"\n',
+        encoding="utf-8",
+    )
+    (bind / "sha256sum").write_text(
+        "#!/bin/sh\n"
+        'python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],\'rb\').read()).hexdigest(), sys.argv[1])" "$1"\n',
+        encoding="utf-8",
+    )
     (bind / "runpodctl").write_text(
         "#!/bin/sh\n"
         'printf "%s\\n" "$*" >> "$DELETED"\n'
+        'if [ "$1" = send ]; then\n'
+        "  code=\n"
+        "  prev=\n"
+        "  for arg; do\n"
+        '    if [ "$prev" = "--code" ]; then code="$arg"; fi\n'
+        '    prev="$arg"\n'
+        "  done\n"
+        '  printf "%s-2\\n" "$code"\n'
+        "  exit 0\n"
+        "fi\n"
         'echo attempt >> "$ATTEMPTS"\n'
         'if [ "$1 $2" = "remove pod" ]; then echo unauthorized >&2; exit 1; fi\n'
         'if [ "$1" = pod ]; then echo \'Error: unknown command "pod"\' >&2; exit 1; fi\n'
@@ -1043,12 +1126,30 @@ def test_self_delete_uses_injected_key_when_runpodctl_is_broken(tmp_path):
     auth = tmp_path / "auth.txt"
     (bind / "git").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     (bind / "python").write_text(
-        '#!/bin/sh\nif [ "$1 $2" = "-m pip" ]; then exit 0; fi\necho ok\nexit 0\n',
+        '#!/bin/sh\nif [ "$1 $2" = "-m pip" ]; then exit 0; fi\necho "samples/sec 1.0"\nexit 0\n',
         encoding="utf-8",
     )
     (bind / "apt-get").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (bind / "timeout").write_text("#!/bin/sh\nshift\nexec \"$@\"\n", encoding="utf-8")
+    (bind / "sha256sum").write_text(
+        "#!/bin/sh\n"
+        'python3 -c "import hashlib,sys; print(hashlib.sha256(open(sys.argv[1],\'rb\').read()).hexdigest(), sys.argv[1])" "$1"\n',
+        encoding="utf-8",
+    )
     (bind / "runpodctl").write_text(
-        "#!/bin/sh\necho 'Error: unknown command \"pod\"' >&2; exit 1\n",
+        "#!/bin/sh\n"
+        'if [ "$1" = send ]; then\n'
+        "  code=\n"
+        "  prev=\n"
+        "  for arg; do\n"
+        '    if [ "$prev" = "--code" ]; then code="$arg"; fi\n'
+        '    prev="$arg"\n'
+        "  done\n"
+        '  printf "%s-2\\n" "$code"\n'
+        "  exit 0\n"
+        "fi\n"
+        "echo 'Error: unknown command \"pod\"' >&2\n"
+        "exit 1\n",
         encoding="utf-8",
     )
     (bind / "curl").write_text(
@@ -1203,7 +1304,7 @@ def test_fake_server_chunked_sse_parses_samples_per_sec(monkeypatch, tmp_path, c
             conn.sendall(_http_bytes(201, "Created", _pod_body("PROVISIONING")))
             return
         if method == "GET" and "/logs" in path:
-            payload = b"data: samples/sec 9.25\n\n"
+            payload = b"data: " + calibrate_handover_logs("9.25").replace(b"\n", b"\ndata: ")
             chunk = f"{len(payload):x}\r\n".encode() + payload + b"\r\n"
             conn.sendall(b"HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nTransfer-Encoding: chunked\r\n\r\n" + chunk)
             conn.settimeout(5)
@@ -1296,7 +1397,7 @@ def test_incomplete_log_read_still_parses_samples_per_sec(monkeypatch, tmp_path,
         def read(self, n=-1):
             if not self._once:
                 self._once = True
-                raise http.client.IncompleteRead(b"data: samples/sec 4.5\n\n")
+                raise http.client.IncompleteRead(b"data: " + calibrate_handover_logs("4.5").replace(b"\n", b"\ndata: "))
             return b""
 
     def urlopen(request, timeout=30):
@@ -1358,7 +1459,7 @@ def test_absent_pod_still_reads_a_rate(monkeypatch, tmp_path, capsys):
         if hit:
             return hit
         if method == "GET" and "/logs" in path:
-            return 200, b"samples/sec 3.5\n"
+            return 200, calibrate_handover_logs("3.5")
         if method == "GET" and path.startswith(f"/pods/{POD}"):
             return 404, {"title": "gone"}
         if method == "POST" and path.endswith("/action"):

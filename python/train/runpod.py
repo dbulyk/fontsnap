@@ -52,6 +52,7 @@ from train.recipe_defs import (
     CALIBRATE_MAX_RUNTIME_SECONDS,
     CALIBRATE_SPEND_CAP_USD,
     CALIBRATE_STEPS,
+    HANDOVER_ACK_SECONDS,
     OFL_V1_BATCH_SIZE,
     TRAIN_SPEND_CAP_USD,
     estimate_train_usd,
@@ -64,8 +65,6 @@ from train.recipe_defs import (
 
 API = "https://api.runpod.io/v2"
 _PUBLIC_REPO = "https://github.com/dbulyk/fontsnap.git"
-# Short flush only: long settle eats the calibrate watchdog window (N15/N19).
-_LOG_SETTLE_SECONDS = 5
 # Image pull / provision happens before the entrypoint; billing starts at create.
 _PROVISION_SLACK_SECONDS = 5 * 60
 _SELF_DELETE_CALL_TIMEOUT = 30
@@ -327,15 +326,101 @@ def self_delete_shell() -> str:
     )
 
 
-def _publish_artifacts_shell() -> str:
-    """Publish ckpt (+ ONNX if present) without deadlocking send/receive.
+def _runpodctl_send_wait_shell(
+    *,
+    file_shell: str,
+    sha_marker: str,
+    receive_marker: str,
+    timeout_seconds: int,
+    indent: str = "    ",
+) -> str:
+    """Background runpodctl send, print sha + full receive code, wait (client ACK).
 
-    runpodctl send appends a relay index to --code (5 parts). Start send in the
-    background, print sha + the full code matched by ^$CODE_BASE-[0-9]+$ (not
-    head -n1: 1.14.15 may print a config banner first), then wait with timeout
-    inside the watchdog window. Never bare `exit`: self-delete must run.
+    runpodctl send appends a relay index to --code (5 parts). The wait is the
+    acknowledgment: send completes only after the client receives. A hard
+    timeout then falls through to self-delete. python -u flushes markers under
+    piped/docker logs before send blocks.
     """
-    t = ARTIFACT_TRANSFER_SECONDS
+    i = indent
+    t = timeout_seconds
+    return (
+        f"{i}SHA=$(sha256sum {file_shell} | awk '{{print $1}}')\n"
+        f"{i}python3 -u -c \"print('{sha_marker}', '$SHA', flush=True)\"\n"
+        f"{i}if ! command -v runpodctl >/dev/null 2>&1; then\n"
+        f'{i}  echo "fontsnap: runpodctl missing; cannot hand over {file_shell}" >&2\n'
+        f"{i}  PUBLISH_RC=4\n"
+        f"{i}else\n"
+        f"{i}  CODE_BASE=$(python3 -c \"import secrets; print('-'.join(secrets.token_hex(2) for _ in range(4)))\")\n"
+        f'{i}  SEND_OUT="$WORK/fontsnap-send.out"\n'
+        f'{i}  SEND_ERR="$WORK/fontsnap-send.err"\n'
+        f'{i}  : >"$SEND_OUT"\n'
+        f'{i}  : >"$SEND_ERR"\n'
+        f'{i}  timeout {t} runpodctl send --code "$CODE_BASE" {file_shell} >"$SEND_OUT" 2>"$SEND_ERR" &\n'
+        f"{i}  SEND_PID=$!\n"
+        f'{i}  FULL=""\n'
+        # 1.14.15 without config.toml prints a banner on stdout before the code.
+        f"{i}  for _ in $(seq 1 300); do\n"
+        f'{i}    FULL=$(grep -E "^${{CODE_BASE}}-[0-9]+$" "$SEND_OUT" 2>/dev/null | head -n1 | tr -d \'\\r\' || true)\n'
+        f'{i}    if [ -n "$FULL" ]; then\n'
+        f"{i}      break\n"
+        f"{i}    fi\n"
+        f'{i}    if ! kill -0 "$SEND_PID" 2>/dev/null; then\n'
+        f'{i}      FULL=$(grep -E "^${{CODE_BASE}}-[0-9]+$" "$SEND_OUT" 2>/dev/null | head -n1 | tr -d \'\\r\' || true)\n'
+        f"{i}      break\n"
+        f"{i}    fi\n"
+        f"{i}    sleep 0.1\n"
+        f"{i}  done\n"
+        f'{i}  if [ -z "$FULL" ]; then\n'
+        f'{i}    echo "fontsnap: send produced no receive code" >&2\n'
+        f'{i}    cat "$SEND_ERR" >&2 || true\n'
+        f'{i}    kill "$SEND_PID" 2>/dev/null || true\n'
+        f'{i}    wait "$SEND_PID" 2>/dev/null || true\n'
+        f"{i}    PUBLISH_RC=4\n"
+        f"{i}  else\n"
+        f"{i}    python3 -u -c \"print('{receive_marker}', '$FULL', flush=True)\"\n"
+        f'{i}    if ! wait "$SEND_PID"; then\n'
+        f'{i}      echo "fontsnap: handover send failed" >&2\n'
+        f'{i}      cat "$SEND_ERR" >&2 || true\n'
+        f"{i}      PUBLISH_RC=4\n"
+        f"{i}    fi\n"
+        f"{i}  fi\n"
+        f"{i}fi\n"
+    )
+
+
+def _publish_calibrate_shell() -> str:
+    """Hand the calibrate rate to the client via runpodctl send (ACK before delete)."""
+    send = _runpodctl_send_wait_shell(
+        file_shell='"$WORK/calibrate-rate.txt"',
+        sha_marker="fontsnap_calibrate_sha256",
+        receive_marker="fontsnap_calibrate_receive",
+        timeout_seconds=HANDOVER_ACK_SECONDS,
+        indent="    ",
+    )
+    return (
+        '  cat "$WORK/fontsnap-train.out"\n'
+        "  PUBLISH_RC=0\n"
+        '  RATE=$(grep -E "^samples/sec " "$WORK/fontsnap-train.out" | tail -n1 | awk \'{print $2}\')\n'
+        '  if [ -z "$RATE" ]; then\n'
+        '    echo "fontsnap: calibrate produced no samples/sec" >&2\n'
+        "    PUBLISH_RC=4\n"
+        "  else\n"
+        '    printf "%s\\n" "$RATE" >"$WORK/calibrate-rate.txt"\n'
+        f"{send}"
+        "  fi\n"
+        '  if [ "$PUBLISH_RC" -ne 0 ]; then status="$PUBLISH_RC"; fi\n'
+    )
+
+
+def _publish_artifacts_shell() -> str:
+    """Publish ckpt (+ ONNX if present); send wait is the client ACK before delete."""
+    send = _runpodctl_send_wait_shell(
+        file_shell='"$TGZ"',
+        sha_marker="fontsnap_artifact_sha256",
+        receive_marker="fontsnap_artifact_receive",
+        timeout_seconds=ARTIFACT_TRANSFER_SECONDS,
+        indent="    ",
+    )
     return (
         '  ART="$WORK/out/train"\n'
         "  PUBLISH_RC=0\n"
@@ -350,48 +435,7 @@ def _publish_artifacts_shell() -> str:
         '      echo "fontsnap: candidate.onnx missing; publishing ckpt only" >&2\n'
         '      tar -C "$ART" -czf "$TGZ" ckpt-final.pt\n'
         "    fi\n"
-        "    SHA=$(sha256sum \"$TGZ\" | awk '{print $1}')\n"
-        # python -u so markers flush under piped/docker logs before send blocks.
-        "    python3 -u -c \"print('fontsnap_artifact_sha256', '$SHA', flush=True)\"\n"
-        "    if ! command -v runpodctl >/dev/null 2>&1; then\n"
-        '      echo "fontsnap: runpodctl missing; cannot send artifacts" >&2\n'
-        "      PUBLISH_RC=4\n"
-        "    else\n"
-        "      CODE_BASE=$(python3 -c \"import secrets; print('-'.join(secrets.token_hex(2) for _ in range(4)))\")\n"
-        '      SEND_OUT="$WORK/fontsnap-send.out"\n'
-        '      SEND_ERR="$WORK/fontsnap-send.err"\n'
-        '      : >"$SEND_OUT"\n'
-        '      : >"$SEND_ERR"\n'
-        f'      timeout {t} runpodctl send --code "$CODE_BASE" "$TGZ" >"$SEND_OUT" 2>"$SEND_ERR" &\n'
-        "      SEND_PID=$!\n"
-        '      FULL=""\n'
-        # 1.14.15 without config.toml prints a banner on stdout before the code.
-        "      for _ in $(seq 1 300); do\n"
-        '        FULL=$(grep -E "^${CODE_BASE}-[0-9]+$" "$SEND_OUT" 2>/dev/null | head -n1 | tr -d \'\\r\' || true)\n'
-        '        if [ -n "$FULL" ]; then\n'
-        "          break\n"
-        "        fi\n"
-        '        if ! kill -0 "$SEND_PID" 2>/dev/null; then\n'
-        '          FULL=$(grep -E "^${CODE_BASE}-[0-9]+$" "$SEND_OUT" 2>/dev/null | head -n1 | tr -d \'\\r\' || true)\n'
-        "          break\n"
-        "        fi\n"
-        "        sleep 0.1\n"
-        "      done\n"
-        '      if [ -z "$FULL" ]; then\n'
-        '        echo "fontsnap: send produced no receive code" >&2\n'
-        '        cat "$SEND_ERR" >&2 || true\n'
-        '        kill "$SEND_PID" 2>/dev/null || true\n'
-        '        wait "$SEND_PID" 2>/dev/null || true\n'
-        "        PUBLISH_RC=4\n"
-        "      else\n"
-        "        python3 -u -c \"print('fontsnap_artifact_receive', '$FULL', flush=True)\"\n"
-        '        if ! wait "$SEND_PID"; then\n'
-        '          echo "fontsnap: artifact send failed" >&2\n'
-        '          cat "$SEND_ERR" >&2 || true\n'
-        "          PUBLISH_RC=4\n"
-        "        fi\n"
-        "      fi\n"
-        "    fi\n"
+        f"{send}"
         "  fi\n"
         '  if [ "$PUBLISH_RC" -ne 0 ]; then status="$PUBLISH_RC"; fi\n'
     )
@@ -402,12 +446,10 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError(f"bad commit pin: {sha!r}")
     deadline = _self_delete_deadline(spec)
-    # Keep settle inside the deadline; leave room for log scrape (N15).
-    settle = min(_LOG_SETTLE_SECONDS, max(0, deadline // 60)) if spec.mode is JobMode.CALIBRATE else 0
     if spec.mode is JobMode.CALIBRATE:
         # No --steps override: calibrate recipe already matches ofl-v1 batch/AMP/loader.
         train = "python -m train.loop --recipe calibrate --device cuda"
-        on_ok = '  cat "$WORK/fontsnap-train.out"\n' + (f"  sleep {settle}\n" if settle else "")
+        on_ok = _publish_calibrate_shell()
     else:
         train = "python -m train.loop --recipe ofl-v1 --device cuda"
         on_ok = '  cat "$WORK/fontsnap-train.out"\n' + _publish_artifacts_shell()
@@ -769,8 +811,11 @@ def _teardown(pod_id: str, key: str, *, mode: str, hourly: Decimal, started: flo
 
 _SAMPLES_PER_SEC = re.compile(r"samples/sec(?:=|\s+)(\d+(?:\.\d+)?)")
 # runpodctl send prints base + "-" + relay index (5 parts). Do not swallow JSON tails.
-_ARTIFACT_RECEIVE = re.compile(r"fontsnap_artifact_receive\s+([0-9a-f]{4}(?:-[0-9a-f]{4}){3}-\d+)\b")
+_RECEIVE_CODE = r"([0-9a-f]{4}(?:-[0-9a-f]{4}){3}-\d+)\b"
+_ARTIFACT_RECEIVE = re.compile(rf"fontsnap_artifact_receive\s+{_RECEIVE_CODE}")
 _ARTIFACT_SHA = re.compile(r"fontsnap_artifact_sha256\s+([0-9a-f]{64})\b")
+_CALIBRATE_RECEIVE = re.compile(rf"fontsnap_calibrate_receive\s+{_RECEIVE_CODE}")
+_CALIBRATE_SHA = re.compile(r"fontsnap_calibrate_sha256\s+([0-9a-f]{64})\b")
 
 
 def parse_samples_per_sec(text: str) -> Decimal | None:
@@ -793,6 +838,16 @@ def parse_artifact_receive(text: str) -> str | None:
 
 def parse_artifact_sha256(text: str) -> str | None:
     found = _ARTIFACT_SHA.findall(text)
+    return found[-1] if found else None
+
+
+def parse_calibrate_receive(text: str) -> str | None:
+    found = _CALIBRATE_RECEIVE.findall(text)
+    return found[-1] if found else None
+
+
+def parse_calibrate_sha256(text: str) -> str | None:
+    found = _CALIBRATE_SHA.findall(text)
     return found[-1] if found else None
 
 
@@ -823,36 +878,81 @@ def _latest_artifact(pod_id: str, key: str, prior: tuple[str | None, str | None]
     return code, digest
 
 
-def receive_artifact(code: str, expected_sha256: str) -> Path:
-    """Pull the train tarball; clear RUNPOD_API_KEY and verify sha256."""
+def _latest_calibrate_handover(
+    pod_id: str, key: str, prior: tuple[str | None, str | None]
+) -> tuple[str | None, str | None]:
+    text = _pod_log_text(pod_id, key, stop_when=_CALIBRATE_RECEIVE)
+    code = parse_calibrate_receive(text) or prior[0]
+    digest = parse_calibrate_sha256(text) or prior[1]
+    return code, digest
+
+
+def _receive_file(code: str, expected_sha256: str, *, dest_dir: Path, timeout: int) -> Path:
+    """runpodctl receive into dest_dir; clear RUNPOD_API_KEY; verify sha256 of the new file."""
     import hashlib
 
-    from train import paths
-
-    dest_dir = assert_under_out(paths.OUT / "train")
+    dest_dir = assert_under_out(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
-    for old in dest_dir.glob("fontsnap-ofl-v1*.tgz"):
-        old.unlink()
+    before = {path.resolve() for path in dest_dir.iterdir()} if dest_dir.is_dir() else set()
     env = {k: v for k, v in os.environ.items() if k != "RUNPOD_API_KEY"}
     subprocess.run(
         ["runpodctl", "receive", code],
         cwd=str(dest_dir),
         check=True,
-        timeout=ARTIFACT_TRANSFER_SECONDS,
+        timeout=timeout,
         env=env,
     )
-    matches = sorted(dest_dir.glob("*.tgz"))
-    if not matches:
-        raise FileNotFoundError("runpodctl receive produced no tarball")
-    archive = matches[-1]
-    digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+    after = sorted(
+        path for path in dest_dir.iterdir() if path.is_file() and path.resolve() not in before
+    )
+    if not after:
+        # Fallback: newest file if the tool overwrote an existing name.
+        after = sorted((path for path in dest_dir.iterdir() if path.is_file()), key=lambda p: p.stat().st_mtime)
+    if not after:
+        raise FileNotFoundError("runpodctl receive produced no file")
+    incoming = after[-1]
+    digest = hashlib.sha256(incoming.read_bytes()).hexdigest()
     if digest != expected_sha256:
-        archive.unlink(missing_ok=True)
-        raise ValueError(f"artifact sha256 mismatch: got {digest}, want {expected_sha256}")
+        incoming.unlink(missing_ok=True)
+        raise ValueError(f"handover sha256 mismatch: got {digest}, want {expected_sha256}")
+    return incoming
+
+
+def receive_artifact(code: str, expected_sha256: str) -> Path:
+    """Pull the train tarball; clear RUNPOD_API_KEY and verify sha256."""
+    from train import paths
+
+    dest_dir = assert_under_out(paths.OUT / "train")
+    for old in dest_dir.glob("fontsnap-ofl-v1*.tgz"):
+        old.unlink()
+    archive = _receive_file(
+        code, expected_sha256, dest_dir=dest_dir, timeout=ARTIFACT_TRANSFER_SECONDS
+    )
     final = dest_dir / "fontsnap-ofl-v1.tgz"
     if archive != final:
         archive.replace(final)
     return final
+
+
+def receive_calibrate_rate(code: str, expected_sha256: str) -> Decimal:
+    """Pull the calibrate rate file (client ACK); persist and return the rate."""
+    from train import paths
+
+    dest_dir = assert_under_out(paths.OUT / "handover")
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    for old in dest_dir.glob("*"):
+        if old.is_file():
+            old.unlink()
+    incoming = _receive_file(code, expected_sha256, dest_dir=dest_dir, timeout=HANDOVER_ACK_SECONDS)
+    text = incoming.read_text(encoding="utf-8").strip()
+    try:
+        rate = Decimal(text.split()[0] if text.split() else text)
+    except (InvalidOperation, IndexError, ValueError) as exc:
+        raise ValueError(f"bad calibrate rate payload: {text!r}") from exc
+    if rate <= 0:
+        raise ValueError(f"non-positive calibrate rate: {rate}")
+    write_calibrate_rate(rate)
+    return rate
 
 
 def project_main_train(rate: Decimal, hourly_usd: Decimal) -> tuple[Decimal, Decimal]:
@@ -879,59 +979,82 @@ def _print_projection(rate: Decimal, hourly_usd: Decimal) -> None:
 
 def _poll(pod_id: str, key: str, spec: RunPodJobSpec, deadline: float) -> tuple[int, Decimal | None, str, str | None, str | None]:
     rate: Decimal | None = None
-    artifact_code: str | None = None
-    artifact_sha: str | None = None
+    handover_code: str | None = None
+    handover_sha: str | None = None
     received = False
     transient = 0
     state = PodState.PROVISIONING.value
+
+    def _try_handover() -> int | None:
+        nonlocal rate, handover_code, handover_sha, received
+        if received:
+            return None
+        if spec.mode is JobMode.CALIBRATE:
+            handover_code, handover_sha = _latest_calibrate_handover(
+                pod_id, key, (handover_code, handover_sha)
+            )
+            if handover_code and handover_sha:
+                try:
+                    rate = receive_calibrate_rate(handover_code, handover_sha)
+                    received = True
+                    print(f"calibrate rate {format(rate, 'f')} (handover ACK)", flush=True)
+                except (OSError, subprocess.SubprocessError, ValueError, FileNotFoundError) as err:
+                    print(f"fontsnap: calibrate handover failed: {err}", file=sys.stderr)
+                    return 4
+            return None
+        handover_code, handover_sha = _latest_artifact(pod_id, key, (handover_code, handover_sha))
+        if handover_code and handover_sha:
+            try:
+                path = receive_artifact(handover_code, handover_sha)
+                print(f"artifact {path}", flush=True)
+                received = True
+            except (OSError, subprocess.SubprocessError, ValueError, FileNotFoundError) as err:
+                print(f"fontsnap: artifact receive failed: {err}", file=sys.stderr)
+                return 4
+        return None
+
     while time.monotonic() < deadline:
         pod = get_pod(pod_id, key)
         state = pod.state.value
         if pod.cloud.upper() == "COMMUNITY":
-            return 4, rate, state, artifact_code, artifact_sha
+            return 4, rate, state, handover_code, handover_sha
         if pod.http_status in _TRANSIENT_HTTP or pod.http_status == 0:
             transient += 1
             if transient >= _TRANSIENT_LIMIT:
-                return 4, rate, state, artifact_code, artifact_sha
+                return 4, rate, state, handover_code, handover_sha
             time.sleep(_POLL_SECONDS)
             continue
         transient = 0
         if pod.http_status in {401, 403}:
-            return 4, rate, state, artifact_code, artifact_sha
+            return 4, rate, state, handover_code, handover_sha
         if pod.state is PodState.RUNNING:
-            rate = _latest_rate(pod_id, key, rate)
-            if spec.mode is JobMode.TRAIN and not received:
-                artifact_code, artifact_sha = _latest_artifact(pod_id, key, (artifact_code, artifact_sha))
-                if artifact_code and artifact_sha:
-                    try:
-                        path = receive_artifact(artifact_code, artifact_sha)
-                        print(f"artifact {path}", flush=True)
-                        received = True
-                    except (OSError, subprocess.SubprocessError, ValueError, FileNotFoundError) as err:
-                        print(f"fontsnap: artifact receive failed: {err}", file=sys.stderr)
-                        return 4, rate, state, artifact_code, artifact_sha
+            # Handover receive is the ACK; log scrape alone races self-delete.
+            fail = _try_handover()
+            if fail is not None:
+                return fail, rate, state, handover_code, handover_sha
             time.sleep(_POLL_SECONDS)
             continue
         if pod.state in _WAIT_STATES:
             time.sleep(_POLL_SECONDS)
             continue
         if pod.state in _DONE_STATES:
-            rate = _latest_rate(pod_id, key, rate)
-            if spec.mode is JobMode.TRAIN and not received:
-                artifact_code, artifact_sha = _latest_artifact(pod_id, key, (artifact_code, artifact_sha))
-            if spec.mode is JobMode.CALIBRATE and rate is None:
-                return 4, rate, state, artifact_code, artifact_sha
-            if spec.mode is JobMode.TRAIN and not received:
-                print("fontsnap: train finished without a verified artifact", file=sys.stderr)
-                return 4, rate, state, artifact_code, artifact_sha
-            return 0, rate, state, artifact_code, artifact_sha
-        return 4, rate, state, artifact_code, artifact_sha
-    if spec.mode is JobMode.CALIBRATE and rate is None:
-        return 4, rate, state, artifact_code, artifact_sha
-    if spec.mode is JobMode.TRAIN and not received:
-        print("fontsnap: train timed out without a verified artifact", file=sys.stderr)
-        return 4, rate, state, artifact_code, artifact_sha
-    return 0, rate, state, artifact_code, artifact_sha
+            fail = _try_handover()
+            if fail is not None:
+                return fail, rate, state, handover_code, handover_sha
+            if not received:
+                kind = "calibrate rate" if spec.mode is JobMode.CALIBRATE else "artifact"
+                print(f"fontsnap: finished without a verified {kind} handover", file=sys.stderr)
+                return 4, rate, state, handover_code, handover_sha
+            return 0, rate, state, handover_code, handover_sha
+        return 4, rate, state, handover_code, handover_sha
+    fail = _try_handover()
+    if fail is not None:
+        return fail, rate, state, handover_code, handover_sha
+    if not received:
+        kind = "calibrate rate" if spec.mode is JobMode.CALIBRATE else "artifact"
+        print(f"fontsnap: timed out without a verified {kind} handover", file=sys.stderr)
+        return 4, rate, state, handover_code, handover_sha
+    return 0, rate, state, handover_code, handover_sha
 
 
 def _over_calibrate_cap(spec: RunPodJobSpec) -> bool:
