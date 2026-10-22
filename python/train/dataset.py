@@ -30,8 +30,9 @@ def prepared_chw(
 ) -> np.ndarray:
     """Render → optional evaluate-style textcrop → prep.
 
-    Replay passes textcrop='pack'|'crop' so old-class negatives live in the same
-    view as realset3 / the extension; plain synth train and hold-out omit it.
+    New-class / replay / synth hold-out stay on raw synth-prep (CPU full-head
+    measure: pack/crop on the CE pool dropped realset3 to ~47%). Softplus
+    negatives from the public web bank use pack+crop in train.web_bank.
     """
     canvas = render_sample(spec, font_bytes, instance=instance)
     if textcrop is not None:
@@ -102,10 +103,9 @@ class OldClassReplaySynth:
         last_err: Exception | None = None
         for offset in range(len(self.specs)):
             spec = self.specs[(index + offset) % len(self.specs)]
-            # Evaluate-style pack/crop (closer domain than raw synth-prep).
-            view = "pack" if (spec.seed % 2 == 0) else "crop"
             try:
-                arr = prepared_chw(spec, self.fonts[spec.class_index], textcrop=view)
+                # Raw synth-prep: same CE view as new classes (see prepared_chw).
+                arr = prepared_chw(spec, self.fonts[spec.class_index])
             except (OSError, RuntimeError, ValueError) as err:
                 last_err = err
                 continue

@@ -7,14 +7,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from train.model import BASE_CLASSES, expand_classifier, expanded_classes
-from train.paths import ROOT, assert_under_out
+from train.paths import assert_under_out
 from train.recipe_defs import (
     CALIBRATE_STEPS,
     CALIBRATE_WARMUP_STEPS,
     OFL_V1_AMP,
     OFL_V1_BATCH_SIZE,
     OFL_V1_CHECKPOINT_EVERY,
-    OFL_V1_DISTILL_WEIGHT,
     OFL_V1_FREEZE_BACKBONE,
     OFL_V1_LR,
     OFL_V1_NUM_WORKERS,
@@ -24,6 +23,7 @@ from train.recipe_defs import (
     OFL_V1_SUPPRESS_MARGIN,
     OFL_V1_SUPPRESS_WEIGHT,
     OFL_V1_WEIGHT_DECAY,
+    WEB_BANK_SLACK_SECONDS,
     ofl_v1_budget,
     ofl_v1_steps,
 )
@@ -40,10 +40,8 @@ class TrainConfig:
     num_classes: int
     device: str
     checkpoint_dir: Path
-    distill_weight: float
     suppress_weight: float
     suppress_margin: float
-    distill_dir: str
     use_synth: bool
     per_class_new: int
     per_class_replay: int
@@ -70,10 +68,8 @@ def recipe(name: str) -> TrainConfig:
         num_classes=expanded_classes(),
         device="cuda",
         checkpoint_dir=_checkpoint_dir(),
-        distill_weight=OFL_V1_DISTILL_WEIGHT,
         suppress_weight=OFL_V1_SUPPRESS_WEIGHT,
         suppress_margin=OFL_V1_SUPPRESS_MARGIN,
-        distill_dir="",
         use_synth=True,
         per_class_new=OFL_V1_PER_CLASS_NEW,
         per_class_replay=OFL_V1_PER_CLASS_REPLAY,
@@ -94,10 +90,8 @@ def recipe(name: str) -> TrainConfig:
             num_classes=BASE_CLASSES,
             device="cpu",
             checkpoint_dir=_checkpoint_dir(),
-            distill_weight=0.0,
             suppress_weight=0.0,
             suppress_margin=0.0,
-            distill_dir="",
             use_synth=False,
             per_class_new=0,
             per_class_replay=0,
@@ -120,17 +114,6 @@ def recipe(name: str) -> TrainConfig:
             **ofl_common,
         )
     raise ValueError(f"unknown recipe {name}")
-
-
-def assert_distill_source(distill_dir: str) -> None:
-    if distill_dir.strip() == "":
-        raise ValueError("distill directory is empty")
-    path = Path(distill_dir).expanduser().resolve()
-    banned = (ROOT / "data" / "realset3").resolve()
-    if path == banned or banned in path.parents:
-        raise ValueError("refusing to distill data/realset3")
-    if not path.is_dir() or not any(path.iterdir()):
-        raise ValueError("distill directory is empty")
 
 
 def checkpoint_path(cfg: TrainConfig, *, step: int | None = None) -> Path:
@@ -188,15 +171,32 @@ def _restore_old_head(model, weight_anchor, bias_anchor) -> None:
             model.module.classifier.bias[:BASE_CLASSES].copy_(bias_anchor)
 
 
+def _web_negative_iter(cfg: TrainConfig, device, *, fetch: bool):
+    """Cycle evaluate pack/crop views from the public web bank for softplus."""
+    import torch
+    from torch.utils.data import DataLoader
+
+    from train.web_bank import WebNegativeBank, ensure_web_bank
+
+    ensure_web_bank(fetch=fetch, deadline_seconds=WEB_BANK_SLACK_SECONDS)
+    bank = WebNegativeBank()
+    loader = DataLoader(
+        bank,
+        batch_size=cfg.batch_size,
+        shuffle=True,
+        num_workers=0,
+    )
+    while True:
+        for batch in loader:
+            yield batch.to(device)
+
+
 def train(cfg: TrainConfig) -> Path:
     target = expanded_classes()
     if cfg.device != "cpu" and os.environ.get("FONTSNAP_ALLOW_GPU") != "1":
         raise SystemExit(2)
     if cfg.num_classes not in (BASE_CLASSES, target):
         raise ValueError(f"num_classes must be {BASE_CLASSES} or {target}")
-    # External image distill (if ever enabled) is banned from realset3.
-    if cfg.distill_weight > 0 and cfg.distill_dir.strip() != "":
-        assert_distill_source(cfg.distill_dir)
     dest = final_checkpoint_path(cfg)
     import torch
     import torch.nn.functional as F
@@ -217,7 +217,6 @@ def train(cfg: TrainConfig) -> Path:
     preserve_old = cfg.freeze_backbone and cfg.num_classes == target
     if preserve_old:
         _freeze_backbone(model)
-    # No second ONNX pass: KL on frozen old columns is ~0 (round 4).
     use_margin = preserve_old and cfg.suppress_weight > 0
     params = [p for p in model.parameters() if p.requires_grad]
     if not params:
@@ -231,23 +230,28 @@ def train(cfg: TrainConfig) -> Path:
     if preserve_old:
         old_w, old_b = _anchor_old_head(model)
 
+    fetch = os.environ.get("FONTSNAP_SKIP_FETCH") != "1"
+    web_iter = None
+    if use_margin and cfg.use_synth:
+        # Bank build before calibrate timer (same as font fetch / warm-up).
+        web_iter = _web_negative_iter(cfg, device, fetch=fetch)
+
     def _step_loss(inputs, labels):
         logits = model(inputs)
         loss = F.cross_entropy(logits, labels)
-        if use_margin:
-            replay = labels < BASE_CLASSES
-            if bool(replay.any()):
-                replay_logits = logits[replay]
-                max_old = replay_logits[:, :BASE_CLASSES].amax(dim=-1)
-                max_new = replay_logits[:, BASE_CLASSES:].amax(dim=-1)
-                # Fire only when a new logit threatens the old answer.
-                loss = loss + cfg.suppress_weight * F.softplus(max_new - max_old + cfg.suppress_margin).mean()
+        if use_margin and web_iter is not None:
+            neg = next(web_iter)
+            neg_logits = model(neg)
+            max_old = neg_logits[:, :BASE_CLASSES].amax(dim=-1)
+            max_new = neg_logits[:, BASE_CLASSES:].amax(dim=-1)
+            # Fire only when a new logit threatens the old answer on web views.
+            loss = loss + cfg.suppress_weight * F.softplus(max_new - max_old + cfg.suppress_margin).mean()
         return loss
 
     # Build loader (font fetch + workers) before the calibrate timer; warm-up
     # batches are excluded from samples/sec so cold fetch cannot tank the rate.
     extra = CALIBRATE_WARMUP_STEPS if cfg.recipe == "calibrate" else 0
-    stream = _batches(cfg, device, limit=cfg.steps + extra)
+    stream = _batches(cfg, device, limit=cfg.steps + extra, fetch=fetch)
     for _ in range(extra):
         try:
             warm_x, warm_y = next(stream)
@@ -330,7 +334,7 @@ def _save(cfg: TrainConfig, model, completed: int, dest: Path) -> None:
     )
 
 
-def _batches(cfg: TrainConfig, device, *, limit: int):
+def _batches(cfg: TrainConfig, device, *, limit: int, fetch: bool | None = None):
     import torch
 
     if not cfg.use_synth:
@@ -342,7 +346,7 @@ def _batches(cfg: TrainConfig, device, *, limit: int):
         return
     from train.dataset import make_ofl_loader
 
-    fetch = os.environ.get("FONTSNAP_SKIP_FETCH") != "1"
+    do_fetch = (os.environ.get("FONTSNAP_SKIP_FETCH") != "1") if fetch is None else fetch
     workers = 0 if cfg.device == "cpu" else cfg.num_workers
     loader = make_ofl_loader(
         batch_size=cfg.batch_size,
@@ -350,7 +354,7 @@ def _batches(cfg: TrainConfig, device, *, limit: int):
         per_class_replay=cfg.per_class_replay,
         num_workers=workers,
         shuffle=True,
-        fetch_fonts=fetch,
+        fetch_fonts=do_fetch,
         replay_repeat=cfg.replay_repeat,
     )
     produced = 0
@@ -405,10 +409,8 @@ def main(argv: list[str] | None = None) -> int:
             num_classes=cfg.num_classes,
             device=cfg.device if device is None else device,
             checkpoint_dir=cfg.checkpoint_dir,
-            distill_weight=cfg.distill_weight,
             suppress_weight=cfg.suppress_weight,
             suppress_margin=cfg.suppress_margin,
-            distill_dir=cfg.distill_dir,
             use_synth=cfg.use_synth,
             per_class_new=cfg.per_class_new,
             per_class_replay=cfg.per_class_replay,

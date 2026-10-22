@@ -433,6 +433,8 @@ def container_script(spec: RunPodJobSpec, *, commit: str | None = None) -> str:
         "GIT_LFS_SKIP_SMUDGE=1 git checkout -q --detach FETCH_HEAD\n"
         "git lfs pull --include='model/**'\n"
         "python -m pip install -q -r python/requirements.txt -r python/train/requirements.txt\n"
+        # Chromium for the public web-negative bank (step A); fits WEB_BANK_SLACK.
+        "python -m playwright install --with-deps chromium >/dev/null\n"
         "export FONTSNAP_ALLOW_GPU=1\n"
         'export PYTHONPATH="$WORK/python"\n'
         f'{train} >"$WORK/fontsnap-train.out" 2>"$WORK/fontsnap-train.err"\n'

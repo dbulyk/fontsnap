@@ -1,4 +1,4 @@
-"""Preservation: GF replay + freeze + LwF (B1). Displacement numbers are measured locally for the PR."""
+"""Preservation: GF replay + freeze + web-bank softplus (B1 step A)."""
 
 from __future__ import annotations
 
@@ -7,6 +7,16 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
+
+
+def _stub_web_bank(monkeypatch, tmp_path):
+    from PIL import Image
+
+    bank = tmp_path / "web-bank"
+    bank.mkdir(exist_ok=True)
+    Image.new("RGB", (120, 40), (240, 240, 240)).save(bank / "stub0.png")
+    monkeypatch.setenv("FONTSNAP_WEB_BANK", str(bank))
+    monkeypatch.setattr("train.paths.OUT", tmp_path)
 
 
 def _stub_train_fonts(monkeypatch, tmp_path, payload: bytes, *, replay_classes: int = 64):
@@ -26,6 +36,7 @@ def _stub_train_fonts(monkeypatch, tmp_path, payload: bytes, *, replay_classes: 
     monkeypatch.setenv("FONTSNAP_FONT_CACHE", str(tmp_path / "cache"))
     (tmp_path / "cache").mkdir(exist_ok=True)
     monkeypatch.setattr("train.export.export_onnx_fp16", lambda *a, **k: None)
+    _stub_web_bank(monkeypatch, tmp_path)
 
 
 def test_new_head_bias_does_not_dominate_argmax_at_step_zero():
@@ -108,7 +119,6 @@ def test_frozen_backbone_old_rows_and_replay_train(tmp_path, monkeypatch):
 
     base_cfg = recipe("ofl-v1")
     assert base_cfg.per_class_replay >= 4
-    assert base_cfg.distill_weight == 0.0
     assert base_cfg.suppress_weight > 0
     assert base_cfg.suppress_margin > 0
     cfg = TrainConfig(
@@ -121,10 +131,8 @@ def test_frozen_backbone_old_rows_and_replay_train(tmp_path, monkeypatch):
         num_classes=base_cfg.num_classes,
         device="cpu",
         checkpoint_dir=tmp_path / "train",
-        distill_weight=0.0,
         suppress_weight=base_cfg.suppress_weight,
         suppress_margin=base_cfg.suppress_margin,
-        distill_dir="",
         use_synth=True,
         per_class_new=1,
         per_class_replay=2,
@@ -164,7 +172,7 @@ def test_frozen_backbone_old_rows_and_replay_train(tmp_path, monkeypatch):
 
 
 def test_replay_margin_suppress_in_loop_source():
-    """Guard: unthresholded logsumexp is gone; margin softplus must remain."""
+    """Guard: softplus is on the web bank; LwF / logsumexp are gone."""
     import inspect
 
     from train import loop
@@ -172,6 +180,8 @@ def test_replay_margin_suppress_in_loop_source():
     src = inspect.getsource(loop.train)
     assert "softplus" in src
     assert "max_new" in src and "max_old" in src
+    assert "web_iter" in src
     assert "logsumexp" not in src
+    assert "distill" not in src.lower()
     # One call site only (import + call); no second model for LwF.
     assert src.count("load_efficientnet_b3_from_onnx(") == 1

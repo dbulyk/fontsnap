@@ -17,6 +17,7 @@ from train.recipe_defs import (
     OFL_V1_SUPPRESS_WEIGHT,
     SETUP_SLACK_SECONDS,
     TRAIN_SPEND_CAP_USD,
+    WEB_BANK_SLACK_SECONDS,
     ofl_v1_budget,
     projection_band,
     train_max_runtime_seconds,
@@ -36,7 +37,7 @@ def test_ofl_v1_and_calibrate_share_loader_shape():
     assert ofl.per_class_replay == cal.per_class_replay == OFL_V1_PER_CLASS_REPLAY == 4
     assert ofl.replay_repeat == cal.replay_repeat == OFL_V1_REPLAY_REPEAT == 6
     assert ofl.freeze_backbone is cal.freeze_backbone is True
-    assert ofl.distill_weight == cal.distill_weight == 0.0
+    assert not hasattr(ofl, "distill_weight")
     assert ofl.suppress_weight == cal.suppress_weight == OFL_V1_SUPPRESS_WEIGHT == 1.0
     assert ofl.suppress_margin == cal.suppress_margin == OFL_V1_SUPPRESS_MARGIN == 8.0
     assert ofl.num_classes == cal.num_classes == expanded_classes()
@@ -68,12 +69,15 @@ def test_runpod_specs_derive_from_recipe_and_rate():
 
 
 def test_train_wall_includes_font_fetch_slack():
-    """B8: cold GF+OFL download must sit inside setup / max_runtime, not only compute."""
+    """B8 + step A: cold GF/OFL fetch and web-bank capture sit inside setup / max_runtime."""
     assert FONT_FETCH_SLACK_SECONDS >= 60
+    assert WEB_BANK_SLACK_SECONDS >= 60
     rate = Decimal("20")
     samples = 1000
     # ceil(1000/20) = 50
-    assert train_wall_seconds(samples, rate) == (50 + SETUP_SLACK_SECONDS + FONT_FETCH_SLACK_SECONDS + ARTIFACT_TRANSFER_SECONDS)
+    assert train_wall_seconds(samples, rate) == (
+        50 + SETUP_SLACK_SECONDS + FONT_FETCH_SLACK_SECONDS + WEB_BANK_SLACK_SECONDS + ARTIFACT_TRANSFER_SECONDS
+    )
 
 
 def test_fontsource_slug_uses_display_kebab_case():
